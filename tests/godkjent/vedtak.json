@@ -3745,7 +3745,7 @@
         {
             "id": "nyadmin-kalender-b1",
             "dato": "2026-10-03",
-            "hva": "Kalenderen i admin-ny, bølge 1 + B4 (eieren godkjente skissen lissom-kalender-skisse.html 3. oktober 2026; arkitektens plan). Alt står bak bryteren «Vis/kalenderark» (content_blocks, mangler raden = av; slås på under Synlighet). Av: kalenderen er uendret. På: fargekoder per type som klTypeInfo (kurs gul, event terrakotta, Paint on Pots slip, brenning brun, verksted leire, notat grønn), typeknapper som viser/skjuler (brenning skjult fra start), merker på kortene (påmeldt/plasser, «Alle betalt»/«N ubetalt», «+N nye», «✎ merknad», deltakerinitialer), svevekort på PC med deltakere og betaling, Paint on Pots-tider fra åpningstida slått sammen per dag med «Vis tidene» (ubookede kommer ikke fra kalender.php), «N økter · M påmeldt» i kolonnehodet. Økt-arket med fanene Deltakere / Venteliste / Kursdagen / Rediger og ⋯ per deltaker (Bytt dato = pamelding flytt, Send bekreftelse på nytt, Møtte ikke, Sperr kursbevis, Sett på venteliste, Rediger påmelding, Avbestill = fjern), Legg til deltaker (pamelding legg-til), Ta betalt (bookingPayments), Gi plass (venteliste gi-plass), Kursdagen: beskjed.php til=okt med ogsaaSms=nei (bare e-post), Meld keramikken klar (ferdigbrent meld-alle), Før timer (kursholdere timer), Last ned deltakerliste; Rediger: plasser (kurs.php plasser), kursholder (kurs.php dato), Flytt tidspunkt (moveDate/endredato), Vis som fullbooket (visFullt), Avlys/gjenopprett uten nytt varsel. B4: kalender.php sender brytere:{kalenderark:bool}. Ingen migrasjon, ingen nye endepunkter, ingen ny kundetekst. Retting etter kontrolløren (STOPP på 38e6c84) og brukertesten, 3. oktober 2026: Rediger påmelding sender bare det som er endret og viser dagens beløp; betalt påmelding beholder beløpet til admin skriver et nytt (advarsel i skjemaet); uendret skjema lagrer ingenting. Beskjed-knappen sier «Send til N betalte» (beskjed.php sender bare til betalte). «Før timer» bruker dagens varighet (kalender.php dagSlutt) og viser «Ført N t <dato>» med «Er du sikker?» når timer alt er ført (kalender.php timerFoert, bare lesing). Gi plass sier at personen får e-post. Legg til deltaker har Gavekortkode. Rediger har lenken «Hele kursoppsettet (navn, pris, tekst, bilder)» til Kurs. Event #a8512e og Paint on Pots #4f716c (mørkere enn skissen, så WCAG AA holder: 5,1:1). Mobil: merknad, initialer og «Alle betalt» på kortene som på PC. Menyvalg, ⋯ og faner minst 44 px; fanene på én linje (rulles sidelengs).",
+            "hva": "Kalenderen i admin-ny, bølge 1 + B4 (eieren godkjente skissen lissom-kalender-skisse.html 3. oktober 2026; arkitektens plan). Alt står bak bryteren «Vis/kalenderark» (content_blocks, mangler raden = av; slås på under Synlighet). Av: kalenderen er uendret. På: fargekoder per type som klTypeInfo (kurs gul, event terrakotta, Paint on Pots slip, brenning brun, verksted leire, notat grønn), typeknapper som viser/skjuler (brenning skjult fra start), merker på kortene (påmeldt/plasser, «Alle betalt»/«N ubetalt», «+N nye», «✎ merknad», deltakerinitialer), svevekort på PC med deltakere og betaling, Paint on Pots-tider fra åpningstida slått sammen per dag med «Vis tidene» (ubookede kommer ikke fra kalender.php), «N økter · M påmeldt» i kolonnehodet. Økt-arket med fanene Deltakere / Venteliste / Kursdagen / Rediger og ⋯ per deltaker (Bytt dato = pamelding flytt, Send bekreftelse på nytt, Møtte ikke, Sperr kursbevis, Sett på venteliste, Rediger påmelding, Avbestill = fjern), Legg til deltaker (pamelding legg-til), Ta betalt (bookingPayments), Gi plass (venteliste gi-plass), Kursdagen: beskjed.php til=okt med ogsaaSms=nei (bare e-post), Meld keramikken klar (ferdigbrent meld-alle), Før timer (kursholdere timer), Last ned deltakerliste; Rediger: plasser (kurs.php plasser), kursholder (kurs.php dato), Flytt tidspunkt (moveDate/endredato), Vis som fullbooket (visFullt), Avlys/gjenopprett uten nytt varsel. B4: kalender.php sender brytere:{kalenderark:bool}. Ingen migrasjon, ingen nye endepunkter, ingen ny kundetekst. Retting etter kontrolløren (STOPP på 38e6c84) og brukertesten, 3. oktober 2026: Rediger påmelding sender bare det som er endret og viser dagens beløp; betalt påmelding beholder beløpet til admin skriver et nytt (advarsel i skjemaet); uendret skjema lagrer ingenting. Beskjed-knappen sier «Send til N betalte» (beskjed.php sender bare til betalte). «Før timer» bruker dagens varighet (kalender.php dagSlutt) og viser «Ført N t <dato>» med «Er du sikker?» når timer alt er ført (kalender.php timerFoert, bare lesing). Gi plass sier at personen får beskjed om plassen. Legg til deltaker har Gavekortkode. Rediger har lenken «Hele kursoppsettet (navn, pris, tekst, bilder)» til Kurs. Event #a8512e og Paint on Pots #4f716c (mørkere enn skissen, så WCAG AA holder: 5,1:1). Mobil: merknad, initialer og «Alle betalt» på kortene som på PC. Menyvalg, ⋯ og faner minst 44 px; fanene på én linje (rulles sidelengs). Etter betaling (GODKJENT med retting) og kontrolløren: alt som ikke er «Ikke betalt» (også Møtte ikke opp og Refundert) regnes som betalt i Rediger påmelding, så beløpet aldri regnes på nytt for dem; uke/dag på PC og «Går nå» på mobil bruker dagSlutt for flerdagerskurs; Ført-oppslaget trimmer tittelen som kursholdere.php. Testen prøver også det som skal nektes (for lite gavekortsaldo, Ta betalt to ganger, avbestilling av gavekortplass) og beløpet etter Bytt dato, nytt beløp på betalt, bare rabatt og Møtte ikke + nytt antall.",
             "hvor": "admin-ny › Kalender (#kalender) på 390 og 1280 px, admin-ny › Synlighet",
             "kode": [
                 {
@@ -3755,7 +3755,8 @@
                         "foreach (['kalenderark'] as $navn) {",
                         "$ut[$navn] = $v !== null && $v !== false && (string) $v === 'ja';",
                         "'dagSlutt' =>",
-                        "'timerFoert' =>"
+                        "'timerFoert' =>",
+                        "mb_substr(trim($tittel), 0, 96)"
                     ]
                 },
                 {
@@ -3770,9 +3771,10 @@
                         "else if(betalt&&(nyttAntall||nyRabatt))endret.belop=fra.belop;",
                         "submitLabel:`Send til ${betalte()} betalte`",
                         "sl=minutter(e.dagSlutt||e.slutt)",
-                        "får e-post om plassen",
+                        "får beskjed om plassen.",
                         "'Hele kursoppsettet (navn, pris, tekst, bilder)','#kurs'",
-                        "field('kode','Gavekortkode')"
+                        "field('kode','Gavekortkode')",
+                        "const betalt=p.status!=='Ikke betalt';"
                     ],
                     "ikkeFinnes": [
                         "submitLabel:`Send til ${deltakere.length}`",
@@ -3791,7 +3793,8 @@
                     "fil": "admin-ny/kalender-pc.js",
                     "finnes": [
                         "const b=brikkeGrunn(e,apne,plass);if(!arkPaa())return b;",
-                        "if(arkPaa()&&e.sammen)return sammenBrikke(e,apne,plass);"
+                        "if(arkPaa()&&e.sammen)return sammenBrikke(e,apne,plass);",
+                        "let sl=minutter(e.dagSlutt||e.slutt);"
                     ]
                 },
                 {
@@ -3805,7 +3808,8 @@
                     "finnes": [
                         "const timekort=e=>{if(!arkPaa())return timekortGrunn(e);",
                         "function treff(e){if(arkPaa()?!synligType(e):(typer.size&&!typer.has(e.type)))return false;",
-                        "merker(e),initialer(e)"
+                        "merker(e),initialer(e)",
+                        "const sd=e.dagSlutt||e.slutt;let sl=sd?minutter(sd):s+60;"
                     ]
                 },
                 {
@@ -3838,7 +3842,13 @@
                         "Bytt dato: Per står på den nye datoen",
                         "390: menyvalgene er minst 44 px",
                         "390: fanene står på én linje",
-                        "390: initialene på kortet"
+                        "390: initialene på kortet",
+                        "for lite saldo: saldoen står",
+                        "Ta betalt to ganger: nektet",
+                        "gavekortplass: avbestilling nektet",
+                        "Møtte ikke + nytt antall: beløpet står",
+                        "bare rabatt: 800 kr",
+                        "betalt + nytt beløp: 450 kr gjelder"
                     ]
                 },
                 {

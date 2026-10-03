@@ -456,7 +456,7 @@ if (DB::harTabell('kursholder_timer')) {
     }
 }
 $foertFor = static fn(?int $holder, string $dato, string $tittel): float => $holder === null ? 0.0
-    : ($foert[$holder . '|' . $dato . '|' . mb_substr($tittel, 0, 96)] ?? 0.0);
+    : ($foert[$holder . '|' . $dato . '|' . mb_substr(trim($tittel), 0, 96)] ?? 0.0);
 
 $hendelser = [];
 foreach ($okter as $o) {

@@ -22,7 +22,7 @@ const mandag=d=>shift(d,-((date(d).getDay()+6)%7));
 const minutter=t=>{const[h,m]=String(t||'0:0').split(':').map(Number);return(h||0)*60+(m||0);};
 const naaMin=()=>{const p=Object.fromEntries(new Intl.DateTimeFormat('nb-NO',{timeZone:'Europe/Oslo',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date()).map(x=>[x.type,x.value]));return Number(p.hour)*60+Number(p.minute);};
 // Hvor lenge et kurs varer. Slutt før start betyr at det går over midnatt (22:00–01:00 er tre timer).
-const varighet=e=>{const s=minutter(e.tid);let sl=e.slutt?minutter(e.slutt):s+60;if(sl<s)sl+=1440;return sl-s;};
+const varighet=e=>{const s=minutter(e.tid);const sd=e.dagSlutt||e.slutt;let sl=sd?minutter(sd):s+60;if(sl<s)sl+=1440;return sl-s;};
 // Går kurset nå? Et kurs som startet i går og går over midnatt, går til det slutter i dag.
 const gaarNaa=(e,idag,n)=>{const s=minutter(e.tid);const siden=e.dato===idag?n-s:e.dato===shift(idag,-1)?n+1440-s:-1;return siden>=0&&siden<varighet(e);};
 // «Neste» letes etter i denne og neste måned; finnes ingen der, hentes én måned til av gangen, høyst SOK_MND måneder fram.

@@ -59,7 +59,7 @@ if ($mode === 'seed') {
     // aktivt gavekort paa 1 000 kr. Todagerskurs Delta om 15 og 16 dager (10-13 og 10-12) hos H: timene per dag.
     $d14 = $dag(14); $d15 = $dag(15); $d16 = $dag(16); $d21 = $dag(21);
     $okt['A2'] = DB::settInn('course_sessions', ['course_id' => $kurs['A'], 'start_tid' => $iUtc("$d14 18:00"), 'slutt_tid' => $iUtc("$d14 21:00"), 'kapasitet' => 8, 'kursholder_id' => $h]);
-    $okt['A3'] = DB::settInn('course_sessions', ['course_id' => $kurs['A'], 'start_tid' => $iUtc("$d21 18:00"), 'slutt_tid' => $iUtc("$d21 21:00"), 'kapasitet' => 8, 'kursholder_id' => $h]);
+    $okt['A3'] = DB::settInn('course_sessions', ['course_id' => $kurs['A'], 'start_tid' => $iUtc("$d21 18:00"), 'slutt_tid' => $iUtc("$d21 21:00"), 'kapasitet' => 8, 'kursholder_id' => $h, 'pris_ore' => 60000]);
     $kurs['D'] = DB::settInn('courses', ['slug' => strtolower($tag . '-d'), 'tittel' => "$tag Delta", 'type' => 'kurs', 'pris_ore' => 90000, 'kapasitet' => 6, 'status' => 'publisert']);
     $okt['D'] = DB::settInn('course_sessions', ['course_id' => $kurs['D'], 'start_tid' => $iUtc("$d15 10:00"), 'slutt_tid' => $iUtc("$d16 12:00"), 'kapasitet' => 6, 'kursholder_id' => $h]);
     DB::settInn('okt_samlinger', ['session_id' => $okt['D'], 'nummer' => 1, 'dato' => $d15, 'fra' => '10:00:00', 'til' => '13:00:00', 'overskrift' => 'Dag en']);
@@ -72,6 +72,9 @@ if ($mode === 'seed') {
     }
     $gave = 'KAT' . strtoupper(bin2hex(random_bytes(5)));
     $gavekort = DB::settInn('gift_cards', ['kode' => $gave, 'opprinnelig_ore' => 100000, 'saldo_ore' => 100000, 'gyldig_til' => $dag(365), 'status' => 'aktivt', 'kjoper_navn' => $tag]);
+    // Et kort med for lite igjen (100 kr): skal bli nektet, saldoen skal staa.
+    $gave2 = 'KAU' . strtoupper(bin2hex(random_bytes(5)));
+    $gavekort2 = DB::settInn('gift_cards', ['kode' => $gave2, 'opprinnelig_ore' => 10000, 'saldo_ore' => 10000, 'gyldig_til' => $dag(365), 'status' => 'aktivt', 'kjoper_navn' => $tag]);
     $b['ingrid'] = DB::settInn('bookings', ['course_id' => $kurs['A'], 'course_session_id' => $okt['A'], 'gjest_navn' => 'Ingrid Berg', 'gjest_epost' => $tag . '.ingrid@e2e.lissom.test', 'gjest_telefon' => '+4790000001', 'antall' => 1, 'belop_ore' => 50000, 'status' => 'betalt']);
     $b['marte'] = DB::settInn('bookings', ['course_id' => $kurs['A'], 'course_session_id' => $okt['A'], 'gjest_navn' => 'Marte Sol', 'gjest_epost' => $tag . '.marte@e2e.lissom.test', 'gjest_telefon' => '+4790000002', 'antall' => 1, 'belop_ore' => 50000, 'status' => 'reservert', 'allergier' => 'Allergisk mot latex', 'created_at' => gmdate('Y-m-d H:i:s', time() - 3 * 86400)]);
     $b['pop1'] = DB::settInn('bookings', ['course_id' => $kurs['P'], 'course_session_id' => $pop['12:00'], 'gjest_navn' => 'Pop En', 'antall' => 2, 'belop_ore' => 40000, 'status' => 'betalt']);
@@ -79,7 +82,7 @@ if ($mode === 'seed') {
     $w = DB::settInn('waitlist', ['course_id' => $kurs['A'], 'course_session_id' => $okt['A'], 'navn' => 'Siri Dal', 'epost' => $tag . '.siri@e2e.lissom.test', 'posisjon' => 1, 'status' => 'venter']);
     $brenn = DB::settInn('brenninger', ['slag' => 'raabrann', 'ovn' => $tag . ' ovn', 'start_tid' => $iUtc("$d 09:00"), 'slutt_tid' => $iUtc("$d 11:00")]);
     $bryter('ja');
-    echo json_encode(compact('tag', 'for', 'admin', 'token', 'h', 'kurs', 'okt', 'pop', 'b', 'w', 'brenn', 'd', 'd2', 'd14', 'd15', 'd16', 'd21', 'gave', 'gavekort')); exit;
+    echo json_encode(compact('tag', 'for', 'admin', 'token', 'h', 'kurs', 'okt', 'pop', 'b', 'w', 'brenn', 'd', 'd2', 'd14', 'd15', 'd16', 'd21', 'gave', 'gavekort', 'gave2', 'gavekort2')); exit;
 }
 
 $s = json_decode($argv[2] ?? '{}', true);
@@ -128,13 +131,15 @@ if ($mode === 'inspect') {
             ? DB::alle("SELECT booking_id, maate, belop_ore, status FROM payments WHERE booking_id IN ({$alleB})") : [],
         'gavekortSaldo' => (int) DB::verdi('SELECT saldo_ore FROM gift_cards WHERE id = :i', ['i' => $s['gavekort']]),
         'gavekortUttak' => DB::alle('SELECT belop_ore, ref_type FROM gift_card_uses WHERE gift_card_id = :i', ['i' => $s['gavekort']]),
+        'gavekort2Saldo' => (int) DB::verdi('SELECT saldo_ore FROM gift_cards WHERE id = :i', ['i' => $s['gavekort2']]),
+        'gavekort2Uttak' => (int) DB::verdi('SELECT COUNT(*) FROM gift_card_uses WHERE gift_card_id = :i', ['i' => $s['gavekort2']]),
     ]); exit;
 }
 
 if ($mode === 'cleanup') {
     DB::kjor('DELETE ' . $varslerHvor);
     $innAlle = implode(',', array_map(static fn($r) => (int) $r['id'], DB::alle($alleB)) ?: [0]);
-    DB::kjor('DELETE FROM gift_card_uses WHERE gift_card_id = :i', ['i' => $s['gavekort']]);
+    DB::kjor('DELETE FROM gift_card_uses WHERE gift_card_id IN (:i, :j)', ['i' => $s['gavekort'], 'j' => $s['gavekort2']]);
     $payIds = array_values(array_filter(array_map('intval', array_merge(
         array_column(DB::alle("SELECT payment_id FROM bookings WHERE id IN ({$innAlle})"), 'payment_id'),
         DB::harKolonne('payments', 'booking_id') ? array_column(DB::alle("SELECT id FROM payments WHERE booking_id IN ({$innAlle})"), 'id') : []
@@ -142,7 +147,7 @@ if ($mode === 'cleanup') {
     DB::kjor("UPDATE bookings SET payment_id = NULL WHERE id IN ({$innAlle})");
     if ($payIds) DB::kjor('DELETE FROM payments WHERE id IN (' . implode(',', $payIds) . ')');
     DB::kjor("DELETE FROM bookings WHERE id IN ({$innAlle})");
-    DB::kjor('DELETE FROM gift_cards WHERE id = :i AND kjoper_navn = :t', ['i' => $s['gavekort'], 't' => $s['tag']]);
+    DB::kjor('DELETE FROM gift_cards WHERE id IN (:i, :j) AND kjoper_navn = :t', ['i' => $s['gavekort'], 'j' => $s['gavekort2'], 't' => $s['tag']]);
     DB::kjor("DELETE FROM okt_samlinger WHERE session_id IN ({$innO})");
     DB::kjor('DELETE FROM waitlist WHERE id = :i OR course_session_id IN (' . $innO . ')', ['i' => $s['w']]);
     DB::kjor("DELETE FROM course_sessions WHERE id IN ({$innO})");

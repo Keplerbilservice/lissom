@@ -127,7 +127,7 @@ try{
   await A.click();await ark(p).waitFor();await ark(p).getByRole('tab',{name:'Venteliste'}).click();
   assert.match(await ark(p).locator('.kal-panel').innerText(),/Siri Dal/);
   await ark(p).getByRole('button',{name:'Gi plass'}).click();
-  assert.match(await p.getByRole('dialog',{name:'Gi kursplass?',exact:true}).innerText(),/Siri Dal får e-post om plassen/,'bekreftelsen sier at personen får e-post');await ja(p,'Gi kursplass?','Gi plass');await ark(p).waitFor({state:'detached'});
+  assert.match(await p.getByRole('dialog',{name:'Gi kursplass?',exact:true}).innerText(),/Siri Dal får beskjed om plassen/,'bekreftelsen sier at personen får beskjed');await ja(p,'Gi kursplass?','Gi plass');await ark(p).waitFor({state:'detached'});
   assert.deepEqual(fanget.pop(),{fil:'venteliste.php',body:{handling:'gi-plass',id:s.w,oktId:s.okt.A}},'Gi plass går til venteliste.php (fanget)');
   // Kursdagen: beskjed (bare e-post), meld klar (fanget), før timer (ekte), deltakerliste.
   await A.click();await ark(p).waitFor();await ark(p).getByRole('tab',{name:'Kursdagen'}).click();
@@ -196,6 +196,7 @@ try{
   await aapneA2();await rad('Per Flytt').getByRole('button',{name:'Mer for Per Flytt'}).click();await ark(p).getByRole('menuitem',{name:'Bytt dato'}).click();
   const bd=p.getByRole('dialog',{name:'Bytt dato for Per Flytt'});await bd.waitFor();await bd.getByLabel('Ny dato').selectOption(String(s.okt.A3));await bd.getByRole('button',{name:'Bytt dato'}).click();await ark(p).waitFor({state:'detached'});
   db=fixture('inspect',s);assert.equal(Number(finn(db,'Per Flytt').okt),s.okt.A3,'Bytt dato: Per står på den nye datoen');
+  assert.equal(Number(finn(db,'Per Flytt').belop_ore),60000,'Bytt dato: beløpet følger prisen på den nye datoen (600 kr)');
   // Rediger påmelding uten endring: ingenting lagres, beløpet står.
   let poster=0;const tell=r=>{if(r.method()==='POST'&&r.url().includes('pamelding.php'))poster++;};p.on('request',tell);
   await aapneA2();await rad('Kari Betalt').getByRole('button',{name:'Mer for Kari Betalt'}).click();await ark(p).getByRole('menuitem',{name:'Rediger påmelding (antall, rabatt)'}).click();
@@ -219,6 +220,36 @@ try{
   await lt.getByRole('button',{name:'Legg til'}).click();await ark(p).waitFor({state:'detached'});
   db=fixture('inspect',s);const ny=finn(db,'Gave Gjest');assert.ok(ny,'Legg til: Gave Gjest er lagt inn');assert.equal(ny.status,'betalt');assert.equal(Number(ny.okt),s.okt.A2);
   assert.equal(db.gavekortSaldo,50000,'gavekortet er trukket 500 kr');assert.equal(db.gavekortUttak.length,1);
+  // ── Det som skal bli NEKTET, og det som skal gjelde (betaling, 3. oktober 2026) ──
+  // Gavekort med for lite saldo: ingen plass, saldoen står.
+  await aapneA2();await ark(p).getByRole('button',{name:'+ Legg til deltaker'}).click();
+  const lt2=p.getByRole('dialog',{name:'Legg til deltaker'});await lt2.waitFor();await lt2.getByLabel('Navn').fill('For Lite');await lt2.getByLabel('Betaling').selectOption('Gavekort');await lt2.getByLabel('Gavekortkode').fill(s.gave2);
+  await lt2.getByRole('button',{name:'Legg til'}).click();await lt2.getByText(/Gavekortet har bare/).waitFor();
+  await lt2.getByRole('button',{name:'Avbryt'}).click();await ja(p,'Forkaste endringene?','Forkast');await lt2.waitFor({state:'detached'});await ark(p).locator('.close').click();await ark(p).waitFor({state:'detached'});
+  db=fixture('inspect',s);assert.equal(finn(db,'For Lite'),undefined,'for lite saldo: ingen plass');assert.equal(db.gavekort2Saldo,10000,'for lite saldo: saldoen står');assert.equal(db.gavekort2Uttak,0);
+  // «Ta betalt» en gang til: knappen er borte, og serveren nekter.
+  await aapneA2();assert.equal(await rad('Nora Vik').getByRole('button',{name:'Ta betalt'}).count(),0,'Ta betalt er borte når det er betalt');await ark(p).locator('.close').click();await ark(p).waitFor({state:'detached'});
+  const igjen=await p.evaluate(async id=>{const x=await fetch('/api/admin/kursbetaling.php',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({handling:'registrer',bookingId:id,maate:'Kontant'})});return await x.json();},s.b.nora);
+  assert.equal(igjen.ok,false,'Ta betalt to ganger: nektet');
+  db=fixture('inspect',s);assert.equal(db.betalinger.filter(b=>Number(b.booking_id)===s.b.nora).length,1,'Ta betalt to ganger: én betaling');
+  // Avbestilling av plass betalt med gavekort: nektet.
+  await aapneA2();await rad('Gave Gjest').getByRole('button',{name:'Mer for Gave Gjest'}).click();await ark(p).getByRole('menuitem',{name:'Avbestill …'}).click();
+  await ja(p,'Avbestill','Avbestill');await p.locator('.toast').filter({hasText:'Bruk refusjon'}).waitFor();await ark(p).locator('.close').click();await ark(p).waitFor({state:'detached'});
+  db=fixture('inspect',s);assert.equal(finn(db,'Gave Gjest').status,'betalt','gavekortplass: avbestilling nektet');assert.equal(db.gavekortSaldo,50000,'gavekortplass: saldoen står');
+  // Betalt påmelding der admin skriver nytt beløp: det nye beløpet gjelder.
+  await aapneA2();await rad('Kari Betalt').getByRole('button',{name:'Mer for Kari Betalt'}).click();await ark(p).getByRole('menuitem',{name:'Rediger påmelding (antall, rabatt)'}).click();
+  rp=p.getByRole('dialog',{name:'Rediger påmelding'});await rp.waitFor();await rp.getByLabel('Totalbeløp i kroner').fill('450');await rp.getByRole('button',{name:'Lagre'}).click();await ark(p).waitFor({state:'detached'});
+  db=fixture('inspect',s);assert.equal(Number(finn(db,'Kari Betalt').belop_ore),45000,'betalt + nytt beløp: 450 kr gjelder');assert.equal(Number(finn(db,'Kari Betalt').antall),2);
+  // Bare rabatten: beløpet regnes av antallet som står (2 × 500 − 20 % = 800).
+  await aapneA2();await rad('Lise Rabatt').getByRole('button',{name:'Mer for Lise Rabatt'}).click();await ark(p).getByRole('menuitem',{name:'Rediger påmelding (antall, rabatt)'}).click();
+  rp=p.getByRole('dialog',{name:'Rediger påmelding'});await rp.waitFor();await rp.getByLabel('Rabatt i prosent').fill('20');await rp.getByRole('button',{name:'Lagre'}).click();await ark(p).waitFor({state:'detached'});
+  db=fixture('inspect',s);assert.equal(Number(finn(db,'Lise Rabatt').belop_ore),80000,'bare rabatt: 800 kr');assert.equal(Number(finn(db,'Lise Rabatt').antall),2);assert.equal(Number(finn(db,'Lise Rabatt').rabatt_prosent),20);
+  // Møtte ikke + nytt antall: beløpet står.
+  await p.getByLabel('Velg dato').fill(s.d);await A.waitFor();await A.click();await ark(p).waitFor();await ark(p).getByRole('tab',{name:/^Deltakere/}).click();
+  await rad('Marte Sol').getByRole('button',{name:'Mer for Marte Sol'}).click();await ark(p).getByRole('menuitem',{name:'Rediger påmelding (antall, rabatt)'}).click();
+  rp=p.getByRole('dialog',{name:'Rediger påmelding'});await rp.waitFor();assert.match(await rp.innerText(),/Påmeldingen står som «Møtte ikke opp»\. Beløpet endres bare hvis du skriver et nytt beløp her\./,'advarsel for Møtte ikke');
+  await rp.getByLabel('Antall').fill('2');await rp.getByRole('button',{name:'Lagre'}).click();await ark(p).waitFor({state:'detached'});
+  db=fixture('inspect',s);assert.equal(db.status.marte,'ikke_mott');assert.equal(Number(finn(db,'Marte Sol').antall),2);assert.equal(Number(finn(db,'Marte Sol').belop_ore),50000,'Møtte ikke + nytt antall: beløpet står');
   // Varsler scenariet la i kø (avbestilling, ny dato): bare e-post, ingenting sendt (testmiljøet holder dem tilbake).
   assert.ok(db.varselRader.every(v=>v.kanal==='epost'&&v.status!=='sendt'),'ingen SMS, ingenting sendt');
   assert.deepEqual(feil,[],'1280: ingen feil i siden');

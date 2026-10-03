@@ -12,7 +12,7 @@ const RAD_MIN=30,RAD_PX=26,MIN_PX=24,LAV_PX=40;
 const minutter=t=>{const m=/^(\d{1,2}):(\d{2})/.exec(t||'');return m?Number(m[1])*60+Number(m[2]):null;};
 const klokke=m=>`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
 // Slutt før start betyr at kurset går over midnatt (+24 t, som varighet() på mobil); i uke og dag vises det til dagens slutt.
-function tidsrom(e){const s=minutter(e.tid);if(s===null)return null;let sl=minutter(e.slutt);if(sl===null||sl===s)sl=s+60;else if(sl<s)sl+=1440;return {s,sl:Math.min(1440,sl)};}
+function tidsrom(e){const s=minutter(e.tid);if(s===null)return null;let sl=minutter(e.dagSlutt||e.slutt);if(sl===null||sl===s)sl=s+60;else if(sl<s)sl+=1440;return {s,sl:Math.min(1440,sl)};}
 
 // Segmentpille Dag · Uke · Måned. Valgt visning er den som står (uke når kalenderen åpnes).
 export function segment(modus,velg){

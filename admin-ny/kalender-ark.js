@@ -129,7 +129,7 @@ export function oktArk(e,o){
   }
   if(f==='venteliste')return vente.length?vente.map(w=>el('div',{class:'kal-delt'},
    el('div',{class:'kal-info'},el('b',{text:w.navn}),el('small',{text:[w.paaKurset?'Venter på kurset':`Plass ${w.posisjon}`,w.varslet?'Varslet':'',w.status].filter(Boolean).join(' · ')})),
-   button('Gi plass',()=>sporOgKjor('Gi kursplass?',`Sett ${w.navn} på denne kursdatoen. ${w.navn} får e-post om plassen. Kontroller betaling og bekreftelse etterpå.`,'Gi plass','venteliste.php',{handling:'gi-plass',id:w.id,oktId:id}),'primary kal-liten'))):el('p',{class:'muted',text:'Ingen står på venteliste til dette kurset.'});
+   button('Gi plass',()=>sporOgKjor('Gi kursplass?',`Sett ${w.navn} på denne kursdatoen. ${w.navn} får beskjed om plassen. Kontroller betaling og bekreftelse etterpå.`,'Gi plass','venteliste.php',{handling:'gi-plass',id:w.id,oktId:id}),'primary kal-liten'))):el('p',{class:'muted',text:'Ingen står på venteliste til dette kurset.'});
   if(f==='kursdagen'){const t=timer(e),foert=Number(e.timerFoert)||0;
    // Sperre mot dobbeltføring: er det alt ført timer på kursholderen for dette kurset denne dagen, står det over knappen, og knappen spør «Er du sikker?».
    const forTimer=()=>foert>0?sporOgKjor('Er du sikker?',`Det er alt ført ${tall(foert)} t på ${e.holder} for ${e.tittel} ${e.dato}. Før ${tall(t)} t til?`,'Før timer','kursholdere.php',{handling:'timer',id:e.kursholderId,dato:e.dato,timer:Math.round(t*100)/100,hva:e.tittel})
@@ -169,11 +169,12 @@ export function oktArk(e,o){
    form('Bytt dato for '+p.navn,[field('oktId','Ny dato','number',{velg:true,options:datoer.map(x=>[x.oktId,`${e.tittel} · ${x.naar} (${x.ledige} ledige)`])})],{},async v=>{await ferdig(await api('pamelding.php',{handling:'flytt',id:p.bookingId,oktId:v.oktId}));},{submitLabel:'Bytt dato',successText:false});
   }catch(err){toast(err.message);}
  }
+ // «Betalt» her = alt som ikke er «Ikke betalt» (også Møtte ikke opp og Refundert): beløpet regnes aldri på nytt for dem.
  // Rediger påmelding. pamelding.php «endre» regner beløpet på nytt (pris × antall − rabatt) når antall eller rabatt sendes uten beløp.
  // Derfor sendes bare det som faktisk er endret, og dagens beløp står i skjemaet. Er påmeldingen betalt, beholdes beløpet
  // (det sendes med uendret) til admin selv skriver et nytt. Ingen endring = ingen lagring.
- function redigerPaamelding(p){const betalt=p.status==='Betalt';const fra={antall:Number(p.antall)||1,rabatt:Number(p.rabatt)||0,belop:(Number(p.belopOre)||0)/100};
-  form('Rediger påmelding',[field('antall','Antall','number',{min:1,required:true}),field('rabatt','Rabatt i prosent','number',{min:0,max:100,step:.01}),field('belop','Totalbeløp i kroner','number',{min:0,step:.01,help:betalt?'Påmeldingen er betalt. Beløpet endres bare hvis du skriver et nytt beløp her.':'Endrer du antall eller rabatt og lar beløpet stå, regnes beløpet ut på nytt.'})],fra,async v=>{
+ function redigerPaamelding(p){const betalt=p.status!=='Ikke betalt';const fra={antall:Number(p.antall)||1,rabatt:Number(p.rabatt)||0,belop:(Number(p.belopOre)||0)/100};
+  form('Rediger påmelding',[field('antall','Antall','number',{min:1,required:true}),field('rabatt','Rabatt i prosent','number',{min:0,max:100,step:.01}),field('belop','Totalbeløp i kroner','number',{min:0,step:.01,help:betalt?(p.status==='Betalt'?'Påmeldingen er betalt.':`Påmeldingen står som «${p.status}».`)+' Beløpet endres bare hvis du skriver et nytt beløp her.':'Endrer du antall eller rabatt og lar beløpet stå, regnes beløpet ut på nytt.'})],fra,async v=>{
    const endret={};const nyttAntall=v.antall!==null&&v.antall!==fra.antall,nyRabatt=v.rabatt!==null&&Math.round(v.rabatt*100)!==Math.round(fra.rabatt*100),nyttBelop=v.belop!==null&&Math.round(v.belop*100)!==Math.round(fra.belop*100);
    if(nyttAntall)endret.antall=v.antall;
    // Rabatten følger med når antallet endres, ellers regner serveren uten den.

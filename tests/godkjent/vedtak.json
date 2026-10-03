@@ -4500,6 +4500,20 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "adminny-ingen-ukecache",
+            "dato": "2026-10-03",
+            "hva": "Eieren, 3. oktober 2026: endringer i det nye admin kom ikke fram fordi admin-ny/*.js og *.css ble mellomlagret i en uke. admin-ny/.htaccess setter «no-cache, must-revalidate» (spør først, 304 når uendret), som nyadmin/.htaccess.",
+            "hvor": "admin-ny",
+            "kode": [
+                {
+                    "fil": "admin-ny/.htaccess",
+                    "finnes": [
+                        "Header set Cache-Control \"no-cache, must-revalidate\""
+                    ]
+                }
+            ]
         }
     ]
 }

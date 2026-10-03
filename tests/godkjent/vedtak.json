@@ -4465,6 +4465,36 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "minside-velkomst",
+            "dato": "2026-10-03",
+            "hva": "Eieren, 3. oktober 2026 (teksten ordrett): Min side for innlogget bruker uten kurs/påmelding og uten nåværende eller tidligere medlemskap viser «Velkommen til Lissom, {fornavn}!», avsnittene «Her samles kursene og medlemskapet ditt når du har booket noe hos oss.» og «Har du lyst til å prøve leire? Finn et kurs som passer deg, eller bli medlem og bruk verkstedet når det passer deg.», tre piller «Se kurs og datoer» (kurssiden), «Bli medlem» (innmeldingsskjemaet på Min side) og «Ta kontakt» (kontaktsiden), og den lille teksten «Lurer du på noe? Skriv til oss, så svarer vi som regel samme dag.». Forsvinner av seg selv når brukeren har booket kurs eller blitt medlem.",
+            "hvor": "Min side › Hjem",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "Her samles kursene og medlemskapet ditt når du har booket noe hos oss.",
+                        "Har du lyst til å prøve leire? Finn et kurs som passer deg, eller bli medlem og bruk verkstedet når det passer deg.",
+                        "Lurer du på noe? Skriv til oss, så svarer vi som regel samme dag.",
+                        ">Se kurs og datoer</button>",
+                        ">Bli medlem</button>",
+                        ">Ta kontakt</button>",
+                        "msVelkomstTittel: 'Velkommen til Lissom'"
+                    ]
+                },
+                {
+                    "fil": "lissom-2108-uten-admin.html",
+                    "finnes": [
+                        "Her samles kursene og medlemskapet ditt når du har booket noe hos oss.",
+                        "Har du lyst til å prøve leire? Finn et kurs som passer deg, eller bli medlem og bruk verkstedet når det passer deg.",
+                        "Lurer du på noe? Skriv til oss, så svarer vi som regel samme dag.",
+                        "Se kurs og datoer",
+                        "Ta kontakt"
+                    ]
+                }
+            ]
         }
     ]
 }

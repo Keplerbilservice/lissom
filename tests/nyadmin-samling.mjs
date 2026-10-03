@@ -127,7 +127,7 @@ try{
   await p.getByRole('dialog',{name:`${s.tag} Framover`}).waitFor();
   assert.equal(await p.getByRole('dialog').count(),1,'bare paameldingen er aapen');
   await p.goto(`${ADR}/admin-ny.html#idag`);await p.goto(`${ADR}/admin-ny.html#pameldte?booking=${s.gammelBooking}`);
-  const gml=p.getByRole('dialog',{name:`${s.tag} Gammel`});await gml.waitFor();
+  const gml=p.getByRole('dialog',{name:`${s.tag} Gammel`});await gml.waitFor();await gml.evaluate(d=>Promise.all([...d.getAnimations({subtree:true})].map(x=>x.finished)));
   await trykk(gml.getByRole('button',{name:'Flytt til annen dato',exact:true}));
   const gflytt=p.getByRole('dialog',{name:'Flytt påmelding'});await gflytt.waitFor();
   const gv=await gflytt.getByLabel('Kursdato',{exact:true}).evaluate(x=>[...x.options].map(o=>o.value));

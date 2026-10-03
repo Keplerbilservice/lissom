@@ -252,6 +252,11 @@ try{
   db=fixture('inspect',s);assert.equal(db.status.marte,'ikke_mott');assert.equal(Number(finn(db,'Marte Sol').antall),2);assert.equal(Number(finn(db,'Marte Sol').belop_ore),50000,'Møtte ikke + nytt antall: beløpet står');
   // Varsler scenariet la i kø (avbestilling, ny dato): bare e-post, ingenting sendt (testmiljøet holder dem tilbake).
   assert.ok(db.varselRader.every(v=>v.kanal==='epost'&&v.status!=='sendt'),'ingen SMS, ingenting sendt');
+  // Regresjon: Paint on Pots 12:00–13:30 + 13:30–15:00 slås sammen; dagSlutt (som PC-tegningen bruker først) følger gruppens siste sluttid.
+  const pot=await p.evaluate(async()=>{const {slaaSammen}=await import('/admin-ny/kalender-ark.js');
+   const t=(tid,slutt)=>({type:'pop',auto:true,dato:'2026-10-10',kursId:7,tid,slutt,dagSlutt:slutt,pameldt:1});
+   const [e]=slaaSammen([t('12:00','13:30'),t('13:30','15:00')]);return {n:e.sammen?.length,tid:e.tid,slutt:e.slutt,dagSlutt:e.dagSlutt};});
+  assert.deepEqual(pot,{n:2,tid:'12:00',slutt:'15:00',dagSlutt:'15:00'},'Paint on Pots slått sammen: brikka går til siste tids slutt');
   assert.deepEqual(feil,[],'1280: ingen feil i siden');
   // Bryteren av: kalenderen er som før.
   fixture('bryter',s,'nei');await p.reload();await p.getByRole('heading',{name:'Kalender',exact:true}).waitFor();

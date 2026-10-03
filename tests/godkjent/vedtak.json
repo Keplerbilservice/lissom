@@ -4465,6 +4465,32 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "folk-se-person-ryddet",
+            "dato": "2026-10-03",
+            "hva": "Eieren, 3. oktober 2026: «Se person» i admin-ny ryddet uten å fjerne funksjoner: tilgangslinje øverst (Har tilgang til <dato> / Venter på betaling / Ingen tilgang – ikke medlem), kortene Medlemskap, Kontakt og Internt notat, handlinger gruppert under Betaling, Medlemskap og Verksted (røde sist). «Vilkår» vises bare med innhold. Folk-lista har sortering Sist aktiv / Flest kurs / Navn (standard Sist aktiv) og viser antall kurs og «sist innom for X dager siden» når det finnes.",
+            "hvor": "admin-ny › Folk › Se person",
+            "kode": [
+                {
+                    "fil": "admin-ny/app.js",
+                    "finnes": [
+                        "Ingen tilgang – ikke medlem",
+                        "group('Betaling',",
+                        "group('Medlemskap',",
+                        "group('Verksted',",
+                        "p.vilkaar?[['Vilkår',p.vilkaar]]:[]",
+                        "['aktiv','Sorter: Sist aktiv',",
+                        "'sist innom for '+p.dagerSiden+' dager siden'"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/ui.js",
+                    "finnes": [
+                        "sorts=[]"
+                    ]
+                }
+            ]
         }
     ]
 }

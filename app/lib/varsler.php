@@ -285,9 +285,14 @@ final class Varsel
      */
     private static function hentMal(string $malNavn): ?array
     {
-        $mal = DB::en('SELECT * FROM notification_templates WHERE navn = :n AND aktiv = 1', ['n' => $malNavn]);
+        $mal = DB::en('SELECT * FROM notification_templates WHERE navn = :n', ['n' => $malNavn]);
         if ($mal === null) {
-            logg_feil("Varselmal «{$malNavn}» finnes ikke eller er slått av");
+            logg_feil("Varselmal «{$malNavn}» finnes ikke");
+            return null;
+        }
+        // Slaatt av under Tekst maler er et valg, ikke en feil — ingen
+        // loggrad (eieren slo av tolv maler 3. oktober 2026).
+        if ((int) ($mal['aktiv'] ?? 0) !== 1) {
             return null;
         }
         return $mal;

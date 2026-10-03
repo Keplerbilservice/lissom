@@ -4141,7 +4141,7 @@
                 {
                     "fil": "app/lib/varsler.php",
                     "finnes": [
-                        "WHERE navn = :n AND aktiv = 1"
+                        "if ((int) ($mal['aktiv'] ?? 0) !== 1) {"
                     ]
                 },
                 {
@@ -4151,6 +4151,67 @@
                         "ikke 09:59 neste dag",
                         "andre kjøring endrer ingenting (idempotent)",
                         "ingen «Varsel må sendes for hånd»"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "meldinger-etter-0310",
+            "dato": "2026-10-03",
+            "hva": "Etter meldingsvalgene 03.10: (1) Annuller henteordre sier «og kunden har fått beskjed» bare når malen ordre_annullert er på. (2) Feltet «Timer før anmeldelsesforespørsel» er byttet med teksten «Sendes neste dag kl. 10.» (ikke redigerbart) i admin-ny og gammel admin; api/admin/varsler.php gir «naar» i stedet for «timer». (3) Varsel::hentMal skiller «finnes ikke» (logges) fra «slått av» (logges ikke). (4) Nettbutikken: kun henting (eieren 03.10, Lissom sender aldri varer) — kassa viser bare «Hent i butikken på Teie», api/ordre.php avviser levering=pakke med «Vi sender ikke varer. Bestillingen hentes i butikken på Teie.» Gamle ordre røres ikke.",
+            "hvor": "Admin › Uttak/Ikke betalt › Annuller; Varsler › Oppfølging etter kurs; nettbutikkens kasse",
+            "kode": [
+                {
+                    "fil": "api/admin/uttak.php",
+                    "finnes": [
+                        "($annullertPaa && trim((string) ($ordre['kunde_epost'] ?? '')) !== '' ? ', og kunden har fått beskjed.' : '.')"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/meldinger-og-oppsett.js",
+                    "finnes": [
+                        "el('p',{text:'Sendes neste dag kl. 10.'})"
+                    ],
+                    "ikkeFinnes": [
+                        "Timer før anmeldelsesforespørsel"
+                    ]
+                },
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        ">Sendes neste dag kl. 10.</p>"
+                    ],
+                    "ikkeFinnes": [
+                        "vaAnmTimer",
+                        "{ navn: 'Send som pakke (kr. '"
+                    ]
+                },
+                {
+                    "fil": "api/admin/varsler.php",
+                    "finnes": [
+                        "'naar'   => 'Sendes neste dag kl. 10.',"
+                    ]
+                },
+                {
+                    "fil": "app/lib/varsler.php",
+                    "finnes": [
+                        "logg_feil(\"Varselmal «{$malNavn}» finnes ikke\");",
+                        "if ((int) ($mal['aktiv'] ?? 0) !== 1) {"
+                    ],
+                    "ikkeFinnes": [
+                        "finnes ikke eller er slått av"
+                    ]
+                },
+                {
+                    "fil": "api/ordre.php",
+                    "finnes": [
+                        "Svar::feil('Vi sender ikke varer. Bestillingen hentes i butikken på Teie.');"
+                    ]
+                },
+                {
+                    "fil": "tests/henting.sh",
+                    "finnes": [
+                        "levering=pakke avvises med norsk melding"
                     ]
                 }
             ]

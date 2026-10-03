@@ -705,7 +705,11 @@ await flyt('Butikk: betal ved henting uten innlogging', async () => {
       await sporsmal.locator('..').getByRole('button', { name: 'Annuller', exact: true }).click();
       // Kvitteringen lukker seg selv etter noen sekunder — den maa fanges
       // mens den staar.
-      const kvittering = await a.getByText(/er annullert\. Varene er lagt tilbake på lager, og kunden har fått beskjed\./)
+      // «og kunden har fått beskjed» bare når malen ordre_annullert er på.
+      const annullertPaa = Number(verdi("SELECT aktiv FROM notification_templates WHERE navn = 'ordre_annullert'") ?? 0) === 1;
+      const kvittering = await a.getByText(annullertPaa
+        ? /er annullert\. Varene er lagt tilbake på lager, og kunden har fått beskjed\./
+        : /er annullert\. Varene er lagt tilbake på lager\.$/)
         .first().waitFor({ timeout: 8000 }).then(() => true, () => false);
       sjekk('… kvitteringen vises', kvittering);
       await a.waitForTimeout(2500);

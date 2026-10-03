@@ -139,6 +139,13 @@ if ($sum <= 0) {
 // hvorfor.
 $levering = Foresporsel::tekst('levering') === 'pakke' ? 'pakke' : 'hent';
 
+// Bare henting (eieren, 3. oktober 2026: «kun henting», Lissom sender aldri
+// varer). Kassa tilbyr ikke sending lenger; en gammel side eller et direkte
+// kall som ber om pakke, stoppes her foer noe lagres. Gamle ordre roeres ikke.
+if ($levering === 'pakke') {
+    Svar::feil('Vi sender ikke varer. Bestillingen hentes i butikken på Teie.');
+}
+
 // Skal pakken sendes, er det ingen disk aa betale over. Da faller «betal ved
 // henting» bort, uansett hva nettleseren sendte.
 if ($vedHenting && $levering === 'pakke') {

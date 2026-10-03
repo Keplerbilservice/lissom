@@ -96,6 +96,13 @@ sjekk "henting uten mobil avvises" "Vi trenger et mobilnummer." "$(echo "$R" | f
 sjekk "… og ingen ordre er lagret" "0" "$(php -r 'require "'"$ROT"'/app/bootstrap.php"; echo DB::verdi("SELECT COUNT(*) FROM orders WHERE kunde_epost = :e", ["e" => "'"$EPOST"'"]);')"
 
 echo
+echo "── Sending avvises (eieren 03.10: kun henting) ──"
+R=$(curl -s -m 20 -X POST -H "Content-Type: application/json" -H "$ORIG" \
+  -d "{\"linjer\":[{\"id\":$VARE,\"antall\":1}],\"betaling\":\"vipps\",\"levering\":\"pakke\",\"navn\":\"TEST Gjest\",\"epost\":\"$EPOST\",\"telefon\":\"40603093\",\"adresse\":\"Testveien 1\",\"postnr\":\"3120\",\"poststed\":\"Teie\"}" "$B/ordre.php")
+sjekk "levering=pakke avvises med norsk melding" "Vi sender ikke varer. Bestillingen hentes i butikken på Teie." "$(echo "$R" | felt '$d["feil"] ?? ""')"
+sjekk "… og ingen ordre er lagret" "0" "$(php -r 'require "'"$ROT"'/app/bootstrap.php"; echo DB::verdi("SELECT COUNT(*) FROM orders WHERE kunde_epost = :e", ["e" => "'"$EPOST"'"]);')"
+
+echo
 echo "── Gjest bestiller med henting, uten innlogging ──"
 R=$(curl -s -m 20 -X POST -H "Content-Type: application/json" -H "$ORIG" \
   -d "{\"linjer\":[{\"id\":$VARE,\"antall\":1}],\"betaling\":\"henting\",\"levering\":\"hent\",\"navn\":\"TEST Gjest\",\"epost\":\"$EPOST\",\"telefon\":\"40603093\"}" "$B/ordre.php")
@@ -133,7 +140,10 @@ echo
 echo "── Annuller ──"
 R=$(admin "{\"handling\":\"annuller\",\"ordreId\":$OID}")
 sjekk "annulleringen gaar gjennom" "True" "$(echo "$R" | felt '!empty($d["ok"])')"
-sjekk "… med kvittering" "True" "$(echo "$R" | felt 'str_contains($d["beskjed"] ?? "", "er annullert. Varene er lagt tilbake på lager, og kunden har fått beskjed.")')"
+# «og kunden har fått beskjed» bare naar malen ordre_annullert er paa.
+ANNULLERT_PAA=$(php -r 'require "'"$ROT"'/app/bootstrap.php"; echo (int) (DB::verdi("SELECT aktiv FROM notification_templates WHERE navn = \"ordre_annullert\"") ?? 0);')
+if [ "$ANNULLERT_PAA" = "1" ]; then KVITT="er annullert. Varene er lagt tilbake på lager, og kunden har fått beskjed."; else KVITT="er annullert. Varene er lagt tilbake på lager."; fi
+sjekk "… med kvittering (beskjed til kunden bare naar malen er paa)" "True" "$(echo "$R" | felt 'str_ends_with($d["beskjed"] ?? "", "'"$KVITT"'")')"
 sjekk "ordren staar som kansellert" "kansellert" "$(php -r 'require "'"$ROT"'/app/bootstrap.php"; echo DB::verdi("SELECT status FROM orders WHERE id = :i", ["i" => '"$OID"']);')"
 sjekk "varen er tilbake paa lager (2 → 3)" "3" "$(php -r 'require "'"$ROT"'/app/bootstrap.php"; echo DB::verdi("SELECT lager FROM products WHERE id = :i", ["i" => '"$VARE"']);')"
 # Malen ordre_annullert ble slaatt av 3. oktober 2026 (eieren, migrasjon 251).

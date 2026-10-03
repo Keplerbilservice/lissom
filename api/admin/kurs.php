@@ -5,6 +5,7 @@
  *   GET                     alle kurs, ogsaa kladder
  *   POST handling=lagre     opprett eller endre et kurs
  *   POST handling=nydato    legg til en dato
+ *   POST handling=nydatoer  legg til flere datoer i én transaksjon (gjentakelse)
  *   POST handling=plasser   endre antall plasser paa én dato
  *   POST handling=endredato endre tidspunktet paa én dato
  *   POST handling=avlys     avlys en dato
@@ -285,6 +286,149 @@ $tilUtc = static function (string $norsk): ?string {
         return null;
     }
     return $d->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+};
+
+// Én dato inn paa et kurs — det «nydato» alltid har gjort, flyttet ut hit
+// uendret (bolge 3, 3. oktober 2026) saa «nydatoer» legger inn hver dato paa
+// noeyaktig samme maate. Svarer ['oktId' => …], eller ['hopp' => 'finnes' |
+// 'avlyst_med_pameldte'] naar plassen er tatt; «nydato» gjor det om til de
+// samme feilmeldingene som foer. $holder kalles der kursholderen alltid ble
+// slaatt opp (etter at en tom avlyst dato er ryddet).
+$leggInnDato = static function (int $kursId, string $start, ?string $slutt, array $dagerInn, ?int $kapasitet, callable $holder, bool $ferieUnntak): array {
+    // Ligger kurset alt paa denne datoen og tida, sier vi det.
+    //
+    // Eieren, 16. september 2026, med et bilde av dialogen: «naa faar jeg
+    // ikke lagret kurs jeg legger ut ... faar beskjed om at Noe gikk galt
+    // og kurset ikke er lagt ut».
+    //
+    // «uq_okt_kurs_start» (course_id, start_tid) kom med migrasjon 014 og
+    // sperrer to oekter paa samme kurs til samme klokkeslett. Uten denne
+    // sjekken doede innleggingen paa PDO-unntaket i DB::settInn, og
+    // feilhaandtereren i bootstrap svarte «Noe gikk galt. Proev igjen,
+    // eller ta kontakt med oss.» — som ikke sier hva som er i veien.
+    // Maalt 16. september: foerste kall gikk gjennom, andre gav HTTP 500
+    // med «Duplicate entry '1-2026-11-25 16:00:00' for key
+    // uq_okt_kurs_start».
+    //
+    // ── Den avlyste datoen som ingen kunne se ───────────────────────
+    //
+    // Eieren, 17. september 2026, med bilde av dialogen paa 25. november:
+    // «faar beskjed om at det allerede er et kurs der, men det er det
+    // ikke».
+    //
+    // Og det var det ikke. Avlyste datoer er ute av kalenderen siden 8.
+    // september — raden blir staaende i basen som «avlyst», og den unike
+    // noekkelen holdt plassen. Ingenting aa se, ingen vei videre: kurset
+    // kunne ikke settes opp paa nytt paa den datoen det ble avlyst.
+    //
+    // «Er det slettet, maa ogsaa databasen toemmes saa det ikke okkuperer
+    // plassen.» En avlyst dato ingen har meldt seg paa er tom paa samme
+    // maate som en dato som slettes i «slettdato»: ingen booking peker
+    // paa den, ingenting gaar tapt. Da slettes den her, og plassen er
+    // ledig.
+    //
+    // Er noen meldt paa, blir raden staaende — bookingen og betalingen
+    // peker paa den, og de er bokfoeringspliktige. Da sier vi hva som er
+    // i veien, framfor «velg en annen».
+    $sperre = DB::en(
+        'SELECT id, status FROM course_sessions WHERE course_id = :k AND start_tid = :s',
+        ['k' => $kursId, 's' => $start]
+    );
+    if ($sperre !== null && (string) $sperre['status'] === 'avlyst') {
+        $sperreId = (int) $sperre['id'];
+        $pameldte = (int) DB::verdi(
+            "SELECT COUNT(*) FROM bookings
+              WHERE course_session_id = :o AND status IN ('betalt','reservert')",
+            ['o' => $sperreId]
+        );
+        if ($pameldte === 0) {
+            // Samme opprydding som i «slettdato», og av samme grunn:
+            //
+            // Avbestilte paameldinger peker fortsatt paa datoen, og
+            // kolonnen har ingen fremmednoekkel — basen sier ikke fra, og
+            // raden ville blitt staaende og pekt paa noe som ikke finnes.
+            // Vi loesner den med vilje, saa bilaget beholder kurset og
+            // beloepet sitt.
+            DB::kjor(
+                'UPDATE bookings SET course_session_id = NULL WHERE course_session_id = :o',
+                ['o' => $sperreId]
+            );
+            // Ventelista loesnes ogsaa: de venter paa KURSET, og staar da
+            // paa de andre datoene — den nye medregnet.
+            if (DB::harTabell('waitlist')) {
+                DB::kjor(
+                    'UPDATE waitlist SET course_session_id = NULL WHERE course_session_id = :o',
+                    ['o' => $sperreId]
+                );
+            }
+            DB::kjor('DELETE FROM course_sessions WHERE id = :i', ['i' => $sperreId]);
+            revider('dato_slettet', 'course_session', $sperreId, [
+                'kurs' => $kursId, 'naar' => $start, 'via' => 'avlyst_plass_frigjort',
+            ]);
+            $sperre = null;
+        }
+    }
+    if ($sperre !== null) {
+        return ['hopp' => (string) $sperre['status'] === 'avlyst' ? 'avlyst_med_pameldte' : 'finnes'];
+    }
+
+    $nyOkt = [
+        'course_id' => $kursId,
+        'start_tid' => $start,
+        'slutt_tid' => $slutt,
+        'kapasitet' => $kapasitet,
+    ];
+    // Kursholderen, i tre trinn — og de gaar én vei:
+    //   1. Er det valgt en paa datoen, er det hen. Alltid.
+    //   2. Ellers: den som staar paa kurset.
+    //   3. Ellers: verkstedets standard — Monica.
+    // Uten dette maatte man valgt den samme personen paa hver eneste dato.
+    //
+    // Trinn 2 og 3 staar i Kursholder::forKurs(), som ogsaa de faste
+    // ukedagene og aapent verksted bruker. Trinn 1 hoerer hjemme
+    // her: det er bare her noen faktisk kan velge.
+    if (Kursholder::klar()) {
+        $nyOkt['kursholder_id'] = $holder($kursId);
+    }
+
+    if ($ferieUnntak && Ferie::harUnntak()) {
+        $nyOkt['ferie_ok'] = 1;
+    }
+    $oktId = DB::settInn('course_sessions', $nyOkt);
+
+    // Gaar kurset over flere dager, lagres dagene som samlinger — dag én
+    // med, saa rekkefolgen og nummereringen stemmer. Samlinger::lagre()
+    // setter deretter oekta fra forste til siste dag, som er den maaten
+    // kunden ser «7.–8. oktober» paa.
+    if ($dagerInn !== []) {
+        $forste = (new DateTimeImmutable($start, new DateTimeZone('UTC')))
+            ->setTimezone(new DateTimeZone('Europe/Oslo'));
+        $sisteKl = $slutt !== null
+            ? (new DateTimeImmutable($slutt, new DateTimeZone('UTC')))
+                ->setTimezone(new DateTimeZone('Europe/Oslo'))->format('H:i')
+            : '';
+        Samlinger::lagre($oktId, array_merge([[
+            'dato' => $forste->format('Y-m-d'),
+            'fra'  => $forste->format('H:i'),
+            'til'  => $sisteKl,
+        ]], $dagerInn));
+    }
+
+    revider('dato_lagt_til', 'course_session', $oktId, [
+        'kurs' => $kursId, 'start' => $start, 'dager' => count($dagerInn) + 1,
+    ]);
+    return ['oktId' => $oktId];
+};
+
+// Bryteren «Vis/kalendergjenta» (content_blocks, mangler raden = av): «Ny
+// kursdato» med gjentakelse og «Dupliser til neste uke» i kalenderen, og
+// «nydatoer» her. Av = kalenderen er som foer, og «nydatoer» svarer 409.
+$gjentaPaa = static function (): bool {
+    if (!DB::harTabell('content_blocks')) {
+        return false;
+    }
+    $v = DB::verdi('SELECT verdi FROM content_blocks WHERE nokkel = :n', ['n' => 'Vis/kalendergjenta']);
+    return $v !== null && $v !== false && (string) $v === 'ja';
 };
 
 switch ($handling) {
@@ -632,134 +776,94 @@ switch ($handling) {
             $ferieTider[] = $tilUtc($d['dato'] . ' ' . ($d['fra'] !== '' ? $d['fra'] : '12:00'));
         }
         $ferieUnntak = $ferieVakt($ferieTider);
-        // Ligger kurset alt paa denne datoen og tida, sier vi det.
-        //
-        // Eieren, 16. september 2026, med et bilde av dialogen: «naa faar jeg
-        // ikke lagret kurs jeg legger ut ... faar beskjed om at Noe gikk galt
-        // og kurset ikke er lagt ut».
-        //
-        // «uq_okt_kurs_start» (course_id, start_tid) kom med migrasjon 014 og
-        // sperrer to oekter paa samme kurs til samme klokkeslett. Uten denne
-        // sjekken doede innleggingen paa PDO-unntaket i DB::settInn, og
-        // feilhaandtereren i bootstrap svarte «Noe gikk galt. Proev igjen,
-        // eller ta kontakt med oss.» — som ikke sier hva som er i veien.
-        // Maalt 16. september: foerste kall gikk gjennom, andre gav HTTP 500
-        // med «Duplicate entry '1-2026-11-25 16:00:00' for key
-        // uq_okt_kurs_start».
-        //
-        // ── Den avlyste datoen som ingen kunne se ───────────────────────
-        //
-        // Eieren, 17. september 2026, med bilde av dialogen paa 25. november:
-        // «faar beskjed om at det allerede er et kurs der, men det er det
-        // ikke».
-        //
-        // Og det var det ikke. Avlyste datoer er ute av kalenderen siden 8.
-        // september — raden blir staaende i basen som «avlyst», og den unike
-        // noekkelen holdt plassen. Ingenting aa se, ingen vei videre: kurset
-        // kunne ikke settes opp paa nytt paa den datoen det ble avlyst.
-        //
-        // «Er det slettet, maa ogsaa databasen toemmes saa det ikke okkuperer
-        // plassen.» En avlyst dato ingen har meldt seg paa er tom paa samme
-        // maate som en dato som slettes i «slettdato»: ingen booking peker
-        // paa den, ingenting gaar tapt. Da slettes den her, og plassen er
-        // ledig.
-        //
-        // Er noen meldt paa, blir raden staaende — bookingen og betalingen
-        // peker paa den, og de er bokfoeringspliktige. Da sier vi hva som er
-        // i veien, framfor «velg en annen».
-        $sperre = DB::en(
-            'SELECT id, status FROM course_sessions WHERE course_id = :k AND start_tid = :s',
-            ['k' => $kursId, 's' => $start]
+        // Kursholderen: valgt paa datoen, ellers kursets, ellers standarden (se $leggInnDato).
+        $holderNy = static fn(int $kursId): ?int => array_key_exists('kursholderId', Foresporsel::kropp())
+                ? $holderId('kursholderId')
+                : Kursholder::forKurs($kursId);
+        $r = $leggInnDato(
+            $kursId, $start, $slutt, $dagerInn,
+            Foresporsel::heltall('kapasitet') ?: null,
+            $holderNy,
+            $ferieUnntak
         );
-        if ($sperre !== null && (string) $sperre['status'] === 'avlyst') {
-            $sperreId = (int) $sperre['id'];
-            $pameldte = (int) DB::verdi(
-                "SELECT COUNT(*) FROM bookings
-                  WHERE course_session_id = :o AND status IN ('betalt','reservert')",
-                ['o' => $sperreId]
-            );
-            if ($pameldte === 0) {
-                // Samme opprydding som i «slettdato», og av samme grunn:
-                //
-                // Avbestilte paameldinger peker fortsatt paa datoen, og
-                // kolonnen har ingen fremmednoekkel — basen sier ikke fra, og
-                // raden ville blitt staaende og pekt paa noe som ikke finnes.
-                // Vi loesner den med vilje, saa bilaget beholder kurset og
-                // beloepet sitt.
-                DB::kjor(
-                    'UPDATE bookings SET course_session_id = NULL WHERE course_session_id = :o',
-                    ['o' => $sperreId]
-                );
-                // Ventelista loesnes ogsaa: de venter paa KURSET, og staar da
-                // paa de andre datoene — den nye medregnet.
-                if (DB::harTabell('waitlist')) {
-                    DB::kjor(
-                        'UPDATE waitlist SET course_session_id = NULL WHERE course_session_id = :o',
-                        ['o' => $sperreId]
-                    );
-                }
-                DB::kjor('DELETE FROM course_sessions WHERE id = :i', ['i' => $sperreId]);
-                revider('dato_slettet', 'course_session', $sperreId, [
-                    'kurs' => $kursId, 'naar' => $start, 'via' => 'avlyst_plass_frigjort',
-                ]);
-                $sperre = null;
-            }
-        }
-        if ($sperre !== null) {
-            Svar::feil((string) $sperre['status'] === 'avlyst'
+        if (isset($r['hopp'])) {
+            Svar::feil($r['hopp'] === 'avlyst_med_pameldte'
                 ? 'Datoen ble avlyst, og påmeldingene står fortsatt på den. '
                   . 'Datoen kan ikke lages på nytt før de er ute — velg et annet klokkeslett så lenge.'
                 : 'Kurset går alt på denne datoen og tida. Velg en annen.');
         }
-
-        $nyOkt = [
-            'course_id' => $kursId,
-            'start_tid' => $start,
-            'slutt_tid' => $slutt,
-            'kapasitet' => Foresporsel::heltall('kapasitet') ?: null,
-        ];
-        // Kursholderen, i tre trinn — og de gaar én vei:
-        //   1. Er det valgt en paa datoen, er det hen. Alltid.
-        //   2. Ellers: den som staar paa kurset.
-        //   3. Ellers: verkstedets standard — Monica.
-        // Uten dette maatte man valgt den samme personen paa hver eneste dato.
-        //
-        // Trinn 2 og 3 staar i Kursholder::forKurs(), som ogsaa de faste
-        // ukedagene og aapent verksted bruker. Trinn 1 hoerer hjemme
-        // her: det er bare her noen faktisk kan velge.
-        if (Kursholder::klar()) {
-            $nyOkt['kursholder_id'] = array_key_exists('kursholderId', Foresporsel::kropp())
-                ? $holderId('kursholderId')
-                : Kursholder::forKurs($kursId);
-        }
-
-        if ($ferieUnntak && Ferie::harUnntak()) {
-            $nyOkt['ferie_ok'] = 1;
-        }
-        $oktId = DB::settInn('course_sessions', $nyOkt);
-
-        // Gaar kurset over flere dager, lagres dagene som samlinger — dag én
-        // med, saa rekkefolgen og nummereringen stemmer. Samlinger::lagre()
-        // setter deretter oekta fra forste til siste dag, som er den maaten
-        // kunden ser «7.–8. oktober» paa.
-        if ($dagerInn !== []) {
-            $forste = (new DateTimeImmutable($start, new DateTimeZone('UTC')))
-                ->setTimezone(new DateTimeZone('Europe/Oslo'));
-            $sisteKl = $slutt !== null
-                ? (new DateTimeImmutable($slutt, new DateTimeZone('UTC')))
-                    ->setTimezone(new DateTimeZone('Europe/Oslo'))->format('H:i')
-                : '';
-            Samlinger::lagre($oktId, array_merge([[
-                'dato' => $forste->format('Y-m-d'),
-                'fra'  => $forste->format('H:i'),
-                'til'  => $sisteKl,
-            ]], $dagerInn));
-        }
-
-        revider('dato_lagt_til', 'course_session', $oktId, [
-            'kurs' => $kursId, 'start' => $start, 'dager' => count($dagerInn) + 1,
-        ]);
+        $oktId = (int) $r['oktId'];
         Svar::ok(['oktId' => $oktId, 'naar' => Booking::norskDato($start)]);
+
+    // ------------------------------------------- flere datoer (gjentakelse)
+    //
+    // Kalenderplanen, bolge 3 (3. oktober 2026): «Ny kursdato» med «Hver uke»
+    // eller «Annenhver uke» sender alle datoene her, i én transaksjon. Hver
+    // dato legges inn som i «nydato» ($leggInnDato). Det som ikke kan legges
+    // inn, hoppes over og meldes tilbake framfor aa stoppe resten:
+    //   stengt  — dagen er stengt (ferie, helligdag; Ferie::stengt)
+    //   dublett — samme tid to ganger i lista
+    //   finnes  — kurset gaar alt da (eller en avlyst dato med paameldte)
+    //   ugyldig — tida kan ikke leses, eller slutt er ikke etter start
+    // En stengt dag gir ingen advarsel her: den er alt vist overstrøket i
+    // forhaandsvisningen og hoppet over der.
+    case 'nydatoer':
+        if (!$gjentaPaa()) {
+            Svar::feil('Gjentakelse er ikke slått på.', 409);
+        }
+        $kursId = Foresporsel::heltall('kursId');
+        if ($kursId <= 0 || DB::en('SELECT id FROM courses WHERE id = :i', ['i' => $kursId]) === null) {
+            Svar::feil('Ukjent kurs.');
+        }
+        $innDatoer = Foresporsel::kropp()['datoer'] ?? null;
+        if (!is_array($innDatoer) || $innDatoer === []) {
+            Svar::feil('Velg minst én dato.');
+        }
+        if (count($innDatoer) > 120) {
+            Svar::feil('For mange datoer på én gang.');
+        }
+        // Kursholderen slaas opp én gang, foer transaksjonen: en ukjent id
+        // stopper hele kallet framfor aa hoppe over hver dato.
+        $holderValgt = array_key_exists('kursholderId', Foresporsel::kropp());
+        $valgtHolder = $holderValgt ? $holderId('kursholderId') : null;
+        $holderFor = static fn(int $k): ?int => $holderValgt ? $valgtHolder : Kursholder::forKurs($k);
+        $kapasitet = Foresporsel::heltall('kapasitet') ?: null;
+
+        $lagtInn = [];
+        $hoppet = [];
+        DB::iTransaksjon(static function () use ($innDatoer, $kursId, $kapasitet, $holderFor, $tilUtc, $leggInnDato, &$lagtInn, &$hoppet): void {
+            $sett = [];
+            foreach ($innDatoer as $d) {
+                $fra = is_array($d) ? trim((string) ($d['start'] ?? '')) : '';
+                $til = is_array($d) ? trim((string) ($d['slutt'] ?? '')) : '';
+                $start = preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/', $fra) === 1 ? $tilUtc($fra) : null;
+                $slutt = $til === '' ? null
+                    : (preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/', $til) === 1 ? $tilUtc($til) : null);
+                if ($start === null || ($til !== '' && ($slutt === null || $slutt <= $start))) {
+                    $hoppet[] = ['start' => $fra, 'grunn' => 'ugyldig'];
+                    continue;
+                }
+                if (isset($sett[$start])) {
+                    $hoppet[] = ['start' => $fra, 'grunn' => 'dublett'];
+                    continue;
+                }
+                $sett[$start] = true;
+                if (Ferie::stengt($start)) {
+                    $hoppet[] = ['start' => $fra, 'grunn' => 'stengt'];
+                    continue;
+                }
+                $r = $leggInnDato($kursId, $start, $slutt, [], $kapasitet, $holderFor, false);
+                if (isset($r['hopp'])) {
+                    $hoppet[] = ['start' => $fra, 'grunn' => 'finnes'];
+                    continue;
+                }
+                $lagtInn[] = ['oktId' => (int) $r['oktId'], 'start' => $fra, 'naar' => Booking::norskDato($start)];
+            }
+        });
+        revider('datoer_lagt_til', 'course', $kursId, [
+            'lagtInn' => count($lagtInn), 'hoppet' => count($hoppet),
+        ]);
+        Svar::ok(['lagtInn' => $lagtInn, 'hoppet' => $hoppet]);
 
     // ------------------------------------------------- fast ukedag (serie)
     //

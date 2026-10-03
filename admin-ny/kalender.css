@@ -185,3 +185,12 @@
 .ks-leggtil{justify-self:start;margin-top:2px}
 /* Smal skjerm: knappene under navnet, så de aldri legger seg over det (brukertesten 3. oktober 2026). */
 @media(max-width:520px){.ks .kal-delt:has(.ks-betal){grid-template-columns:minmax(0,1fr)}.ks .ks-betal{justify-content:flex-start}}
+/* «Ny kursdato» med gjentakelse (bølge 3, kalender-gjenta.js): valgknapper, forhåndsvisning og datoene. */
+.kal-gj{display:grid;gap:16px}.kal-gj [hidden]{display:none!important}
+.kal-gj-blokk{display:grid;gap:8px;justify-items:start}
+.kal-gj-valg{flex-wrap:wrap;border-radius:16px}.kal-gj-valg .kp-seg{min-height:44px;padding:6px 14px}
+.kal-gj-forhand{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 12px}.kal-gj-forhand:empty{display:none}
+.kal-gj-topp{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:baseline}
+.kal-gj-datoer{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;max-height:180px;overflow:auto}
+.kal-gj-dato{min-height:44px;padding:4px 10px;border:1px solid var(--line);border-radius:999px;background:var(--paper);font-size:15px}
+.kal-gj-dato.kal-gj-av{text-decoration:line-through;opacity:.5}.kal-gj-dato:disabled{cursor:not-allowed}

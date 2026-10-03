@@ -5,6 +5,7 @@
 import {el,api,button,link,badge,date,sheet,form,field,confirm,toast,courseMutation} from './ui.js';
 import {bookingPayments,courseStart} from './kursstart-og-betaling.js';
 import {startKurs} from './kursstart3.js';
+import {dupliser} from './kalender-gjenta.js';
 
 // ── Bryteren ─────────────────────────────────────────────────────────
 let brytere={},holdere=[];
@@ -14,6 +15,8 @@ export const arkPaa=()=>brytere.kalenderark===true;
 // «Vis/kursstart3» (bølge 2): «Start kurset» i tre steg med Vipps-krav. Av = kursstarten som før.
 export const kursstartPaa=()=>brytere.kursstart3===true;
 export const kursholdere=()=>holdere;
+// «kalendergjenta» (bølge 3): «Ny kursdato» med gjentakelse og «Dupliser til neste uke» (kalender-gjenta.js).
+export const gjentaPaa=()=>brytere.kalendergjenta===true;
 
 // ── Typene og fargene (som klTypeInfo i gamle admin) ────────────────
 export const TYPER=[['kurs','Kurs'],['event','Event'],['pop','Paint on Pots'],['brenning','Brenning'],['verksted','Verksted'],['notat','Notat']];
@@ -205,6 +208,7 @@ export function oktArk(e,o){
   return [el('div',{class:'kal-skjema'},el('label',{},el('span',{text:'Plasser'}),plasser),el('label',{},el('span',{text:'Kursholder'}),holder),lagre),
    el('div',{class:'kal-verktoy'},
     button('Flytt tidspunkt',()=>{s.close();o.flytt(e);}),
+    gjentaPaa()&&!e.avlyst&&e.kursId?button('Dupliser til neste uke',async()=>{try{await ferdig({beskjed:await dupliser(e)});}catch(err){if(err.message!=='Avbrutt.')toast(err.message);}}):null,
     Object.assign(link('Hele kursoppsettet (navn, pris, tekst, bilder)','#kurs'),{onclick:()=>s.close()}),
     button(e.visFullt?'Åpne for påmelding':'Vis som fullbooket',()=>sporOgKjor('Endre bookingmuligheten?',e.visFullt?'Åpne datoen for nye påmeldinger.':'Sperr datoen for nye påmeldinger. Eksisterende deltakere beholdes.','Bekreft','kurs.php',{handling:'visFullt',oktId:id,paa:e.visFullt?'nei':'ja'})),
     button(e.avlyst?'Gjenopprett økta':'Avlys økta',()=>sporOgKjor(e.avlyst?'Gjenopprett':'Avlys dato',`${e.avlyst?'Gjenopprett':'Avlys'} ${e.tittel} ${e.dato}. Kontroller påmeldte og varsling etterpå.`,e.avlyst?'Gjenopprett':'Avlys dato','kurs.php',{handling:e.avlyst?'gjenopprett':'avlys',oktId:id}),'danger'))];

@@ -2203,7 +2203,9 @@ sjekk('samlinger har ingen opptattMellom igjen',
 // Kursholderen skal fortsatt kunne settes og endres paa en dato.
 sjekk('kursholder kan fortsatt velges paa en dato',
     str_contains($kursFil2, "\$endring['kursholder_id'] = \$holderId('kursholderId');")
-    && str_contains($kursFil2, "\$nyOkt['kursholder_id'] = array_key_exists('kursholderId'"));
+    // Bolge 3 (3. oktober 2026): oppslaget staar i $leggInnDato, valget sendes inn fra «nydato» ($holderNy).
+    && str_contains($kursFil2, "\$nyOkt['kursholder_id'] = \$holder(\$kursId);")
+    && str_contains($kursFil2, "\$holderNy = static fn(int \$kursId): ?int => array_key_exists('kursholderId'"));
 
 // ── To kurs med samme navn ───────────────────────────────────────────────
 //

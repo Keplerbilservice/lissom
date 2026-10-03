@@ -4099,6 +4099,77 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "kalender-b3-gjenta",
+            "dato": "2026-10-03",
+            "hva": "Kalenderen, bølge 3 (skissen lissom-kalender-skisse.html, nyKursDialog og gjentaDatoer): «Ny kursdato» i admin-ny-kalenderen får kursholder, Gjentakelse (Én gang / Hver uke / Annenhver uke) og «Hvor lenge» (1, 2, 3, 6 mnd, Ut året, Til dato, Antall ganger), med forhåndsvisning av alle datoene (antall og første–siste); trykk på en dato tar den bort, stengte dager står overstrøket og hoppes over. Ingenting forhåndsvalgt utover «Én gang»; kurs og kursholder må velges, og Hvor lenge må velges ved Hver uke/Annenhver uke. Én gang går til kurs.php «nydato» som før (med ferieadvarsel). Gjentakelsen går til ny handling «nydatoer»: alle datoene i én transaksjon, stengt dag, dublett i lista, en dato som finnes og ugyldig tid hoppes over og meldes tilbake. Koden for én dato er trukket ut i $leggInnDato og brukes av begge; «nydato» oppfører seg som før. «Dupliser til neste uke» i økt-arket (Rediger) legger samme økt inn sju dager senere via «nydato» (alle dagene i et flerdagerskurs). Bak bryteren «Vis/kalendergjenta» (content_blocks, mangler raden = av; Synlighet): av = kalenderen som før, og «nydatoer» svarer 409. Ingen varsel ved flytt/avlys i denne bølgen. Ingen migrasjon.",
+            "hvor": "admin-ny › Kalender › Ny kursdato og økt-arket › Rediger (390 og 1280 px), admin-ny › Synlighet",
+            "kode": [
+                {
+                    "fil": "api/admin/kurs.php",
+                    "finnes": [
+                        "case 'nydatoer':",
+                        "Svar::feil('Gjentakelse er ikke slått på.', 409);",
+                        "$leggInnDato = static function (int $kursId, string $start, ?string $slutt, array $dagerInn, ?int $kapasitet, callable $holder, bool $ferieUnntak): array {",
+                        "DB::iTransaksjon(static function () use (",
+                        "$hoppet[] = ['start' => $fra, 'grunn' => 'stengt'];",
+                        "'Kurset går alt på denne datoen og tida. Velg en annen.'"
+                    ]
+                },
+                {
+                    "fil": "api/admin/kalender.php",
+                    "finnes": [
+                        "$ut['kalendergjenta'] = $g !== null && $g !== false && (string) $g === 'ja';"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kalender.js",
+                    "finnes": [
+                        "if(gjentaPaa())return nyKursdatoGjenta(courseId,dag,{kursholdere:kursholdere(),refresh});"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kalender-ark.js",
+                    "finnes": [
+                        "export const gjentaPaa=()=>brytere.kalendergjenta===true;",
+                        "button('Dupliser til neste uke',"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kalender-gjenta.js",
+                    "finnes": [
+                        "let ofte='en',lengde='',bort=new Set();",
+                        "['1','1 mnd'],['2','2 mnd'],['3','3 mnd'],['6','6 mnd'],['aar','Ut året'],['dato','Til dato'],['antall','Antall ganger']",
+                        "handling:'nydatoer'",
+                        "'Trykk på en dato for å ta den bort'"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/innhold-og-kurs.js",
+                    "finnes": [
+                        "['Vis/kalendergjenta','Kalenderen: gjenta kursdatoer og dupliser til neste uke',false]"
+                    ]
+                },
+                {
+                    "fil": "tests/kalender-gjenta.php",
+                    "finnes": [
+                        "mangler raden: 409",
+                        "hoppet over: stengt, dublett, finnes, ugyldig",
+                        "… og den første datoen er rullet tilbake",
+                        "samme igjen: samme feilmelding som før"
+                    ]
+                },
+                {
+                    "fil": "tests/nyadmin-kalender-gjenta.mjs",
+                    "finnes": [
+                        "390: ingenting valgt under Hvor lenge",
+                        "1280: stengt dag er overstrøket",
+                        "1280: tre datoer etter at én er tatt bort",
+                        "av: ingen dupliser"
+                    ]
+                }
+            ]
         }
     ]
 }

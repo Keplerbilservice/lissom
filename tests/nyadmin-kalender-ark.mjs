@@ -14,7 +14,7 @@ const ADR=process.env.E2E_ADRESSE||'http://lokal.lissom.no:8140';
 const fixture=(mode,s,...x)=>JSON.parse(execFileSync('php',['tests/nettleser/kalender-ark-fixture.php',mode,JSON.stringify(s||{}),...x],{encoding:'utf8'}));
 const browser=await chromium.launch({args:['--host-resolver-rules=MAP lokal.lissom.no 127.0.0.1']});
 const s=fixture('seed');
-const SENDER={'beskjed.php':null,'venteliste.php':null,'ferdigbrent.php':null,'pamelding.php':['bekreftelse','flytt','fjern','til-venteliste','legg-til']};
+const SENDER={'beskjed.php':null,'venteliste.php':null,'ferdigbrent.php':null,'pamelding.php':['bekreftelse','til-venteliste']};
 async function apne(c){
  await c.addCookies([{name:'lissom_sesjon',value:s.token,domain:'lokal.lissom.no',path:'/'}]);
  const p=await c.newPage();const feil=[];p.on('pageerror',e=>feil.push(e.message));const fanget=[];
@@ -40,16 +40,23 @@ try{
   await p.getByLabel('Velg dato').fill(s.d);
   const alfa=p.locator('button.kalm-kort',{hasText:`${s.tag} Alfa`});await alfa.waitFor();
   assert.ok(await alfa.evaluate(b=>b.classList.contains('kal-t-kurs')),'390: kurset har kursfargen');
-  assert.deepEqual(await alfa.locator('.kal-m').allInnerTexts(),['2/6','1 ubetalt','+1'],'390: merkene på kortet');
+  assert.deepEqual(await alfa.locator('.kal-m').allInnerTexts(),['2/6','1 ubetalt','+1 nye','✎ merknad'],'390: merkene på kortet, som på PC');
+  assert.deepEqual(await alfa.locator('.kal-bilder span').allInnerTexts(),['I','M'],'390: initialene på kortet');
+  const bravo=p.locator('button.kalm-kort',{hasText:`${s.tag} Bravo`});assert.deepEqual(await bravo.locator('.kal-m').allInnerTexts(),['0/10'],'390: tomt kurs har bare plassene');
   assert.equal(await p.locator('.kalm-kort',{hasText:'ovn'}).count(),0,'390: brenningen er skjult');
   assert.match(await p.locator('.kalm-dag .kal-sum').first().innerText(),/^2 økter · 2 påmeldt$/,'390: dagsoppsummering');
   await alfa.tap();await ark(p).waitFor();
   assert.deepEqual(await ark(p).getByRole('tab').allInnerTexts(),['Deltakere (2)','Venteliste','Kursdagen','Rediger'],'390: fanene i arket');
+  const faneY=await ark(p).getByRole('tab').evaluateAll(t=>t.map(x=>Math.round(x.getBoundingClientRect().top)));assert.equal(new Set(faneY).size,1,'390: fanene står på én linje');
+  const faneH=await ark(p).getByRole('tab').evaluateAll(t=>t.map(x=>x.getBoundingClientRect().height));assert.ok(faneH.every(h=>h>=44),'390: fanene er minst 44 px høye');
+  await ark(p).getByRole('tab',{name:'Rediger'}).tap();assert.equal(await ark(p).getByRole('tab',{name:'Rediger'}).getAttribute('aria-selected'),'true','390: siste fane kan trykkes');await ark(p).getByRole('tab',{name:'Deltakere (2)'}).tap();
   const bredde=await p.evaluate(()=>({side:document.documentElement.scrollWidth,ark:document.querySelector('dialog.kal-ark').getBoundingClientRect().width}));
   assert.ok(bredde.side<=390&&bredde.ark<=390,'390: arket og siden er innenfor skjermen');
   await ark(p).getByRole('button',{name:'Mer for Marte Sol'}).tap();
   const meny=ark(p).getByRole('menu');await meny.waitFor();
   const mb=await meny.boundingBox();assert.ok(mb.x>=0&&mb.x+mb.width<=390,'390: menyen er innenfor skjermen');
+  const valgH=await meny.getByRole('menuitem').evaluateAll(v=>v.map(x=>x.getBoundingClientRect().height));assert.ok(valgH.every(h=>h>=44),'390: menyvalgene er minst 44 px');
+  assert.ok((await ark(p).getByRole('button',{name:'Mer for Marte Sol'}).boundingBox()).height>=44,'390: ⋯ er minst 44 px');
   await p.keyboard.press('Escape');await meny.waitFor({state:'detached'});assert.equal(await ark(p).count(),1,'Escape lukker bare menyen');
   await ark(p).locator('.close').tap();
   // Paint on Pots dagen etter: tidene på én linje, tiden uten booking vises ikke.
@@ -69,7 +76,7 @@ try{
   assert.equal(await p.getByRole('combobox',{name:'Hendelsestype'}).count(),0,'typeknapper i stedet for nedtrekk');
   await p.getByRole('searchbox',{name:'Søk i kalender'}).fill(s.tag);
   await p.getByLabel('Velg dato').fill(s.d);
-  const uke=p.locator('.kp[data-visning="uke"]');const A=uke.locator('.kp-brikke',{hasText:`${s.tag} Alfa`});await A.waitFor();
+  const uke=p.locator('.kp[data-visning="uke"]');const A=uke.locator(`.kp-brikke[data-id="${s.okt.A}"]`);await A.waitFor();
   assert.equal(await uke.locator('.kp-brikke',{hasText:'ovn'}).count(),0,'brenning skjult fra start');
   await typer.getByRole('button',{name:'Brenning'}).click();
   assert.equal(await uke.locator('.kp-brikke',{hasText:'ovn'}).count(),1,'trykk på Brenning viser den');
@@ -119,22 +126,29 @@ try{
   // Venteliste: Gi plass (fanget).
   await A.click();await ark(p).waitFor();await ark(p).getByRole('tab',{name:'Venteliste'}).click();
   assert.match(await ark(p).locator('.kal-panel').innerText(),/Siri Dal/);
-  await ark(p).getByRole('button',{name:'Gi plass'}).click();await ja(p,'Gi kursplass?','Gi plass');await ark(p).waitFor({state:'detached'});
+  await ark(p).getByRole('button',{name:'Gi plass'}).click();
+  assert.match(await p.getByRole('dialog',{name:'Gi kursplass?',exact:true}).innerText(),/Siri Dal får e-post om plassen/,'bekreftelsen sier at personen får e-post');await ja(p,'Gi kursplass?','Gi plass');await ark(p).waitFor({state:'detached'});
   assert.deepEqual(fanget.pop(),{fil:'venteliste.php',body:{handling:'gi-plass',id:s.w,oktId:s.okt.A}},'Gi plass går til venteliste.php (fanget)');
   // Kursdagen: beskjed (bare e-post), meld klar (fanget), før timer (ekte), deltakerliste.
   await A.click();await ark(p).waitFor();await ark(p).getByRole('tab',{name:'Kursdagen'}).click();
   const kd=ark(p).locator('.kal-panel');
   assert.deepEqual(await kd.locator('.button').allInnerTexts(),['▶ Start kurset','Send beskjed til alle','Meld keramikken klar for henting',`Før 3 t på ${s.tag} H`,'Last ned deltakerliste'],'verktøyene på Kursdagen');
+  assert.equal(await kd.locator('.kal-foert').count(),0,'ingen timer ført ennå');
   assert.equal(await kd.getByRole('link',{name:'Last ned deltakerliste'}).getAttribute('href'),`/api/admin/deltakerliste.php?okt=${s.okt.A}`);
   await kd.getByRole('button',{name:'Send beskjed til alle'}).click();
   const bf=p.getByRole('dialog',{name:`Beskjed til alle på ${s.tag} Alfa`});await bf.waitFor();
-  await bf.getByLabel('Melding').fill('Testbeskjed');await bf.getByRole('button',{name:'Send til 2'}).click();await ark(p).waitFor({state:'detached'});
+  await bf.getByLabel('Melding').fill('Testbeskjed');await bf.getByRole('button',{name:'Send til 1 betalte'}).click();await ark(p).waitFor({state:'detached'});
   assert.deepEqual(fanget.pop(),{fil:'beskjed.php',body:{til:'okt',oktId:s.okt.A,tekst:'Testbeskjed',ogsaaSms:'nei'}},'beskjeden går som e-post, ikke SMS (fanget)');
   await A.click();await ark(p).waitFor();await ark(p).getByRole('tab',{name:'Kursdagen'}).click();
   await ark(p).getByRole('button',{name:'Meld keramikken klar for henting'}).click();await ja(p,'Meld keramikken klar','Send');await ark(p).waitFor({state:'detached'});
   assert.deepEqual(fanget.pop(),{fil:'ferdigbrent.php',body:{handling:'meld-alle',oktId:s.okt.A}},'meld klar går til ferdigbrent.php (fanget)');
   await A.click();await ark(p).waitFor();await ark(p).getByRole('tab',{name:'Kursdagen'}).click();
   await ark(p).getByRole('button',{name:`Før 3 t på ${s.tag} H`}).click();await ja(p,'Før arbeidstimer','Før timer');await ark(p).waitFor({state:'detached'});
+  // Sperre mot dobbeltføring: neste gang står «Ført 3 t …», og knappen spør «Er du sikker?».
+  await A.click();await ark(p).waitFor();await ark(p).getByRole('tab',{name:'Kursdagen'}).click();
+  assert.match(await ark(p).locator('.kal-foert').innerText(),/^Ført 3 t /,'førte timer vises');
+  await ark(p).getByRole('button',{name:`Før 3 t på ${s.tag} H`}).click();const sikker=p.getByRole('dialog',{name:'Er du sikker?',exact:true});await sikker.waitFor();
+  assert.match(await sikker.innerText(),/alt ført 3 t/);await sikker.getByRole('button',{name:'Avbryt'}).click();await ark(p).locator('.close').click();await ark(p).waitFor({state:'detached'});
   // Rediger: plasser og fullbooket lagres ekte.
   await A.click();await ark(p).waitFor();await ark(p).getByRole('tab',{name:'Rediger'}).click();
   await ark(p).getByLabel('Plasser').fill('7');await ark(p).getByRole('button',{name:'Lagre',exact:true}).click();await ark(p).waitFor({state:'detached'});
@@ -145,7 +159,69 @@ try{
   assert.equal(db.timer.length,1,'timene er ført');assert.equal(Number(db.timer[0].timer),3);assert.equal(db.timer[0].dato,s.d);
   assert.equal(db.venter,'venter','Siri står fortsatt på ventelista (gi plass ble fanget)');
   assert.equal(db.varsler,0,'ingen varsler lagt i kø');
-  assert.deepEqual(fanget,[],'alt som sender er sjekket');assert.deepEqual(feil,[],'1280: ingen feil i siden');
+  assert.deepEqual(fanget,[],'alt som sender er sjekket');
+  // Rediger: lenken til hele kursoppsettet.
+  await A.click();await ark(p).waitFor();await ark(p).getByRole('tab',{name:'Rediger'}).click();
+  assert.equal(await ark(p).getByRole('link',{name:'Hele kursoppsettet (navn, pris, tekst, bilder)'}).getAttribute('href'),'#kurs');await ark(p).locator('.close').click();await ark(p).waitFor({state:'detached'});
+  // Fargene fra skissen: event #c4623a.
+  assert.equal(await uke.locator('.kp-brikke',{hasText:`${s.tag} Bravo`}).evaluate(b=>getComputedStyle(b).backgroundColor),'rgb(196, 98, 58)','event #c4623a');
+  // Timer for flerdagerskurs: hver dag sin varighet (dag 1 10–13 = 3 t, dag 2 10–12 = 2 t).
+  for(const [dato,t] of [[s.d15,3],[s.d16,2]]){
+   await p.getByLabel('Velg dato').fill(dato);const D=p.locator(`.kp-brikke`,{hasText:`${s.tag} Delta`}).filter({has:p.locator('small')});await D.first().waitFor();
+   const paaDag=p.locator(`.kp-kol .kp-brikke`,{hasText:`${s.tag} Delta`});
+   const n=await paaDag.count();let funnet=false;
+   for(let i=0;i<n&&!funnet;i++){const b=paaDag.nth(i);await b.click();await ark(p).waitFor();
+    if((await ark(p).locator('.kal-ark-hode p').innerText()).includes(new Date(dato+'T12:00:00').toLocaleDateString('nb-NO',{weekday:'short',day:'numeric',month:'short'}))){funnet=true;
+     await ark(p).getByRole('tab',{name:'Kursdagen'}).click();assert.equal(await ark(p).getByRole('button',{name:`Før ${t} t på ${s.tag} H`}).count(),1,`flerdagerskurs ${dato}: ${t} t`);}
+    await ark(p).locator('.close').click();await ark(p).waitFor({state:'detached'});}
+   assert.ok(funnet,`fant Delta ${dato}`);
+  }
+  // ── Scenario mot basen (kontrolløren 3. oktober 2026): Alfa om 14 dager ──
+  await p.getByLabel('Velg dato').fill(s.d14);const A2=uke.locator(`.kp-brikke[data-id="${s.okt.A2}"]`);await A2.waitFor();
+  const aapneA2=async()=>{await A2.click();await ark(p).waitFor();await ark(p).getByRole('tab',{name:/^Deltakere/}).click();};
+  const rad=n=>ark(p).locator('.kal-delt',{hasText:n});
+  const finn=(db,navn)=>db.bookinger.find(b=>b.navn===navn);
+  // Ta betalt, kontant (bookingPayments).
+  await aapneA2();await rad('Nora Vik').getByRole('button',{name:'Ta betalt'}).click();
+  const bet=p.getByRole('dialog',{name:'Betaling · Nora Vik'});await bet.waitFor();await bet.getByRole('button',{name:'Registrer mottatt betaling'}).click();
+  const rf=p.getByRole('dialog',{name:'Registrer mottatt betaling'});await rf.waitFor();await rf.getByLabel('Betalt med').selectOption('Kontant');await rf.getByRole('button',{name:'Lagre'}).click();
+  await ja(p,'Registrer betalingen?','Registrer');const bet2=p.getByRole('dialog',{name:'Betaling · Nora Vik'});await bet2.getByText('Gjort opp').waitFor();await bet2.locator('.close').click();
+  db=fixture('inspect',s);assert.equal(finn(db,'Nora Vik').status,'betalt','Ta betalt: Nora er betalt');
+  assert.ok(db.betalinger.some(b=>Number(b.booking_id)===s.b.nora&&b.maate==='Kontant'&&Number(b.belop_ore)===50000),'Ta betalt: kontant 500 kr er ført');
+  // Avbestill.
+  await aapneA2();await rad('Ola Avbestill').getByRole('button',{name:'Mer for Ola Avbestill'}).click();await ark(p).getByRole('menuitem',{name:'Avbestill …'}).click();
+  await ja(p,'Avbestill','Avbestill');await ark(p).waitFor({state:'detached'});
+  db=fixture('inspect',s);assert.equal(finn(db,'Ola Avbestill').status,'avbestilt','Avbestill: Ola er avbestilt');
+  // Bytt dato til Alfa om 21 dager.
+  await aapneA2();await rad('Per Flytt').getByRole('button',{name:'Mer for Per Flytt'}).click();await ark(p).getByRole('menuitem',{name:'Bytt dato'}).click();
+  const bd=p.getByRole('dialog',{name:'Bytt dato for Per Flytt'});await bd.waitFor();await bd.getByLabel('Ny dato').selectOption(String(s.okt.A3));await bd.getByRole('button',{name:'Bytt dato'}).click();await ark(p).waitFor({state:'detached'});
+  db=fixture('inspect',s);assert.equal(Number(finn(db,'Per Flytt').okt),s.okt.A3,'Bytt dato: Per står på den nye datoen');
+  // Rediger påmelding uten endring: ingenting lagres, beløpet står.
+  let poster=0;const tell=r=>{if(r.method()==='POST'&&r.url().includes('pamelding.php'))poster++;};p.on('request',tell);
+  await aapneA2();await rad('Kari Betalt').getByRole('button',{name:'Mer for Kari Betalt'}).click();await ark(p).getByRole('menuitem',{name:'Rediger påmelding (antall, rabatt)'}).click();
+  let rp=p.getByRole('dialog',{name:'Rediger påmelding'});await rp.waitFor();
+  assert.equal(await rp.getByLabel('Totalbeløp i kroner').inputValue(),'500','dagens beløp står i skjemaet');
+  assert.match(await rp.innerText(),/Påmeldingen er betalt\. Beløpet endres bare hvis du skriver et nytt beløp her\./,'advarsel for betalt påmelding');
+  await rp.getByRole('button',{name:'Lagre'}).click();await rp.getByText('Ingenting å endre.').waitFor();assert.equal(poster,0,'uten endring sendes ingenting');
+  db=fixture('inspect',s);assert.equal(Number(finn(db,'Kari Betalt').belop_ore),50000,'uten endring: beløpet står');
+  // Betalt + nytt antall uten nytt beløp: beløpet står.
+  await rp.getByLabel('Antall').fill('2');await rp.getByRole('button',{name:'Lagre'}).click();await ark(p).waitFor({state:'detached'});
+  db=fixture('inspect',s);assert.equal(Number(finn(db,'Kari Betalt').antall),2);assert.equal(Number(finn(db,'Kari Betalt').belop_ore),50000,'betalt: beløpet er uendret');
+  // Ikke betalt + nytt antall: beløpet regnes på nytt med rabatten som sto (2 × 500 − 10 % = 900).
+  await aapneA2();await rad('Lise Rabatt').getByRole('button',{name:'Mer for Lise Rabatt'}).click();await ark(p).getByRole('menuitem',{name:'Rediger påmelding (antall, rabatt)'}).click();
+  rp=p.getByRole('dialog',{name:'Rediger påmelding'});await rp.waitFor();assert.equal(await rp.getByLabel('Totalbeløp i kroner').inputValue(),'450');
+  await rp.getByLabel('Antall').fill('2');await rp.getByRole('button',{name:'Lagre'}).click();await ark(p).waitFor({state:'detached'});
+  db=fixture('inspect',s);assert.equal(Number(finn(db,'Lise Rabatt').belop_ore),90000,'ikke betalt: beløpet regnet med rabatten');assert.equal(Number(finn(db,'Lise Rabatt').rabatt_prosent),10);
+  p.off('request',tell);
+  // Legg til med gavekort.
+  await aapneA2();await ark(p).getByRole('button',{name:'+ Legg til deltaker'}).click();
+  const lt=p.getByRole('dialog',{name:'Legg til deltaker'});await lt.waitFor();await lt.getByLabel('Navn').fill('Gave Gjest');await lt.getByLabel('Betaling').selectOption('Gavekort');await lt.getByLabel('Gavekortkode').fill(s.gave);
+  await lt.getByRole('button',{name:'Legg til'}).click();await ark(p).waitFor({state:'detached'});
+  db=fixture('inspect',s);const ny=finn(db,'Gave Gjest');assert.ok(ny,'Legg til: Gave Gjest er lagt inn');assert.equal(ny.status,'betalt');assert.equal(Number(ny.okt),s.okt.A2);
+  assert.equal(db.gavekortSaldo,50000,'gavekortet er trukket 500 kr');assert.equal(db.gavekortUttak.length,1);
+  // Varsler scenariet la i kø (avbestilling, ny dato): bare e-post, ingenting sendt (testmiljøet holder dem tilbake).
+  assert.ok(db.varselRader.every(v=>v.kanal==='epost'&&v.status!=='sendt'),'ingen SMS, ingenting sendt');
+  assert.deepEqual(feil,[],'1280: ingen feil i siden');
   // Bryteren av: kalenderen er som før.
   fixture('bryter',s,'nei');await p.reload();await p.getByRole('heading',{name:'Kalender',exact:true}).waitFor();
   await p.getByLabel('Velg dato').fill(s.d);await A.waitFor();

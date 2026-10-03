@@ -4,7 +4,7 @@
 // Hele kortet åpner hendelsesarket som finnes fra før (eventDetails i kalender.js).
 // Ingen piler, ingen «Åpne»-knapper, ingenting valgt på forhånd i filteret.
 import {el,api,badge,today,date,iso,shift} from './ui.js';
-import {settBrytere,arkPaa,typeKnapper,synligType,filterEndret,slaaSammen,typeKlasse,merker,tidene,tiderTekst,dagSum} from './kalender-ark.js';
+import {settBrytere,arkPaa,typeKnapper,synligType,filterEndret,slaaSammen,typeKlasse,merker,initialer,tidene,tiderTekst,dagSum} from './kalender-ark.js';
 
 export const SMAL='(max-width:760px)';
 export const erSmal=()=>matchMedia(SMAL).matches;
@@ -108,7 +108,7 @@ export async function kalenderMobil({title,eventDetails,handlinger}){
   const timekort=e=>{if(!arkPaa())return timekortGrunn(e);
    if(e.sammen)return el('div',{class:'kalm-kort kal-t-pop kal-sammen',role:'group','aria-label':`${e.tittel} · ${tiderTekst(e)}`},el('span',{class:'kalm-tid'},el('b',{text:e.tid||''}),e.slutt?el('small',{text:e.slutt}):null),el('span',{class:'kalm-hva'},el('strong',{text:e.tittel}),el('small',{text:tiderTekst(e)}),tidene(e,eventDetails)));
    const k=timekortGrunn(e);k.classList.add(typeKlasse(e));
-   if(e.kap){k.querySelector('.kalm-hva small').textContent=[e.holder,e.samling].filter(Boolean).join(' · ');k.append(el('span',{class:'kal-merker kalm-merker'},merker(e,{kort:true})));}
+   if(e.kap){k.querySelector('.kalm-hva small').textContent=[e.holder,e.samling].filter(Boolean).join(' · ');k.append(el('span',{class:'kal-merker kalm-merker'},merker(e),initialer(e)));}
    return k;};
   const timekortGrunn=e=>el('button',{type:'button',class:`kalm-kort ${e.avlyst?'avlyst':''}`,onclick:()=>eventDetails(e)},el('span',{class:'kalm-tid'},el('b',{text:e.tid||''}),e.slutt?el('small',{text:e.slutt}):null),el('span',{class:'kalm-hva'},el('strong',{text:e.tittel}),el('small',{text:[e.holder,e.avlyst?'Avlyst':null,e.kap?plass(e):e.type].filter(Boolean).join(' · ')})));
   const dagListe=(d,overskrift)=>{const l=paaDag(d);return el('section',{class:'kalm-dag'},el(overskrift,{text:stor(dagNavn(d,{weekday:'long',day:'numeric',month:'long'}))}),arkPaa()?el('small',{class:'kal-sum',text:dagSum(l)}):null,Object.hasOwn(stengte,d)?badge('Stengt','warn'):null,l.length?l.map(timekort):el('p',{class:'muted',text:'Ingen hendelser'}));};

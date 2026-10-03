@@ -89,8 +89,9 @@ export function svevekort(node,e){
 const naar=e=>`${date(e.dato).toLocaleDateString('nb-NO',{weekday:'short',day:'numeric',month:'short'})} · ${e.tid||''}${e.slutt?'–'+e.slutt:''}`;
 const typeNavn=t=>(TYPER.find(([k])=>k===t)||[,'Kurs'])[1];
 const minutter=t=>{const m=/^(\d{1,2}):(\d{2})/.exec(t||'');return m?Number(m[1])*60+Number(m[2]):null;};
-// Varigheten i timer (slutt før start = over midnatt), til «Før timer».
-const timer=e=>{const s=minutter(e.tid),sl=minutter(e.slutt);if(s===null||sl===null)return 0;return ((sl<=s?sl+1440:sl)-s)/60;};
+// Varigheten i timer for akkurat denne dagen (dagSlutt fra kalender.php; på dag 1 av et flerdagerskurs er «slutt» siste dags sluttid).
+// Slutt før start = over midnatt.
+const timer=e=>{const s=minutter(e.tid),sl=minutter(e.dagSlutt||e.slutt);if(s===null||sl===null)return 0;return ((sl<=s?sl+1440:sl)-s)/60;};
 const tall=t=>String(Math.round(t*100)/100).replace('.',',');
 let arkFane='deltakere';
 
@@ -128,12 +129,17 @@ export function oktArk(e,o){
   }
   if(f==='venteliste')return vente.length?vente.map(w=>el('div',{class:'kal-delt'},
    el('div',{class:'kal-info'},el('b',{text:w.navn}),el('small',{text:[w.paaKurset?'Venter på kurset':`Plass ${w.posisjon}`,w.varslet?'Varslet':'',w.status].filter(Boolean).join(' · ')})),
-   button('Gi plass',()=>sporOgKjor('Gi kursplass?',`Sett ${w.navn} på valgt kursdato. Kontroller betaling og bekreftelse etterpå.`,'Gi plass','venteliste.php',{handling:'gi-plass',id:w.id,oktId:id}),'primary kal-liten'))):el('p',{class:'muted',text:'Ingen står på venteliste til dette kurset.'});
-  if(f==='kursdagen'){const t=timer(e);return el('div',{class:'kal-verktoy'},
+   button('Gi plass',()=>sporOgKjor('Gi kursplass?',`Sett ${w.navn} på denne kursdatoen. ${w.navn} får e-post om plassen. Kontroller betaling og bekreftelse etterpå.`,'Gi plass','venteliste.php',{handling:'gi-plass',id:w.id,oktId:id}),'primary kal-liten'))):el('p',{class:'muted',text:'Ingen står på venteliste til dette kurset.'});
+  if(f==='kursdagen'){const t=timer(e),foert=Number(e.timerFoert)||0;
+   // Sperre mot dobbeltføring: er det alt ført timer på kursholderen for dette kurset denne dagen, står det over knappen, og knappen spør «Er du sikker?».
+   const forTimer=()=>foert>0?sporOgKjor('Er du sikker?',`Det er alt ført ${tall(foert)} t på ${e.holder} for ${e.tittel} ${e.dato}. Før ${tall(t)} t til?`,'Før timer','kursholdere.php',{handling:'timer',id:e.kursholderId,dato:e.dato,timer:Math.round(t*100)/100,hva:e.tittel})
+    :sporOgKjor('Før arbeidstimer',`Før ${tall(t)} timer på ${e.holder} for ${e.tittel} ${e.dato}.`,'Før timer','kursholdere.php',{handling:'timer',id:e.kursholderId,dato:e.dato,timer:Math.round(t*100)/100,hva:e.tittel});
+   return el('div',{class:'kal-verktoy'},
    e.kap&&!e.avlyst?button('▶ Start kurset',()=>{s.close();courseStart(id,o.refresh);},'primary'):null,
-   deltakere.length?button('Send beskjed til alle',beskjed):null,
+   betalte()?button('Send beskjed til alle',beskjed):null,
    deltakere.length?button('Meld keramikken klar for henting',()=>sporOgKjor('Meld keramikken klar',`De ${deltakere.length} deltakerne får e-post om at keramikken kan hentes.`,'Send','ferdigbrent.php',{handling:'meld-alle',oktId:id})):null,
-   e.kursholderId&&t>0?button(`Før ${tall(t)} t på ${e.holder}`,()=>sporOgKjor('Før arbeidstimer',`Før ${tall(t)} timer på ${e.holder} for ${e.tittel} ${e.dato}.`,'Før timer','kursholdere.php',{handling:'timer',id:e.kursholderId,dato:e.dato,timer:Math.round(t*100)/100,hva:e.tittel})):null,
+   e.kursholderId&&t>0&&foert>0?el('p',{class:'muted kal-foert',text:`Ført ${tall(foert)} t ${date(e.dato).toLocaleDateString('nb-NO',{day:'numeric',month:'short'})}`}):null,
+   e.kursholderId&&t>0?button(`Før ${tall(t)} t på ${e.holder}`,forTimer):null,
    link('Last ned deltakerliste','/api/admin/deltakerliste.php?okt='+id));}
   return rediger();
  }
@@ -163,9 +169,22 @@ export function oktArk(e,o){
    form('Bytt dato for '+p.navn,[field('oktId','Ny dato','number',{velg:true,options:datoer.map(x=>[x.oktId,`${e.tittel} · ${x.naar} (${x.ledige} ledige)`])})],{},async v=>{await ferdig(await api('pamelding.php',{handling:'flytt',id:p.bookingId,oktId:v.oktId}));},{submitLabel:'Bytt dato',successText:false});
   }catch(err){toast(err.message);}
  }
- function redigerPaamelding(p){form('Rediger påmelding',[field('antall','Antall','number',{min:1,required:true}),field('rabatt','Rabatt i prosent','number',{min:0,max:100,step:.01}),field('belop','Totalbeløp i kroner','number',{min:0,step:.01,help:'Tomt felt regner beløpet ut av pris, antall og rabatt.'})],{antall:p.antall||1,rabatt:p.rabatt||0},async v=>{await ferdig(await api('pamelding.php',{handling:'endre',id:p.bookingId,...Object.fromEntries(Object.entries(v).filter(([,x])=>x!==null))}));},{successText:false});}
- function leggTil(){form('Legg til deltaker',[field('navn','Navn','text',{required:true}),field('telefon','Mobil','tel'),field('epost','E-post','email'),field('antall','Antall','number',{min:1,required:true}),field('betaltMaate','Betaling','text',{velg:true,options:['Ikke betalt','Betaler ved oppmøte','Kontant','Vipps','Gavekort','Faktura','Gratis']}),field('varsle','Send bekreftelse','checkbox')],{antall:1},async v=>{await ferdig(await api('pamelding.php',{handling:'legg-til',oktId:id,...v,varsle:v.varsle?'ja':'nei'}));},{submitLabel:'Legg til',successText:false});}
- function beskjed(){form('Beskjed til alle på '+e.tittel,[field('tekst','Melding','textarea',{required:true,help:'Sendes på e-post.'})],{},async v=>{await ferdig(await api('beskjed.php',{til:'okt',oktId:id,tekst:v.tekst,ogsaaSms:'nei'}));},{submitLabel:`Send til ${deltakere.length}`,successText:false});}
+ // Rediger påmelding. pamelding.php «endre» regner beløpet på nytt (pris × antall − rabatt) når antall eller rabatt sendes uten beløp.
+ // Derfor sendes bare det som faktisk er endret, og dagens beløp står i skjemaet. Er påmeldingen betalt, beholdes beløpet
+ // (det sendes med uendret) til admin selv skriver et nytt. Ingen endring = ingen lagring.
+ function redigerPaamelding(p){const betalt=p.status==='Betalt';const fra={antall:Number(p.antall)||1,rabatt:Number(p.rabatt)||0,belop:(Number(p.belopOre)||0)/100};
+  form('Rediger påmelding',[field('antall','Antall','number',{min:1,required:true}),field('rabatt','Rabatt i prosent','number',{min:0,max:100,step:.01}),field('belop','Totalbeløp i kroner','number',{min:0,step:.01,help:betalt?'Påmeldingen er betalt. Beløpet endres bare hvis du skriver et nytt beløp her.':'Endrer du antall eller rabatt og lar beløpet stå, regnes beløpet ut på nytt.'})],fra,async v=>{
+   const endret={};const nyttAntall=v.antall!==null&&v.antall!==fra.antall,nyRabatt=v.rabatt!==null&&Math.round(v.rabatt*100)!==Math.round(fra.rabatt*100),nyttBelop=v.belop!==null&&Math.round(v.belop*100)!==Math.round(fra.belop*100);
+   if(nyttAntall)endret.antall=v.antall;
+   // Rabatten følger med når antallet endres, ellers regner serveren uten den.
+   if(nyRabatt||(nyttAntall&&!nyttBelop))endret.rabatt=nyRabatt?v.rabatt:fra.rabatt;
+   if(nyttBelop)endret.belop=v.belop;else if(betalt&&(nyttAntall||nyRabatt))endret.belop=fra.belop;
+   if(!Object.keys(endret).length)throw Error('Ingenting å endre.');
+   await ferdig(await api('pamelding.php',{handling:'endre',id:p.bookingId,...endret}));},{successText:false});}
+ function leggTil(){form('Legg til deltaker',[field('navn','Navn','text',{required:true}),field('telefon','Mobil','tel'),field('epost','E-post','email'),field('antall','Antall','number',{min:1,required:true}),field('betaltMaate','Betaling','text',{velg:true,options:['Ikke betalt','Betaler ved oppmøte','Kontant','Vipps','Gavekort','Faktura','Gratis']}),field('kode','Gavekortkode'),field('varsle','Send bekreftelse','checkbox')],{antall:1},async v=>{await ferdig(await api('pamelding.php',{handling:'legg-til',oktId:id,...v,varsle:v.varsle?'ja':'nei'}));},{submitLabel:'Legg til',successText:false});}
+ // beskjed.php til=okt sender bare til påmeldinger med status betalt. Tallet på knappen er derfor de betalte.
+ const betalte=()=>deltakere.filter(p=>p.status==='Betalt').length;
+ function beskjed(){form('Beskjed til alle på '+e.tittel,[field('tekst','Melding','textarea',{required:true,help:'Sendes på e-post til dem som har betalt.'})],{},async v=>{await ferdig(await api('beskjed.php',{til:'okt',oktId:id,tekst:v.tekst,ogsaaSms:'nei'}));},{submitLabel:`Send til ${betalte()} betalte`,successText:false});}
  // Rediger: plasser og kursholder her. Tidspunktet flyttes med «Flytt tidspunkt», som kjenner samlingene i et flerdagerskurs.
  function rediger(){
   const plasser=el('input',{type:'number',min:0,step:1,value:e.kap||'','aria-label':'Plasser'});
@@ -177,6 +196,7 @@ export function oktArk(e,o){
   return [el('div',{class:'kal-skjema'},el('label',{},el('span',{text:'Plasser'}),plasser),el('label',{},el('span',{text:'Kursholder'}),holder),lagre),
    el('div',{class:'kal-verktoy'},
     button('Flytt tidspunkt',()=>{s.close();o.flytt(e);}),
+    Object.assign(link('Hele kursoppsettet (navn, pris, tekst, bilder)','#kurs'),{onclick:()=>s.close()}),
     button(e.visFullt?'Åpne for påmelding':'Vis som fullbooket',()=>sporOgKjor('Endre bookingmuligheten?',e.visFullt?'Åpne datoen for nye påmeldinger.':'Sperr datoen for nye påmeldinger. Eksisterende deltakere beholdes.','Bekreft','kurs.php',{handling:'visFullt',oktId:id,paa:e.visFullt?'nei':'ja'})),
     button(e.avlyst?'Gjenopprett økta':'Avlys økta',()=>sporOgKjor(e.avlyst?'Gjenopprett':'Avlys dato',`${e.avlyst?'Gjenopprett':'Avlys'} ${e.tittel} ${e.dato}. Kontroller påmeldte og varsling etterpå.`,e.avlyst?'Gjenopprett':'Avlys dato','kurs.php',{handling:e.avlyst?'gjenopprett':'avlys',oktId:id}),'danger'))];
  }

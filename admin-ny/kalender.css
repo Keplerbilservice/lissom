@@ -76,8 +76,8 @@
 /* ── Bølge 1 (3. oktober 2026), bare når bryteren «Vis/kalenderark» er på (kalender-ark.js) ──
    Fargekoder per type som klTypeInfo i gamle admin: kurs gul, event terrakotta, Paint on Pots slip, brenning brun, verksted leire, notat grønn. */
 .kal-t-kurs{--kal-bg:var(--lissom-yellow);--kal-fg:var(--lissom-brown)}
-.kal-t-event{--kal-bg:var(--terracotta-500);--kal-fg:var(--clay-50)}
-.kal-t-pop{--kal-bg:var(--slip-500);--kal-fg:var(--clay-50)}
+.kal-t-event{--kal-bg:#c4623a;--kal-fg:#fff8f0}
+.kal-t-pop{--kal-bg:#5f8580;--kal-fg:#f6fbfa}
 .kal-t-brenning{--kal-bg:var(--lissom-brown);--kal-fg:var(--clay-50)}
 .kal-t-verksted{--kal-bg:var(--clay-200);--kal-fg:var(--text-heading,var(--lissom-brown))}
 .kal-t-notat{--kal-bg:var(--sage-100);--kal-fg:var(--sage-600);--kal-kant:var(--sage-500)}
@@ -105,7 +105,8 @@
 .kal-sum{display:block;font-size:12px;color:var(--muted);font-weight:500;letter-spacing:0;text-transform:none}
 .kp-kolhode.today .kal-sum{color:var(--ink)}
 .kalm-dag>.kal-sum{font-size:14px;margin-top:-4px}
-.kalm-merker{flex-direction:column;align-items:flex-end;margin:0 0 0 auto;flex:none}
+.kalm-merker{flex-direction:column;align-items:flex-end;margin:0 0 0 auto;flex:none;max-width:45%}.kalm-merker .kal-bilder{margin-right:5px}
+.kal-foert{margin:0;font-size:14px}
 /* Paint on Pots: tidene samme dag på én linje, «Vis tidene» åpner lista. */
 .kal-sammen{cursor:default}
 .kp-brikke.kal-sammen{height:auto}.kp-brikke.kal-sammen:has(.kal-tider:not([hidden])){z-index:4}
@@ -125,14 +126,14 @@
 .kal-ark-hode{display:grid;gap:6px;justify-items:start;padding-bottom:12px;border-bottom:1px solid var(--line);margin-bottom:14px}
 .kal-ark-hode p{margin:0}
 .kal-type-pille{background:var(--kal-bg);color:var(--kal-fg);font-size:13px;padding:2px 10px}
-.kal-faner{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
-.kal-faner button{border:0;background:none;min-height:40px;padding:6px 12px;border-radius:9px;font-weight:700}
+.kal-faner{display:flex;flex-wrap:nowrap;gap:4px;margin-top:6px;overflow-x:auto;scrollbar-width:none;max-width:100%;justify-self:stretch}.kal-faner::-webkit-scrollbar{display:none}
+.kal-faner button{border:0;background:none;min-height:44px;padding:6px 12px;border-radius:9px;font-weight:700;white-space:nowrap;flex:none}
 .kal-faner button[aria-selected=true]{background:var(--ink);color:var(--paper)}
 .kal-panel{display:grid;gap:8px}
 .kal-delt{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 10px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:8px 10px;background:#fff}
 .kal-info{min-width:0}.kal-info b{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.kal-info small{color:var(--muted);font-size:14px;overflow-wrap:anywhere}
 .kal-rad{display:flex;gap:6px;align-items:center}
-.button.kal-liten{min-height:40px;padding:6px 12px}
+.button.kal-liten{min-height:44px;padding:6px 12px}
 .button.kal-bred{width:100%}
 .kal-verktoy{display:grid;gap:8px}
 .kal-verktoy .button{justify-content:flex-start}
@@ -140,7 +141,7 @@
 .kal-skjema label{display:grid;gap:4px;font-weight:700}
 .kal-skjema input,.kal-skjema select{min-height:44px;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:#fff}
 .kal-meny{position:fixed;z-index:5;display:grid;min-width:240px;padding:5px;background:var(--paper);border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 30px #4d1d1229}
-.kal-meny button{border:0;background:none;text-align:left;min-height:40px;padding:8px 10px;border-radius:8px;font-weight:600}
+.kal-meny button{border:0;background:none;text-align:left;min-height:44px;padding:8px 10px;border-radius:8px;font-weight:600}
 .kal-meny button:hover,.kal-meny button:focus-visible{background:var(--ground)}
 .kal-meny hr{border:0;border-top:1px solid var(--line);margin:4px 0;width:100%}
 .kal-rod{color:var(--red)}
@@ -149,3 +150,5 @@
 /* Merkene inne i brikka: ikke blokk-linjer (.event span), og ingenting krymper bort. */
 .event .kal-merker{display:flex}.event .kal-m{display:inline-flex}.event .kal-bilder span{display:grid}
 .kp-brikke[class*=" kal-t-"]>*{flex:none}
+/* 390 px: fanene får plass på én linje; blir det for trangt, rulles de sidelengs. */
+@media(max-width:420px){.kal-faner button{padding:6px 8px;font-size:16px}}

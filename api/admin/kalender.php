@@ -440,6 +440,24 @@ $typeFor = static function (array $o): string {
     return 'kurs';
 };
 
+// ── Foerte timer per kursholder og dag ─────────────────────────────────
+//
+// Okt-arket (bolge 1) foerer timer med «hva» = kursets tittel. For aa
+// unngaa dobbeltfoering viser arket det som alt er foert samme dag for samme
+// kursholder og kurs. Bare lesing.
+$foert = [];
+if (DB::harTabell('kursholder_timer')) {
+    foreach (DB::alle(
+        'SELECT kursholder_id, dato, hva, SUM(timer) AS timer FROM kursholder_timer
+          WHERE dato >= :fra AND dato < :til GROUP BY kursholder_id, dato, hva',
+        ['fra' => substr($fra, 0, 10), 'til' => substr($til, 0, 10)]
+    ) as $t) {
+        $foert[(int) $t['kursholder_id'] . '|' . $t['dato'] . '|' . (string) $t['hva']] = (float) $t['timer'];
+    }
+}
+$foertFor = static fn(?int $holder, string $dato, string $tittel): float => $holder === null ? 0.0
+    : ($foert[$holder . '|' . $dato . '|' . mb_substr($tittel, 0, 96)] ?? 0.0);
+
 $hendelser = [];
 foreach ($okter as $o) {
     $id  = (int) $o['id'];
@@ -572,6 +590,17 @@ foreach ($okter as $o) {
         // kurset to ganger paa samme dag, var det ingenting som sa hvilken
         // av dem folk faktisk kunne booke. Naa sier linja fra.
         'publisert' => (string) ($o['kurs_status'] ?? 'publisert') === 'publisert',
+        // Sluttida for akkurat denne dagen. Paa dag 1 av et flerdagerskurs er
+        // «slutt» siste dags sluttid; arket regner timene av denne.
+        'dagSlutt' => (static function () use ($samlingKart, $id, $o, $iOslo): string {
+            foreach ($samlingKart[$id] ?? [] as $sa) {
+                if ((string) $sa['dato'] === $iOslo((string) $o['start_tid'], 'Y-m-d') && (string) $sa['til'] !== '') {
+                    return (string) $sa['til'];
+                }
+            }
+            return $o['slutt_tid'] !== null ? $iOslo((string) $o['slutt_tid'], 'H:i') : '';
+        })(),
+        'timerFoert' => $foertFor(isset($o['holder_id']) ? (int) $o['holder_id'] : null, $iOslo((string) $o['start_tid'], 'Y-m-d'), (string) $o['tittel']),
     ];
 
     // ── Dag to og tre ───────────────────────────────────────────────────
@@ -606,6 +635,9 @@ foreach ($okter as $o) {
             'samling'     => 'Samling ' . $sa['nummer'] . ' av ' . $antSaml,
             // Kort form til maanedsbrikka, der det er faa tegn aa ta av.
             'samlingKort' => $sa['nummer'] . ' av ' . $antSaml,
+            'dagSlutt'    => $sa['til'] !== '' ? (string) $sa['til']
+                           : ($o['slutt_tid'] !== null ? $iOslo((string) $o['slutt_tid'], 'H:i') : ''),
+            'timerFoert'  => $foertFor(isset($o['holder_id']) ? (int) $o['holder_id'] : null, (string) $sa['dato'], (string) $o['tittel']),
             'auto'    => false,
         ]);
     }

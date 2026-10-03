@@ -600,8 +600,13 @@ if ($handling === 'annuller') {
             'ordrenr' => $ordre['ordrenr'],
             'sum_ore' => (int) $ordre['sum_ore'],
         ]);
+        // «kunden har fått beskjed» bare naar malen ordre_annullert er paa
+        // (den ble slaatt av 3. oktober 2026, migrasjon 251).
+        $annullertPaa = (int) (DB::verdi(
+            "SELECT aktiv FROM notification_templates WHERE navn = 'ordre_annullert'"
+        ) ?? 0) === 1;
         Svar::ok(['beskjed' => $ordre['ordrenr'] . ' er annullert. Varene er lagt tilbake på lager'
-            . (trim((string) ($ordre['kunde_epost'] ?? '')) !== '' ? ', og kunden har fått beskjed.' : '.')]);
+            . ($annullertPaa && trim((string) ($ordre['kunde_epost'] ?? '')) !== '' ? ', og kunden har fått beskjed.' : '.')]);
     }
 
     // Alle delene salget ble gjort opp med.

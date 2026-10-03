@@ -447,23 +447,24 @@ switch ($jobb) {
             break;
         }
 
-        // Hvor lenge etter kurset. Timer, ikke dager: SMS-en skal komme mens
-        // de fortsatt husker det, ikke uken etter.
-        $timer = max(1, min(72, (int) Config::hent('anmeldelse_timer', '3')));
-
+        // Naar: neste dag kl. 10 norsk tid etter kurset (eieren, 3. oktober
+        // 2026 — foer: «anmeldelse_timer» timer etter). Basen gir kurs som er
+        // over og yngre enn tre doegn; Booking::anmeldelseKlar() avgjor om
+        // klokka er passert 10 dagen etter, i Europe/Oslo.
         $okter = DB::alle(
-            "SELECT cs.id, cs.start_tid, c.tittel, c.sms_paaminnelse
+            "SELECT cs.id, cs.start_tid, c.tittel, c.sms_paaminnelse,
+                    COALESCE(cs.slutt_tid, cs.start_tid) AS slutt
                FROM course_sessions cs
                JOIN courses c ON c.id = cs.course_id
               WHERE cs.status = 'planlagt'
                 AND cs.anmeldelse_sendt_at IS NULL
-                AND COALESCE(cs.slutt_tid, cs.start_tid)
-                    <= DATE_SUB(UTC_TIMESTAMP(), INTERVAL :t HOUR)
+                AND COALESCE(cs.slutt_tid, cs.start_tid) <= UTC_TIMESTAMP()
                 AND COALESCE(cs.slutt_tid, cs.start_tid)
                     > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 3 DAY)
-                AND COALESCE(c.tema, '') <> 'Kun for medlemmer'",
-            ['t' => $timer]
+                AND COALESCE(c.tema, '') <> 'Kun for medlemmer'"
         );
+        $okter = array_values(array_filter($okter,
+            static fn(array $o): bool => Booking::anmeldelseKlar((string) $o['slutt'])));
 
         $antall = 0;
         foreach ($okter as $okt) {

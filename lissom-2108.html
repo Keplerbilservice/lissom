@@ -18572,8 +18572,7 @@ window.__resources = {
 
             <div>
               <label for="va-anm-timer" style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Hvor lenge etter kurset</label>
-              <input id="va-anm-timer" value="{{ vaAnmTimer }}" onChange="{{ settVa.anmeldelse_timer }}" placeholder="3" inputmode="numeric" style="{{ vaFeltStil }}">
-              <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Timer. Mellom 1 og 72 — den skal komme mens de fortsatt husker det.</p>
+              <p id="va-anm-timer" style="margin: 0; font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Sendes neste dag kl. 10.</p>
             </div>
 
             <div style="background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ vaAnmStatus }}</div>
@@ -59776,8 +59775,9 @@ class Component extends DCLogic {
       })(),
       // Levering. Prisen kommer fra basen, ikke fra en tekst her inne.
       levValg: [
+        // Bare henting (eieren, 3. oktober 2026: «kun henting», Lissom
+        // sender aldri varer). api/ordre.php avviser levering=pakke.
         { navn: 'Hent i butikken på Teie', verdi: 'hent' },
-        { navn: 'Send som pakke (kr. ' + this.fraktKr() + ',-)', verdi: 'pakke' },
       ].map(v => ({
         navn: v.navn,
         valgt: (this.state.levering || 'hent') === v.verdi,
@@ -75140,13 +75140,12 @@ class Component extends DCLogic {
           // Varsel::mal() sender e-post i stedet saa lenge SMS ikke er satt
           // opp — samme melding, annen vei.
           vaAnmLenke: verdi('anmeldelse_lenke'),
-          vaAnmTimer: verdi('anmeldelse_timer') || '3',
           // Hva som faktisk skjer, ikke bare hva bryteren staar paa.
           vaAnmStatus: (() => {
             const a = d.anmeldelse || {};
             if (!a.paa) { return 'Står av. Ingen oppfølging sendes.'; }
             if (!a.lenke) { return 'Bryteren står på, men lenken mangler — ingenting sendes før den er fylt ut.'; }
-            return 'På. Går ' + a.timer + ' timer etter kurset, som ' + a.kanal + '.'
+            return 'På. Sendes neste dag kl. 10, som ' + a.kanal + '.'
               + (a.kanal === 'e-post' ? ' Den går som SMS av seg selv den dagen SMS er satt opp.' : '')
               + (a.sendt ? ' ' + a.sendt + ' sendt hittil.' : '');
           })(),

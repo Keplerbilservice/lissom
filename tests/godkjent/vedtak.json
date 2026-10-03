@@ -4101,6 +4101,122 @@
             ]
         },
         {
+            "id": "meldinger-eier-0310",
+            "dato": "2026-10-03",
+            "hva": "Meldingene, eierens skjema 03.10 (YbLC6SsCPPVP99toBZGLhh): (1) Google-anmeldelsen (mal «anmeldelse», cron «anmeldelser») sendes neste dag kl. 10 norsk tid etter kurset, ikke 3 timer etter. Kursdagen er den norske datoen kurset sluttet; slutter det etter midnatt (før kl. 06), regnes det til kvelden før. Europe/Oslo, så sommer- og vintertid stemmer. Sperren «aldri eldre enn 3 døgn» og én gang per økt (anmeldelse_sendt_at) står. (2) Migrasjon 251 slår AV butikkordre_pakke, intern_dugnad_ferdig, intern_dugnad_sporsmal, intern_gave_lost_inn, intern_gave_pakkes, intern_nytt_medlem, intern_nytt_medlem_sms, intern_ny_foresporsel, intern_ny_pamelding, intern_ny_vare, ordre_annullert og soknad_godkjent_sms (aktiv=0, tekstene står). Maler som er av sendes ikke og gir ingen «Varsel må sendes for hånd». (3) venteliste_satt: «Skulle det bli en ledig plass, kontakter vi deg.» (resten likt). (4) «Start kurset» steg 3 viser «Sendes neste dag kl. 10», som nå stemmer med jobben. SMS uendret.",
+            "hvor": "Cron anmeldelser; Tekst maler; e-posten «Du står på venteliste»; admin-ny › Start kurset › steg 3",
+            "kode": [
+                {
+                    "fil": "app/lib/booking.php",
+                    "finnes": [
+                        "public static function anmeldelseSendetid(string $sluttUtc): DateTimeImmutable",
+                        "if ((int) $lokal->format('G') < 6) {",
+                        "&& $naa < $slutt->modify('+3 days');"
+                    ]
+                },
+                {
+                    "fil": "bin/cron.php",
+                    "finnes": [
+                        "static fn(array $o): bool => Booking::anmeldelseKlar((string) $o['slutt'])));",
+                        "> DATE_SUB(UTC_TIMESTAMP(), INTERVAL 3 DAY)"
+                    ],
+                    "ikkeFinnes": [
+                        "INTERVAL :t HOUR"
+                    ]
+                },
+                {
+                    "fil": "db/migrations/251_meldinger_av_og_venteliste.sql",
+                    "finnes": [
+                        "-- godkjent av eieren: 2026-10-03",
+                        "'soknad_godkjent_sms'",
+                        "'Skulle det bli en ledig plass, kontakter vi deg.'"
+                    ]
+                },
+                {
+                    "fil": "api/admin/kursstart3.php",
+                    "finnes": [
+                        "['navn' => 'Google-anmeldelse', 'naar' => 'Sendes neste dag kl. 10']"
+                    ]
+                },
+                {
+                    "fil": "app/lib/varsler.php",
+                    "finnes": [
+                        "if ((int) ($mal['aktiv'] ?? 0) !== 1) {"
+                    ]
+                },
+                {
+                    "fil": "tests/meldinger-0310.php",
+                    "finnes": [
+                        "slutt 21:00 → sendes 10:00 neste dag",
+                        "ikke 09:59 neste dag",
+                        "andre kjøring endrer ingenting (idempotent)",
+                        "ingen «Varsel må sendes for hånd»"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "meldinger-etter-0310",
+            "dato": "2026-10-03",
+            "hva": "Etter meldingsvalgene 03.10: (1) Annuller henteordre sier «og kunden har fått beskjed» bare når malen ordre_annullert er på. (2) Feltet «Timer før anmeldelsesforespørsel» er byttet med teksten «Sendes neste dag kl. 10.» (ikke redigerbart) i admin-ny og gammel admin; api/admin/varsler.php gir «naar» i stedet for «timer». (3) Varsel::hentMal skiller «finnes ikke» (logges) fra «slått av» (logges ikke). (4) Nettbutikken: kun henting (eieren 03.10, Lissom sender aldri varer) — kassa viser bare «Hent i butikken på Teie», api/ordre.php avviser levering=pakke med «Vi sender ikke varer. Bestillingen hentes i butikken på Teie.» Gamle ordre røres ikke.",
+            "hvor": "Admin › Uttak/Ikke betalt › Annuller; Varsler › Oppfølging etter kurs; nettbutikkens kasse",
+            "kode": [
+                {
+                    "fil": "api/admin/uttak.php",
+                    "finnes": [
+                        "($annullertPaa && trim((string) ($ordre['kunde_epost'] ?? '')) !== '' ? ', og kunden har fått beskjed.' : '.')"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/meldinger-og-oppsett.js",
+                    "finnes": [
+                        "el('p',{text:'Sendes neste dag kl. 10.'})"
+                    ],
+                    "ikkeFinnes": [
+                        "Timer før anmeldelsesforespørsel"
+                    ]
+                },
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        ">Sendes neste dag kl. 10.</p>"
+                    ],
+                    "ikkeFinnes": [
+                        "vaAnmTimer",
+                        "{ navn: 'Send som pakke (kr. '"
+                    ]
+                },
+                {
+                    "fil": "api/admin/varsler.php",
+                    "finnes": [
+                        "'naar'   => 'Sendes neste dag kl. 10.',"
+                    ]
+                },
+                {
+                    "fil": "app/lib/varsler.php",
+                    "finnes": [
+                        "logg_feil(\"Varselmal «{$malNavn}» finnes ikke\");",
+                        "if ((int) ($mal['aktiv'] ?? 0) !== 1) {"
+                    ],
+                    "ikkeFinnes": [
+                        "finnes ikke eller er slått av"
+                    ]
+                },
+                {
+                    "fil": "api/ordre.php",
+                    "finnes": [
+                        "Svar::feil('Vi sender ikke varer. Bestillingen hentes i butikken på Teie.');"
+                    ]
+                },
+                {
+                    "fil": "tests/henting.sh",
+                    "finnes": [
+                        "levering=pakke avvises med norsk melding"
+                    ]
+                }
+            ]
+        },
+        {
             "id": "kalender-b3-gjenta",
             "dato": "2026-10-03",
             "hva": "Kalenderen, bølge 3 (skissen lissom-kalender-skisse.html, nyKursDialog og gjentaDatoer): «Ny kursdato» i admin-ny-kalenderen får kursholder, Gjentakelse (Én gang / Hver uke / Annenhver uke) og «Hvor lenge» (1, 2, 3, 6 mnd, Ut året, Til dato, Antall ganger), med forhåndsvisning av alle datoene (antall og første–siste); trykk på en dato tar den bort, stengte dager står overstrøket og hoppes over. Ingenting forhåndsvalgt utover «Én gang»; kurs og kursholder må velges, og Hvor lenge må velges ved Hver uke/Annenhver uke. Én gang går til kurs.php «nydato» som før (med ferieadvarsel). Gjentakelsen går til ny handling «nydatoer»: alle datoene i én transaksjon, stengt dag, dublett i lista, en dato som finnes og ugyldig tid hoppes over og meldes tilbake. Koden for én dato er trukket ut i $leggInnDato og brukes av begge; «nydato» oppfører seg som før. «Dupliser til neste uke» i økt-arket (Rediger) legger samme økt inn sju dager senere via «nydato» (alle dagene i et flerdagerskurs). Bak bryteren «Vis/kalendergjenta» (content_blocks, mangler raden = av; Synlighet): av = kalenderen som før, og «nydatoer» svarer 409. Ingen varsel ved flytt/avlys i denne bølgen. Ingen migrasjon.",

@@ -128,6 +128,7 @@ kjor "planbytte"     php tests/planbytte.php
 kjor "nytt etter 20"  php tests/nytt-etter-20.php
 kjor "vakt, datasjekk" php tests/vaktdata-regler.php
 kjor "anmeldelser"   php tests/anmeldelser.php
+kjor "meldinger 03.10 (anmeldelse kl. 10, maler av)" php tests/meldinger-0310.php
 kjor "AI-kommentarsvar" php tests/autosvar.php
 kjor "galleri"       php tests/galleri.php
 kjor "lager"         php tests/lager.php

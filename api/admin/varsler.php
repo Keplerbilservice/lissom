@@ -243,7 +243,8 @@ $svar['anmeldelse'] = [
     ) ?? 0) === 1,
     'lenke'  => trim((string) Config::hent('anmeldelse_lenke', '')) !== '',
     'kanal'  => Varsel::smsMulig() ? 'SMS' : 'e-post',
-    'timer'  => max(1, min(72, (int) Config::hent('anmeldelse_timer', '3'))),
+    // Fast tidspunkt fra 3. oktober 2026 (eieren): neste dag kl. 10.
+    'naar'   => 'Sendes neste dag kl. 10.',
     'sendt'  => (int) (DB::verdi(
         "SELECT COUNT(*) FROM notifications WHERE mal = 'anmeldelse'"
     ) ?? 0),

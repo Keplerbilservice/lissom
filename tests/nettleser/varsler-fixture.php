@@ -23,7 +23,7 @@ if ($mode === 'seed') {
         DB::kjor('INSERT INTO innstillinger(nokkel,verdi) VALUES(:k,:v) ON DUPLICATE KEY UPDATE verdi=VALUES(verdi)', ['k' => $k, 'v' => $v]);
     }
     $s['course'] = DB::settInn('courses', ['slug' => $tag, 'tittel' => 'Nattkontroll Dreiekurs', 'type' => 'kurs', 'status' => 'publisert', 'pris_ore' => 10000, 'kapasitet' => 12]);
-    foreach (['tomorrow' => 20, 'past' => -24, 'old' => -100, 'future' => 96] as $name => $hours) {
+    foreach (['tomorrow' => 20, 'past' => -48, 'old' => -100, 'future' => 96] as $name => $hours) {
         $s[$name] = DB::settInn('course_sessions', ['course_id' => $s['course'], 'start_tid' => gmdate('Y-m-d H:i:s', time() + $hours * 3600),
             'slutt_tid' => gmdate('Y-m-d H:i:s', time() + ($hours + 2) * 3600), 'kapasitet' => 12]);
     }

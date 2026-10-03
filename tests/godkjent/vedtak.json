@@ -4518,7 +4518,7 @@
         {
             "id": "penger-mva-tabeller",
             "dato": "2026-10-03",
-            "hva": "Eieren, 3. oktober 2026: Penger i admin-ny viser mva-en og hvor den kommer fra, til regnskapet. «I dag» og «Denne måneden» har hvert sitt store tall «Mva å betale», en linje «Omsetning inkl. mva», og en tabell Kategori | Mva-sats | Grunnlag (ekskl. mva) | Mva med én rad per kategori og sats og en Sum-rad. Hver rad kan åpnes og viser betalingene bak (dato, hva, beløp, mva) fra Omsetning::rader. Satsene er systemets egne (Omsetning::mvaFor). Er Sum større enn radene (f.eks. dropin), vises differansen som «Annet». På mobil blir hver rad et kort uten sideveis rulling.",
+            "hva": "Eieren, 3. oktober 2026: Penger i admin-ny viser mva-en og hvor den kommer fra, til regnskapet. «I dag» og «Denne måneden» har hvert sitt store tall «Mva å betale», en linje «Omsetning inkl. mva», og en tabell Kategori | Mva-sats | Grunnlag (ekskl. mva) | Mva med én rad per kategori og sats og en Sum-rad. Hver rad kan åpnes og viser betalingene bak (dato, hva, beløp, mva) fra Omsetning::rader. Satsene er systemets egne (Omsetning::mvaFor). Er Sum større enn radene (f.eks. dropin), vises differansen som «Annet». På mobil blir hver rad et kort uten sideveis rulling. Gavekort vises som «Utenfor mva».",
             "hvor": "admin-ny › Penger",
             "kode": [
                 {
@@ -4529,7 +4529,8 @@
                         "['Kategori','Mva-sats','Grunnlag (ekskl. mva)','Mva']",
                         "'Mva å betale: '+money(sM)",
                         "'Omsetning inkl. mva: '+money(sI)",
-                        "const rest={navn:'Annet'"
+                        "const rest={navn:'Annet'",
+                        "r.nokkel==='gavekort'?'Utenfor mva'"
                     ]
                 },
                 {

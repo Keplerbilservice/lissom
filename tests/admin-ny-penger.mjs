@@ -45,7 +45,7 @@ try{
    assert.deepEqual(t.rader.slice(0,-1).map(r=>r.navn.replace(/\s*$/,'')),[...linjer.map(l=>l.navn),...(harAnnet?['Annet']:[])]);
    for(const [j,l] of linjer.entries()){
     const r=t.rader[j];
-    assert.equal(r.tall[0],l.mvaSats>0?`${l.mvaSats} %`:'0 % (fritatt)');
+    assert.equal(r.tall[0],l.nokkel==='gavekort'?'Utenfor mva':l.mvaSats>0?`${l.mvaSats} %`:'0 % (fritatt)');
     assert.deepEqual([kr(r.tall[1]),kr(r.tall[2])],[krOre(l.eksOre),krOre(l.mvaOre)]);
     assert.equal((l.eksOre)+(l.mvaOre),l.ore,`${l.navn}: grunnlag + mva = inkl.`);
     assert.match(r.tab,/tabular-nums/);

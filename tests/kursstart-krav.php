@@ -16,6 +16,8 @@
  *   (h) 400 fra Vipps (salgsenheten har ikke lov): tydelig feil, ingen rad
  *       igjen, og kontant virker
  *   (i) mangler mobilnummer, og delvis betalt: kravet gjelder det som står igjen
+ *   (j)–(r) kontrolløren og brukertesten 3. oktober 2026
+ *   (s) bokføringen av et dobbelt trukket krav er én transaksjon (feil midt i)
  *
  * Kjøres av tests/kursstart-krav.mjs via tests/nettleser/kjor.sh (falsk Vipps
  * og testserver på). Alt merkes «KsKravTest-» og ryddes etterpå.
@@ -507,6 +509,36 @@ $sett('.krav-400', null);
 sjekk('HTTP 200 med ok:false (ikke 502)', $st === 200 && ($j['ok'] ?? null) === false, "HTTP $st");
 sjekk('… bare den norske teksten', str_contains((string) ($j['feil'] ?? ''), 'Salgsenheten har ikke lov')
     && !str_contains((string) ($j['feil'] ?? ''), 'ErrorCode') && !str_contains((string) ($j['feil'] ?? ''), 'MSN'), (string) ($j['feil'] ?? ''));
+
+// ── (s) bokføringen er én transaksjon: feil midt i gir ingen halv lagring ─
+echo "\n── (s) trukket + feil midt i bokføringen: alt eller ingenting ─\n";
+$sett('.betaling-status', 'CREATED');
+$U = $b('Ulrik', '91300018');
+KursstartKrav::send($U);
+$refU = (string) $kravRad($U)['vipps_reference'];
+Vipps::trekk($refU, 50000, 0);
+DB::iTransaksjon(static fn() => Booking::manuellBetaling($U, 50000, 'Kontant'));
+Booking::settBetaltStatus($U);
+$sett('.betaling-status', 'AUTHORIZED');
+// En utløser som stopper oppdateringen av plassen — midt i, etter at
+// betalingsraden er satt betalt i samme transaksjon.
+DB::kjor('DROP TRIGGER IF EXISTS ks_test_feil');
+DB::kobling()->exec("CREATE TRIGGER ks_test_feil BEFORE UPDATE ON bookings FOR EACH ROW
+    BEGIN IF NEW.id = {$U} THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'testfeil midt i bokforingen'; END IF; END");
+$idU = $eid();
+try {
+    $h = $webhook($refU, 'AUTHORIZED', $idU);
+} finally {
+    DB::kjor('DROP TRIGGER IF EXISTS ks_test_feil');
+}
+sjekk('feil midt i: webhooken svarer 503', $h === 503, (string) $h);
+sjekk('… betalingen står fortsatt «venter» (ikke halvt bokført)', $kravRad($U)['status'] === 'venter', (string) $kravRad($U)['status']);
+sjekk('… og har ikke fått «Må refunderes»', !str_contains((string) $kravRad($U)['kommentar'], 'Må refunderes'));
+sjekk('… summen er bare kontanten: 500 kr', $sum($U) === 50000, (string) $sum($U));
+$h = $webhook($refU, 'AUTHORIZED', $idU);
+sjekk('samme hendelse igjen: alt bokført på én gang', $h === 200 && $kravRad($U)['status'] === 'betalt'
+    && str_contains((string) $kravRad($U)['kommentar'], 'Må refunderes') && $sum($U) === 100000 && $bStatus($U) === 'betalt',
+    $h . ' ' . $kravRad($U)['status'] . ' ' . $sum($U));
 
 $ferdig = true;
 echo "\n  $ok av " . ($ok + $feil) . " kursstart-krav-kontroller bestått\n";

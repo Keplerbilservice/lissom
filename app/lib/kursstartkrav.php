@@ -458,12 +458,19 @@ final class KursstartKrav
                     logg_feil('Vipps-krav ' . $referanse . ' er delvis trukket (' . $trukket . ' av ' . $p['belop_ore'] . ' øre). Avstem for hånd.');
                     throw new RuntimeException('Vipps-kravet er delvis trukket. Avstem for hånd.');
                 }
-                DB::kjor("UPDATE payments SET status = 'betalt' WHERE id = :i AND status NOT IN ('betalt','delvis_refundert','refundert')",
-                    ['i' => (int) $p['id']]);
-                if (!$utenPlass) {
-                    Booking::settBetaltStatus($bookingId);
-                }
-                self::meldRefusjon((int) $p['id'], $hvorfor);
+                // Betalt, ny status på plassen og «Må refunderes» i én
+                // transaksjon: enten står alle tre, eller ingen. Går noe galt
+                // midt i, kastes feilen (webhook 503), raden står som før, og
+                // neste forsøk gjør alt på nytt (kontrolløren 3. oktober 2026).
+                $bokfor = static function () use ($p, $utenPlass, $bookingId, $hvorfor): void {
+                    DB::kjor("UPDATE payments SET status = 'betalt' WHERE id = :i AND status NOT IN ('betalt','delvis_refundert','refundert')",
+                        ['i' => (int) $p['id']]);
+                    if (!$utenPlass) {
+                        Booking::settBetaltStatus($bookingId);
+                    }
+                    self::meldRefusjon((int) $p['id'], $hvorfor);
+                };
+                DB::kobling()->inTransaction() ? $bokfor() : DB::iTransaksjon($bokfor);
                 logg_feil('Vipps-krav ' . $referanse . ' ble trukket etter at plassen var ' . $hvorfor . '. Refunder ' . $p['belop_ore'] . ' øre for hånd.');
                 self::revider('kursstart_krav_dobbelt', $bookingId, ['referanse' => $referanse, 'hvorfor' => $hvorfor, 'trukket_ore' => $trukket]);
                 return true;

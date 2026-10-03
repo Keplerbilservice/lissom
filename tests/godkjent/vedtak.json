@@ -4565,7 +4565,8 @@
                     "finnes": [
                         "fhmedlem:    () => this.gaaAdmin('minside', { fhRolle: 'medlem', fhFra: 'adminoversikt' })",
                         "data-ms-av=\"{{ msAdminAv }}\"",
-                        "!this.bryterPaa('minside' + id)"
+                        "!this.bryterPaa('minside' + id)",
+                        "[data-ms-av~=\"ovn\"] [data-ms-modul=\"ovn\"]:not(:has([data-ms-modul=\"barn\"]))"
                     ]
                 }
             ]

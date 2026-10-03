@@ -38,6 +38,18 @@ try{
   await p.locator('article.list-item').filter({hasText:'Stemple inn og timene dine'}).getByRole('button',{name:'Slå på',exact:true}).click();await p.getByRole('dialog').getByRole('button',{name:'Slå på',exact:true}).click();
   await p.locator('article.list-item').filter({hasText:'Stemple inn og timene dine'}).getByText('Vises',{exact:true}).waitFor();
   await mp.reload();await mp.getByRole('switch',{name:'Stemple inn og timene dine: vis/skjul',exact:true}).waitFor();assert.equal(await mp.locator('[data-ms-modul="stempel"]').isVisible(),true,'stempel tilbake');
+  // Ovnen av: bare ovn-delen forsvinner, «Ta med barn» i samme kort står (egen bryter).
+  const barnRad=()=>p.locator('article.list-item').filter({hasText:'Ta med barn'});const barnVarAv=await barnRad().getByRole('button',{name:'Slå på',exact:true}).count()>0;
+  if(barnVarAv){await barnRad().getByRole('button',{name:'Slå på',exact:true}).click();await p.getByRole('dialog').getByRole('button',{name:'Slå på',exact:true}).click();await barnRad().getByText('Vises',{exact:true}).waitFor();await mp.reload();await mp.getByRole('switch',{name:'Ta med barn: vis/skjul',exact:true}).waitFor();}
+  assert.equal(await mp.locator('[data-ms-modul="barn"]').isVisible(),true,'barn vises før');
+  const ovn=()=>p.locator('article.list-item').filter({hasText:'Ovnen'});
+  await ovn().getByRole('button',{name:'Slå av',exact:true}).click();await p.getByRole('dialog').getByRole('button',{name:'Slå av',exact:true}).click();await ovn().getByText('Skjult',{exact:true}).waitFor();
+  await mp.reload();await mp.getByRole('switch',{name:'Ta med barn: vis/skjul',exact:true}).waitFor();
+  assert.equal(await mp.getByRole('button',{name:'Råbrann satt',exact:true}).count(),0,'ovn-delen borte');
+  assert.equal(await mp.getByRole('switch',{name:'Ovnen: vis/skjul',exact:true}).isVisible(),false,'ovn-bryteren skjult');
+  assert.equal(await mp.locator('[data-ms-modul="barn"]').isVisible(),true,'Ta med barn står når Ovnen er av');
+  await ovn().getByRole('button',{name:'Slå på',exact:true}).click();await p.getByRole('dialog').getByRole('button',{name:'Slå på',exact:true}).click();await ovn().getByText('Vises',{exact:true}).waitFor();
+  if(barnVarAv){await barnRad().getByRole('button',{name:'Slå av',exact:true}).click();await p.getByRole('dialog').getByRole('button',{name:'Slå av',exact:true}).click();await barnRad().getByText('Skjult',{exact:true}).waitFor();}
   assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,width+': ingen vannrett rulling');
   assert.deepEqual(json403,[],'ingen .json-feil');assert.deepEqual(errors,[]);
   await m.close();await c.close();console.log(width+' px: SEO/GEO/Tekster laster, Min side-brytere og Se som medlem bestått.');

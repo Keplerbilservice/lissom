@@ -461,7 +461,9 @@ img{max-width:100%;display:block}
 .lx-msalle [data-ms-modul="nyttig"]{grid-column:1 / -1!important}.lx-msalle .ms-o-stempel{order:4}.lx-msalle .ms-o-inne{order:5}.lx-msalle .ms-o-ovn{order:7}.lx-msalle .ms-o-faq{order:8}
 @media(min-width:761px){.lx-msalle [data-ms-modul]{grid-column:span 1!important}.lx-msalle .ms-o-stempel{grid-column:span 2!important}}
 /* Eierens bryter per modul (Vis/minside<id>), se msModulVals. */
-[data-ms-av~="inne"] [data-ms-modul="inne"],[data-ms-av~="faq"] [data-ms-modul="faq"],[data-ms-av~="ovn"] [data-ms-modul="ovn"],[data-ms-av~="stempel"] [data-ms-modul="stempel"],[data-ms-av~="skiver"] [data-ms-modul="skiver"],[data-ms-av~="abonnement"] [data-ms-modul="abonnement"],[data-ms-av~="nyttig"] [data-ms-modul="nyttig"],[data-ms-av~="historikk"] [data-ms-modul="historikk"],[data-ms-av~="beskjeder"] [data-ms-modul="beskjeder"],[data-ms-av~="pameldinger"] [data-ms-modul="pameldinger"],[data-ms-av~="kursbevis"] [data-ms-modul="kursbevis"],[data-ms-av~="chat"] [data-ms-modul="chat"],[data-ms-av~="hms"] [data-ms-modul="hms"]{display:none!important}
+[data-ms-av~="inne"] [data-ms-modul="inne"],[data-ms-av~="faq"] [data-ms-modul="faq"],[data-ms-av~="stempel"] [data-ms-modul="stempel"],[data-ms-av~="skiver"] [data-ms-modul="skiver"],[data-ms-av~="abonnement"] [data-ms-modul="abonnement"],[data-ms-av~="nyttig"] [data-ms-modul="nyttig"],[data-ms-av~="historikk"] [data-ms-modul="historikk"],[data-ms-av~="beskjeder"] [data-ms-modul="beskjeder"],[data-ms-av~="pameldinger"] [data-ms-modul="pameldinger"],[data-ms-av~="kursbevis"] [data-ms-modul="kursbevis"],[data-ms-av~="chat"] [data-ms-modul="chat"],[data-ms-av~="hms"] [data-ms-modul="hms"]{display:none!important}
+/* Ovnen av: bare ovn-delen forsvinner. «Ta med barn» i samme kort har egen bryter; uten den skjules hele kortet. */
+[data-ms-av~="ovn"] [data-ms-modul="ovn"] > .ms-modulvalg,[data-ms-av~="ovn"] [data-ms-modul="ovn"]:not(:has([data-ms-modul="barn"])){display:none!important}
 
 </style>
 <!-- ds-css:slutt -->
@@ -5130,6 +5132,9 @@ window.__resources = {
               <button type="button" onClick="{{ ovnGlasurNaa }}" style="{{ ovnPilleStil }}">Glasurbrann satt</button>
               <button type="button" onClick="{{ ovnTomtNaa }}" style="{{ ovnPilleStil }}">Ovn er tømt</button>
             </div>
+</sc-if>
+            <!-- «Ta med barn» styres bare av sin egen bryter (eieren 03.10):
+                 ovn-bryteren lukker sc-if-en over, ikke denne. -->
             <sc-if value="{{ barnVis }}" hint-placeholder-val="{{ false }}">
             <div class="ms-o-barn" style="margin-left: auto; min-width: 0; max-width: 460px;" data-ms-modul="barn">
 <div class="ms-modulvalg"><strong>{{ msModuler.barn.navn }}</strong><button type="button" role="switch" aria-label="Ta med barn: vis/skjul" aria-checked="{{ msModuler.barn.aria }}" onClick="{{ msModuler.barn.veksle }}" class="ms-modulbryter">{{ msModuler.barn.tekst }}</button></div>
@@ -5159,7 +5164,6 @@ window.__resources = {
 </sc-if>
 </div>
             </sc-if>
-</sc-if>
 </div>
           <div class="ms-o-stempel" style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-6);" data-ms-modul="stempel">
 <div class="ms-modulvalg"><strong>{{ msModuler.stempel.navn }}</strong><button type="button" role="switch" aria-label="Stemple inn og timene dine: vis/skjul" aria-checked="{{ msModuler.stempel.aria }}" onClick="{{ msModuler.stempel.veksle }}" class="ms-modulbryter">{{ msModuler.stempel.tekst }}</button></div>

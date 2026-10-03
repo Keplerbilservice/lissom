@@ -222,7 +222,10 @@ $nyGrense = (new DateTimeImmutable('now', $utc))->modify('-1 day')->format('Y-m-
 // check_ins — den med understrek; «checkins» uten er en tom tabell fra
 // 001_init som ingenting bruker.
 $verksted = [];
-foreach (DB::alle(
+// Eieren, 3. oktober 2026: «ikke vis medlemmer i kalenderen». Med «Vis/kalendermeny» paa
+// sendes innsjekkene ikke i det hele tatt, ikke bare skjult i nettleseren.
+$skjulInnsjekk = (string) (DB::verdi('SELECT verdi FROM content_blocks WHERE nokkel = :n', ['n' => 'Vis/kalendermeny']) ?: '') === 'ja';
+if (!$skjulInnsjekk) foreach (DB::alle(
     'SELECT DATE(inn_tid) AS dag, COUNT(DISTINCT member_id) AS antall,
             MIN(inn_tid) AS forste, MAX(COALESCE(ut_tid, inn_tid)) AS siste
        FROM check_ins

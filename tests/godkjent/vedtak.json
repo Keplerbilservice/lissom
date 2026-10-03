@@ -4416,6 +4416,20 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "kalender-ingen-innsjekk",
+            "dato": "2026-10-03",
+            "hva": "Eieren, 3. oktober 2026: «ikke vis medlemmer i kalenderen». Med Vis/kalendermeny på sender api/admin/kalender.php ingen innsjekk-hendelser («N medlemmer innsjekket», type verksted) i det hele tatt.",
+            "hvor": "admin-ny › Kalender",
+            "kode": [
+                {
+                    "fil": "api/admin/kalender.php",
+                    "finnes": [
+                        "if (!$skjulInnsjekk) foreach (DB::alle("
+                    ]
+                }
+            ]
         }
     ]
 }

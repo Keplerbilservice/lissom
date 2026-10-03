@@ -104,13 +104,15 @@ export async function nyKursdatoGjenta(courseId,dag,o){
 export async function dupliser(e){
  const oktId=Number(e.oktId||e.id);let samlinger=[];
  const d=await api('kurs.php');for(const k of d.kurs||[])for(const x of k.datoer||[])if(x.oktId===oktId)samlinger=x.samlinger||[];
- const forste=samlinger[0]||{dato:e.dato,fra:e.tid,til:e.dagSlutt||e.slutt||''};
+ // Samlingens tider, med øktas egne som reserve når fra/til er tom (kontrolløren 03.10).
+ const s0=samlinger[0]||{};const forste={dato:s0.dato||e.dato,fra:s0.fra||e.tid,til:s0.til||e.dagSlutt||e.slutt||''};
  const ny=shift(forste.dato,7);
  if(!await confirm('Dupliser til neste uke?',`${e.tittel} legges inn ${kortDato(ny)} kl. ${forste.fra}${samlinger.length>1?` (alle ${samlinger.length} dagene)`:''}.`,'Dupliser'))throw Error('Avbrutt.');
  const body={handling:'nydato',kursId:e.kursId,start:`${ny}T${forste.fra}`,slutt:forste.til&&forste.til>forste.fra?`${ny}T${forste.til}`:''};
  if(e.kap)body.kapasitet=e.kap;
- if(Number.isInteger(e.kursholderId))body.kursholderId=e.kursholderId;
- if(samlinger.length>1)body.dager=samlinger.slice(1).map(sa=>({dato:shift(sa.dato,7),fra:sa.fra,til:sa.til}));
+ // «Ikke tildelt» på originalen blir «Ikke tildelt» på kopien (0), ikke kursets kursholder.
+ body.kursholderId=Number.isInteger(e.kursholderId)?e.kursholderId:0;
+ if(samlinger.length>1)body.dager=samlinger.slice(1).map(sa=>({dato:shift(sa.dato,7),fra:sa.fra||forste.fra,til:sa.til||forste.til}));
  await courseMutation(body);
  return `${e.tittel} er lagt inn ${kortDato(ny)} kl. ${forste.fra}.`;
 }

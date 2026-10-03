@@ -1,5 +1,16 @@
 <?php
+// Sperre mot ekte Vipps (kontrolløren, 3. oktober 2026): uten LISSOM_VIPPS_BASE leste
+// Config::vippsBase() vipps_base fra secrets, og et lokalt kall gikk til Vipps sin ekte
+// innlogging. Er adressen ikke satt, pekes den til en lokal port der ingenting svarer;
+// er den likevel ikke lokal (f.eks. miljo = produksjon), stopper testen før noe kjøres.
+if ((string) (getenv('LISSOM_VIPPS_BASE') ?: '') === '') {
+    putenv('LISSOM_VIPPS_BASE=http://127.0.0.1:9');
+}
 require dirname(__DIR__) . '/app/bootstrap.php';
+if (!in_array(parse_url(Config::vippsBase(), PHP_URL_HOST), ['127.0.0.1', 'localhost', '::1', '[::1]'], true)) {
+    fwrite(STDERR, "Stopper: Vipps-adressen er ikke lokal (" . Config::vippsBase() . "). Sett LISSOM_VIPPS_BASE til falsk Vipps.\n");
+    exit(1);
+}
 
 /** Kildekontroller skal gi samme resultat med Windows- og Unix-linjeskift. */
 function les_testfil(string $sti): string

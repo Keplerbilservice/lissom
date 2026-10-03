@@ -4518,29 +4518,33 @@
         {
             "id": "penger-mva-tabeller",
             "dato": "2026-10-03",
-            "hva": "Eieren, 3. oktober 2026: Penger i admin-ny viser to tabeller, «I dag» og «Denne måneden», med kolonnene Ekskl. mva | Mva | Inkl. mva, én rad per kategori og en Sum-rad. Tallene kommer ferdig delt fra oversikt.php (Omsetning::mvaFor), ingen ny mva-regel. Ekskl. + mva = inkl. På mobil blir hver rad et kort uten sideveis rulling. Er Sum større enn radene (f.eks. dropin), vises differansen som egen rad «Annet», så radene alltid summerer til Sum.",
+            "hva": "Eieren, 3. oktober 2026: Penger i admin-ny viser mva-en og hvor den kommer fra, til regnskapet. «I dag» og «Denne måneden» har hvert sitt store tall «Mva å betale», en linje «Omsetning inkl. mva», og en tabell Kategori | Mva-sats | Grunnlag (ekskl. mva) | Mva med én rad per kategori og sats og en Sum-rad. Hver rad kan åpnes og viser betalingene bak (dato, hva, beløp, mva) fra Omsetning::rader. Satsene er systemets egne (Omsetning::mvaFor). Er Sum større enn radene (f.eks. dropin), vises differansen som «Annet». På mobil blir hver rad et kort uten sideveis rulling.",
             "hvor": "admin-ny › Penger",
             "kode": [
                 {
                     "fil": "admin-ny/app.js",
                     "finnes": [
-                        "card('I dag',mvaTable(o.linjerIdag,o.idagEksOre,o.idagMvaOre,o.idagOre))",
-                        "card('Denne måneden',mvaTable(o.linjerMnd,o.manedEksOre,o.manedMvaOre,o.manedOre))",
-                        "const cols=['Ekskl. mva','Mva','Inkl. mva']",
-                        "const rest={navn:'Annet',eks:sE-tot('eks'),mva:sM-tot('mva'),inkl:sI-tot('inkl')};"
+                        "card('I dag',mvaTable(o.linjerIdag,o.idagEksOre,o.idagMvaOre,o.idagOre,o.detaljerIdag))",
+                        "card('Denne måneden',mvaTable(o.linjerMnd,o.manedEksOre,o.manedMvaOre,o.manedOre,o.detaljerMnd))",
+                        "['Kategori','Mva-sats','Grunnlag (ekskl. mva)','Mva']",
+                        "'Mva å betale: '+money(sM)",
+                        "'Omsetning inkl. mva: '+money(sI)",
+                        "const rest={navn:'Annet'"
                     ]
                 },
                 {
                     "fil": "admin-ny/design.css",
                     "finnes": [
-                        ".mva-table td::before{content:attr(data-label)",
-                        "font-variant-numeric:tabular-nums"
+                        ".mva-table td[data-label]::before{content:attr(data-label)",
+                        "font-variant-numeric:tabular-nums",
+                        ".mva-table tr[hidden]{display:none}"
                     ]
                 },
                 {
                     "fil": "api/admin/oversikt.php",
                     "finnes": [
-                        "'idagMvaOre'          => $eksIdag['mvaOre'],",
+                        "'detaljerIdag' => $detaljer($dagStart),",
+                        "'mvaOre'   => Omsetning::mvaFor($f, $ore)['mvaOre'],",
                         "+ Omsetning::mvaFor($nokkel, $etter[$nokkel]);"
                     ]
                 }

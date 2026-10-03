@@ -4450,6 +4450,21 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "folk-aktive-medlemmer",
+            "dato": "2026-10-03",
+            "hva": "Eieren, 3. oktober 2026: Folk viser aktive medlemmer (status aktiv/prove) som standard, med filteret «Aktive medlemmer / Ikke medlemmer». «Har tilgang» gjelder bare medlemmer som ikke mangler betaling — ikke-medlemmer står aldri under «Har tilgang».",
+            "hvor": "admin-ny › Folk",
+            "kode": [
+                {
+                    "fil": "admin-ny/app.js",
+                    "finnes": [
+                        "options:[['aktiv','Aktive medlemmer'],['ikke','Ikke medlemmer']]",
+                        "(['aktiv','prove'].includes(p.status)&&!p.betalingMangler)"
+                    ]
+                }
+            ]
         }
     ]
 }

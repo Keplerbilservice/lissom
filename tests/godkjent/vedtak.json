@@ -4481,13 +4481,22 @@
                         "group('Verksted',",
                         "p.vilkaar?[['Vilkår',p.vilkaar]]:[]",
                         "['aktiv','Sorter: Sist aktiv',",
-                        "'sist innom for '+p.dagerSiden+' dager siden'"
+                        "'sist innom for '+p.dagerSidenSist+' dager siden'",
+                        "'aldri innom'",
+                        "tilDato=summary.betaltTil||summary.slutter||null"
                     ]
                 },
                 {
                     "fil": "admin-ny/ui.js",
                     "finnes": [
                         "sorts=[]"
+                    ]
+                },
+                {
+                    "fil": "api/admin/medlemmer.php",
+                    "finnes": [
+                        "'dagerSidenSist' => $sistInn[(int) $m['id']] ?? null,",
+                        "'betaltTil' => $betaltTil === null ? null"
                     ]
                 }
             ]

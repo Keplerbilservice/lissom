@@ -3160,7 +3160,7 @@
             "hvor": "admin-ny › Kalender › Flytt tidspunkt · Påmeldte › Ny påmelding / Flytt til annen dato · Kalender › Ny kursdato · Medlemsgaver › Gi gave",
             "kode": [
                 {
-                    "fil": "admin-ny/app.js",
+                    "fil": "admin-ny/kalender.js",
                     "finnes": [
                         "const nr=String(e.id).startsWith('saml-')",
                         "field('kursId','Kurs','number',{velg:true,",
@@ -3287,6 +3287,265 @@
                         "flere enn 50 nye i dag: alle 55 står med",
                         "planbytte står ikke i Nye påmeldinger",
                         "avbrutt fast trekk, så engangs: står som ny"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "nyadmin-kalender-k0-egen-fil",
+            "dato": "2026-10-02",
+            "hva": "Ny kalender i admin-ny, bit K0 (eieren godkjente del 2, 2. oktober 2026): kalenderkoden (calendar, kalendernotat, hendelsesarket, deltakere, ny kursdato og Flytt tidspunkt) er flyttet uendret fra admin-ny/app.js til admin-ny/kalender.js, kalenderstilen uendret fra design.css til kalender.css (lenket i admin-ny.html etter design.css), og kalender-mobil.js og kalender-pc.js er tomme stubber som kalender.js importerer, så K3 og K4 kan bygges hver for seg. Ingen ny atferd; courseMutation hentes fra ui.js, ingen kopi. (Stubben kalender-mobil.js er erstattet av K3, 2. oktober 2026; se nyadmin-kalender-k3-mobil.)",
+            "hvor": "admin-ny › Kalender (#kalender) · Kurs › Deltakere / Ny kursdato",
+            "kode": [
+                {
+                    "fil": "admin-ny/kalender.js",
+                    "finnes": [
+                        "export function kalenderOppsett(h){({title,item,details,href,act,refresh}=h);}",
+                        "export {calendar,participants,newDate};",
+                        "async function calendar(){",
+                        "async function moveDate(e){"
+                    ],
+                    "ikkeFinnes": [
+                        "export async function courseMutation"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/app.js",
+                    "finnes": [
+                        "import {calendar,participants,newDate,kalenderOppsett} from './kalender.js';",
+                        "kalenderOppsett({title,item,details,href,act,refresh});",
+                        "kalender:calendar"
+                    ],
+                    "ikkeFinnes": [
+                        "async function calendar(){",
+                        "async function moveDate(e){",
+                        "let calendarDay="
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kalender.css",
+                    "finnes": [
+                        ".calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:9px}",
+                        ".event.cancelled{opacity:.65;border-color:var(--red)}"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/design.css",
+                    "ikkeFinnes": [
+                        ".calendar{display:grid;",
+                        ".event{width:100%;"
+                    ]
+                },
+                {
+                    "fil": "admin-ny.html",
+                    "finnes": [
+                        "<link rel=\"stylesheet\" href=\"/admin-ny/design.css\"><link rel=\"stylesheet\" href=\"/admin-ny/kalender.css\">"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "nyadmin-kalender-k4-pc",
+            "dato": "2026-10-02",
+            "hva": "Ny kalender i admin-ny, bit K4 (eieren godkjente ny PC-kalender 2. oktober 2026): på bred skjerm (min-width 1101px) tegner kalender.js uke og dag med kalender-pc.js. Uke med tidsakse (klokkeslett til venstre, 30-minuttersrader) er standard; dag har én kolonne per kursholder (standard kursholder alltid, de andre når de har noe, «Ikke tildelt» bare når noe mangler kursholder); måned er som før. Segmentpille Dag · Uke · Måned erstatter nedtrekkslista på PC. Hver time er en brikke; hele brikka åpner hendelsesarket (eventDetails). Overlappende brikker ligger side om side. Cellene har data-dato, data-akse og data-kol (slippmål for K5, dra og slipp er ikke bygd). Samling 2 og 3 har data-låst. Søk og typefilter beholdes. Mobil (smal skjerm) er uendret.",
+            "hvor": "admin-ny › Kalender (#kalender), PC 1280 px",
+            "kode": [
+                {
+                    "fil": "admin-ny/kalender.js",
+                    "finnes": [
+                        "import {kalenderPc,segment,erBred} from './kalender-pc.js';",
+                        "const view=bred?segment(calendarMode,v=>{calendarMode=v;draw();}):el('select',",
+                        "if(bred&&calendarMode!=='maaned'){const pc=kalenderPc(",
+                        "let calendarDay=today(),calendarMode='uke'"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kalender-pc.js",
+                    "finnes": [
+                        "export const PC_BRED='(min-width:761px)';",
+                        "[['dag','Dag'],['uke','Uke'],['maaned','Måned']]",
+                        "role:'group','aria-label':'Kalendervisning'",
+                        "'data-akse':klokke(fra+i*RAD_MIN),'data-kol':k.kol",
+                        "if(laast)attr['data-låst']=true;",
+                        "onclick:()=>apne(e)",
+                        "function sideOmSide(liste)",
+                        "const RAD_MIN=30"
+                    ],
+                    "ikkeFinnes": [
+                        "Åpne",
+                        "→"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kalender.css",
+                    "finnes": [
+                        ".kp-segment{",
+                        ".kp-celle{height:26px;",
+                        ".kp-brikke.event{position:absolute;"
+                    ]
+                },
+                {
+                    "fil": "tests/nyadmin-kalender-pc.mjs",
+                    "finnes": [
+                        "'data-låst'",
+                        "'Dag','Uke','Måned'"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "nyadmin-kalender-k3-mobil",
+            "dato": "2026-10-02",
+            "hva": "Ny kalender i admin-ny, bit K3 (eieren godkjente mobilkalenderen 2. oktober 2026, 390 px): på smal skjerm (max-width:760px) tegner kalender.js mobilvisningen fra kalender-mobil.js; PC-visningen er uendret (målt lik DOM og piksler i Uke, Måned, Dag og arket mot K0). Øverst kortene «Går nå» og «Neste» (kurs, påmeldt/plasser, tid; mønster fra gamle admin kalNaa*; vakter, brenning, notater, innsjekk og avlyste teller ikke). Så segmentpille Dag · Uke · Måned, «I dag»-pille og ett søkeikon som åpner søk, «Velg dato» og typefilter (ingen type valgt på forhånd). Ukestripe med sju dager og prikk når det skjer noe; man sveiper sidelengs mellom ukene (touch-action:pan-y, loddrett sveip ruller siden), ingen piler. Valgt dag er timekort; hele kortet åpner hendelsesarket (eventDetails). Uke viser bare dager med noe. Måned er en rute man sveiper mellom månedene. Alle trykkflater minst 44 px. Ny kursdato, Nytt kalendernotat og Abonner på kalenderen står som piller under kalenderen (abonner() er felles for PC og mobil). Lissom-drakten: ds-colors.css og ds-spacing.css importeres i kalender.css.",
+            "hvor": "admin-ny › Kalender (#kalender) på mobil",
+            "kode": [
+                {
+                    "fil": "admin-ny/kalender.js",
+                    "finnes": [
+                        "import {kalenderMobil,erSmal,SMAL,valgtDag} from './kalender-mobil.js';",
+                        "async function calendar(){if(erSmal())return kalenderMobil({title,eventDetails,handlinger:[",
+                        "button('Abonner på kalenderen',abonner)"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kalender-mobil.js",
+                    "finnes": [
+                        "export const SMAL='(max-width:760px)';",
+                        "export async function kalenderMobil({title,eventDetails,handlinger}){",
+                        "kort(gaar,'Går nå','gaar')",
+                        "kort(neste,'Neste','neste')",
+                        "[['dag','Dag'],['uke','Uke'],['maaned','Måned']]",
+                        "text:'I dag'",
+                        "'aria-label':'Søk i kalender'",
+                        "'aria-label':'Velg dato'",
+                        "onclick:()=>eventDetails(e)",
+                        "function sveip(node,bla)"
+                    ],
+                    "ikkeFinnes": [
+                        "← Forrige",
+                        "Neste →",
+                        "'Åpne'"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kalender.css",
+                    "finnes": [
+                        "@import url(\"/ds-colors.css\");",
+                        "@import url(\"/ds-spacing.css\");",
+                        ".kalm-uke,.kalm-mnd-rute{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;touch-action:pan-y;",
+                        ".kalm .kalm-pille{min-height:44px;min-width:44px;border-radius:999px;",
+                        ".calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:9px}"
+                    ]
+                },
+                {
+                    "fil": "tests/nyadmin-kalender-mobil.mjs",
+                    "finnes": [
+                        "sveip sidelengs blar uka, loddrett sveip ruller siden",
+                        "alle trykkflater er minst 44 px",
+                        "ingen type valgt på forhånd",
+                        "PC-kalenderen med tidsakse"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "nyadmin-kalender-samlet",
+            "dato": "2026-10-02",
+            "hva": "Ny kalender i admin-ny samlet (K0 + K3 + K4, alle godkjent av kontrolløren 2. oktober 2026; eieren ga fullmakt til anbefalt valg). Bredde: mobilkalenderen (K3) til og med 760 px, PC-kalenderen med tidsakse (K4) fra 761 px, også nettbrett. kalender.js har K3-linja først (if(erSmal())return kalenderMobil(...)), K4 etter. Én lytter på (max-width:760px): krysser bredden mens kalenderen vises, tegnes den på nytt; krysser den mens dataene lastes, tegnes riktig visning når de kommer. Kontrollørfunn rettet: PC-banene for korte hendelser regnes fra tegnet høyde (minst 24 px), så de ikke dekker hverandre; dagkolonnene kobles på kursholderens id (kalender.php gir kursholderId, bare lagt til); notater og annet uten kursholder som ikke er kurs, ligger som bånd over alle kolonnene i dagsvisningen som i gamle admin, og «Ikke tildelt» står bare for kurs uten kursholder. Mobil: kurs over midnatt (slutt før start) regnes riktig i «Går nå» (også kurs som startet i går), «Går nå» og «Neste» regnes på nytt hvert minutt med én timer som stoppes når kalenderen ikke vises, og «Neste» letes etter høyst seks måneder fram. Ingen nye tekster. Etter kontrollen (samme dag): måned har sju kolonner fra 761 px (1100-px-regelen for kalenderen fjernet); brikker under 40 px viser bare tid og tittel på én linje med ellipse; krysser bredden mens et ark står åpent, tegnes kalenderen på nytt først når arket lukkes; nyadmin-avsluttende prøver kalenderen på 390 px (mobil) og 1280 px (PC). På mobil foreslår «Nytt kalendernotat» og «Ny kursdato» dagen som er valgt i mobilkalenderen (valgtDag), ikke PC-kalenderens dag; PC er uendret. Etter godkjent kontroll: «Neste» på mobil er alltid første kommende kurs fra nå (månedene letes i rekkefølge, en valgt senere måned hopper ikke over noen); på PC regnes kurs over midnatt (slutt før start) som +24 t og vises til dagens slutt i uke og dag.",
+            "hvor": "admin-ny › Kalender (#kalender) på 390, 900 og 1280 px",
+            "kode": [
+                {
+                    "fil": "admin-ny/kalender.js",
+                    "finnes": [
+                        "import {kalenderMobil,erSmal,SMAL,valgtDag} from './kalender-mobil.js';",
+                        "async function calendar(){if(erSmal())return kalenderMobil({title,eventDetails,handlinger:[",
+                        ".then(m=>erSmal()?vist(m,true):calendar());",
+                        "if(erSmal())return calendar();const events=data.hendelser||[];",
+                        "matchMedia(SMAL).addEventListener('change',byttVisning);",
+                        "if(document.querySelector('dialog[open]')){if(!ventendeBytte)ventendeBytte=setInterval(",
+                        "button('Ny kursdato',()=>newDate(0,valgtDag()),'primary'),button('Nytt kalendernotat',()=>calendarNote({},valgtDag()))",
+                        "function calendarNote(e={},dag=calendarDay){",
+                        "async function newDate(courseId=0,dag=calendarDay){"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kalender-pc.js",
+                    "finnes": [
+                        "export const PC_BRED='(min-width:761px)';",
+                        "const RAD_MIN=30,RAD_PX=26,MIN_PX=24,LAV_PX=40;",
+                        "hoyde=Math.max(MIN_PX,(sl-s)/RAD_MIN*RAD_PX-2);return {e,top,hoyde,s:top,sl:top+hoyde+2};",
+                        "const holderNokkel=e=>e.kursholderId!=null",
+                        "nokler.has(String(h.id))",
+                        "const baand=dagens.filter(e=>!holderNokkel(e)&&!erKurs(e));",
+                        "class:'kp-baandlag'",
+                        "if(plass&&plass.hoyde<LAV_PX){attr.class+=' kp-lav';return el('button',attr,el('small',{text:e.tid||''}),el('strong',{text:e.tittel}));}",
+                        "else if(sl<s)sl+=1440;return {s,sl:Math.min(1440,sl)};"
+                    ],
+                    "ikkeFinnes": [
+                        "min-width:1101px",
+                        "navn.has(h.navn)"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kalender-mobil.js",
+                    "finnes": [
+                        "export const SMAL='(max-width:760px)';",
+                        "if(sl<s)sl+=1440;",
+                        "e.dato===shift(idag,-1)?n+1440-s",
+                        "const SOK_MND=6;",
+                        "naTimer=setInterval(()=>{if(!rot.isConnected){clearInterval(naTimer);return;}",
+                        "export const valgtDag=()=>valgt;",
+                        "try{for(let i=0,ym=mnd(idag);!neste&&i<=SOK_MND;i++,ym=nesteMnd(ym))neste=forsteI(await hentMnd(ym));}catch{}"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kalender.css",
+                    "finnes": [
+                        ".kalm-naboks{display:contents}",
+                        ".kp-baandlag{position:absolute;",
+                        ".kp-brikke.event.kp-lav{flex-direction:row;"
+                    ],
+                    "ikkeFinnes": [
+                        "@media(max-width:1100px){.calendar{"
+                    ]
+                },
+                {
+                    "fil": "api/admin/kalender.php",
+                    "finnes": [
+                        "'kursholderId' => isset($o['holder_id']) ? (int) $o['holder_id'] : null,",
+                        "h.id AS holder_id"
+                    ]
+                },
+                {
+                    "fil": "tests/nyadmin-kalender-pc.mjs",
+                    "finnes": [
+                        "korte kurs som ligger tett dekker ikke hverandre",
+                        "to kursholdere med samme navn får hver sin kolonne (id)",
+                        "båndet går over alle kolonnene",
+                        "mens dataene lastes: riktig visning tegnes",
+                        "900 px: uke med tidsakse og sju dager",
+                        "kurset over midnatt slutter ved dagens slutt"
+                    ]
+                },
+                {
+                    "fil": "tests/nyadmin-kalender-mobil.mjs",
+                    "finnes": [
+                        "kurs over midnatt går nå",
+                        "«Går nå» og «Neste» oppdateres hvert minutt",
+                        "ingen «Neste» lenger fram enn seks måneder",
+                        "Nytt kalendernotat foreslår valgt dag",
+                        "Ny kursdato foreslår valgt dag",
+                        "«Neste» er januar, ikke den valgte måneden"
+                    ]
+                },
+                {
+                    "fil": "tests/nyadmin-avsluttende.mjs",
+                    "finnes": [
+                        "Kalender ${width} px: uke over månedsskifte",
+                        "button.kalm-kort"
+                    ],
+                    "ikkeFinnes": [
+                        "getByLabel('Kalendervisning').selectOption"
                     ]
                 }
             ]
@@ -3564,6 +3823,123 @@
                     "fil": "tests/alle.sh",
                     "finnes": [
                         "kjor \"AI-kommentarsvar\" php tests/autosvar.php"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "nyadmin-kalender-b1",
+            "dato": "2026-10-03",
+            "hva": "Kalenderen i admin-ny, bølge 1 + B4 (eieren godkjente skissen lissom-kalender-skisse.html 3. oktober 2026; arkitektens plan). Alt står bak bryteren «Vis/kalenderark» (content_blocks, mangler raden = av; slås på under Synlighet). Av: kalenderen er uendret. På: fargekoder per type som klTypeInfo (kurs gul, event terrakotta, Paint on Pots slip, brenning brun, verksted leire, notat grønn), typeknapper som viser/skjuler (brenning skjult fra start), merker på kortene (påmeldt/plasser, «Alle betalt»/«N ubetalt», «+N nye», «✎ merknad», deltakerinitialer), svevekort på PC med deltakere og betaling, Paint on Pots-tider fra åpningstida slått sammen per dag med «Vis tidene» (ubookede kommer ikke fra kalender.php), «N økter · M påmeldt» i kolonnehodet. Økt-arket med fanene Deltakere / Venteliste / Kursdagen / Rediger og ⋯ per deltaker (Bytt dato = pamelding flytt, Send bekreftelse på nytt, Møtte ikke, Sperr kursbevis, Sett på venteliste, Rediger påmelding, Avbestill = fjern), Legg til deltaker (pamelding legg-til), Ta betalt (bookingPayments), Gi plass (venteliste gi-plass), Kursdagen: beskjed.php til=okt med ogsaaSms=nei (bare e-post), Meld keramikken klar (ferdigbrent meld-alle), Før timer (kursholdere timer), Last ned deltakerliste; Rediger: plasser (kurs.php plasser), kursholder (kurs.php dato), Flytt tidspunkt (moveDate/endredato), Vis som fullbooket (visFullt), Avlys/gjenopprett uten nytt varsel. B4: kalender.php sender brytere:{kalenderark:bool}. Ingen migrasjon, ingen nye endepunkter, ingen ny kundetekst. Retting etter kontrolløren (STOPP på 38e6c84) og brukertesten, 3. oktober 2026: Rediger påmelding sender bare det som er endret og viser dagens beløp; betalt påmelding beholder beløpet til admin skriver et nytt (advarsel i skjemaet); uendret skjema lagrer ingenting. Beskjed-knappen sier «Send til N betalte» (beskjed.php sender bare til betalte). «Før timer» bruker dagens varighet (kalender.php dagSlutt) og viser «Ført N t <dato>» med «Er du sikker?» når timer alt er ført (kalender.php timerFoert, bare lesing). Gi plass sier at personen får beskjed om plassen. Legg til deltaker har Gavekortkode. Rediger har lenken «Hele kursoppsettet (navn, pris, tekst, bilder)» til Kurs. Event #a8512e og Paint on Pots #4f716c (mørkere enn skissen, så WCAG AA holder: 5,1:1). Mobil: merknad, initialer og «Alle betalt» på kortene som på PC. Menyvalg, ⋯ og faner minst 44 px; fanene på én linje (rulles sidelengs). Etter betaling (GODKJENT med retting) og kontrolløren: alt som ikke er «Ikke betalt» (også Møtte ikke opp og Refundert) regnes som betalt i Rediger påmelding, så beløpet aldri regnes på nytt for dem; uke/dag på PC og «Går nå» på mobil bruker dagSlutt for flerdagerskurs; Ført-oppslaget trimmer tittelen som kursholdere.php. Testen prøver også det som skal nektes (for lite gavekortsaldo, Ta betalt to ganger, avbestilling av gavekortplass) og beløpet etter Bytt dato, nytt beløp på betalt, bare rabatt og Møtte ikke + nytt antall.",
+            "hvor": "admin-ny › Kalender (#kalender) på 390 og 1280 px, admin-ny › Synlighet",
+            "kode": [
+                {
+                    "fil": "api/admin/kalender.php",
+                    "finnes": [
+                        "'brytere' => (static function (): array {",
+                        "foreach (['kalenderark'] as $navn) {",
+                        "$ut[$navn] = $v !== null && $v !== false && (string) $v === 'ja';",
+                        "'dagSlutt' =>",
+                        "'timerFoert' =>",
+                        "mb_substr(trim($tittel), 0, 96)"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kalender-ark.js",
+                    "finnes": [
+                        "export const arkPaa=()=>brytere.kalenderark===true;",
+                        "export const skjulte=new Set(['brenning']);",
+                        "{til:'okt',oktId:id,tekst:v.tekst,ogsaaSms:'nei'}",
+                        "{handling:'meld-alle',oktId:id}",
+                        "{handling:'gi-plass',id:w.id,oktId:id}",
+                        "if(!Object.keys(endret).length)throw Error('Ingenting å endre.');",
+                        "else if(betalt&&(nyttAntall||nyRabatt))endret.belop=fra.belop;",
+                        "submitLabel:`Send til ${betalte()} betalte`",
+                        "sl=minutter(e.dagSlutt||e.slutt)",
+                        "får beskjed om plassen.",
+                        "'Hele kursoppsettet (navn, pris, tekst, bilder)','#kurs'",
+                        "field('kode','Gavekortkode')",
+                        "const betalt=p.status!=='Ikke betalt';"
+                    ],
+                    "ikkeFinnes": [
+                        "submitLabel:`Send til ${deltakere.length}`",
+                        "help:'Tomt felt regner beløpet ut av pris, antall og rabatt.'"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kalender.js",
+                    "finnes": [
+                        "function eventDetails(e){if(arkPaa()){if(e.sammen)return tiderArk(e,eventDetails);if(erOkt(e))return oktArk(e,",
+                        "const type=arkPaa()?typeKnapper(()=>draw()):el('select',{'aria-label':'Hendelsestype'",
+                        "const matches=arkPaa()?slaaSammen(treff):treff;"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kalender-pc.js",
+                    "finnes": [
+                        "const b=brikkeGrunn(e,apne,plass);if(!arkPaa())return b;",
+                        "if(arkPaa()&&e.sammen)return sammenBrikke(e,apne,plass);",
+                        "let sl=minutter(e.dagSlutt||e.slutt);"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kalender.js",
+                    "finnes": [
+                        "settBrytere(data.brytere,data.kursholdere);if(erSmal())return calendar();"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kalender-mobil.js",
+                    "finnes": [
+                        "const timekort=e=>{if(!arkPaa())return timekortGrunn(e);",
+                        "function treff(e){if(arkPaa()?!synligType(e):(typer.size&&!typer.has(e.type)))return false;",
+                        "merker(e),initialer(e)",
+                        "const sd=e.dagSlutt||e.slutt;let sl=sd?minutter(sd):s+60;"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kalender.css",
+                    "finnes": [
+                        ".kal-t-kurs{--kal-bg:var(--lissom-yellow);--kal-fg:var(--lissom-brown)}",
+                        ".kal-t-event{--kal-bg:#a8512e;--kal-fg:#fff8f0}",
+                        ".kal-t-pop{--kal-bg:#4f716c;--kal-fg:#f6fbfa}",
+                        ".kal-meny button{border:0;background:none;text-align:left;min-height:44px;",
+                        "flex-wrap:nowrap;gap:4px;margin-top:6px;overflow-x:auto"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/innhold-og-kurs.js",
+                    "finnes": [
+                        "['Vis/kalenderark','Kalenderen: økt-ark, farger og merker',false]"
+                    ]
+                },
+                {
+                    "fil": "tests/nyadmin-kalender-ark.mjs",
+                    "finnes": [
+                        "av: det gamle hendelsesarket",
+                        "beskjeden går som e-post, ikke SMS (fanget)",
+                        "ingen varsler lagt i kø",
+                        "uten endring sendes ingenting",
+                        "betalt: beløpet er uendret",
+                        "gavekortet er trukket 500 kr",
+                        "Ta betalt: kontant 500 kr er ført",
+                        "Avbestill: Ola er avbestilt",
+                        "Bytt dato: Per står på den nye datoen",
+                        "390: menyvalgene er minst 44 px",
+                        "390: fanene står på én linje",
+                        "390: initialene på kortet",
+                        "for lite saldo: saldoen står",
+                        "Ta betalt to ganger: nektet",
+                        "gavekortplass: avbestilling nektet",
+                        "Møtte ikke + nytt antall: beløpet står",
+                        "bare rabatt: 800 kr",
+                        "betalt + nytt beløp: 450 kr gjelder"
+                    ]
+                },
+                {
+                    "fil": "tests/nettleser/kjor.sh",
+                    "finnes": [
+                        "nyadmin-kalender-pc nyadmin-kalender-ark"
                     ]
                 }
             ]

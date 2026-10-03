@@ -1,0 +1,154 @@
+/* Lissom-drakten: fargene og avstandene fra ds-colors.css og ds-spacing.css (K3). */
+@import url("/ds-colors.css");
+@import url("/ds-spacing.css");
+/* Kalenderen i arbeidsrommet (#kalender). Flyttet uendret fra design.css (K0, 2. oktober 2026). */
+.calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:9px}.day{border:1px solid var(--line);background:var(--paper);border-radius:12px;min-height:160px;padding:10px;min-width:0}.day.today{border:2px solid #a2502b}.day h3{font-family:'Alegreya Sans',sans-serif;font-size:16px;letter-spacing:0;text-transform:capitalize}.event{width:100%;text-align:left;display:block;background:var(--ground);border:0;border-left:3px solid #a2502b;border-radius:7px;padding:9px;margin:8px 0;overflow-wrap:anywhere;font-size:15px}.event strong,.event span{display:block}.event.cancelled{opacity:.65;border-color:var(--red)}.calendar.single{grid-template-columns:1fr}
+@media(min-width:1500px){.day{min-height:190px}}
+@media(max-width:760px){.calendar{grid-template-columns:1fr}.calendar .day{min-height:0;padding:15px}.calendar .day.blank{display:none}.event{padding:13px;font-size:17px}}
+/* ── Kalenderen på mobil (K3, 2. oktober 2026). Bare tegnet på smal skjerm av kalender-mobil.js. ──
+   Alt som kan trykkes er minst 44 px. Pilleknapper som resten av drakten. */
+.kalm{display:grid;gap:var(--space-3)}
+.kalm .kalm-hode{margin-bottom:var(--space-1)}
+.kalm .kalm-hode .muted:empty,.kalm .kalm-hode .actions:empty{display:none}
+.kalm-naboks{display:contents}
+.kalm-na{display:grid;gap:2px;width:100%;min-height:44px;text-align:left;justify-content:stretch;align-items:start;padding:var(--space-4);border-radius:16px;border:1px solid var(--border-subtle,var(--clay-200));background:var(--surface-card,#fff);color:var(--text-heading,var(--lissom-brown));font-weight:400}
+.kalm-na.gaar{background:var(--lissom-brown);border-color:var(--lissom-brown);color:var(--clay-100)}
+.kalm-na-e{font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--terracotta-600)}
+.kalm-na.gaar .kalm-na-e{color:var(--lissom-yellow)}
+.kalm-na-h{font-family:Bitter,Georgia,serif;font-size:21px;font-weight:800;letter-spacing:-.02em;margin:3px 0 1px;overflow-wrap:anywhere}
+.kalm-na.gaar .kalm-na-h{color:var(--clay-50)}
+.kalm-na-p{font-size:15px;color:var(--clay-600)}
+.kalm-na.gaar .kalm-na-p{color:rgba(244,235,222,.78)}
+.kalm-na-bar{display:block;height:6px;border-radius:99px;background:var(--clay-200);margin:var(--space-2) 0 var(--space-1);overflow:hidden}
+.kalm-na.gaar .kalm-na-bar{background:rgba(244,235,222,.18)}
+.kalm-na-bar>span{display:block;height:100%;border-radius:99px;background:var(--lissom-yellow)}
+.kalm-styr{display:flex;align-items:center;gap:var(--space-2);margin-top:var(--space-2)}
+.kalm-seg{display:flex;flex:1;min-width:0;padding:3px;gap:2px;border-radius:999px;background:var(--clay-100);border:1px solid var(--clay-200)}
+.kalm-seg .kalm-pille{flex:1;border:0;background:transparent;padding:0 var(--space-2)}
+.kalm-seg .kalm-pille[aria-pressed=true]{background:var(--lissom-brown);color:var(--clay-50)}
+.kalm .kalm-pille{min-height:44px;min-width:44px;border-radius:999px;padding:0 var(--space-4);font-size:16px;white-space:nowrap}
+.kalm .kalm-typer .kalm-pille[aria-pressed=true]{background:var(--lissom-yellow);border-color:var(--lissom-yellow)}
+.kalm-ikon{position:relative;width:44px;min-width:44px;height:44px;padding:0;border-radius:999px}
+.kalm-ikon.aktiv::after{content:"";position:absolute;top:8px;right:8px;width:9px;height:9px;border-radius:50%;background:var(--terracotta-600)}
+.kalm-panel{display:grid;gap:var(--space-2);padding:var(--space-3);border-radius:16px;background:var(--surface-card,#fff);border:1px solid var(--clay-200)}
+.kalm-panel[hidden]{display:none}
+.kalm-panel input{min-height:44px;width:100%;border:1px solid var(--clay-200);border-radius:12px;background:var(--clay-100);padding:var(--space-2) var(--space-3)}
+.kalm-typer{display:flex;flex-wrap:wrap;gap:var(--space-2)}
+.kalm-innhold{display:grid;gap:var(--space-3)}
+.kalm-mnd{margin:var(--space-1) 0 0;font-size:14px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--clay-600)}
+.kalm-uke,.kalm-mnd-rute{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;touch-action:pan-y;transition:transform .18s ease}
+.kalm-ukedag,.kalm-celle{display:grid;justify-items:center;align-content:center;gap:1px;min-width:0;min-height:62px;padding:6px 0;border-radius:14px;border:1px solid transparent;background:transparent;font-weight:400}
+.kalm-celle{min-height:48px;padding:4px 0}
+.kalm-ukedag i,.kalm-celle i{font-style:normal;font-size:13px;color:var(--clay-600);text-transform:lowercase}
+.kalm-celle i{display:none}
+.kalm-ukedag b,.kalm-celle b{font-size:18px;font-weight:700}
+.kalm-ukedag.idag,.kalm-celle.idag{border-color:var(--terracotta-600)}
+.kalm-ukedag[aria-pressed=true],.kalm-celle[aria-pressed=true]{background:var(--lissom-brown);border-color:var(--lissom-brown);color:var(--clay-50)}
+.kalm-ukedag[aria-pressed=true] i{color:var(--clay-200)}
+.kalm-prikk{width:6px;height:6px;border-radius:50%;background:var(--terracotta-600)}
+.kalm-prikk.tom{visibility:hidden}
+[aria-pressed=true]>.kalm-prikk{background:var(--lissom-yellow)}
+.kalm-dag{display:grid;gap:var(--space-2)}
+.kalm-dag h2,.kalm-dag h3{margin:var(--space-2) 0 0;font-size:19px}
+.kalm-dag>p{margin:0}
+.kalm-kort{display:flex;align-items:flex-start;justify-content:flex-start;gap:var(--space-3);width:100%;min-height:56px;padding:var(--space-3) var(--space-4);text-align:left;border-radius:14px;border:1px solid var(--clay-200);border-left:4px solid var(--terracotta-600);background:var(--surface-card,#fff);font-weight:400}
+.kalm-kort.avlyst{opacity:.65;border-left-color:var(--red)}
+.kalm-tid{display:grid;flex:0 0 48px}
+.kalm-tid b{font-size:16px}
+.kalm-tid small{font-size:14px}
+.kalm-hva{display:grid;min-width:0;gap:2px}
+.kalm-hva strong{overflow-wrap:anywhere}
+.kalm-hva small{font-size:15px}
+.kalm-handlinger{display:flex;flex-wrap:wrap;gap:var(--space-2);margin-top:var(--space-4)}
+.kalm-handlinger .button{border-radius:999px}
+/* PC-kalenderen (K4, 2. oktober 2026): segmentpille, uke med tidsakse og dag med én kolonne per kursholder (kalender-pc.js). Bare bred skjerm. */
+.kp-segment{display:inline-flex;gap:4px;padding:4px;border:1px solid var(--line);border-radius:999px;background:var(--paper)}.kp-seg{border:0;background:transparent;border-radius:999px;min-height:36px;padding:6px 18px;font-weight:600}.kp-seg[aria-pressed=true]{background:var(--ink);color:var(--paper)}
+.kp-dagtittel{display:flex;align-items:center;gap:12px;margin:0 0 12px}.kp-dagtittel h3{font-family:'Alegreya Sans',sans-serif;font-size:19px;letter-spacing:0;margin:0}.kp-dagtittel h3::first-letter,.kp[data-visning=uke] .kp-kolhode h3::first-letter{text-transform:uppercase}.kp-dagtittel.today h3{color:#a2502b}
+.kp-tavle{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}.kp-hode,.kp-kropp{display:grid;grid-template-columns:58px repeat(var(--kp-n),minmax(0,1fr))}
+.kp-hode{background:var(--ground);border-bottom:1px solid var(--line)}.kp-kolhode{padding:10px 8px;min-width:0;border-left:1px solid var(--line)}.kp-kolhode.today{box-shadow:inset 0 -3px 0 #a2502b}.kp-kolhode h3{font-family:'Alegreya Sans',sans-serif;font-size:16px;letter-spacing:0;margin:0;overflow-wrap:anywhere}.kp-kolhode .badge{margin-top:4px}.kp-kolhode .kp-brikke.event{margin:6px 0 0}
+.kp-akse{position:relative}.kp-akse span{position:absolute;right:8px;font-size:13px;color:var(--muted);transform:translateY(-50%)}.kp-akse span.forst{transform:translateY(3px)}
+.kp-kol{position:relative;min-width:0;border-left:1px solid var(--line)}.kp-kol.today{background:#ffcf3812}.kp-celle{height:26px;border-top:1px solid var(--line)}.kp-celle:first-child{border-top:0}.kp-celle[data-akse$=":30"]{border-top:1px dashed #e5d7c699}
+.kp-brikke.event{position:absolute;display:flex;flex-direction:column;justify-content:flex-start;margin:0;padding:4px 7px;font-size:14px;line-height:1.25;overflow:hidden;z-index:1;box-shadow:0 1px 3px #4d1d1218}.kp-kolhode .kp-brikke.event{position:static;width:100%}.kp-brikke small{font-size:13px}.kp-brikke>*{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal;max-width:100%}.kp-brikke:hover,.kp-brikke:focus-visible{z-index:3;box-shadow:0 4px 14px #4d1d1230}.kp-brikke[data-låst]{border-left-style:dashed}
+/* Dagsvisningen: notater og annet uten kursholder som ikke er kurs, ligger som bånd over alle kolonnene (som i gamle admin). Laget begynner der kolonnene begynner, etter tidsaksen. */
+.kp-kropp{position:relative}.kp-baandlag{position:absolute;top:0;left:58px;right:0;pointer-events:none;z-index:2}.kp-baandlag .kp-brikke.event{pointer-events:auto}.kp-baandtopp{display:grid;gap:6px;margin:0 0 12px}.kp-baandtopp .kp-brikke.event{position:static;width:100%}
+/* Lave brikker (under 40 px): tid og tittel på én linje, med ellipse. */
+.kp-brikke.event.kp-lav{flex-direction:row;align-items:center;gap:6px;padding:0 7px;white-space:nowrap}.kp-lav>small{flex:none}.kp-lav>strong{flex:1;min-width:0}
+/* ── Bølge 1 (3. oktober 2026), bare når bryteren «Vis/kalenderark» er på (kalender-ark.js) ──
+   Fargekoder per type som klTypeInfo i gamle admin: kurs gul, event terrakotta, Paint on Pots slip, brenning brun, verksted leire, notat grønn. */
+.kal-t-kurs{--kal-bg:var(--lissom-yellow);--kal-fg:var(--lissom-brown)}
+.kal-t-event{--kal-bg:#a8512e;--kal-fg:#fff8f0}
+.kal-t-pop{--kal-bg:#4f716c;--kal-fg:#f6fbfa}
+.kal-t-brenning{--kal-bg:var(--lissom-brown);--kal-fg:var(--clay-50)}
+.kal-t-verksted{--kal-bg:var(--clay-200);--kal-fg:var(--text-heading,var(--lissom-brown))}
+.kal-t-notat{--kal-bg:var(--sage-100);--kal-fg:var(--sage-600);--kal-kant:var(--sage-500)}
+.event[class*=" kal-t-"]{background:var(--kal-bg);color:var(--kal-fg);border-left-color:var(--kal-kant,var(--kal-fg))}
+.event.kal-t-notat{border:1.5px solid var(--kal-kant)}
+.event[class*=" kal-t-"].cancelled{background-image:repeating-linear-gradient(135deg,#ffffff8c 0 6px,transparent 6px 12px);opacity:.75}
+.event[class*=" kal-t-"].cancelled strong{text-decoration:line-through}
+.kalm-kort[class*=" kal-t-"]{border-left-color:var(--kal-bg)}
+.kalm-kort.kal-t-verksted,.kalm-kort.kal-t-notat{border-left-color:var(--kal-kant,var(--clay-600))}
+.kal-prikk{display:inline-block;width:12px;height:12px;border-radius:4px;background:var(--kal-bg);border:1px solid var(--kal-kant,transparent);flex:none}
+/* Typeknappene: trykk på en farge for å vise eller skjule. */
+.kal-typer{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.kal-type{display:inline-flex;align-items:center;gap:6px;min-height:36px;border:1.5px solid var(--line);border-radius:999px;padding:3px 12px 3px 9px;background:var(--paper);font-size:15px;font-weight:700}
+.kal-type[aria-pressed=false]{opacity:.5;text-decoration:line-through}
+.kalm .kal-type{min-height:44px;font-size:16px}
+/* Merkene: plasser, betaling, nye og merknad. */
+.kal-merker{display:flex;flex-wrap:wrap;gap:3px;margin-top:4px;white-space:normal!important;overflow:visible!important}
+.kal-m{display:inline-flex;align-items:center;gap:4px;border-radius:99px;padding:1px 8px;font-size:12px;font-weight:700;line-height:1.5;white-space:nowrap;background:#ffffffc4;color:var(--ink)}
+.kal-m-ok{background:#dcebe1;color:var(--green)}
+.kal-m-skylder{background:#f6d9d3;color:var(--red)}
+.kal-m-ny{background:var(--ink);color:var(--yellow)}
+.kal-m-merk{background:#fff;color:var(--ink)}
+.kal-bilder{display:flex!important;margin-top:4px}
+.kal-bilder span{width:18px;height:18px;border-radius:50%;border:1.5px solid currentColor;background:var(--paper);color:var(--ink);font-size:9px;font-weight:800;display:grid;place-items:center;margin-right:-5px;flex:none}
+.kal-sum{display:block;font-size:12px;color:var(--muted);font-weight:500;letter-spacing:0;text-transform:none}
+.kp-kolhode.today .kal-sum{color:var(--ink)}
+.kalm-dag>.kal-sum{font-size:14px;margin-top:-4px}
+.kalm-merker{flex-direction:column;align-items:flex-end;margin:0 0 0 auto;flex:none;max-width:45%}.kalm-merker .kal-bilder{margin-right:5px}
+.kal-foert{margin:0;font-size:14px}
+/* Paint on Pots: tidene samme dag på én linje, «Vis tidene» åpner lista. */
+.kal-sammen{cursor:default}
+.kp-brikke.kal-sammen{height:auto}.kp-brikke.kal-sammen:has(.kal-tider:not([hidden])){z-index:4}
+.kal-vis-tider{margin-top:4px;min-height:32px;border:0;border-radius:9px;padding:3px 10px;background:#fff;color:var(--ink);font-size:13px;font-weight:700;align-self:flex-start}
+.kalm .kal-vis-tider{min-height:44px;font-size:15px}
+.kal-tider{display:grid;gap:3px;margin-top:4px}
+.kal-tider[hidden]{display:none}
+.kal-tid{min-height:30px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink);padding:2px 8px;text-align:left;font-size:13px;font-weight:700}
+.kalm .kal-tid,.sheet .kal-tid{min-height:44px;font-size:16px}
+/* Svevekortet på PC. */
+.kal-sveve{position:fixed;z-index:50;width:260px;background:var(--paper);border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 30px #4d1d1229;padding:10px 12px;font-size:14px;pointer-events:none}
+.kal-sveve h4{margin:0 0 4px;font-family:Bitter,Georgia,serif;font-size:16px}
+.kal-sveve ul{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:3px}
+.kal-sveve li{display:flex;justify-content:space-between;gap:6px}.kal-sveve li>span:first-child{display:inline-flex;gap:5px;align-items:center}
+/* Økt-arket. På PC står det til høyre, på mobil som før. */
+.kal-ark .sheet-head{margin-bottom:10px}
+.kal-ark-hode{display:grid;gap:6px;justify-items:start;padding-bottom:12px;border-bottom:1px solid var(--line);margin-bottom:14px}
+.kal-ark-hode p{margin:0}
+.kal-type-pille{background:var(--kal-bg);color:var(--kal-fg);font-size:13px;padding:2px 10px}
+.kal-faner{display:flex;flex-wrap:nowrap;gap:4px;margin-top:6px;overflow-x:auto;scrollbar-width:none;max-width:100%;justify-self:stretch}.kal-faner::-webkit-scrollbar{display:none}
+.kal-faner button{border:0;background:none;min-height:44px;padding:6px 12px;border-radius:9px;font-weight:700;white-space:nowrap;flex:none}
+.kal-faner button[aria-selected=true]{background:var(--ink);color:var(--paper)}
+.kal-panel{display:grid;gap:8px}
+.kal-delt{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 10px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:8px 10px;background:#fff}
+.kal-info{min-width:0}.kal-info b{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.kal-info small{color:var(--muted);font-size:14px;overflow-wrap:anywhere}
+.kal-rad{display:flex;gap:6px;align-items:center}
+.button.kal-liten{min-height:44px;padding:6px 12px}
+.button.kal-bred{width:100%}
+.kal-verktoy{display:grid;gap:8px}
+.kal-verktoy .button{justify-content:flex-start}
+.kal-skjema{display:grid;gap:10px;margin-bottom:14px}
+.kal-skjema label{display:grid;gap:4px;font-weight:700}
+.kal-skjema input,.kal-skjema select{min-height:44px;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:#fff}
+.kal-meny{position:fixed;z-index:5;display:grid;min-width:240px;padding:5px;background:var(--paper);border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 30px #4d1d1229}
+.kal-meny button{border:0;background:none;text-align:left;min-height:44px;padding:8px 10px;border-radius:8px;font-weight:600}
+.kal-meny button:hover,.kal-meny button:focus-visible{background:var(--ground)}
+.kal-meny hr{border:0;border-top:1px solid var(--line);margin:4px 0;width:100%}
+.kal-rod{color:var(--red)}
+@media(min-width:761px){.sheet.kal-ark{margin:0 0 0 auto;width:min(480px,100%);height:100dvh;max-height:100dvh;border-radius:22px 0 0 22px}}
+@media(max-width:760px){.sheet.kal-ark{margin-bottom:0;width:100%;max-width:100%;border-radius:22px 22px 0 0}}
+/* Merkene inne i brikka: ikke blokk-linjer (.event span), og ingenting krymper bort. */
+.event .kal-merker{display:flex}.event .kal-m{display:inline-flex}.event .kal-bilder span{display:grid}
+.kp-brikke[class*=" kal-t-"]>*{flex:none}
+/* 390 px: fanene får plass på én linje; blir det for trangt, rulles de sidelengs. */
+@media(max-width:420px){.kal-faner button{padding:6px 8px;font-size:16px}}

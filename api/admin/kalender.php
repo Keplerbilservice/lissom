@@ -65,7 +65,7 @@ $iOslo = static function (string $utcTid, string $format) use ($oslo, $utc): str
 // ── Oektene ─────────────────────────────────────────────────────────────
 $harAuto   = DB::harKolonne('course_sessions', 'fra_apningstid');
 $harHolder = DB::harKolonne('course_sessions', 'kursholder_id');
-$holderKol = $harHolder ? ', h.navn AS holder' : ", '' AS holder";
+$holderKol = $harHolder ? ', h.navn AS holder, h.id AS holder_id' : ", '' AS holder, NULL AS holder_id";
 $autoKol   = ($harAuto ? ', cs.fra_apningstid' : ', 0 AS fra_apningstid')
 ;
 // Kolonna kom med oppdatering 137. Kjores den ikke, staar ingen dato som
@@ -440,6 +440,24 @@ $typeFor = static function (array $o): string {
     return 'kurs';
 };
 
+// ── Foerte timer per kursholder og dag ─────────────────────────────────
+//
+// Okt-arket (bolge 1) foerer timer med «hva» = kursets tittel. For aa
+// unngaa dobbeltfoering viser arket det som alt er foert samme dag for samme
+// kursholder og kurs. Bare lesing.
+$foert = [];
+if (DB::harTabell('kursholder_timer')) {
+    foreach (DB::alle(
+        'SELECT kursholder_id, dato, hva, SUM(timer) AS timer FROM kursholder_timer
+          WHERE dato >= :fra AND dato < :til GROUP BY kursholder_id, dato, hva',
+        ['fra' => substr($fra, 0, 10), 'til' => substr($til, 0, 10)]
+    ) as $t) {
+        $foert[(int) $t['kursholder_id'] . '|' . $t['dato'] . '|' . (string) $t['hva']] = (float) $t['timer'];
+    }
+}
+$foertFor = static fn(?int $holder, string $dato, string $tittel): float => $holder === null ? 0.0
+    : ($foert[$holder . '|' . $dato . '|' . mb_substr(trim($tittel), 0, 96)] ?? 0.0);
+
 $hendelser = [];
 foreach ($okter as $o) {
     $id  = (int) $o['id'];
@@ -549,6 +567,8 @@ foreach ($okter as $o) {
         'tittel' => (string) $o['tittel'],
         'type'   => $typeFor($o),
         'holder' => (string) ($o['holder'] ?? ''),
+        // Kursholderens id, saa dagsvisningen paa PC kobler kolonnene paa id, ikke navn.
+        'kursholderId' => isset($o['holder_id']) ? (int) $o['holder_id'] : null,
         'kap'    => (int) $o['kapasitet'],
         'pameldt'=> $pameldt,
         'deltakere' => $rader,
@@ -570,6 +590,17 @@ foreach ($okter as $o) {
         // kurset to ganger paa samme dag, var det ingenting som sa hvilken
         // av dem folk faktisk kunne booke. Naa sier linja fra.
         'publisert' => (string) ($o['kurs_status'] ?? 'publisert') === 'publisert',
+        // Sluttida for akkurat denne dagen. Paa dag 1 av et flerdagerskurs er
+        // «slutt» siste dags sluttid; arket regner timene av denne.
+        'dagSlutt' => (static function () use ($samlingKart, $id, $o, $iOslo): string {
+            foreach ($samlingKart[$id] ?? [] as $sa) {
+                if ((string) $sa['dato'] === $iOslo((string) $o['start_tid'], 'Y-m-d') && (string) $sa['til'] !== '') {
+                    return (string) $sa['til'];
+                }
+            }
+            return $o['slutt_tid'] !== null ? $iOslo((string) $o['slutt_tid'], 'H:i') : '';
+        })(),
+        'timerFoert' => $foertFor(isset($o['holder_id']) ? (int) $o['holder_id'] : null, $iOslo((string) $o['start_tid'], 'Y-m-d'), (string) $o['tittel']),
     ];
 
     // ── Dag to og tre ───────────────────────────────────────────────────
@@ -604,6 +635,9 @@ foreach ($okter as $o) {
             'samling'     => 'Samling ' . $sa['nummer'] . ' av ' . $antSaml,
             // Kort form til maanedsbrikka, der det er faa tegn aa ta av.
             'samlingKort' => $sa['nummer'] . ' av ' . $antSaml,
+            'dagSlutt'    => $sa['til'] !== '' ? (string) $sa['til']
+                           : ($o['slutt_tid'] !== null ? $iOslo((string) $o['slutt_tid'], 'H:i') : ''),
+            'timerFoert'  => $foertFor(isset($o['holder_id']) ? (int) $o['holder_id'] : null, (string) $sa['dato'], (string) $o['tittel']),
             'auto'    => false,
         ]);
     }
@@ -627,4 +661,16 @@ Svar::json([
         : [],
     'fra' => substr($fra, 0, 10),
     'til' => substr($til, 0, 10),
+    // Bryterne kalenderen tegner etter (B4, 3. oktober 2026). Leses fra
+    // content_blocks «Vis/<navn>» som app/lib/skisser.php. Mangler raden,
+    // er bryteren av: «kalenderark» = okt-arket, merkene og fargene (bolge 1).
+    // Av betyr at kalenderen er akkurat som foer.
+    'brytere' => (static function (): array {
+        $ut = [];
+        foreach (['kalenderark'] as $navn) {
+            $v = DB::verdi('SELECT verdi FROM content_blocks WHERE nokkel = :n', ['n' => 'Vis/' . $navn]);
+            $ut[$navn] = $v !== null && $v !== false && (string) $v === 'ja';
+        }
+        return $ut;
+    })(),
 ]);

@@ -345,6 +345,18 @@ $venteliste = (int) DB::verdi(
     "SELECT COUNT(*) FROM waitlist WHERE status IN ('venter', 'varslet')"
 );
 
+// --- Innboksen: kommentarer som venter paa svar (eieren, 3. oktober 2026) --
+//
+// Samme telling som «Venter på deg (n)» i innboksen: raden staar «venter» til
+// noen har svart eller trykket «Ferdig» (ikkeSvar). Uten migrasjon 250 er
+// tallet 0, og I dag viser ingenting.
+$innboksVenter = 0;
+try {
+    $innboksVenter = count(Kommentarsvar::ventende());
+} catch (Throwable $e) {
+    logg_feil('Kunne ikke telle innboksen', $e);
+}
+
 // --- Siste paameldinger ---------------------------------------------------
 $nyeste = DB::alle(
     "SELECT b.id, b.antall, b.status, b.belop_ore, b.created_at,
@@ -953,6 +965,7 @@ Svar::json([
           LIMIT 6"
     )),
     'venteliste' => $venteliste,
+    'innboksVenter' => $innboksVenter,
     // «Bestill mer» og «Lav aktivitet» (eieren, 28. september 2026). Bare
     // for verkstedet — se app/lib/lager.php og app/lib/aktivitet.php.
     'bestillMer'   => Lager::bestillMer(),

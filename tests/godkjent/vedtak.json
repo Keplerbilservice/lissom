@@ -3756,7 +3756,7 @@
         {
             "id": "ai-kommentarsvar",
             "dato": "2026-10-03",
-            "hva": "AI svarer på kommentarer (skisse JPBhkwBjN9aKWEDFWdR2Um): bare emoji/tagging/«dytt»/kort reaksjon → kommentaren likes; ros med ord → ett kort svar (1–2 setninger, du-form, høyst én emoji, ingen hashtags, aldri «Takk for din kommentar», aldri likt et nylig sendt svar); spørsmål, klager og negative → forslag som venter på Monica, ingenting sendes. Priser og datoer bare fra kurssiden og medlemskapene; ellers «Send oss en melding, så finner vi ut av det!». Høyst 20 i timen, siste 14 dager, aldri der noen alt har svart. AI nede: ingenting sendes, ingen faste svar, varsel i innboksen. Instagram-liker uten tillatelse: ingen reaksjon. Admin-UI bare i admin-ny (Innboks): pillen «Venter på deg (n)», merker, «Forslag fra AI», knappene Svar / Nytt forslag / Ikke svar.",
+            "hva": "AI svarer på kommentarer (skisse JPBhkwBjN9aKWEDFWdR2Um): bare emoji/tagging/«dytt»/kort reaksjon → kommentaren likes; ros med ord → ett kort svar (1–2 setninger, du-form, høyst én emoji, ingen hashtags, aldri «Takk for din kommentar», aldri likt et nylig sendt svar); spørsmål, klager og negative → forslag som venter på Monica, ingenting sendes. Priser og datoer bare fra kurssiden og medlemskapene; ellers «Send oss en melding, så finner vi ut av det!». Høyst 20 i timen, siste 14 dager, aldri der noen alt har svart. AI nede: ingenting sendes, ingen faste svar, varsel i innboksen. Instagram-liker uten tillatelse: ingen reaksjon. Admin-UI bare i admin-ny (Innboks): pillen «Venter på deg (n)», merker, «Forslag fra AI», knappene Svar / Nytt forslag / Ferdig (het «Ikke svar» til eieren 3. oktober 2026 ba om «Ferdig»).",
             "hvor": "app/lib/kommentarsvar.php, app/lib/meta.php (kandidater, likKommentar), bin/cron.php kommentarsvar (timeslinja anmeldelser, bryter Vis/autosvar), api/admin/meta.php (nyttForslag, ikkeSvar), admin-ny/marked.js inbox(), migrasjon 250",
             "kode": [
                 {
@@ -3821,7 +3821,7 @@
                         "badge('Svart')",
                         "el('span',{text:'Forslag fra AI'})",
                         "aiPaa?button('Nytt forslag',",
-                        "button('Ikke svar',",
+                        "button('Ferdig',",
                         "if(!await confirm('Publiser svar?',`Legg svaret ut på ${c.kanal}.`,'Publiser svar'))return;",
                         "text:'AI-svarene står stille: AI svarer ikke nå. Kommentarene venter til det virker igjen.'",
                         "aiPaa=r.autosvarPaa!==false;",
@@ -4597,6 +4597,52 @@
                         "Lurer du på noe? Skriv til oss, så svarer vi som regel samme dag.",
                         "Se kurs og datoer",
                         "Ta kontakt"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "admin-ny-stemple-markedsforing-verksted",
+            "dato": "2026-10-03",
+            "hva": "Eieren, 3. oktober 2026: (1) Admin-ny har «○  Stemple inn» / «●  Stemple ut» i toppen ved Administrator/Logg ut, også på mobil, for den innloggede. Samme endepunkt (/api/stempling.php) og tekster som topplinja i gamle admin; tittelen viser «Verkstedet er åpent · siden HH:MM». (2) «Markedsføring» er eget menypunkt mellom Innhold og Alle funksjoner (#marked) med SEO, GEO, Artikler, Referanser, Kursvelger, Videokurs, Mobilvisning og Tekstmaler. SEO og GEO står én gang — ikke i Innhold eller Alle funksjoner. (3) Innboks ligger ikke under Markedsføring, men blant Oppgaver på I dag, med rød pille «N ubesvarte i innboks» når kommentarer venter; hver kommentar har «Svar» og «Ferdig» (ikkeSvar) og forsvinner fra tellingen når den er håndtert. (4) Verksted har kortene Oppskrifter, Keramikk maler (#dokumenter) og Skisser; Skisser og Oppskrifter står ikke i Alle funksjoner. Ingen funksjon er fjernet; søket finner alt.",
+            "hvor": "Admin-ny › toppen, menyen, I dag, Markedsføring, Innboks, Verksted, Alle funksjoner",
+            "kode": [
+                {
+                    "fil": "admin-ny/app.js",
+                    "finnes": [
+                        "function stempleKnapp()",
+                        "fetch('/api/stempling.php'",
+                        "'●  Stemple ut':'○  Stemple inn'",
+                        "['marked','Markedsføring','✦'],['alle','Alle funksjoner','☷']",
+                        "' ubesvarte i innboks'",
+                        "['Innboks','innboks']"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/marked.js",
+                    "finnes": [
+                        "link('Referanser','#referanser')",
+                        "link('Tekstmaler','#maler')",
+                        "button('Ferdig',async()=>{"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/arbeidsoppgaver.js",
+                    "finnes": [
+                        "['Keramikk maler','#dokumenter','Åpnes her']",
+                        "['Skisser','/skisser.html'"
+                    ]
+                },
+                {
+                    "fil": "api/admin/oversikt.php",
+                    "finnes": [
+                        "'innboksVenter' => $innboksVenter"
+                    ]
+                },
+                {
+                    "fil": "tests/nettleser/kjor.sh",
+                    "finnes": [
+                        "nyadmin-stemple-meny"
                     ]
                 }
             ]

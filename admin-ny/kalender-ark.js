@@ -56,7 +56,9 @@ export function slaaSammen(hendelser){
  for(const e of hendelser){if(e.type==='pop'&&e.auto&&!e.avlyst){const n=`${e.dato}|${e.kursId}`;if(!grupper.has(n))grupper.set(n,[]);grupper.get(n).push(e);}}
  const samlet=new Map();
  for(const [n,l] of grupper){if(l.length<2)continue;const s=[...l].sort((a,b)=>String(a.tid).localeCompare(String(b.tid)));
-  samlet.set(n,{...s[0],id:`pop-${s[0].dato}-${s[0].kursId}`,oktId:0,tid:s[0].tid,slutt:s.reduce((m,x)=>String(x.slutt||x.tid)>m?String(x.slutt||x.tid):m,''),pameldt:s.reduce((a,x)=>a+(Number(x.pameldt)||0),0),kap:0,deltakere:s.flatMap(x=>x.deltakere||[]),venteliste:[],nye:s.reduce((a,x)=>a+(Number(x.nye)||0),0),sammen:s});}
+  // Gruppens siste sluttid gjelder både «slutt» og «dagSlutt» (PC-tegningen bruker dagSlutt først).
+  const sist=s.reduce((m,x)=>String(x.dagSlutt||x.slutt||x.tid)>m?String(x.dagSlutt||x.slutt||x.tid):m,'');
+  samlet.set(n,{...s[0],id:`pop-${s[0].dato}-${s[0].kursId}`,oktId:0,tid:s[0].tid,slutt:sist,dagSlutt:sist,pameldt:s.reduce((a,x)=>a+(Number(x.pameldt)||0),0),kap:0,deltakere:s.flatMap(x=>x.deltakere||[]),venteliste:[],nye:s.reduce((a,x)=>a+(Number(x.nye)||0),0),sammen:s});}
  const ut=[],brukt=new Set();
  for(const e of hendelser){const n=`${e.dato}|${e.kursId}`;if(e.type==='pop'&&e.auto&&!e.avlyst&&samlet.has(n)){if(!brukt.has(n)){brukt.add(n);ut.push(samlet.get(n));}continue;}ut.push(e);}
  return ut;

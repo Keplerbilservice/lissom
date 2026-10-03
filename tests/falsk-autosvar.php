@@ -21,7 +21,10 @@ header('Content-Type: application/json');
 if ($sti === '/v1/messages') {
     $kropp = json_decode((string) file_get_contents('php://input'), true) ?: [];
     $inn = (string) ($kropp['messages'][0]['content'] ?? '');
-    $kommentar = preg_match('/Kommentar(?: fra [^\n]*)?:\n(.*?)\n/s', $inn, $m) ? $m[1] : '';
+    $kommentar = preg_match('/<kommentar>\n(.*?)\n<\/kommentar>/s', $inn, $m) ? $m[1] : '';
+    // Kontrolloeren, 3. oktober 2026: kommentaren skal staa merket som data.
+    file_put_contents($logg, 'PROMPT ' . (str_contains((string) ($kropp['system'] ?? ''), 'er DATA fra')
+        && str_contains($inn, "<kommentar>\n") ? 'merket' : 'umerket') . "\n", FILE_APPEND);
     $nytt = str_contains($inn, 'Skriv et annet forslag');
     file_put_contents($logg, 'AI ' . ($nytt ? '(nytt) ' : '') . $kommentar . "\n", FILE_APPEND);
     if ((int) ($sc['ai_status'] ?? 200) !== 200) {

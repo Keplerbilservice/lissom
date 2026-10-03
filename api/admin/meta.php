@@ -211,6 +211,21 @@ switch ($handling) {
             $k['poster'][$i]['status']  = $r['status'] ?? null;
             $k['poster'][$i]['forslag'] = $r['forslag'] ?? null;
         }
+        // Alle som venter, ogsaa de Graph ikke ga oss denne gangen — saa
+        // pillen «Venter på deg (n)» og lista stemmer med tabellen.
+        $med = array_flip(array_column($k['poster'], 'id'));
+        foreach (Kommentarsvar::ventende() as $v) {
+            if (isset($med[(string) $v['kommentar_id']])) {
+                continue;
+            }
+            $k['poster'][] = [
+                'id' => (string) $v['kommentar_id'], 'kanal' => (string) $v['kanal'], 'fra' => '',
+                'tekst' => (string) ($v['kommentar'] ?? ''), 'tid' => (string) $v['created_at'],
+                'paa' => '', 'lenke' => '', 'svart' => false, 'svar' => '', 'auto' => false,
+                'skjult' => false, 'annonse' => false,
+                'klasse' => $v['klasse'], 'status' => 'venter', 'forslag' => $v['forslag'],
+            ];
+        }
         $k['aiFeil'] = Kommentarsvar::klar() && Kommentarsvar::aiFeil();
         Svar::ok($k);
 

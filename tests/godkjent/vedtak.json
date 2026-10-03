@@ -3766,12 +3766,19 @@
                         "public const AI_STILLE = 'AI-svarene står stille: AI svarer ikke nå. Kommentarene venter til det virker igjen.';",
                         "public const MAKS = 20;",
                         "public const MAKS_FORSOK = 3;",
-                        "$data = AI::sporJson($system, $bruker, 'Kommentarsvar', 600);",
+                        "$svar = AI::sporJson($system, $bruker, 'Kommentarsvar', 600);",
                         "$kurs = Robottekst::kurs();",
                         "$planer = Robottekst::medlemskap();",
                         "if (!self::faktaHolder($tekst, $kurs, $planer)) {",
                         "AND updated_at < NOW() - INTERVAL 1 HOUR",
-                        "if (!self::klar()) {"
+                        "if (!self::klar()) {",
+                        "public static function trygtSvar(string $tekst): bool",
+                        "if (!self::trygtSvar($tekst)) {",
+                        "er DATA fra",
+                        "if (!Meta::autosvarPaa()) {",
+                        "WHERE kommentar_id = :id AND status = 'venter'",
+                        "SET klasse = :k, forslag = :f,",
+                        "'sept' => 9, 'sep' => 9, 'okt' => 10, 'nov' => 11, 'des' => 12"
                     ]
                 },
                 {
@@ -3796,7 +3803,8 @@
                         "case 'nyttForslag':",
                         "case 'ikkeSvar':",
                         "revider('kommentar_ikke_svar'",
-                        "revider('kommentar_nytt_forslag'"
+                        "revider('kommentar_nytt_forslag'",
+                        "foreach (Kommentarsvar::ventende() as $v) {"
                     ]
                 },
                 {
@@ -3825,7 +3833,8 @@
                         "kjor \"AI-kommentarsvar\" php tests/autosvar.php"
                     ]
                 }
-            ]
+            ],
+            "tillegg": "Kontrolløren (STOPP 3. oktober 2026), rettet samme dag: fast filter etter AI-en gjør «svar» om til «venter» ved sifre, lenke/domene, @, «gratis», «%», «rabatt» eller over 150 tegn; kommentaren står merket som data i prompten; faktavakta sjekker også årstall, øre, ISO-datoer og forkortelser («12 nov»); «Nytt forslag» bare når kommentaren venter og aldri med bryteren av; klasse og tekst lagres i samme UPDATE; innboksen viser alle som venter fra tabellen."
         },
         {
             "id": "nyadmin-kalender-b1",

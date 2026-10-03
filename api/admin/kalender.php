@@ -667,7 +667,9 @@ Svar::json([
     // Av betyr at kalenderen er akkurat som foer.
     'brytere' => (static function (): array {
         $ut = [];
-        foreach (['kalenderark'] as $navn) {
+        // «kalendermeny» (resten av kalenderen etter skissen, 3. oktober 2026): hoeyreklikk-menyer,
+        // dra og slipp, sidelista, listevisning og dagsrapport; innsjekk skjult. Samme regel.
+        foreach (['kalenderark', 'kalendermeny'] as $navn) {
             $v = DB::verdi('SELECT verdi FROM content_blocks WHERE nokkel = :n', ['n' => 'Vis/' . $navn]);
             $ut[$navn] = $v !== null && $v !== false && (string) $v === 'ja';
         }

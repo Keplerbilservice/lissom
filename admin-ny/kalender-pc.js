@@ -14,9 +14,9 @@ const klokke=m=>`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padS
 // Slutt før start betyr at kurset går over midnatt (+24 t, som varighet() på mobil); i uke og dag vises det til dagens slutt.
 function tidsrom(e){const s=minutter(e.tid);if(s===null)return null;let sl=minutter(e.dagSlutt||e.slutt);if(sl===null||sl===s)sl=s+60;else if(sl<s)sl+=1440;return {s,sl:Math.min(1440,sl)};}
 
-// Segmentpille Dag · Uke · Måned. Valgt visning er den som står (uke når kalenderen åpnes).
-export function segment(modus,velg){
- const knapper=[['dag','Dag'],['uke','Uke'],['maaned','Måned']].map(([v,n])=>el('button',{type:'button',class:'kp-seg','data-modus':v,'aria-pressed':String(v===modus),text:n,onclick:()=>{knapper.forEach(k=>k.setAttribute('aria-pressed',String(k.dataset.modus===v)));velg(v);}}));
+// Segmentpille Dag · Uke · Måned (· Liste når bryteren «Vis/kalendermeny» er på). Valgt visning er den som står (uke når kalenderen åpnes).
+export function segment(modus,velg,medListe=false){
+ const knapper=[['dag','Dag'],['uke','Uke'],['maaned','Måned'],...(medListe?[['liste','Liste']]:[])].map(([v,n])=>el('button',{type:'button',class:'kp-seg','data-modus':v,'aria-pressed':String(v===modus),text:n,onclick:()=>{knapper.forEach(k=>k.setAttribute('aria-pressed',String(k.dataset.modus===v)));velg(v);}}));
  return el('div',{class:'kp-segment',role:'group','aria-label':'Kalendervisning'},knapper);
 }
 

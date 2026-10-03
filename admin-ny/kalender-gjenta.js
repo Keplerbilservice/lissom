@@ -27,18 +27,20 @@ const LENGDER=[['1','1 mnd'],['2','2 mnd'],['3','3 mnd'],['6','6 mnd'],['aar','U
 const OFTE=[['en','Én gang'],['uke','Hver uke'],['annen','Annenhver uke']];
 
 // courseId: kurset som foreslås (0 = ingen). dag: datoen som foreslås. o: {kursholdere, refresh}.
-export async function nyKursdatoGjenta(courseId,dag,o){
+// forslag (fra menyen og dra og slipp, kalender-meny.js): {fra, til, kursholderId, ofte}. Hvor lenge velges alltid selv.
+export async function nyKursdatoGjenta(courseId,dag,o,forslag={}){
  let kurs,stengte=[];
  try{kurs=(await api('kurs.php')).kurs||[];}catch(e){toast(e.message);return;}
  try{stengte=(await api('apningstider.php')).stengte||[];}catch{stengte=[];}
- let ofte='en',lengde='',bort=new Set();
+ let ofte=['en','uke','annen'].includes(forslag.ofte)?forslag.ofte:'en',lengde='',bort=new Set();
  const velg=(navn,valg,id)=>el('select',{'aria-label':navn,id},el('option',{value:'',text:navn,disabled:true,selected:true}),valg.map(([v,t])=>el('option',{value:String(v),text:t})));
  const kursFelt=velg('Kurs',kurs.map(k=>[k.id,k.tittel]));
  if(Number.isInteger(courseId)&&courseId>0&&kurs.some(k=>k.id===courseId))kursFelt.value=String(courseId);
  const holderFelt=velg('Kursholder',[...(o.kursholdere||[]).map(h=>[h.id,h.navn]),[0,'Ikke tildelt']]);
+ if(forslag.kursholderId!=null&&forslag.kursholderId!==''&&[...holderFelt.options].some(x=>x.value===String(forslag.kursholderId)&&!x.disabled))holderFelt.value=String(forslag.kursholderId);
  const datoFelt=el('input',{type:'date',value:dag,required:true,'aria-label':'Første dag'});
- const fraFelt=el('input',{type:'time',value:'18:00',required:true,'aria-label':'Starter kl.'});
- const tilFelt=el('input',{type:'time',value:'20:00',required:true,'aria-label':'Slutter kl.'});
+ const fraFelt=el('input',{type:'time',value:forslag.fra||'18:00',required:true,'aria-label':'Starter kl.'});
+ const tilFelt=el('input',{type:'time',value:forslag.til||'20:00',required:true,'aria-label':'Slutter kl.'});
  const tilDato=el('input',{type:'date','aria-label':'Siste dato'});
  const antall=el('input',{type:'number',min:1,max:60,step:1,inputmode:'numeric','aria-label':'Antall ganger'});
  const felt=(navn,input,klasse='')=>el('label',{class:`field ${klasse}`},el('span',{text:navn}),input);

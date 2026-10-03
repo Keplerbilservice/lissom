@@ -3354,7 +3354,7 @@
                     "fil": "admin-ny/kalender.js",
                     "finnes": [
                         "import {kalenderPc,segment,erBred} from './kalender-pc.js';",
-                        "const view=bred?segment(calendarMode,v=>{calendarMode=v;draw();}):el('select',",
+                        "const view=bred?segment(calendarMode,v=>{calendarMode=v;draw();},menyPaa()):el('select',",
                         "if(bred&&calendarMode!=='maaned'){const pc=kalenderPc(",
                         "let calendarDay=today(),calendarMode='uke'"
                     ]
@@ -3363,7 +3363,7 @@
                     "fil": "admin-ny/kalender-pc.js",
                     "finnes": [
                         "export const PC_BRED='(min-width:761px)';",
-                        "[['dag','Dag'],['uke','Uke'],['maaned','Måned']]",
+                        "[['dag','Dag'],['uke','Uke'],['maaned','Måned'],...(medListe?[['liste','Liste']]:[])]",
                         "role:'group','aria-label':'Kalendervisning'",
                         "'data-akse':klokke(fra+i*RAD_MIN),'data-kol':k.kol",
                         "if(laast)attr['data-låst']=true;",
@@ -3403,7 +3403,7 @@
                     "fil": "admin-ny/kalender.js",
                     "finnes": [
                         "import {kalenderMobil,erSmal,SMAL,valgtDag} from './kalender-mobil.js';",
-                        "async function calendar(){if(erSmal())return kalenderMobil({title,eventDetails,handlinger:[",
+                        "async function calendar(){if(erSmal())return kalenderMobil({title,eventDetails:e=>trykkMobil(e,eventDetails),varselkort:e=>varselkort(e,eventDetails),handlinger:[",
                         "button('Abonner på kalenderen',abonner)"
                     ]
                 },
@@ -3411,7 +3411,7 @@
                     "fil": "admin-ny/kalender-mobil.js",
                     "finnes": [
                         "export const SMAL='(max-width:760px)';",
-                        "export async function kalenderMobil({title,eventDetails,handlinger}){",
+                        "export async function kalenderMobil({title,eventDetails,handlinger,varselkort}){",
                         "kort(gaar,'Går nå','gaar')",
                         "kort(neste,'Neste','neste')",
                         "[['dag','Dag'],['uke','Uke'],['maaned','Måned']]",
@@ -3458,14 +3458,14 @@
                     "fil": "admin-ny/kalender.js",
                     "finnes": [
                         "import {kalenderMobil,erSmal,SMAL,valgtDag} from './kalender-mobil.js';",
-                        "async function calendar(){if(erSmal())return kalenderMobil({title,eventDetails,handlinger:[",
-                        ".then(m=>erSmal()?vist(m,true):calendar());",
-                        "if(erSmal())return calendar();const events=data.hendelser||[];",
+                        "async function calendar(){if(erSmal())return kalenderMobil({title,eventDetails:e=>trykkMobil(e,eventDetails),varselkort:e=>varselkort(e,eventDetails),handlinger:[",
+                        "return erSmal()?vist(m,true):calendar();});",
+                        "if(erSmal())return calendar();if(calendarMode==='liste'&&!menyPaa())calendarMode='uke';const events=data.hendelser||[];",
                         "matchMedia(SMAL).addEventListener('change',byttVisning);",
                         "if(document.querySelector('dialog[open]')){if(!ventendeBytte)ventendeBytte=setInterval(",
                         "button('Ny kursdato',()=>newDate(0,valgtDag()),'primary'),button('Nytt kalendernotat',()=>calendarNote({},valgtDag()))",
-                        "function calendarNote(e={},dag=calendarDay){",
-                        "async function newDate(courseId=0,dag=calendarDay){"
+                        "function calendarNote(e={},dag=calendarDay,fra=''){",
+                        "async function newDate(courseId=0,dag=calendarDay,forslag={}){"
                     ]
                 },
                 {
@@ -3857,7 +3857,7 @@
                     "fil": "api/admin/kalender.php",
                     "finnes": [
                         "'brytere' => (static function (): array {",
-                        "foreach (['kalenderark'] as $navn) {",
+                        "foreach (['kalenderark', 'kalendermeny'] as $navn) {",
                         "$ut[$navn] = $v !== null && $v !== false && (string) $v === 'ja';",
                         "'dagSlutt' =>",
                         "'timerFoert' =>",
@@ -3912,7 +3912,7 @@
                     "fil": "admin-ny/kalender-mobil.js",
                     "finnes": [
                         "const timekort=e=>{if(!arkPaa())return timekortGrunn(e);",
-                        "function treff(e){if(arkPaa()?!synligType(e):(typer.size&&!typer.has(e.type)))return false;",
+                        "if(arkPaa()?!synligType(e):(typer.size&&!typer.has(e.type)))return false;",
                         "merker(e),initialer(e)",
                         "const sd=e.dagSlutt||e.slutt;let sl=sd?minutter(sd):s+60;"
                     ]
@@ -4319,7 +4319,7 @@
                 {
                     "fil": "admin-ny/kalender.js",
                     "finnes": [
-                        "if(gjentaPaa())return nyKursdatoGjenta(courseId,dag,{kursholdere:kursholdere(),refresh});"
+                        "if(gjentaPaa())return nyKursdatoGjenta(courseId,dag,{kursholdere:kursholdere(),refresh},forslag);"
                     ]
                 },
                 {
@@ -4332,7 +4332,7 @@
                 {
                     "fil": "admin-ny/kalender-gjenta.js",
                     "finnes": [
-                        "let ofte='en',lengde='',bort=new Set();",
+                        "lengde='',bort=new Set();",
                         "['1','1 mnd'],['2','2 mnd'],['3','3 mnd'],['6','6 mnd'],['aar','Ut året'],['dato','Til dato'],['antall','Antall ganger']",
                         "handling:'nydatoer'",
                         "'Trykk på en dato for å ta den bort'"
@@ -4360,6 +4360,59 @@
                         "1280: stengt dag er overstrøket",
                         "1280: tre datoer etter at én er tatt bort",
                         "av: ingen dupliser"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "kalender-resten-meny",
+            "dato": "2026-10-03",
+            "hva": "Kalenderen, resten etter skissen lissom-kalender-skisse.html (hMeny, visMeny, tomPlassMeny, dagMeny, notatMeny, venteMeny, kursMeny, koblePC, flyttBekreft): høyreklikk-menyer på PC på økt, tom plass, dagens kolonnehode, notat, venteliste og kurs i sidelista, med bokstavtaster; på mobil åpner trykk på en økt eller et notat de samme valgene i et ark. Kopier/lim inn økt (lim inn = kurs.php nydato, med bekreftelse). Hurtigtaster N (ny kursdato), 1–4 (dag, uke, måned, liste), / (søk), Esc lukker. Dra og slipp på PC: flytt økt med bekreftelse «Flytte økta?», konfliktvarsel når kursholderen er opptatt, antall påmeldte og at de ikke får beskjed automatisk, og «Angre» i 6 s som flytter tilbake (kurs.php endredato, og dato for kursholder i dagsvisningen); kurs over flere dager flyttes med «Flytt tidspunkt». Kurs fra sidelista til dag/tid åpner Ny kursdato forhåndsutfylt; person fra ventelista inn på en økt = venteliste.php gi-plass med bekreftelse; deltaker (rundingen på brikka) til en annen økt = pamelding.php flytt med bekreftelse (deltakeren får e-post som før). Sidelista (Venteliste, Legg til deltaker, Dra inn kurs) kan skjules. Listevisning, kursholderfilter, dagsrapport (vis og last ned som CSV), mobil «+»-knapp og kort for avlyste og tynt besatte økter de neste sju dagene. Innsjekkene («N medlemmer innsjekket», type verksted) vises ikke når bryteren er på, som i gamle admin (eieren 3. oktober 2026: ingen medlemmer i kalenderen). Bak bryteren «Vis/kalendermeny» (content_blocks, mangler raden = av; Synlighet): av = kalenderen som før. Ingen nye endepunkter, ingen migrasjon, ingen nye kundetekster.",
+            "hvor": "admin-ny › Kalender (390 og 1280 px), admin-ny › Synlighet",
+            "kode": [
+                {
+                    "fil": "api/admin/kalender.php",
+                    "finnes": [
+                        "foreach (['kalenderark', 'kalendermeny'] as $navn) {"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kalender-ark.js",
+                    "finnes": [
+                        "export const menyPaa=()=>brytere.kalendermeny===true;",
+                        "export const skjultInnsjekk=e=>menyPaa()&&e.type==='verksted';"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kalender-meny.js",
+                    "finnes": [
+                        "export function hMeny(x,y,overskrift,valg){",
+                        "export async function flyttBekreft(e,dag,tid,kol){",
+                        "'Flytt likevel':'Ja, flytt økta'",
+                        "De får ikke beskjed automatisk.",
+                        "handling:'gi-plass'",
+                        "handling:'flytt'",
+                        "export async function dagsrapport(dag){",
+                        "{'1':'dag','2':'uke','3':'maaned','4':'liste'}"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kalender.js",
+                    "finnes": [
+                        "import {settKontekst,koblePC,merkDra,sideliste,sidelisteSkjult,byttSideliste,listeVisning,dagsrapport,trykkMobil,plussKnapp,varselkort} from './kalender-meny.js';"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/innhold-og-kurs.js",
+                    "finnes": [
+                        "['Vis/kalendermeny','Kalenderen: høyreklikk-menyer, dra og slipp, sideliste og dagsrapport',false]"
+                    ]
+                },
+                {
+                    "fil": "tests/nyadmin-kalender-meny.mjs",
+                    "finnes": [
+                        "1280 px: dra økt, konfliktvarsel, Flytt likevel og Angre",
+                        "390 px: varselkort, valgene i arket, + og innsjekk skjult"
                     ]
                 }
             ]

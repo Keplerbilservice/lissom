@@ -17,16 +17,20 @@ export const kursstartPaa=()=>brytere.kursstart3===true;
 export const kursholdere=()=>holdere;
 // «kalendergjenta» (bølge 3): «Ny kursdato» med gjentakelse og «Dupliser til neste uke» (kalender-gjenta.js).
 export const gjentaPaa=()=>brytere.kalendergjenta===true;
+// «kalendermeny» (resten av skissen): høyreklikk-menyer, dra og slipp, sidelista, liste, dagsrapport og stempling-stripa (kalender-meny.js).
+export const menyPaa=()=>brytere.kalendermeny===true;
 
 // ── Typene og fargene (som klTypeInfo i gamle admin) ────────────────
 export const TYPER=[['kurs','Kurs'],['event','Event'],['pop','Paint on Pots'],['brenning','Brenning'],['verksted','Verksted'],['notat','Notat']];
 // Brenning er skjult når kalenderen åpnes, som før. Valget huskes mellom oppfriskninger.
 export const skjulte=new Set(['brenning']);
 export const synligType=e=>!skjulte.has(e.type);
+// Bryteren «Vis/kalendermeny» på: innsjekkene («N medlemmer innsjekket», type verksted) vises ikke, som i gamle admin (eieren 3. oktober 2026).
+export const skjultInnsjekk=e=>menyPaa()&&e.type==='verksted';
 export const typeKlasse=e=>`kal-t-${TYPER.some(([t])=>t===e.type)?e.type:'kurs'}`;
 // Trykk på en farge viser eller skjuler typen. tegn: tegner kalenderen på nytt.
 export function typeKnapper(tegn,klasse=''){
- return el('div',{class:`kal-typer ${klasse}`,role:'group','aria-label':'Vis typer'},TYPER.map(([t,n])=>el('button',{type:'button',class:'kal-type','data-type':t,'aria-pressed':String(!skjulte.has(t)),onclick:ev=>{skjulte.has(t)?skjulte.delete(t):skjulte.add(t);ev.currentTarget.setAttribute('aria-pressed',String(!skjulte.has(t)));tegn();}},el('span',{class:`kal-prikk kal-t-${t}`,'aria-hidden':true}),n)));
+ return el('div',{class:`kal-typer ${klasse}`,role:'group','aria-label':'Vis typer'},TYPER.filter(([t])=>!(menyPaa()&&t==='verksted')).map(([t,n])=>el('button',{type:'button',class:'kal-type','data-type':t,'aria-pressed':String(!skjulte.has(t)),onclick:ev=>{skjulte.has(t)?skjulte.delete(t):skjulte.add(t);ev.currentTarget.setAttribute('aria-pressed',String(!skjulte.has(t)));tegn();}},el('span',{class:`kal-prikk kal-t-${t}`,'aria-hidden':true}),n)));
 }
 export const filterEndret=()=>!(skjulte.size===1&&skjulte.has('brenning'));
 
@@ -45,7 +49,8 @@ export function merker(e,{kort=false}={}){
 }
 export function initialer(e){
  const d=e.deltakere||[];if(!d.length)return null;
- return el('span',{class:'kal-bilder','aria-hidden':true},d.slice(0,5).map(p=>el('span',{text:(String(p.navn||'?').trim()[0]||'?').toLocaleUpperCase('nb-NO')})),d.length>5?el('span',{text:`+${d.length-5}`}):null);
+ // Bryteren «Vis/kalendermeny» på: rundingene kan dras til en annen økt (Bytt dato, kalender-meny.js).
+ return el('span',{class:'kal-bilder','aria-hidden':true},d.slice(0,5).map(p=>el('span',{text:(String(p.navn||'?').trim()[0]||'?').toLocaleUpperCase('nb-NO'),...(menyPaa()&&p.bookingId?{draggable:'true','data-booking':String(p.bookingId),'data-navn':p.navn,'data-antall':String(p.antall||1),title:p.navn}:{})})),d.length>5?el('span',{text:`+${d.length-5}`}):null);
 }
 // «2 økter · 17 påmeldt» for én dag: kurs, eventer og Paint on Pots som ikke er avlyst.
 export function dagSum(hendelser){
@@ -113,6 +118,8 @@ export function leggTilDeltaker(id,ferdig){form('Legg til deltaker',[field('navn
 export function oktArk(e,o){
  skjulSveve();
  const id=Number(e.oktId||e.id);const deltakere=e.deltakere||[];const vente=e.venteliste||[];
+ // o.fane: menyen (kalender-meny.js) åpner arket rett på en fane.
+ if(o.fane)arkFane=o.fane;
  if(!e.kap&&arkFane==='deltakere')arkFane='rediger';
  const panel=el('div',{class:'kal-panel',role:'tabpanel'});
  const faner=[['deltakere',`Deltakere (${deltakere.length})`],['venteliste','Venteliste'],['kursdagen','Kursdagen'],['rediger','Rediger']];

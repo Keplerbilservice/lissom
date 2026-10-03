@@ -199,3 +199,46 @@
 .kal-gj-datoer{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;max-height:180px;overflow:auto}
 .kal-gj-dato{min-height:44px;padding:4px 10px;border:1px solid var(--line);border-radius:999px;background:var(--paper);font-size:15px}
 .kal-gj-dato.kal-gj-av{text-decoration:line-through;opacity:.5}.kal-gj-dato:disabled{cursor:not-allowed}
+/* ── Resten av kalenderen (3. oktober 2026, kalender-meny.js). Bare når bryteren «Vis/kalendermeny» er på. ──
+   Høyreklikk-menyen med bokstavtaster, sidelista, dra og slipp, listevisning, dagsrapport og mobilens «+» og varselkort. */
+.kal-hlag{position:fixed;inset:0;z-index:60}
+.kal-slor{position:absolute;inset:0}
+.kal-hmeny{position:fixed;display:grid;min-width:250px;max-width:320px;max-height:calc(100dvh - 16px);overflow:auto;padding:5px;background:var(--paper);border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 30px #4d1d1229}
+.kal-hmeny-tittel{padding:6px 10px 4px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.kal-hmeny button{display:flex;justify-content:space-between;align-items:center;gap:12px;border:0;background:none;text-align:left;min-height:36px;padding:6px 10px;border-radius:8px;font-weight:600}
+.kal-hmeny button:hover,.kal-hmeny button:focus-visible{background:var(--ground)}
+.kal-hmeny kbd{font:inherit;font-size:12px;font-weight:700;min-width:22px;text-align:center;padding:1px 6px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--muted)}
+.kal-hmeny hr,.kal-valgliste hr{border:0;border-top:1px solid var(--line);margin:4px 0;width:100%}
+.kal-valgliste{display:grid;gap:6px}.kal-valgliste .button{justify-content:flex-start;width:100%}
+.kal-flate{display:grid;grid-template-columns:240px minmax(0,1fr);gap:16px;align-items:start}.kal-flate.uten-liste{grid-template-columns:minmax(0,1fr)}
+.kal-sideliste{display:grid;gap:12px;position:sticky;top:12px}
+.kal-boks{display:grid;gap:6px;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:12px}
+.kal-boks h3{display:flex;justify-content:space-between;align-items:center;font-family:'Alegreya Sans',sans-serif;font-size:16px;letter-spacing:0;margin:0}
+.kal-boks small{font-size:13px}
+.kal-teller{font-size:13px;font-weight:700;background:var(--ground);border-radius:99px;padding:0 8px}
+.kal-sl-liste{display:grid;gap:5px}
+.kal-dra,.kal-kursbrikke{display:flex;align-items:center;gap:8px;min-height:36px;padding:5px 9px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:grab;font-size:15px;overflow-wrap:anywhere}
+.kal-dra{flex-direction:column;align-items:flex-start;gap:0}.kal-dra small{color:var(--muted)}
+.kal-kursbrikke .kal-prikk{flex:none}
+.kp-brikke[draggable=true]{cursor:grab}.kal-bilder span[draggable=true]{cursor:grab}
+.kp-celle.kal-over{background:#ffcf3866;outline:2px dashed #a2502b;outline-offset:-2px}
+.kp-brikke.kal-slipp-over{outline:3px solid var(--green);outline-offset:1px}
+.kal-flate .kp-celle{cursor:pointer}
+.toast.kal-angre{display:flex;align-items:center;justify-content:space-between;gap:14px}
+.kal-angre-knapp{border:0;border-radius:9px;background:var(--yellow);color:var(--ink);font-weight:700;min-height:36px;padding:4px 14px}
+.kal-konflikt{margin:0 0 10px}.kal-paameldte{font-weight:700}
+.kal-liste{display:grid;gap:14px}.kal-liste section{display:grid;gap:6px}
+.kal-liste h3{font-family:'Alegreya Sans',sans-serif;font-size:18px;letter-spacing:0;margin:6px 0 0;text-transform:capitalize}
+.kal-liste h3 .kal-sum{display:inline;text-transform:none}
+.kal-lr{display:grid;grid-template-columns:120px minmax(0,1fr) auto;gap:10px;align-items:center;width:100%;min-height:44px;padding:8px 12px;text-align:left;border:1px solid var(--line);border-radius:12px;background:var(--paper);font-weight:400}
+.kal-lr-tid{justify-self:start;background:var(--kal-bg);color:var(--kal-fg)}
+.kal-lr-hva{display:grid;min-width:0}.kal-lr-hva small{font-size:14px}
+.kal-lr .kal-merker{margin:0}
+.kal-rapport section{border-bottom:1px solid var(--line);padding:8px 0}
+.kal-rapport h3{font-size:17px;margin:0 0 4px}.kal-rapport h3 small{font-family:'Alegreya Sans',sans-serif;font-size:14px;letter-spacing:0}
+.kal-rapport ul{margin:0;padding-left:18px;display:grid;gap:2px}.kal-rapport li{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.kal-obs{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;min-height:44px;padding:10px 14px;border-radius:14px;border:1px solid var(--line);text-align:left;font-weight:600}
+.kal-tynt{background:#ffcf3833}.kal-avl{background:#f6d9d3;color:var(--red)}
+.kal-pluss{position:fixed;right:18px;bottom:calc(96px + env(safe-area-inset-bottom));z-index:21;width:56px;height:56px;border-radius:50%;border:0;background:var(--yellow);color:var(--ink);font-size:30px;font-weight:700;line-height:1;box-shadow:0 6px 20px #4d1d1233}
+@media(min-width:761px){.kal-pluss{display:none}}
+@media(max-width:1100px){.kal-flate{grid-template-columns:200px minmax(0,1fr)}}

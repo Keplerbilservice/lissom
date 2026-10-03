@@ -4,7 +4,7 @@
 // Hele kortet åpner hendelsesarket som finnes fra før (eventDetails i kalender.js).
 // Ingen piler, ingen «Åpne»-knapper, ingenting valgt på forhånd i filteret.
 import {el,api,badge,today,date,iso,shift} from './ui.js';
-import {settBrytere,arkPaa,typeKnapper,synligType,filterEndret,slaaSammen,typeKlasse,merker,initialer,tidene,tiderTekst,dagSum} from './kalender-ark.js';
+import {settBrytere,arkPaa,menyPaa,skjultInnsjekk,typeKnapper,synligType,filterEndret,slaaSammen,typeKlasse,merker,initialer,tidene,tiderTekst,dagSum} from './kalender-ark.js';
 
 export const SMAL='(max-width:760px)';
 export const erSmal=()=>matchMedia(SMAL).matches;
@@ -43,7 +43,7 @@ async function lastet(ym){return maaneder.has(ym)?await maaneder.get(ym):{hendel
 async function alleLastet(){const ut=[],stengt={};for(const ym of maaneder.keys()){const d=await lastet(ym);ut.push(...d.hendelser);Object.assign(stengt,d.stengte);}return{hendelser:ut,stengte:stengt};}
 
 // Bryteren «Vis/kalenderark» på: typeknappene viser og skjuler (brenning skjult fra start). Av: typefilteret som før.
-function treff(e){if(arkPaa()?!synligType(e):(typer.size&&!typer.has(e.type)))return false;const ord=sok.toLocaleLowerCase('nb-NO').trim().split(/\s+/).filter(Boolean);const tekst=`${e.tittel} ${e.holder||''} ${(e.deltakere||[]).map(p=>p.navn).join(' ')}`.toLocaleLowerCase('nb-NO');return ord.every(w=>tekst.includes(w));}
+function treff(e){if(skjultInnsjekk(e))return false;if(arkPaa()?!synligType(e):(typer.size&&!typer.has(e.type)))return false;const ord=sok.toLocaleLowerCase('nb-NO').trim().split(/\s+/).filter(Boolean);const tekst=`${e.tittel} ${e.holder||''} ${(e.deltakere||[]).map(p=>p.navn).join(' ')}`.toLocaleLowerCase('nb-NO');return ord.every(w=>tekst.includes(w));}
 const sortert=l=>[...l].sort((a,b)=>String(a.tid).localeCompare(String(b.tid)));
 
 // Sveip sidelengs på et felt. touch-action:pan-y i stilen lar nettleseren rulle loddrett selv;
@@ -54,7 +54,8 @@ function sveip(node,bla){let x0=0,y0=0,dx=0,retning=null;
  const slipp=()=>{node.style.transition='';node.style.transform='';if(retning==='x'&&Math.abs(dx)>50)bla(dx<0?1:-1);retning=null;};
  node.addEventListener('touchend',slipp);node.addEventListener('touchcancel',()=>{dx=0;slipp();});}
 
-export async function kalenderMobil({title,eventDetails,handlinger}){
+// varselkort (bryteren «Vis/kalendermeny», kalender-meny.js): kort for avlyste og tynt besatte økter øverst.
+export async function kalenderMobil({title,eventDetails,handlinger,varselkort}){
  maaneder.clear();clearInterval(naTimer);
  const idag=today();
  // I går med: et kurs som startet i går kveld og går over midnatt, kan gå nå.
@@ -62,6 +63,7 @@ export async function kalenderMobil({title,eventDetails,handlinger}){
 
  // ── Går nå og Neste ────────────────────────────────────────────────
  const naBoks=el('div',{class:'kalm-naboks'});
+ const obsBoks=el('div',{class:'kalm-naboks'});
  async function oppdaterNa(){
   const idag=today(),n=naaMin();
   // Første kommende kurs i én måned. Månedene letes gjennom i rekkefølge fra i dag, så en måned som er lastet
@@ -95,7 +97,8 @@ export async function kalenderMobil({title,eventDetails,handlinger}){
  async function tegn(){
   const dager=modus==='maaned'?[valgt]:[mandag(valgt),shift(mandag(valgt),6)];
   try{await sikre(dager);}catch(e){innhold.replaceChildren(el('p',{class:'empty',text:e.message}));return;}
-  const {hendelser,stengte}=await alleLastet();const synlige=arkPaa()?slaaSammen(hendelser.filter(treff)):hendelser.filter(treff);
+  const {hendelser,stengte}=await alleLastet();
+  obsBoks.replaceChildren(...(menyPaa()&&varselkort?varselkort(hendelser.filter(e=>!skjultInnsjekk(e))):[]));const synlige=arkPaa()?slaaSammen(hendelser.filter(treff)):hendelser.filter(treff);
   const paaDag=d=>sortert(synlige.filter(e=>e.dato===d));
   velgDato.value=valgt;
   segment.replaceChildren(...[['dag','Dag'],['uke','Uke'],['maaned','Måned']].map(([v,t])=>el('button',{type:'button',class:'kalm-pille','aria-pressed':String(modus===v),text:t,onclick:()=>{modus=v;tegn();}})));
@@ -135,7 +138,7 @@ export async function kalenderMobil({title,eventDetails,handlinger}){
  await oppdaterNa();
 
  const rot=el('div',{class:'kalm'},hode,
-  naBoks,
+  naBoks,obsBoks,
   styring,panel,innhold,
   el('div',{class:'kalm-handlinger'},handlinger));
  naTimer=setInterval(()=>{if(!rot.isConnected){clearInterval(naTimer);return;}if(!document.hidden)oppdaterNa().catch(()=>{});},60000);

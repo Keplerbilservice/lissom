@@ -163,8 +163,8 @@ try{
   // Rediger: lenken til hele kursoppsettet.
   await A.click();await ark(p).waitFor();await ark(p).getByRole('tab',{name:'Rediger'}).click();
   assert.equal(await ark(p).getByRole('link',{name:'Hele kursoppsettet (navn, pris, tekst, bilder)'}).getAttribute('href'),'#kurs');await ark(p).locator('.close').click();await ark(p).waitFor({state:'detached'});
-  // Fargene fra skissen: event #c4623a.
-  assert.equal(await uke.locator('.kp-brikke',{hasText:`${s.tag} Bravo`}).evaluate(b=>getComputedStyle(b).backgroundColor),'rgb(196, 98, 58)','event #c4623a');
+  // Fargene (AA): event #a8512e.
+  assert.equal(await uke.locator('.kp-brikke',{hasText:`${s.tag} Bravo`}).evaluate(b=>getComputedStyle(b).backgroundColor),'rgb(168, 81, 46)','event #a8512e');
   // Timer for flerdagerskurs: hver dag sin varighet (dag 1 10–13 = 3 t, dag 2 10–12 = 2 t).
   for(const [dato,t] of [[s.d15,3],[s.d16,2]]){
    await p.getByLabel('Velg dato').fill(dato);const D=p.locator(`.kp-brikke`,{hasText:`${s.tag} Delta`}).filter({has:p.locator('small')});await D.first().waitFor();

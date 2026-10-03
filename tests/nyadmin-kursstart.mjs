@@ -164,6 +164,15 @@ try{
   assert.deepEqual(i.b.per.krav,[{status:'betalt',belop:50000}],'1280: QR-betalingen er betalt');
   assert.equal(i.b.per.status,'betalt','1280: Per er betalt');assert.equal(i.b.per.sum,50000);
   fixture('vipps',s,'CREATED','nei');
+  // Avbestilt mens QR-koden står oppe: «Påmeldingen er avbestilt.», aldri «Betalt», og vinduet lukker seg.
+  await rad(p,'Nils Utennummer').getByRole('button',{name:'Vis QR-kode'}).click();
+  const qn=qrVindu(p);await qn.waitFor();await qn.getByText('Venter på Vipps').waitFor();
+  fixture('avbestill',s,'nils');
+  await qn.getByText('Påmeldingen er avbestilt.',{exact:true}).waitFor({timeout:30000});
+  assert.equal(await qn.getByText('Betalt',{exact:true}).count(),0,'1280: avbestilt viser ikke «Betalt»');
+  await qn.waitFor({state:'detached',timeout:10000});
+  assert.equal(await rad(p,'Nils Utennummer').count(),0,'1280: Nils er borte fra lista');
+  assert.equal(se().b.nils.status,'avbestilt','1280: Nils er avbestilt, ikke betalt');
   // Sveip/tilbake-knappen: Tilbake er skjult på steg 1.
   assert.equal(await ks(p).locator('.ks-fot button',{hasText:'Tilbake'}).evaluate(b=>getComputedStyle(b).visibility),'hidden','1280: ingen Tilbake på steg 1');
   await ks(p).locator('.close').click();await ks(p).waitFor({state:'detached'});
@@ -184,7 +193,7 @@ try{
  }
  const slutt=se();
  assert.equal(slutt.varsler,0,'ingen e-post eller SMS lagt i kø');
- assert.equal(slutt.b.nils.krav.length,0,'Nils (uten mobil) fikk aldri krav');
+ assert.equal(slutt.b.nils.sum,0,'Nils (avbestilt) har ikke betalt noe');
  console.log('nyadmin-kursstart: OK (390 med berøring og 1280)');
 }finally{
  await browser.close();

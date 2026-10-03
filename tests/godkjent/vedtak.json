@@ -4043,7 +4043,7 @@
                 {
                     "fil": "admin-ny/innhold-og-kurs.js",
                     "finnes": [
-                        "['Vis/kursstart3','Start kurset i tre steg, med Vipps-krav',false]"
+                        "['Vis/kursstart3','Start kurset i tre steg, med QR-betaling',false]"
                     ]
                 },
                 {
@@ -4116,7 +4116,9 @@
                     "finnes": [
                         "$kropp['qrFormat'] = ['format' => 'IMAGE/SVG+XML'];",
                         "$kropp['customerInteraction'] = 'CUSTOMER_PRESENT';",
-                        "public static function qrBilde(string $url): string"
+                        "public static function qrBilde(string $url): string",
+                        "foreach (['vipps.no', 'vippsmobilepay.com'] as $domene) {",
+                        "if ($vert === $domene || str_ends_with($vert, '.' . $domene)) {"
                     ]
                 },
                 {
@@ -4135,7 +4137,8 @@
                         "text:'Vis QR-kode'",
                         "badge('Venter på Vipps','warn')",
                         "badge('Betalt','good')",
-                        "handling:'qr'"
+                        "handling:'qr'",
+                        "text:'Påmeldingen er avbestilt.'"
                     ],
                     "ikkeFinnes": [
                         "Send Vipps-krav'",
@@ -4151,7 +4154,8 @@
                         "sen skanning: ingen trekk, betalt sum = 500 kr (bare kontanten)",
                         "begge godkjent: bare QR-koden trekkes, kravet trekkes ikke",
                         "to ventende godkjent samtidig: ett trekk, den andre sluppet",
-                        "handling=krav avvises (409) med norsk tekst, ingen rad, ingen kall til Vipps"
+                        "handling=krav avvises (409) med norsk tekst, ingen rad, ingen kall til Vipps",
+                        "andre verter, http, bruker i adressen og annen port avvises før noe hentes"
                     ]
                 },
                 {
@@ -4161,7 +4165,14 @@
                         "390: dobbeltklikk gir én QR-betaling på 500 kr",
                         "390: QR-koden er stor (",
                         "1280: QR-betalingen er betalt",
+                        "1280: avbestilt viser ikke «Betalt»",
                         "av: QR nektes"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/innhold-og-kurs.js",
+                    "finnes": [
+                        "['Vis/kursstart3','Start kurset i tre steg, med QR-betaling',false]"
                     ]
                 }
             ]

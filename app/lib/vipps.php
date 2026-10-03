@@ -593,16 +593,28 @@ final class Vipps
      * ber om. Bildet hentes her og ikke i nettleseren: sikkerhetsregelen
      * (img-src i .htaccess) slipper ikke inn bilder fra andre verter.
      *
-     * Bare https (eller den lokale falske Vippsen i test), ingen omdirigering,
-     * og bare SVG eller PNG under 300 kB. Ingen nøkler sendes med.
+     * Bare https til Vipps sine egne verter (vipps.no, vippsmobilepay.com og
+     * underdomenene deres), eller den lokale falske Vippsen i test. Ingen
+     * omdirigering, og bare SVG eller PNG under 300 kB. Ingen nøkler sendes med.
      */
     public static function qrBilde(string $url): string
     {
         $url = trim($url);
         $lokal = str_starts_with(Config::vippsBase(), 'http://127.0.0.1:')
             && str_starts_with($url, Config::vippsBase() . '/');
-        if (!$lokal && !str_starts_with($url, 'https://')) {
-            throw new RuntimeException('QR-adressen fra Vipps er ikke https.');
+        if (!$lokal) {
+            $d = parse_url($url);
+            $vert = strtolower((string) ($d['host'] ?? ''));
+            $tillatt = false;
+            foreach (['vipps.no', 'vippsmobilepay.com'] as $domene) {
+                if ($vert === $domene || str_ends_with($vert, '.' . $domene)) {
+                    $tillatt = true;
+                }
+            }
+            if (($d['scheme'] ?? '') !== 'https' || !$tillatt || isset($d['user']) || isset($d['pass'])
+                || (isset($d['port']) && (int) $d['port'] !== 443)) {
+                throw new RuntimeException('QR-adressen er ikke hos Vipps: ' . $vert);
+            }
         }
         $svar = http_kall($url, 'GET', null, ['Accept: image/svg+xml, image/png'], 15);
         $kropp = (string) $svar['kropp'];

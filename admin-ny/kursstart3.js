@@ -52,7 +52,9 @@ export async function startKurs(e,o){
   v.dlg.addEventListener('close',stopp);
   async function sjekk(){if(ferdig||lukket||!v.dlg.isConnected)return;await hent();if(ferdig)return;tegn();
    const n=d.deltakere.find(x=>x.bookingId===p.bookingId);
-   if(!n||n.status==='Betalt'||n.skyldigOre===0){stopp();tilstand.replaceChildren(badge('Betalt','good'));t=setTimeout(()=>{if(v.dlg.isConnected)v.close();},1500);return;}
+   // Borte fra lista = avbestilt mens koden sto oppe (lista tar ikke med avbestilte). Ikke «Betalt».
+   if(!n){stopp();tilstand.replaceChildren(el('p',{class:'muted',text:'Påmeldingen er avbestilt.'}));t=setTimeout(()=>{if(v.dlg.isConnected)v.close();},1500);return;}
+   if(n.status==='Betalt'||n.skyldigOre===0){stopp();tilstand.replaceChildren(badge('Betalt','good'));t=setTimeout(()=>{if(v.dlg.isConnected)v.close();},1500);return;}
    if(n.krav!=='venter'&&n.krav!=='opprettet'){stopp();tilstand.replaceChildren(el('p',{class:'muted',text:'QR-koden er utløpt. Trykk «Vis QR-kode» på nytt.'}));return;}
    t=setTimeout(sjekk,3000);}
   t=setTimeout(sjekk,3000);}

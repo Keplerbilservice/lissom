@@ -714,6 +714,22 @@ sjekk('tydelig norsk feil, ingen rad', str_contains($t, 'Fikk ikke laget QR-kode
 $stopp = $kontant($QN);
 sjekk('kontant virker etterpå: 500 kr', $stopp === null && $sum($QN) === 50000 && $bStatus($QN) === 'betalt', (string) $stopp);
 
+// ── (æ) QR-bildet hentes bare fra Vipps sine verter ─────────────────────
+echo "\n── (æ) QR-bildet bare fra vipps.no / vippsmobilepay.com ─────\n";
+$vertNei = static function (string $url): bool {
+    try { Vipps::qrBilde($url); return false; }
+    catch (RuntimeException $e) { return str_starts_with($e->getMessage(), 'QR-adressen er ikke hos Vipps'); }
+};
+$fra = $lengde();
+sjekk('andre verter, http, bruker i adressen og annen port avvises før noe hentes',
+    $vertNei('https://evil.example/qr.svg') && $vertNei('https://vipps.no.evil.example/qr.svg')
+    && $vertNei('https://evilvipps.no/qr.svg') && $vertNei('http://qr.vipps.no/qr.svg')
+    && $vertNei('https://x@qr.vipps.no/qr.svg') && $vertNei('https://qr.vipps.no:8443/qr.svg')
+    && $vertNei('http://127.0.0.2:8165/qr/x.svg'));
+// Vipps sine verter slipper gjennom vertssjekken (feiler så på nettet: adressene finnes ikke).
+sjekk('vipps.no, vippsmobilepay.com og underdomener slipper gjennom vertssjekken',
+    !$vertNei('https://finnes-ikke.lissomtest.vipps.no/qr.svg') && !$vertNei('https://finnes-ikke.lissomtest.vippsmobilepay.com/qr.svg'));
+
 $ferdig = true;
 echo "\n  $ok av " . ($ok + $feil) . " kursstart-krav-kontroller bestått\n";
 exit($feil === 0 ? 0 : 1);

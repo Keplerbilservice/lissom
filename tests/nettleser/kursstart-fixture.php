@@ -5,6 +5,7 @@
  *   php tests/nettleser/kursstart-fixture.php seed
  *   php tests/nettleser/kursstart-fixture.php bryter '<json fra seed>' ja|nei
  *   php tests/nettleser/kursstart-fixture.php vipps '<json fra seed>' <betaling-status> [ja|nei for 400 på krav og QR]
+ *   php tests/nettleser/kursstart-fixture.php avbestill '<json fra seed>' <navn, f.eks. nils>
  *   php tests/nettleser/kursstart-fixture.php inspect '<json fra seed>'
  *   php tests/nettleser/kursstart-fixture.php cleanup '<json fra seed>'
  *
@@ -86,6 +87,11 @@ if ($mode === 'vipps') {
     foreach (['.krav-400', '.qr-400'] as $n) {
         if (($argv[4] ?? 'nei') === 'ja') { file_put_contents($styrFil($n), 'ja'); } else { @unlink($styrFil($n)); }
     }
+    echo json_encode(['ok' => true]); exit;
+}
+if ($mode === 'avbestill') {
+    // Som en avbestilling fra et annet sted mens QR-koden står oppe.
+    DB::kjor("UPDATE bookings SET status = 'avbestilt' WHERE id = :i AND id IN ({$innB})", ['i' => (int) ($s['b'][$argv[3] ?? ''] ?? 0)]);
     echo json_encode(['ok' => true]); exit;
 }
 if ($mode === 'inspect') {

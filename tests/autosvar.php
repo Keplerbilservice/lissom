@@ -79,6 +79,8 @@ if (!Kommentarsvar::klar()) {
 }
 $rydd = static fn() => DB::kjor("DELETE FROM meta_kommentarer WHERE kommentar_id LIKE 'ak-%'");
 $rydd();
+// Ventende fra andre enn denne testen telles med i «igjen».
+$grunn = Kommentarsvar::antallVenter();
 
 $naa = gmdate('Y-m-d\TH:i:sO');
 $gammel = gmdate('Y-m-d\TH:i:sO', time() - 30 * 86400);
@@ -166,7 +168,7 @@ sjekk('kommentaren staar merket som data i hver prompt',
 sjekk('klasse og tekst lagret sammen (ingen svar/venter uten tekst)', (int) DB::verdi("SELECT COUNT(*) FROM meta_kommentarer
     WHERE kommentar_id LIKE 'ak-%' AND klasse IN ('svar', 'venter') AND (forslag IS NULL OR forslag = '')") === 0);
 sjekk('ingen reservasjon hengende igjen', (int) DB::verdi("SELECT COUNT(*) FROM meta_kommentarer WHERE kommentar_id LIKE 'ak-%' AND status = 'behandles'") === 0);
-sjekk('igjen = de som venter (4)', $r['igjen'] === 4, (string) $r['igjen']);
+sjekk('igjen = de som venter (4)', $r['igjen'] === $grunn + 4, (string) $r['igjen']);
 
 // ── Kjoering 2: ingen dobling, hengende reservasjon frigis ───────────
 $sc['ig'][] = $ig('ak-ig-heng', '😍👏');
@@ -229,7 +231,7 @@ $l = $linjer();
 sjekk('bryter av: ingen AI-kall', $ai($l) === []);
 sjekk('bryter av: ingenting sendt', $post($l) === []);
 sjekk('bryter av: ingen rad', $rad('ak-ig-av') === null);
-sjekk('bryter av: telles som ventende', $r['igjen'] === 5, (string) $r['igjen']);
+sjekk('bryter av: telles som ventende', $r['igjen'] === $grunn + 5, (string) $r['igjen']);
 
 // ── Instagram uten tillatelse til aa like ────────────────────────────
 $sc['ig_likes_forbidden'] = true;
@@ -248,7 +250,7 @@ $settSc();
 $r = Kommentarsvar::kjor(true);
 $l = $linjer();
 sjekk('20 per kjoering', count($ai($l)) === 20 && $r['liket'] === 20, count($ai($l)) . ' AI / ' . $r['liket'] . ' likt');
-sjekk('resten telles som ventende', $r['igjen'] === 4 + 5, (string) $r['igjen']);
+sjekk('resten telles som ventende', $r['igjen'] === $grunn + 4 + 5, (string) $r['igjen']);
 $r = Kommentarsvar::kjor(true);
 $l = $linjer();
 sjekk('neste kjoering tar de fem siste', count($ai($l)) === 5 && $r['liket'] === 5);
@@ -399,6 +401,18 @@ sjekk('innboksen (API): alle som venter i tabellen er med, ogsaa de Graph ikke g
     $svar['status'] === 200 && count($venterIApi) === Kommentarsvar::antallVenter()
     && in_array('ak-tabell', array_column($venterIApi, 'id'), true),
     $svar['status'] . ' / ' . count($venterIApi) . ' av ' . Kommentarsvar::antallVenter());
+// Bryteren av: innboksen skal skjule «Nytt forslag» og AI-varselet (brukertesten 3. oktober 2026).
+$settBryter('nei');
+$j = json_decode($somAdmin(['handling' => 'kommentarer'])['kropp'], true) ?: [];
+sjekk('innboksen (API): bryteren av sendes med (autosvarPaa = false)', ($j['autosvarPaa'] ?? null) === false);
+$settBryter('ja');
+$j = json_decode($somAdmin(['handling' => 'kommentarer'])['kropp'], true) ?: [];
+sjekk('innboksen (API): bryteren paa sendes med (autosvarPaa = true)', ($j['autosvarPaa'] ?? null) === true);
+$marked = (string) file_get_contents($rot . '/admin-ny/marked.js');
+sjekk('innboksen (admin-ny): «Nytt forslag» og AI-varselet bare med bryteren paa',
+    str_contains($marked, "aiPaa=r.autosvarPaa!==false;") && str_contains($marked, "aiPaa?button('Nytt forslag',")
+    && str_contains($marked, "aiPaa&&r.aiFeil?el('p'"));
+sjekk('innboksen (admin-ny): besvarte kort har ikke «Svar»', str_contains($marked, "answered?null:button('Svar',"));
 $svar = $somAdmin(['handling' => 'nyttForslag', 'id' => 'ak-ig-ros']);
 sjekk('API nyttForslag paa en som ikke venter: avvist (400), raden urort',
     $svar['status'] === 400 && ($rad('ak-ig-ros')['status'] ?? '') === 'svart', (string) $svar['status']);

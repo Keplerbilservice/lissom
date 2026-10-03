@@ -3808,7 +3808,8 @@
                         "case 'ikkeSvar':",
                         "revider('kommentar_ikke_svar'",
                         "revider('kommentar_nytt_forslag'",
-                        "foreach (Kommentarsvar::ventende() as $v) {"
+                        "foreach (Kommentarsvar::ventende() as $v) {",
+                        "$k['autosvarPaa'] = Meta::autosvarPaa();"
                     ]
                 },
                 {
@@ -3819,10 +3820,16 @@
                         "badge('Venter på deg','warn')",
                         "badge('Svart')",
                         "el('span',{text:'Forslag fra AI'})",
-                        "button('Nytt forslag',",
+                        "aiPaa?button('Nytt forslag',",
                         "button('Ikke svar',",
                         "if(!await confirm('Publiser svar?',`Legg svaret ut på ${c.kanal}.`,'Publiser svar'))return;",
-                        "text:'AI-svarene står stille: AI svarer ikke nå. Kommentarene venter til det virker igjen.'"
+                        "text:'AI-svarene står stille: AI svarer ikke nå. Kommentarene venter til det virker igjen.'",
+                        "aiPaa=r.autosvarPaa!==false;",
+                        "aiPaa&&r.aiFeil?el('p'",
+                        "answered?null:button('Svar',",
+                        "if(min<48*60)return 'for '+Math.round(min/60)+' timer siden';",
+                        "c.paa?'På: '+c.paa:''",
+                        "el('div',{class:'list'},el('div',{class:'grid'},card('Instagram'"
                     ]
                 },
                 {
@@ -3838,7 +3845,7 @@
                     ]
                 }
             ],
-            "tillegg": "Kontrolløren (STOPP 3. oktober 2026), rettet samme dag: fast filter etter AI-en gjør «svar» om til «venter» ved sifre, lenke/domene, @, «gratis», «%», «rabatt» eller over 150 tegn; kommentaren står merket som data i prompten; faktavakta sjekker også årstall, øre, ISO-datoer og forkortelser («12 nov»); «Nytt forslag» bare når kommentaren venter og aldri med bryteren av; klasse og tekst lagres i samme UPDATE; innboksen viser alle som venter fra tabellen. Andre runde (STOPP på f46328f), samme dag: filteret stopper alt som ligner en adresse uansett toppdomene (ord.ord, «lissom . no», «dot», «punktum»), koder med fire store bokstaver på rad og «kode/koden»; et tall ved «kr»/«,-» er pris, ikke årstall; ingenting sendes hvis raden er endret (f.eks. «Ikke svar») mens AI-en tenker."
+            "tillegg": "Kontrolløren (STOPP 3. oktober 2026), rettet samme dag: fast filter etter AI-en gjør «svar» om til «venter» ved sifre, lenke/domene, @, «gratis», «%», «rabatt» eller over 150 tegn; kommentaren står merket som data i prompten; faktavakta sjekker også årstall, øre, ISO-datoer og forkortelser («12 nov»); «Nytt forslag» bare når kommentaren venter og aldri med bryteren av; klasse og tekst lagres i samme UPDATE; innboksen viser alle som venter fra tabellen. Andre runde (STOPP på f46328f), samme dag: filteret stopper alt som ligner en adresse uansett toppdomene (ord.ord, «lissom . no», «dot», «punktum»), koder med fire store bokstaver på rad og «kode/koden»; et tall ved «kr»/«,-» er pris, ikke årstall; ingenting sendes hvis raden er endret (f.eks. «Ikke svar») mens AI-en tenker. Etter brukertesten (GULT på 460c37d), samme dag: kortene viser kanal, «for X timer siden» (samme regel som gamle admin) og «På: …»; besvarte kort har ikke «Svar» (bare «Skjul»), «♥ Liker»-kort beholder Svar og Skjul; luft over pillen; med bryteren av vises verken «Nytt forslag» eller AI-varselet."
         },
         {
             "id": "nyadmin-kalender-b1",

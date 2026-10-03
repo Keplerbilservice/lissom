@@ -227,6 +227,8 @@ switch ($handling) {
             ];
         }
         $k['aiFeil'] = Kommentarsvar::klar() && Kommentarsvar::aiFeil();
+        // Bryteren av: innboksen viser verken «Nytt forslag» eller AI-varselet.
+        $k['autosvarPaa'] = Meta::autosvarPaa();
         Svar::ok($k);
 
     // ---------------------------------------------------------------------

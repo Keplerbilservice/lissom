@@ -3741,6 +3741,87 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "nyadmin-kalender-b1",
+            "dato": "2026-10-03",
+            "hva": "Kalenderen i admin-ny, bølge 1 + B4 (eieren godkjente skissen lissom-kalender-skisse.html 3. oktober 2026; arkitektens plan). Alt står bak bryteren «Vis/kalenderark» (content_blocks, mangler raden = av; slås på under Synlighet). Av: kalenderen er uendret. På: fargekoder per type som klTypeInfo (kurs gul, event terrakotta, Paint on Pots slip, brenning brun, verksted leire, notat grønn), typeknapper som viser/skjuler (brenning skjult fra start), merker på kortene (påmeldt/plasser, «Alle betalt»/«N ubetalt», «+N nye», «✎ merknad», deltakerinitialer), svevekort på PC med deltakere og betaling, Paint on Pots-tider fra åpningstida slått sammen per dag med «Vis tidene» (ubookede kommer ikke fra kalender.php), «N økter · M påmeldt» i kolonnehodet. Økt-arket med fanene Deltakere / Venteliste / Kursdagen / Rediger og ⋯ per deltaker (Bytt dato = pamelding flytt, Send bekreftelse på nytt, Møtte ikke, Sperr kursbevis, Sett på venteliste, Rediger påmelding, Avbestill = fjern), Legg til deltaker (pamelding legg-til), Ta betalt (bookingPayments), Gi plass (venteliste gi-plass), Kursdagen: beskjed.php til=okt med ogsaaSms=nei (bare e-post), Meld keramikken klar (ferdigbrent meld-alle), Før timer (kursholdere timer), Last ned deltakerliste; Rediger: plasser (kurs.php plasser), kursholder (kurs.php dato), Flytt tidspunkt (moveDate/endredato), Vis som fullbooket (visFullt), Avlys/gjenopprett uten nytt varsel. B4: kalender.php sender brytere:{kalenderark:bool}. Ingen migrasjon, ingen nye endepunkter, ingen ny kundetekst.",
+            "hvor": "admin-ny › Kalender (#kalender) på 390 og 1280 px, admin-ny › Synlighet",
+            "kode": [
+                {
+                    "fil": "api/admin/kalender.php",
+                    "finnes": [
+                        "'brytere' => (static function (): array {",
+                        "foreach (['kalenderark'] as $navn) {",
+                        "$ut[$navn] = $v !== null && $v !== false && (string) $v === 'ja';"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kalender-ark.js",
+                    "finnes": [
+                        "export const arkPaa=()=>brytere.kalenderark===true;",
+                        "export const skjulte=new Set(['brenning']);",
+                        "{til:'okt',oktId:id,tekst:v.tekst,ogsaaSms:'nei'}",
+                        "{handling:'meld-alle',oktId:id}",
+                        "{handling:'gi-plass',id:w.id,oktId:id}"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kalender.js",
+                    "finnes": [
+                        "function eventDetails(e){if(arkPaa()){if(e.sammen)return tiderArk(e,eventDetails);if(erOkt(e))return oktArk(e,",
+                        "const type=arkPaa()?typeKnapper(()=>draw()):el('select',{'aria-label':'Hendelsestype'",
+                        "const matches=arkPaa()?slaaSammen(treff):treff;"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kalender-pc.js",
+                    "finnes": [
+                        "const b=brikkeGrunn(e,apne,plass);if(!arkPaa())return b;",
+                        "if(arkPaa()&&e.sammen)return sammenBrikke(e,apne,plass);"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kalender.js",
+                    "finnes": [
+                        "settBrytere(data.brytere,data.kursholdere);if(erSmal())return calendar();"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kalender-mobil.js",
+                    "finnes": [
+                        "const timekort=e=>{if(!arkPaa())return timekortGrunn(e);",
+                        "function treff(e){if(arkPaa()?!synligType(e):(typer.size&&!typer.has(e.type)))return false;"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kalender.css",
+                    "finnes": [
+                        ".kal-t-kurs{--kal-bg:var(--lissom-yellow);--kal-fg:var(--lissom-brown)}",
+                        ".kal-t-pop{--kal-bg:var(--slip-500);--kal-fg:var(--clay-50)}"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/innhold-og-kurs.js",
+                    "finnes": [
+                        "['Vis/kalenderark','Kalenderen: økt-ark, farger og merker',false]"
+                    ]
+                },
+                {
+                    "fil": "tests/nyadmin-kalender-ark.mjs",
+                    "finnes": [
+                        "av: det gamle hendelsesarket",
+                        "beskjeden går som e-post, ikke SMS (fanget)",
+                        "ingen varsler lagt i kø"
+                    ]
+                },
+                {
+                    "fil": "tests/nettleser/kjor.sh",
+                    "finnes": [
+                        "nyadmin-kalender-pc nyadmin-kalender-ark"
+                    ]
+                }
+            ]
         }
     ]
 }

@@ -73,3 +73,79 @@
 .kp-kropp{position:relative}.kp-baandlag{position:absolute;top:0;left:58px;right:0;pointer-events:none;z-index:2}.kp-baandlag .kp-brikke.event{pointer-events:auto}.kp-baandtopp{display:grid;gap:6px;margin:0 0 12px}.kp-baandtopp .kp-brikke.event{position:static;width:100%}
 /* Lave brikker (under 40 px): tid og tittel på én linje, med ellipse. */
 .kp-brikke.event.kp-lav{flex-direction:row;align-items:center;gap:6px;padding:0 7px;white-space:nowrap}.kp-lav>small{flex:none}.kp-lav>strong{flex:1;min-width:0}
+/* ── Bølge 1 (3. oktober 2026), bare når bryteren «Vis/kalenderark» er på (kalender-ark.js) ──
+   Fargekoder per type som klTypeInfo i gamle admin: kurs gul, event terrakotta, Paint on Pots slip, brenning brun, verksted leire, notat grønn. */
+.kal-t-kurs{--kal-bg:var(--lissom-yellow);--kal-fg:var(--lissom-brown)}
+.kal-t-event{--kal-bg:var(--terracotta-500);--kal-fg:var(--clay-50)}
+.kal-t-pop{--kal-bg:var(--slip-500);--kal-fg:var(--clay-50)}
+.kal-t-brenning{--kal-bg:var(--lissom-brown);--kal-fg:var(--clay-50)}
+.kal-t-verksted{--kal-bg:var(--clay-200);--kal-fg:var(--text-heading,var(--lissom-brown))}
+.kal-t-notat{--kal-bg:var(--sage-100);--kal-fg:var(--sage-600);--kal-kant:var(--sage-500)}
+.event[class*=" kal-t-"]{background:var(--kal-bg);color:var(--kal-fg);border-left-color:var(--kal-kant,var(--kal-fg))}
+.event.kal-t-notat{border:1.5px solid var(--kal-kant)}
+.event[class*=" kal-t-"].cancelled{background-image:repeating-linear-gradient(135deg,#ffffff8c 0 6px,transparent 6px 12px);opacity:.75}
+.event[class*=" kal-t-"].cancelled strong{text-decoration:line-through}
+.kalm-kort[class*=" kal-t-"]{border-left-color:var(--kal-bg)}
+.kalm-kort.kal-t-verksted,.kalm-kort.kal-t-notat{border-left-color:var(--kal-kant,var(--clay-600))}
+.kal-prikk{display:inline-block;width:12px;height:12px;border-radius:4px;background:var(--kal-bg);border:1px solid var(--kal-kant,transparent);flex:none}
+/* Typeknappene: trykk på en farge for å vise eller skjule. */
+.kal-typer{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.kal-type{display:inline-flex;align-items:center;gap:6px;min-height:36px;border:1.5px solid var(--line);border-radius:999px;padding:3px 12px 3px 9px;background:var(--paper);font-size:15px;font-weight:700}
+.kal-type[aria-pressed=false]{opacity:.5;text-decoration:line-through}
+.kalm .kal-type{min-height:44px;font-size:16px}
+/* Merkene: plasser, betaling, nye og merknad. */
+.kal-merker{display:flex;flex-wrap:wrap;gap:3px;margin-top:4px;white-space:normal!important;overflow:visible!important}
+.kal-m{display:inline-flex;align-items:center;gap:4px;border-radius:99px;padding:1px 8px;font-size:12px;font-weight:700;line-height:1.5;white-space:nowrap;background:#ffffffc4;color:var(--ink)}
+.kal-m-ok{background:#dcebe1;color:var(--green)}
+.kal-m-skylder{background:#f6d9d3;color:var(--red)}
+.kal-m-ny{background:var(--ink);color:var(--yellow)}
+.kal-m-merk{background:#fff;color:var(--ink)}
+.kal-bilder{display:flex!important;margin-top:4px}
+.kal-bilder span{width:18px;height:18px;border-radius:50%;border:1.5px solid currentColor;background:var(--paper);color:var(--ink);font-size:9px;font-weight:800;display:grid;place-items:center;margin-right:-5px;flex:none}
+.kal-sum{display:block;font-size:12px;color:var(--muted);font-weight:500;letter-spacing:0;text-transform:none}
+.kp-kolhode.today .kal-sum{color:var(--ink)}
+.kalm-dag>.kal-sum{font-size:14px;margin-top:-4px}
+.kalm-merker{flex-direction:column;align-items:flex-end;margin:0 0 0 auto;flex:none}
+/* Paint on Pots: tidene samme dag på én linje, «Vis tidene» åpner lista. */
+.kal-sammen{cursor:default}
+.kp-brikke.kal-sammen{height:auto}.kp-brikke.kal-sammen:has(.kal-tider:not([hidden])){z-index:4}
+.kal-vis-tider{margin-top:4px;min-height:32px;border:0;border-radius:9px;padding:3px 10px;background:#fff;color:var(--ink);font-size:13px;font-weight:700;align-self:flex-start}
+.kalm .kal-vis-tider{min-height:44px;font-size:15px}
+.kal-tider{display:grid;gap:3px;margin-top:4px}
+.kal-tider[hidden]{display:none}
+.kal-tid{min-height:30px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink);padding:2px 8px;text-align:left;font-size:13px;font-weight:700}
+.kalm .kal-tid,.sheet .kal-tid{min-height:44px;font-size:16px}
+/* Svevekortet på PC. */
+.kal-sveve{position:fixed;z-index:50;width:260px;background:var(--paper);border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 30px #4d1d1229;padding:10px 12px;font-size:14px;pointer-events:none}
+.kal-sveve h4{margin:0 0 4px;font-family:Bitter,Georgia,serif;font-size:16px}
+.kal-sveve ul{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:3px}
+.kal-sveve li{display:flex;justify-content:space-between;gap:6px}.kal-sveve li>span:first-child{display:inline-flex;gap:5px;align-items:center}
+/* Økt-arket. På PC står det til høyre, på mobil som før. */
+.kal-ark .sheet-head{margin-bottom:10px}
+.kal-ark-hode{display:grid;gap:6px;justify-items:start;padding-bottom:12px;border-bottom:1px solid var(--line);margin-bottom:14px}
+.kal-ark-hode p{margin:0}
+.kal-type-pille{background:var(--kal-bg);color:var(--kal-fg);font-size:13px;padding:2px 10px}
+.kal-faner{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.kal-faner button{border:0;background:none;min-height:40px;padding:6px 12px;border-radius:9px;font-weight:700}
+.kal-faner button[aria-selected=true]{background:var(--ink);color:var(--paper)}
+.kal-panel{display:grid;gap:8px}
+.kal-delt{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 10px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:8px 10px;background:#fff}
+.kal-info{min-width:0}.kal-info b{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.kal-info small{color:var(--muted);font-size:14px;overflow-wrap:anywhere}
+.kal-rad{display:flex;gap:6px;align-items:center}
+.button.kal-liten{min-height:40px;padding:6px 12px}
+.button.kal-bred{width:100%}
+.kal-verktoy{display:grid;gap:8px}
+.kal-verktoy .button{justify-content:flex-start}
+.kal-skjema{display:grid;gap:10px;margin-bottom:14px}
+.kal-skjema label{display:grid;gap:4px;font-weight:700}
+.kal-skjema input,.kal-skjema select{min-height:44px;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:#fff}
+.kal-meny{position:fixed;z-index:5;display:grid;min-width:240px;padding:5px;background:var(--paper);border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 30px #4d1d1229}
+.kal-meny button{border:0;background:none;text-align:left;min-height:40px;padding:8px 10px;border-radius:8px;font-weight:600}
+.kal-meny button:hover,.kal-meny button:focus-visible{background:var(--ground)}
+.kal-meny hr{border:0;border-top:1px solid var(--line);margin:4px 0;width:100%}
+.kal-rod{color:var(--red)}
+@media(min-width:761px){.sheet.kal-ark{margin:0 0 0 auto;width:min(480px,100%);height:100dvh;max-height:100dvh;border-radius:22px 0 0 22px}}
+@media(max-width:760px){.sheet.kal-ark{margin-bottom:0;width:100%;max-width:100%;border-radius:22px 22px 0 0}}
+/* Merkene inne i brikka: ikke blokk-linjer (.event span), og ingenting krymper bort. */
+.event .kal-merker{display:flex}.event .kal-m{display:inline-flex}.event .kal-bilder span{display:grid}
+.kp-brikke[class*=" kal-t-"]>*{flex:none}

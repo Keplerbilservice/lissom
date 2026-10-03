@@ -629,4 +629,16 @@ Svar::json([
         : [],
     'fra' => substr($fra, 0, 10),
     'til' => substr($til, 0, 10),
+    // Bryterne kalenderen tegner etter (B4, 3. oktober 2026). Leses fra
+    // content_blocks «Vis/<navn>» som app/lib/skisser.php. Mangler raden,
+    // er bryteren av: «kalenderark» = okt-arket, merkene og fargene (bolge 1).
+    // Av betyr at kalenderen er akkurat som foer.
+    'brytere' => (static function (): array {
+        $ut = [];
+        foreach (['kalenderark'] as $navn) {
+            $v = DB::verdi('SELECT verdi FROM content_blocks WHERE nokkel = :n', ['n' => 'Vis/' . $navn]);
+            $ut[$navn] = $v !== null && $v !== false && (string) $v === 'ja';
+        }
+        return $ut;
+    })(),
 ]);

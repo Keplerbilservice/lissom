@@ -3,6 +3,7 @@
 // Cellene har data-dato, data-akse (HH:MM) og data-kol (kursholder-id i dag, tom i uke = kursholderen beholdes): slippmål for dra og slipp i K5.
 // Samling 2 og 3 har data-låst på brikka: dagene flyttes fra kursets dato, ikke hver for seg (se kalender.php).
 import {el,badge,today,date,shift} from './ui.js';
+import {arkPaa,typeKlasse,merker,initialer,svevekort,skjulSveve,tidene,tiderTekst,dagSum} from './kalender-ark.js';
 
 export const PC_BRED='(min-width:761px)';
 export const erBred=()=>typeof matchMedia==='function'&&matchMedia(PC_BRED).matches;
@@ -27,7 +28,22 @@ function sideOmSide(liste){
  if(klynge.length)lukk();return sortert;
 }
 
+// Bryteren «Vis/kalenderark» på (bølge 1): fargen etter typen, merkene og deltakerinitialene på brikka, og svevekortet.
+// Paint on Pots-tidene samme dag er slått sammen (slaaSammen i kalender-ark.js) og tegnes av sammenBrikke. Av: brikka som før.
 function brikke(e,apne,plass){
+ if(arkPaa()&&e.sammen)return sammenBrikke(e,apne,plass);
+ const b=brikkeGrunn(e,apne,plass);if(!arkPaa())return b;
+ b.classList.add(typeKlasse(e));b.removeAttribute('title');
+ if(!b.classList.contains('kp-lav')){const sp=b.querySelector(':scope>span');if(sp){sp.textContent=[e.holder,e.samling].filter(Boolean).join(' · ');if(!sp.textContent)sp.remove();}
+  if(e.kap||e.avlyst)b.append(...[el('span',{class:'kal-merker'},merker(e)),initialer(e)].filter(Boolean));}
+ svevekort(b,e);return b;
+}
+function sammenBrikke(e,apne,plass){
+ const attr={class:'event kp-brikke kal-t-pop kal-sammen','data-id':String(e.id),role:'group','aria-label':`${e.tittel} · ${tiderTekst(e)}`};
+ if(plass)attr.style=`top:${plass.top}px;min-height:${plass.hoyde}px;left:calc(${plass.bane/plass.av*100}% + 3px);width:calc(${100/plass.av}% - 6px)`;
+ return el('div',attr,el('small',{text:`${e.tid||''}${e.slutt?'–'+e.slutt:''}`}),el('strong',{text:e.tittel}),el('span',{class:'kal-merker'},el('span',{class:'kal-m kal-m-plass',text:tiderTekst(e)})),tidene(e,apne));
+}
+function brikkeGrunn(e,apne,plass){
  const laast=String(e.id).startsWith('saml-');
  const attr={type:'button',class:`event kp-brikke ${e.avlyst?'cancelled':''}`,'data-id':String(e.id),title:e.tittel,onclick:()=>apne(e)};
  if(laast)attr['data-låst']=true;
@@ -91,6 +107,7 @@ function holderKolonner(dag,hendelser,kursholdere){
 
 // modus: 'uke' | 'dag'. start: første dag. hendelser: allerede filtrert på søk og type i kalender.js.
 export function kalenderPc({modus,start,hendelser,stengte={},kursholdere=[],apne}){
+ skjulSveve();
  if(modus==='dag'){
   const dagens=hendelser.filter(e=>e.dato===start);const [fra,til]=ramme(dagens);
   const baand=dagens.filter(e=>!holderNokkel(e)&&!erKurs(e));const baandUtenTid=baand.filter(e=>!tidsrom(e));
@@ -98,6 +115,6 @@ export function kalenderPc({modus,start,hendelser,stengte={},kursholdere=[],apne
   return {el:el1,antall:dagens.length};
  }
  const dager=Array.from({length:7},(_,i)=>shift(start,i));const uka=hendelser.filter(e=>dager.includes(e.dato));const [fra,til]=ramme(uka);
- const kolonner=dager.map(dag=>({dato:dag,kol:'',idag:dag===today(),hode:dagHode(dag,stengte,false),hendelser:uka.filter(e=>e.dato===dag)}));
+ const kolonner=dager.map(dag=>({dato:dag,kol:'',idag:dag===today(),hode:[dagHode(dag,stengte,false),arkPaa()?el('span',{class:'kal-sum',text:dagSum(uka.filter(e=>e.dato===dag))}):null],hendelser:uka.filter(e=>e.dato===dag)}));
  return {el:el('div',{class:'kp','data-visning':'uke'},tavle(kolonner,fra,til,apne)),antall:uka.length};
 }

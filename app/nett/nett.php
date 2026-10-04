@@ -211,6 +211,17 @@ final class Nett
         if ($side === null) {
             return null;
         }
+        // Strukturerte data som bare sida selv kjenner — FAQ-en og
+        // brodsmulene paa Paint on Pots (kursside.php). De legges i samme
+        // graf som resten, saa det er én blokk i hodet.
+        if (!empty($side['ld']) && is_array($side['ld']) && $ld === []) {
+            $ld = ['@context' => 'https://schema.org', '@graph' => []];
+        }
+        if (!empty($side['ld']) && is_array($side['ld']) && isset($ld['@graph']) && is_array($ld['@graph'])) {
+            foreach ($side['ld'] as $x) {
+                $ld['@graph'][] = $x;
+            }
+        }
 
         $html = self::dokument($adresse, $seo, $ld, $side);
         if ($buffer !== null) {

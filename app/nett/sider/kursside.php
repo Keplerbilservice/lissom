@@ -41,6 +41,20 @@ if ($kort === null) {
 }
 
 $tittel = (string) $kat['tittel'];
+// Egen overskrift og én linje under den (migrasjon 254, SEO 4. oktober
+// 2026): «Dreiekurs i Tønsberg» og «Paint on Pots i Tønsberg». Kursnavnet
+// ($tittel) staar som det er — det er det bookingen og e-postene bruker.
+// Foer migrasjonen er kjoert finnes ikke kolonnene, og navnet er H1 som foer.
+$seoH1 = '';
+$seoIngress = '';
+if (DB::harKolonne('courses', 'seo_h1')) {
+    $seoRad = DB::en("SELECT seo_h1, seo_ingress FROM courses WHERE slug = :s AND status = 'publisert'", ['s' => $slug]);
+    $seoH1 = trim((string) ($seoRad['seo_h1'] ?? ''));
+    $seoIngress = trim((string) ($seoRad['seo_ingress'] ?? ''));
+}
+// Paint on Pots-hovedsiden. /paint-on-pots sendes hit (.htaccess), og
+// innholdet derfra staar under bookingen — se nederst.
+$erPop = $slug === 'paint-on-pots';
 $datoer = $kat['datoer'] ?? [];
 $kunKontakt = !empty($kort['kunKontakt']);
 $fullbooket = ($kort['status'] ?? '') === 'Fullbooket';
@@ -122,7 +136,7 @@ foreach ($flis as $f) {
     $h .= '<span style="display: inline-flex; align-items: center; padding: 6px 12px; border-radius: var(--radius-pill); background: var(--clay-100); font: var(--type-label); font-size: 12px; font-weight: 700; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); white-space: nowrap;">' . $e($f) . '</span>';
 }
 $h .= '</div>'
-    . '<h1 style="margin: 0 0 var(--space-5); font-size: var(--text-4xl);">' . $e($tittel) . '</h1>';
+    . '<h1 style="margin: 0 0 var(--space-5); font-size: var(--text-4xl);">' . $e($seoH1 !== '' ? $seoH1 : $tittel) . '</h1>';
 
 // Beskrivelsen: ingress og avsnitt, som bOmAvsnitt i nettsida.
 $raa = trim((string) ($kat['om'] ?? '')) ?: trim((string) ($kat['kortBeskrivelse'] ?? '')) ?: trim((string) ($kat['laerer'] ?? ''));
@@ -147,6 +161,11 @@ if ($ingress !== '') {
     $h .= '<p style="margin: 0 0 var(--space-6); font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); line-height: 1.35; color: var(--text-heading); max-width: 46ch; text-wrap: balance;">' . $e($ingress) . '</p>';
 } elseif ($deler !== []) {
     $h .= '<p style="margin: 0 0 var(--space-6); color: var(--text-heading); font-size: var(--text-lg); line-height: 1.6; max-width: 58ch; text-wrap: pretty;">' . $e((string) array_shift($deler)) . '</p>';
+}
+// Linja under overskriften (migrasjon 254) — paa Paint on Pots at Lissom
+// ikke er en del av kjeden, hoeyt oppe der den blir lest.
+if ($seoIngress !== '') {
+    $h .= '<p style="margin: 0 0 var(--space-6); color: var(--text-body); font-size: var(--text-base); line-height: 1.6; max-width: 58ch; text-wrap: pretty;">' . $e($seoIngress) . '</p>';
 }
 
 // Her slutter toppen. Paa mobil kommer bookingboksen naa; paa skjerm staar
@@ -471,6 +490,142 @@ if (!$kunKontakt && !$gratis) {
     $h .= '<div style="height: 1px; background: var(--border-subtle); margin: var(--space-6) 0;"></div><div style="display: flex; gap: 10px; align-items: center; font-size: var(--text-sm); color: var(--text-muted);"><span style="width: 8px; height: 8px; border-radius: 50%; background: var(--sage-500);"></span>Du betaler trygt med Vipps.</div>';
 }
 $h .= '</div></div></div></section>' . "\n";
+
+// ── Paint on Pots: innholdet fra den gamle sida ───────────────────────────
+//
+// SEO-gjennomgangen 4. oktober 2026 (eieren: «ok, gjør det»): to sider
+// konkurrerte om de samme soekene, og bookingsida — der annonsene lander —
+// hadde ingen visninger. Naa er dette hovedsida, og /paint-on-pots sendes
+// hit med 301. Tekstene er de samme som der, fra Nettsiden → Innhold
+// («Paint on Pots/…»), saa de redigeres der som foer.
+//
+// FAQ-en tegnes og sendes som FAQPage av de samme svarene, og bare det som
+// alt staar paa nettsida eller i kursoppsettet: prisen fra kurset, tiden
+// fra kurset, resten fra innholdet.
+$popLd = [];
+if ($erPop) {
+    $kicker = static fn(string $t): string => trim($t) === '' ? '' : '<div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">' . $e($t) . '</div>';
+    $h2 = static fn(string $t): string => trim($t) === '' ? '' : '<h2 style="margin: 0 0 var(--space-5); font-size: var(--text-3xl);">' . $e($t) . '</h2>';
+    $avsnitt = static fn(string $t): string => trim($t) === '' ? '' : '<p style="margin: 0 0 var(--space-4); color: var(--text-body); line-height: 1.65; max-width: 62ch; text-wrap: pretty;">' . $e($t) . '</p>';
+    $boks = 'background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);';
+
+    // Spoersmaal og svar. Pris og tid kommer fra kurset; uten dem faller
+    // spoersmaalet bort heller enn aa svare noe som ikke stemmer.
+    $faq = [];
+    if ($pris !== '' && !$gratis) {
+        $prisSvar = str_starts_with($pris, 'Fra ')
+            ? 'Prisen er fra ' . mb_substr($pris, 4) . ' og avhenger av gjenstanden du velger.'
+            : 'Prisen er ' . $pris . '.';
+        $faq[] = ['q' => 'Hva koster Paint on Pots?', 'a' => trim($prisSvar . ' ' . $innh('Paint on Pots/4/Brødtekst'))];
+    }
+    $tid = trim((string) ($kort['duration'] ?? ''));
+    if ($tid !== '') {
+        $faq[] = ['q' => 'Hvor lang tid tar det?', 'a' => 'Tiden du booker, varer ' . $tid . '.'];
+    }
+    foreach ([3, 2, 1, 4] as $i) {
+        $q = trim($innh('Paint on Pots/8/Spørsmål ' . $i));
+        $a = trim($innh('Paint on Pots/8/Svar ' . $i));
+        if ($q !== '' && $a !== '') {
+            $faq[] = ['q' => $q, 'a' => $a];
+        }
+    }
+
+    $h .= '<section style="background: var(--clay-50); padding: 0 var(--space-8) var(--section-y);">'
+        . '<div style="max-width: var(--width-content); margin: 0 auto; display: flex; flex-direction: column; gap: var(--space-10);">';
+
+    // Slik foregaar det — de fire stegene.
+    $steg = [];
+    for ($i = 1; $i <= 4; $i++) {
+        $t = trim($innh('Paint on Pots/7/Steg ' . $i));
+        $x = trim($innh('Paint on Pots/7/Steg ' . $i . ' tekst'));
+        if ($t !== '' || $x !== '') {
+            $steg[] = [$t, $x];
+        }
+    }
+    if ($steg !== []) {
+        $h .= '<div>' . $h2('Slik fungerer Paint on Pots')
+            . '<div class="lx-cols4" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-6);">';
+        foreach ($steg as $n => [$t, $x]) {
+            $h .= '<div style="' . $boks . ' padding: var(--space-6);">'
+                . '<div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--terracotta-600); margin-bottom: var(--space-2);">' . ($n + 1) . '</div>'
+                . ($t !== '' ? '<h3 style="margin: 0 0 var(--space-2); font-size: var(--text-lg);">' . $e($t) . '</h3>' : '')
+                . ($x !== '' ? '<p style="margin: 0; color: var(--text-body); font-size: var(--text-sm); line-height: 1.6; text-wrap: pretty;">' . $e($x) . '</p>' : '')
+                . '</div>';
+        }
+        $h .= '</div></div>';
+    }
+
+    // Priser.
+    if ($pris !== '' && !$gratis) {
+        $h .= '<div style="' . $boks . '">'
+            . $kicker($innh('Paint on Pots/4/Kicker'))
+            . $h2($innh('Paint on Pots/4/Overskrift'))
+            . '<p style="margin: 0 0 var(--space-4); font-family: var(--font-display); font-weight: 800; font-size: var(--text-3xl); color: var(--text-heading);">' . $e($pris) . '</p>'
+            . $avsnitt($innh('Paint on Pots/4/Brødtekst'))
+            . '</div>';
+    }
+
+    // Det folk lurer paa.
+    if ($faq !== []) {
+        $h .= '<div>' . $kicker($innh('Paint on Pots/5/Kicker')) . $h2($innh('Paint on Pots/5/Overskrift') ?: 'Det folk lurer på')
+            . '<div class="lx-cols2" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-6) var(--space-10);">';
+        foreach ($faq as $s) {
+            $h .= '<div><h3 style="margin: 0 0 var(--space-2); font-size: var(--text-lg);">' . $e($s['q']) . '</h3>'
+                . '<p style="margin: 0; color: var(--text-body); line-height: 1.65; text-wrap: pretty;">' . $e($s['a']) . '</p></div>';
+        }
+        $h .= '</div></div>';
+        $popLd[] = [
+            '@type'      => 'FAQPage',
+            '@id'        => 'https://lissom.no/kurs/' . $slug . '#faq',
+            'mainEntity' => array_map(static fn(array $s): array => [
+                '@type'          => 'Question',
+                'name'           => $s['q'],
+                'acceptedAnswer' => ['@type' => 'Answer', 'text' => $s['a']],
+            ], $faq),
+        ];
+    }
+
+    // Om Paint on Pots — de to tekstene fra den gamle sida, og kortversjonen.
+    // Avsnittene uten egen noekkel i innholdet sto fast i skjermen der; de er
+    // flyttet med ordrett. «Stikk innom»-avsnittet er ikke med: drop-in
+    // finnes ikke lenger (migrasjon 228).
+    $h .= '<div class="lx-cols2" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-10); align-items: start;">'
+        . '<div>' . $kicker($innh('Paint on Pots/1/Kicker')) . $h2($innh('Paint on Pots/1/Overskrift'))
+        . $avsnitt($innh('Paint on Pots/1/Avsnitt 1')) . $avsnitt($innh('Paint on Pots/1/Avsnitt 2')) . '</div>'
+        . '<div>' . $kicker($innh('Paint on Pots/2/Kicker')) . $h2($innh('Paint on Pots/2/Overskrift'))
+        . $avsnitt($innh('Paint on Pots/2/Ingress')) . $avsnitt($innh('Paint on Pots/2/Avsnitt 1'))
+        . $avsnitt('Mens dere maler, oppstår de gode samtalene helt av seg selv. Man senker skuldrene, ler litt mer og får vist sider av seg selv som kanskje ikke kommer frem i en travel hverdag. Det er rolig, ekte og uanstrengt.')
+        . $avsnitt($innh('Paint on Pots/2/Avsnitt 2')) . $avsnitt($innh('Paint on Pots/2/Avsnitt 3')) . '</div>'
+        . '</div>';
+    $kortTekst = trim($innh('Paint on Pots/3/Tekst'));
+    if ($kortTekst !== '') {
+        $h .= '<div style="' . $boks . ' background: var(--clay-100);">' . $kicker($innh('Paint on Pots/3/Kicker'))
+            . '<h3 style="margin: 0 0 var(--space-3); font-size: var(--text-2xl);">' . $e($kortTekst) . '</h3>'
+            . '<p style="margin: 0; color: var(--lissom-brown); line-height: 1.6; max-width: 72ch; text-wrap: pretty;">Velg din favorittgjenstand, finn frem fargene og skap noe unikt. Paint on Pots er en enkel og hyggelig aktivitet for venner, familie, kolleger eller en romantisk date. Ingen forkunnskaper nødvendig, bare lysten til å være kreativ og ha det gøy.</p>'
+            . '</div>';
+    }
+
+    // Videre: kurslista og dreiekurset (SEO: lenk mellom /kurs og Paint on Pots).
+    $h .= '<div style="display: flex; gap: 12px; flex-wrap: wrap;">'
+        . Deler::knapp('Se alle kurs', ['href' => '/kurs', 'lenke' => true, 'variant' => 'ink'])
+        . Deler::knapp('Dreiekurs i Tønsberg', ['href' => '/kurs/dreiekurs', 'lenke' => true, 'variant' => 'secondary'])
+        . '</div>';
+
+    $h .= '</div></section>' . "\n";
+
+    // Broedsmulene: Forside › Events › Paint on Pots. Sida staar under
+    // Events i menyen, og det er der den listes.
+    $popLd[] = [
+        '@type'           => 'BreadcrumbList',
+        '@id'             => 'https://lissom.no/kurs/' . $slug . '#brodsmuler',
+        'itemListElement' => [
+            ['@type' => 'ListItem', 'position' => 1, 'name' => 'Lissom Keramikk', 'item' => 'https://lissom.no/'],
+            ['@type' => 'ListItem', 'position' => 2, 'name' => 'Events', 'item' => 'https://lissom.no/events'],
+            ['@type' => 'ListItem', 'position' => 3, 'name' => $seoH1 !== '' ? $seoH1 : $tittel, 'item' => 'https://lissom.no/kurs/' . $slug],
+        ],
+    ];
+}
+
 $h .= '</div>' . "\n";
 $h .= Deler::bunn(true);
 
@@ -490,5 +645,6 @@ return [
     'aktiv'  => $erEvent ? 'Events' : 'Kurs',
     'hode'   => $hode,
     'skript' => 'window.lissomVare = ' . str_replace('</', '<\/', (string) $vareJson) . ';',
+    'ld'     => $popLd,
 ];
 

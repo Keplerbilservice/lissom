@@ -309,10 +309,7 @@
             ],
             "live": [
                 {
-                    "sti": "/paint-on-pots",
-                    "finnes": [
-                        "Bestill tid på Teie ved Tønsberg."
-                    ],
+                    "sti": "/kurs/paint-on-pots",
                     "ikkeFinnes": [
                         "Drop-in på Teie"
                     ]
@@ -5183,6 +5180,84 @@
                     "fil": "lissom-2108.html",
                     "finnes": [
                         "&& !this.state.admMobApen && !(side === 'minside' && this.msNyPaa()),"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "seo-paint-on-pots-hovedside",
+            "dato": "2026-10-04",
+            "hva": "SEO tiltak 4: /kurs/paint-on-pots er Paint on Pots-hovedsiden (301 fra /paint-on-pots), egen tittel/beskrivelse med prisen fra kurset, H1 «Paint on Pots i Tønsberg», kjedesetningen høyt oppe, priser + FAQ (FAQPage) + BreadcrumbList; /kurs/dreiekurs H1 «Dreiekurs i Tønsberg»; /kurs/handbygging tittel med plateteknikk; lenker «Dreiekurs i Tønsberg» fra /kurs og artikler",
+            "hvor": "/kurs/paint-on-pots, /kurs/dreiekurs, /kurs/handbygging, /kurs, /nyheter",
+            "kode": [
+                {
+                    "fil": ".htaccess",
+                    "finnes": [
+                        "RewriteRule ^paint-on-pots/?$ /kurs/paint-on-pots [R=301,L]"
+                    ]
+                },
+                {
+                    "fil": "db/migrations/254_seo_paint_on_pots_og_kurssidene.sql",
+                    "finnes": [
+                        "Paint on Pots Tønsberg – mal din egen keramikk | Lissom",
+                        "Fra {pris}.",
+                        "SET seo_h1 = 'Paint on Pots i Tønsberg'",
+                        "SET seo_h1 = 'Dreiekurs i Tønsberg'",
+                        "Plateteknikk og håndbygging i Tønsberg | Lissom Keramikk",
+                        "ikke en del av Paint on Pots-kjeden"
+                    ]
+                },
+                {
+                    "fil": "app/nett/sider/kursside.php",
+                    "finnes": [
+                        "'@type'      => 'FAQPage',",
+                        "'@type'           => 'BreadcrumbList',",
+                        "$e($seoH1 !== '' ? $seoH1 : $tittel)"
+                    ]
+                },
+                {
+                    "fil": "app/nett/sider/kurs.php",
+                    "finnes": [
+                        "Deler::knapp('Dreiekurs i Tønsberg', ['href' => '/kurs/dreiekurs'",
+                        "Deler::knapp('Paint on Pots i Tønsberg', ['href' => '/kurs/paint-on-pots'"
+                    ]
+                },
+                {
+                    "fil": "app/nett/sider/nyheter.php",
+                    "finnes": [
+                        "'paint-on-pots-slik-fungerer-det' => [['Se priser og book Paint on Pots', '/kurs/paint-on-pots']],"
+                    ]
+                },
+                {
+                    "fil": "api/sitemap.php",
+                    "ikkeFinnes": [
+                        "['/paint-on-pots',"
+                    ]
+                }
+            ],
+            "live": [
+                {
+                    "sti": "/kurs/paint-on-pots",
+                    "finnes": [
+                        "<title>Paint on Pots Tønsberg – mal din egen keramikk | Lissom</title>",
+                        ">Paint on Pots i Tønsberg</h1>",
+                        "\"@type\":\"FAQPage\"",
+                        "\"@type\":\"BreadcrumbList\""
+                    ],
+                    "ikkeFinnes": [
+                        "{pris}"
+                    ]
+                },
+                {
+                    "sti": "/kurs/dreiekurs",
+                    "finnes": [
+                        ">Dreiekurs i Tønsberg</h1>"
+                    ]
+                },
+                {
+                    "sti": "/kurs/handbygging",
+                    "finnes": [
+                        "<title>Plateteknikk og håndbygging i Tønsberg | Lissom Keramikk</title>"
                     ]
                 }
             ]

@@ -77,7 +77,7 @@ try {
 $ut[] = '';
 $ut[] = '- [Alle kurs og events](' . ROT . '/kurs): hele lista, med datoer og ledige plasser';
 $ut[] = '- [Events](' . ROT . '/events): Sip & Clay, Date Night og Paint on Pots';
-$ut[] = '- [Paint on Pots](' . ROT . '/paint-on-pots): mal ferdigbrent keramikk, passer også barn';
+$ut[] = '- [Paint on Pots](' . ROT . '/kurs/paint-on-pots): mal ferdigbrent keramikk, passer også barn';
 $ut[] = '- [Kalender](' . ROT . '/kalender): alt som skjer, uke for uke';
 $ut[] = '- [Bedrift og event](' . ROT . '/bedrift): teambuilding, julebord og kick-off';
 $ut[] = '';
@@ -108,7 +108,7 @@ $GEO_SIDER = [
     'kursoversikt' => '/kurs',
     'nyttig'       => '/nyttig-info',
     'nyheter'      => '/nyheter',
-    'paintonpots'  => '/paint-on-pots',
+    'paintonpots'  => '/kurs/paint-on-pots',
 ];
 
 // De seks kurs- og eventsidene har ingen fast adresse: de bor under

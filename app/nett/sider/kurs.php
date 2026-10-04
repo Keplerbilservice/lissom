@@ -118,6 +118,18 @@ foreach ($vist as $i => $k) {
 }
 $h .= '</div></section>' . "\n";
 
+// Dreiekurset og Paint on Pots, som piller under kortene. SEO-gjennomgangen
+// 4. oktober 2026 (eieren: «ok, gjør det»): lenker med «dreiekurs i
+// Tønsberg» som tekst, og en vei fra kurslista til Paint on Pots — som ikke
+// staar blant kortene her, bare under Events.
+if (!$erEvents) {
+    $h .= '<section style="background: var(--clay-50); padding: 0 var(--space-8) var(--space-12);">'
+        . '<div style="max-width: var(--width-content); margin: 0 auto; display: flex; gap: 12px; flex-wrap: wrap;">'
+        . Deler::knapp('Dreiekurs i Tønsberg', ['href' => '/kurs/dreiekurs', 'lenke' => true, 'variant' => 'ink'])
+        . Deler::knapp('Paint on Pots i Tønsberg', ['href' => '/kurs/paint-on-pots', 'lenke' => true, 'variant' => 'secondary'])
+        . '</div></section>' . "\n";
+}
+
 // Velkommen.
 $h .= '<section style="background: var(--clay-50); padding: 0 var(--space-8) var(--space-12);">'
     . '<div class="lx-cols2" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-10); align-items: start; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-10);">'

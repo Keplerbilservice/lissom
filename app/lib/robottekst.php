@@ -156,7 +156,10 @@ final class Robottekst
             'fra_pris'    => (int) ($k['fra_pris'] ?? 0) === 1,
             'beskrivelse' => trim(strip_tags((string) ($k['beskrivelse'] ?? ''))),
             'kort'        => trim((string) ($k['kort_beskrivelse'] ?? '')),
-            'seo_meta'    => trim((string) ($k['seo_meta'] ?? '')),
+            'seo_meta'    => self::medPris(trim((string) ($k['seo_meta'] ?? '')), (int) $k['pris_ore']),
+            // Overskriften paa kurssida naar den er en annen enn navnet
+            // (migrasjon 254). Tom foer migrasjonen er kjoert.
+            'seo_h1'      => trim((string) ($k['seo_h1'] ?? '')),
             'tema'        => (string) ($k['tema'] ?? ''),
             'bilde'       => trim((string) ($k['bilde'] ?? '')),
             'datoer'      => $datoer,
@@ -242,6 +245,23 @@ final class Robottekst
     public static function kroner(int $ore): string
     {
         return 'kr. ' . number_format($ore / 100, 0, ',', ' ') . ',-';
+    }
+
+    /**
+     * «{pris}» i en egen soeketekst (courses.seo_meta, migrasjon 254) byttes
+     * med kursets pris — «450 kr». Prisen staar ett sted, i kursoppsettet,
+     * og beskrivelsen i soeket foelger med naar den endres. Har kurset ingen
+     * pris, gaar setningen med {pris} ut i stedet for aa si «0 kr».
+     */
+    public static function medPris(string $tekst, int $ore): string
+    {
+        if (!str_contains($tekst, '{pris}')) {
+            return $tekst;
+        }
+        if ($ore <= 0) {
+            return trim((string) preg_replace('/\s*[^.!?]*\{pris\}[^.!?]*[.!?]?/u', '', $tekst));
+        }
+        return str_replace('{pris}', number_format($ore / 100, 0, ',', ' ') . ' kr', $tekst);
     }
 
     /** «16. september» av et UTC-tidspunkt fra basen. */
@@ -335,7 +355,7 @@ final class Robottekst
                 if ($k === null) {
                     return null;
                 }
-                $h1 = $k['tittel'];
+                $h1 = $k['seo_h1'] !== '' ? $k['seo_h1'] : $k['tittel'];
                 $meta = $k['seo_meta'] !== '' ? $k['seo_meta'] : ($k['kort'] !== '' ? $k['kort'] : self::ingress($k['beskrivelse']));
                 $deler[] = self::kursHtml($k);
                 $ld[] = self::kursLd($k, $canon);

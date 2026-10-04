@@ -270,7 +270,7 @@ if (preg_match('~^/kurs/([a-z0-9\-]+)$~i', $adresse, $treff) === 1) {
         $egne .= DB::harKolonne('courses', 'bilder') ? ', bilder' : ', NULL AS bilder';
         $egne .= DB::harKolonne('courses', 'karusell_fra') ? ', karusell_fra' : ', NULL AS karusell_fra';
         $k = DB::en(
-            "SELECT tittel, beskrivelse, bilde, {$egne} FROM courses
+            "SELECT tittel, beskrivelse, bilde, pris_ore, {$egne} FROM courses
               WHERE slug = :s AND status = 'publisert'
                 AND COALESCE(tema, '') <> 'Kun for medlemmer'",
             ['s' => $treff[1]]
@@ -279,6 +279,10 @@ if (preg_match('~^/kurs/([a-z0-9\-]+)$~i', $adresse, $treff) === 1) {
             $navn = (string) $k['tittel'];
             $egenTittel = trim((string) ($k['seo_tittel'] ?? ''));
             $egenMeta   = trim((string) ($k['seo_meta'] ?? ''));
+            // {pris} i den egne beskrivelsen er kursets pris slik den staar
+            // i basen naa (migrasjon 254, Paint on Pots) — ikke et tall
+            // skrevet inn en gang og glemt.
+            $egenMeta = Robottekst::medPris($egenMeta, (int) ($k['pris_ore'] ?? 0));
             $meta = $egenMeta !== '' ? $egenMeta
                   : trim((string) preg_replace('/\s+/u', ' ', (string) ($k['beskrivelse'] ?? '')));
             if (mb_strlen($meta) > 158) {

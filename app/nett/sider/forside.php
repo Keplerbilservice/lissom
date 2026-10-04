@@ -42,7 +42,7 @@ $h .= '<section class="lx-hero" data-theme="sun" style="background: var(--lissom
 
 // Knapp 2 gaar til Paint on Pots-bookingen naar det ligger datoer ute,
 // ellers til datoene paa Paint on Pots-sida — popTilDatoer() i nettsida.
-$popHref = '/paint-on-pots#pop-datoer';
+$popHref = '/kurs/paint-on-pots';
 foreach (Katalog::offentlig(false) as $k) {
     if ($k['tittel'] === 'Paint on Pots' && ($k['datoer'] ?? []) !== [] && ($k['slug'] ?? '') !== '') {
         $popHref = '/kurs/' . rawurlencode((string) $k['slug']);
@@ -77,7 +77,7 @@ if (($lagret['Banner/pa'] ?? '') !== 'nei' && !Nett::mobilSkjult('apenthus')) {
         $lag = $lagret['Banner/' . $f] ?? '';
         $b[$f] = $lag === '' ? $v : $lag;
     }
-    $maal = ['butikk' => '/butikk', 'gavekort' => '/gavekort', 'kurs' => '/kurs', 'events' => '/events', 'paintonpots' => '/paint-on-pots', 'medlemskap' => '/medlemskap', 'kontakt' => '/kontakt'];
+    $maal = ['butikk' => '/butikk', 'gavekort' => '/gavekort', 'kurs' => '/kurs', 'events' => '/events', 'paintonpots' => '/kurs/paint-on-pots', 'medlemskap' => '/medlemskap', 'kontakt' => '/kontakt'];
     $h .= '<section data-theme="ink" style="background: var(--lissom-brown); padding: var(--space-8); position: relative; overflow: clip;">'
         . '<div class="lx-hide-m" style="position: absolute; top: 0; bottom: 0; right: 0; width: 52%; background-image: ' . Nett::cssUrl($b['bilde']) . '; background-size: cover; background-position: center 30%; mask-image: linear-gradient(to right, transparent 0%, black 60%); -webkit-mask-image: linear-gradient(to right, transparent 0%, black 60%); opacity: 0.85; pointer-events: none;"></div>'
         . '<div class="lx-band" style="max-width: var(--width-content); margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: var(--space-6) var(--space-10); flex-wrap: wrap; position: relative;">'
@@ -97,7 +97,7 @@ $h .= '<section style="background: var(--clay-50); padding: var(--section-y) var
 $innganger = [
     ['level' => '01 · Dreiekurs', 'title' => 'Dreiekurs', 'text' => 'To kvelder ved dreieskiva: sentrere, dreie, trimme foten og dekorere. Vi glaserer og brenner. Fra leireklump til ferdig kopp.', 'image' => 'uploads_foto-dreiekurs2.jpg', 'imageAlt' => 'Deltaker dreier ved dreieskiva hos Lissom Keramikk', 'cta' => 'Se dreiekurs', 'href' => '/kurs'],
     ['level' => '02 · Plateteknikk og håndbygging', 'title' => 'Boller og store fat', 'text' => 'Kjevle ut leira, forme over form, få rene kanter. Én kveld: boller, et stort fat eller en fransk smørklokke.', 'image' => 'uploads_foto-boller.jpg', 'imageAlt' => 'Kursholderen viser en bolle til deltakerne på plateteknikk hos Lissom Keramikk', 'cta' => 'Se kursene', 'href' => '/kurs'],
-    ['level' => '03 · Paint on Pots', 'title' => 'Paint on Pots', 'text' => 'Velg en ferdigbrent kopp, skål eller figur og mal den slik du vil. Vi glaserer og brenner — klar til henting etter to til fire uker.', 'image' => 'uploads_foto-paint.jpg', 'imageAlt' => 'Paint on Pots: ferdigbrent keramikk som males hos Lissom Keramikk', 'cta' => 'Les mer', 'href' => '/paint-on-pots'],
+    ['level' => '03 · Paint on Pots', 'title' => 'Paint on Pots', 'text' => 'Velg en ferdigbrent kopp, skål eller figur og mal den slik du vil. Vi glaserer og brenner — klar til henting etter to til fire uker.', 'image' => 'uploads_foto-paint.jpg', 'imageAlt' => 'Paint on Pots: ferdigbrent keramikk som males hos Lissom Keramikk', 'cta' => 'Les mer', 'href' => '/kurs/paint-on-pots'],
     ['level' => '04 · Medlemskap', 'title' => 'Medlemskap', 'text' => 'Egen hylle, dørkode døgnet rundt og timer i verkstedet hver måned. Prøv én måned uten binding.', 'image' => 'uploads_shutterstock_2829101499.jpg', 'imageAlt' => 'Medlem jobber ved dreieskiva i verkstedet hos Lissom', 'cta' => 'Se medlemskap', 'href' => '/medlemskap'],
 ];
 foreach ($innganger as $k) {

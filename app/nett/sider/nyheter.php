@@ -18,10 +18,12 @@ declare(strict_types=1);
 if (!defined('ARTIKKEL_PILLER')) {
     define('ARTIKKEL_PILLER', [
         'dreiekurs-i-tonsberg-hva-skjer' => [['Se dreiekurset', '/kurs/dreiekurs']],
-        'dreiekurs-for-nybegynnere-slik-foles-det-a-sitte-ved-dreieskiva-forste-gang' => [['Se dreiekurset', '/kurs/dreiekurs']],
-        'dreiing-eller-handbygging-slik-velger-du-riktig-start-med-leire' => [['Se dreiekurset', '/kurs/dreiekurs'], ['Se håndbygging', '/kurs/handbygging']],
+        // «Dreiekurs i Tønsberg» som tekst paa lenka, og Paint on Pots til
+        // hovedsida (SEO-gjennomgangen 4. oktober 2026).
+        'dreiekurs-for-nybegynnere-slik-foles-det-a-sitte-ved-dreieskiva-forste-gang' => [['Dreiekurs i Tønsberg', '/kurs/dreiekurs']],
+        'dreiing-eller-handbygging-slik-velger-du-riktig-start-med-leire' => [['Dreiekurs i Tønsberg', '/kurs/dreiekurs'], ['Se håndbygging', '/kurs/handbygging']],
         'plateteknikk-eller-handbygging' => [['Se håndbygging', '/kurs/handbygging']],
-        'paint-on-pots-slik-fungerer-det' => [['Se Paint on Pots', '/paint-on-pots']],
+        'paint-on-pots-slik-fungerer-det' => [['Se priser og book Paint on Pots', '/kurs/paint-on-pots']],
         'keramikk-med-barn-tonsberg' => [['Se barnekurset', '/kurs/alle-barn-se-her-tre-pa-rad']],
         'date-night-keramikk-tonsberg' => [['Se Date Night', '/kurs/date-night']],
         'sip-and-clay-tonsberg' => [['Se Sip & Clay', '/kurs/sip-and-clay']],

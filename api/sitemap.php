@@ -31,7 +31,8 @@ $faste = [
     ['/kalender',                     '0.9', 'daily'],
     ['/medlemskap',                   '0.8', 'monthly'],
     ['/butikk',                       '0.7', 'weekly'],
-    ['/paint-on-pots',                '0.7', 'monthly'],
+    // /paint-on-pots sender til /kurs/paint-on-pots fra 4. oktober 2026
+    // (.htaccess). Den kommer med blant kursene under.
     ['/bedrift',                      '0.6', 'monthly'],
     ['/gavekort',                     '0.6', 'monthly'],
     ['/om-oss',                       '0.6', 'monthly'],

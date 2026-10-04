@@ -325,7 +325,7 @@ return [
         // «href» her, og Mal::tegn() leter etter href-verdier i den forste
         // lista. Laa den i den andre, ble det href="" — stripa saa riktig ut
         // og var doed. Maalt 23. september 2026.
-        'popStripeGaa' => '/paint-on-pots',
+        'popStripeGaa' => '/kurs/paint-on-pots',
         'popStripeStil' => 'display: flex; align-items: flex-start; gap: var(--space-3); '
             . 'border-radius: var(--radius-md); padding: 13px 16px; margin-bottom: var(--space-5); '
             . 'text-decoration: none; background: '

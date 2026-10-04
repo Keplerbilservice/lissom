@@ -114,6 +114,7 @@ kjor "refusjon gjør opp kjøpet (L-1, L-3)" php tests/refusjon-formal.php
 kjor "gavekort samtidig (L-4)" php tests/gavekort-samtidig.php
 kjor "avslutning og manuell medlemsbetaling (L-11, L-12)" php tests/medlem-l11-l12.php
 kjor "flytting, venteliste, portalrefusjon (L-7–L-9)" php tests/pamelding-flytt.php
+kjor "pengehull 1–4 (frys, Kassa/Forny, skyldig, endre/fjern)" php tests/pengehull.php
 kjor "refusjonsklient" node tests/refusjon-klient.mjs
 gruppe backend
 kjor "backend"       php -d memory_limit=-1 tests/backend.php

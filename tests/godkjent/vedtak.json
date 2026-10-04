@@ -4828,6 +4828,88 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "pengehull-1-fryst-aldri-betalt",
+            "dato": "2026-10-04",
+            "hva": "Pengehull 1 (betalingseksperten, eierens fullmakt «gjør alt»): et fryst medlem som aldri har betalt, står bare som skyldig når det finnes en måned å betale. skyldigMaaned() gir da måneden verkstedet ellers ville tatt betalt for (denne, eller neste for nytt medlemskap etter den 20.), med mindre en frys har fritatt den. betalingsstatus() avslutter med regelen: fryst + utestående + ingen skyldig måned = «Fryst til <dato>», ikke utestående. Kassa og Min side (uten fast trekk) kan betale den skyldige måneden; fast trekk betaler i verkstedet som før.",
+            "hvor": "app/lib/medlemskap.php (skyldigMaaned, betalingsstatus), api/admin/medlemmer.php (Kassa)",
+            "kode": [
+                {
+                    "fil": "app/lib/medlemskap.php",
+                    "finnes": [
+                        "private static function betalingsstatusRaa(",
+                        "if ($fryst !== null && self::skyldigMaaned($medlem, $idag) === null) {",
+                        "$fra = self::gjelderFraForsteBetaling($id)"
+                    ]
+                },
+                {
+                    "fil": "tests/alle.sh",
+                    "finnes": [
+                        "php tests/pengehull.php"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "pengehull-2-kassa-og-forny",
+            "dato": "2026-10-04",
+            "hva": "Pengehull 2: Kassa og egenbetaling («Forny») kan ikke betale samme måned. fornyPeriodePaa tar medlemslåsen (samme som Kassa, L-12) og regner perioden og lagrer raden under låsen; Kassa nekter (409, eksisterende tekst «Betalingen pågår i Vipps. Prøv igjen om litt.») mens en egenbetaling for måneden er opprettet/venter og er yngre enn 30 minutter. Et nytt «Forny»-trykk mens det første fortsatt er på vei til Vipps, får den samme teksten.",
+            "hvor": "app/lib/medlemskap.php (fornyPeriodePaa), api/admin/medlemmer.php ($medlemsperiode)",
+            "kode": [
+                {
+                    "fil": "app/lib/medlemskap.php",
+                    "finnes": [
+                        "DB::en('SELECT id FROM members WHERE id = :i FOR UPDATE', ['i' => $medlemId]);",
+                        "throw new RuntimeException('Betalingen pågår i Vipps. Prøv igjen om litt.');"
+                    ]
+                },
+                {
+                    "fil": "api/admin/medlemmer.php",
+                    "finnes": [
+                        "WHERE member_id = :m AND formal = 'medlemskap' AND type = 'epayment'",
+                        "throw new RuntimeException('Betalingen pågår i Vipps. Prøv igjen om litt.', 409);"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "pengehull-3-alle-ubetalte-maaneder",
+            "dato": "2026-10-04",
+            "hva": "Pengehull 3: skyldig ser alle betalte måneder, ikke bare den siste. Første ubetalte måned som ikke er fritatt av frys skyldes (fra første betalte måned, ikke før innmeldingen eller nyeste avtale, høyst 12 måneder tilbake). betalingsstatus sier «Forfalt <måned> · sist betalt <dato>» i stedet for «Betalt» når en eldre måned mangler, også ved fast trekk med et feilet trekk før et vellykket. Kassa tar den eldste ubetalte måneden først. sisteBetalinger() velger betalingen for den seneste perioden (ikke den sist registrerte), og «Forny» lager aldri en betaling for en måned som alt er betalt.",
+            "hvor": "app/lib/medlemskap.php, api/admin/medlemmer.php",
+            "kode": [
+                {
+                    "fil": "app/lib/medlemskap.php",
+                    "finnes": [
+                        "private static function dekkedeMaaneder(array $rader): array",
+                        "private static function ubetaltMellom(",
+                        "$best['_dekket'] = self::dekkedeMaaneder($rader) + ['avtaleLaget'"
+                    ]
+                },
+                {
+                    "fil": "api/admin/medlemmer.php",
+                    "finnes": [
+                        "} elseif ($skyldig !== null && $skyldig < $fra) {"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "pengehull-4-pamelding-endre-fjern",
+            "dato": "2026-10-04",
+            "hva": "Pengehull 4: «endre» på en påmelding regner betalt status på nytt når beløpet endres, som flytting (L-7): det som er betalt for hånd uten rad, føres som betaling (kommentar «Betalt før endring»), og Booking::settBetaltStatus() gir restbeløp under «Ikke betalt» eller «for mye» i svaret. Gratis er gratis; reservert uten betalinger røres ikke; betaling på vei i Vipps gir 409. «fjern» nekter også en Vipps-betalt plass som bare er koblet via payments.booking_id (som kursbetaling.php).",
+            "hvor": "api/admin/pamelding.php (endre, fjern)",
+            "kode": [
+                {
+                    "fil": "api/admin/pamelding.php",
+                    "finnes": [
+                        "'Betalt før endring');",
+                        "return Booking::settBetaltStatus($id);",
+                        "WHERE booking_id = :b AND type <> 'manuell'"
+                    ]
+                }
+            ]
         }
     ]
 }

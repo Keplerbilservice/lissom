@@ -164,7 +164,11 @@ $api = file_get_contents(dirname(__DIR__) . '/api/medlemskap.php');
 sjekk('«Forny» paa samme plan gaar til fornyPeriode(), ikke en ny avtale', str_contains($api, 'Medlemskap::fornyPeriode($medlem, $naa)'));
 $lib = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
 sjekk('fornyPeriode() regner fra der forrige betaling slutter',
-    str_contains($lib, '$slutt = self::dekkerTil($siste);') && str_contains($lib, "\$rad['gjelder_fra'] = \$gjelderFra;"));
+    // Pengehull 3 (4. oktober 2026): «der forrige slutter» er den foerste
+    // maaneden fra denne som ingen betaling dekker (alle betalte maaneder,
+    // ikke bare den siste). Atferden testes i tests/pengehull.php.
+    str_contains($lib, "\$gjelderFra = \$d->format('Y-m-d') === \$denne ? \$idag : \$d->format('Y-m-d');")
+    && str_contains($lib, "\$rad['gjelder_fra'] = \$gjelderFra;"));
 
 // ── 3. Omsetningen ────────────────────────────────────────────────────
 echo "\n── Omsetningen ──────────────────────────────────────────────\n";

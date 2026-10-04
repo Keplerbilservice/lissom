@@ -499,6 +499,157 @@ final class Medlemskap
             && $dag->modify('first day of next month')->format('Y-m-d') === substr($fra, 0, 10);
     }
 
+    // ── Alle betalte maaneder, ikke bare den siste ──────────────────────
+    //
+    // Pengehull 3 (betalingseksperten, 4. oktober 2026): skyldig ble regnet
+    // fra den SISTE betalingen. Var februar ubetalt og mars betalt, forsvant
+    // februargjelda. Naa ses alle betalte maaneder, og den foerste ubetalte
+    // (som ikke er fritatt av en frys) er den som skyldes.
+
+    /**
+     * Betalte, ikke annullerte medlemsbetalinger (ikke timepakker), per
+     * medlem, eldste foerst. Samme utvalg som betalingForMaaned().
+     *
+     * @param list<int> $medlemIder
+     * @return array<int,list<array<string,mixed>>>
+     */
+    private static function betalteRader(array $medlemIder): array
+    {
+        $medlemIder = array_values(array_filter(array_map('intval', $medlemIder), static fn(int $i): bool => $i > 0));
+        if ($medlemIder === []) {
+            return [];
+        }
+        $inn = implode(',', $medlemIder);
+        $fraKol = DB::harKolonne('payments', 'gjelder_fra') ? 'p.gjelder_fra' : 'NULL AS gjelder_fra';
+        $maateKol = DB::harKolonne('payments', 'maate') ? 'p.maate' : 'NULL AS maate';
+        $utenTimepakke = DB::harTabell('timepakker')
+            ? 'AND NOT EXISTS (SELECT 1 FROM timepakker tp WHERE tp.payment_id = p.id)' : '';
+        $ut = [];
+        foreach (DB::alle(
+            "SELECT p.id, p.member_id, p.type, p.subscription_id, p.created_at, p.belop_ore, {$maateKol}, {$fraKol},
+                    CASE WHEN s.id IS NULL THEN mm.engangs ELSE mp.engangs END AS engangs
+               FROM payments p
+          LEFT JOIN subscriptions s ON s.id = p.subscription_id
+          LEFT JOIN membership_plans mp ON mp.navn = s.plan
+          LEFT JOIN members m ON m.id = p.member_id
+          LEFT JOIN membership_plans mm ON mm.navn = m.medlemskap_type
+              WHERE p.member_id IN ({$inn}) AND p.formal = 'medlemskap'
+                AND p.status IN ('betalt','delvis_refundert') AND p.annullert_at IS NULL
+                {$utenTimepakke}
+              ORDER BY p.created_at, p.id"
+        ) as $r) {
+            $ut[(int) $r['member_id']][] = $r;
+        }
+        return $ut;
+    }
+
+    /**
+     * Kalendermaanedene (Y-m) betalingene dekker, med samme regel som
+     * betalingForMaaned(): perioden er gjelder_fra (ellers betalingsdagen), og
+     * den foerste betalingen paa et nytt medlemskap kjoept etter den 20.
+     * dekker ogsaa kjoepsmaaneden. Engangsplaner teller ikke.
+     *
+     * @param list<array<string,mixed>> $rader fra betalteRader()
+     * @return array{maaneder: array<string,bool>, forste: ?string}
+     */
+    private static function dekkedeMaaneder(array $rader): array
+    {
+        $oslo = new DateTimeZone('Europe/Oslo');
+        $utc  = new DateTimeZone('UTC');
+        $sett = [];
+        $mnd = [];
+        foreach ($rader as $r) {
+            if ((int) ($r['engangs'] ?? 0) === 1) {
+                continue;
+            }
+            $avtale = (int) ($r['subscription_id'] ?? 0);
+            $forste = !isset($sett[$avtale]);
+            $sett[$avtale] = true;
+            $kjopt = (new DateTimeImmutable((string) $r['created_at'], $utc))->setTimezone($oslo)->format('Y-m-d');
+            $start = trim((string) ($r['gjelder_fra'] ?? '')) ?: $kjopt;
+            $mnd[substr($start, 0, 7)] = true;
+            if ($forste && self::erForskuttert($r)) {
+                $mnd[substr($kjopt, 0, 7)] = true;
+            }
+        }
+        ksort($mnd);
+        return ['maaneder' => $mnd, 'forste' => $mnd === [] ? null : (string) array_key_first($mnd)];
+    }
+
+    /**
+     * Maaneden (Y-m) skyldberegningen begynner i: den foerste betalte
+     * maaneden, men ikke foer innmeldingen, ikke foer den nyeste avtalen ble
+     * laget (et nytt medlemskap etter et opphold skal ikke arve hullet), og
+     * hoeyst tolv maaneder tilbake.
+     *
+     * @param array<string,mixed>|null $avtale den nyeste subscriptions-raden
+     */
+    private static function skyldFra(string $forsteYm, ?string $startDato, ?array $avtale, string $idag): string
+    {
+        $fra = [$forsteYm, (new DateTimeImmutable($idag))->modify('first day of this month')->modify('-11 months')->format('Y-m')];
+        $start = trim((string) $startDato);
+        if ($start !== '') {
+            $fra[] = substr($start, 0, 7);
+        }
+        $laget = trim((string) ($avtale['created_at'] ?? ''));
+        if ($laget !== '') {
+            $fra[] = (new DateTimeImmutable($laget, new DateTimeZone('UTC')))
+                ->setTimezone(new DateTimeZone('Europe/Oslo'))->format('Y-m');
+        }
+        return max($fra);
+    }
+
+    /**
+     * Foerste dag i den foerste maaneden fra $fraYm til og med maaneden $idag
+     * ligger i, som verken er betalt eller fritatt av en frys. Ellers null.
+     *
+     * @param array<string,bool> $maaneder fra dekkedeMaaneder()
+     */
+    private static function forsteUbetalte(int $medlemId, string $fraYm, array $maaneder, string $idag): ?string
+    {
+        $d = new DateTimeImmutable(substr($fraYm, 0, 7) . '-01');
+        for ($n = 0; $d->format('Y-m-d') <= $idag && $n < 24; $d = $d->modify('first day of next month'), $n++) {
+            if (isset($maaneder[$d->format('Y-m')])) {
+                continue;
+            }
+            if (!self::fritattMaaned($medlemId, $d->format('Y-m-d'))) {
+                return $d->format('Y-m-d');
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Ubetalt maaned foer eller mellom betalingene (pengehull 3), eller null.
+     * Bare for et loepende medlemskap med minst én betalt maaned.
+     *
+     * @param array<string,mixed>      $medlem
+     * @param array<string,mixed>|null $avtale den nyeste subscriptions-raden
+     * @param array{maaneder: array<string,bool>, forste: ?string}|null $dekket
+     */
+    private static function ubetaltMellom(array $medlem, ?array $avtale, ?array $dekket, string $idag): ?string
+    {
+        $id = (int) ($medlem['id'] ?? 0);
+        if ($id <= 0) {
+            return null;
+        }
+        $dekket ??= self::dekkedeMaaneder(self::betalteRader([$id])[$id] ?? []);
+        if ($dekket['forste'] === null || self::erEngangs((string) ($medlem['medlemskap_type'] ?? ''))) {
+            return null;
+        }
+        // Naar avtalen ble laget: listene i admin henter avtalen uten
+        // created_at, saa den ligger ogsaa i «_dekket» fra sisteBetalinger().
+        // Samme svar i lista og paa medlemmet.
+        $laget = $avtale['created_at'] ?? ($dekket['avtaleLaget'] ?? null);
+        if ($laget === null && isset($avtale['id'])) {
+            $laget = DB::verdi('SELECT created_at FROM subscriptions WHERE id = :i', ['i' => (int) $avtale['id']]);
+        }
+        return self::forsteUbetalte($id,
+            self::skyldFra($dekket['forste'], isset($medlem['start_dato']) ? (string) $medlem['start_dato'] : null,
+                $laget === null ? null : ['created_at' => (string) $laget], $idag),
+            $dekket['maaneder'], $idag);
+    }
+
     /**
      * Fra naar (UTC) maanedstimene skal telles denne maaneden. Normalt den
      * 1. i norsk tid; har medlemmet et nytt medlemskap kjoept etter den 20.
@@ -761,7 +912,7 @@ final class Medlemskap
             return null;
         }
         $idag ??= (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))->format('Y-m-d');
-        $a = DB::en('SELECT id, siste_trekk FROM subscriptions WHERE member_id = :m ORDER BY id DESC LIMIT 1', ['m' => $id]);
+        $a = DB::en('SELECT id, siste_trekk, created_at FROM subscriptions WHERE member_id = :m ORDER BY id DESC LIMIT 1', ['m' => $id]);
         if ($a !== null) {
             $t = self::sisteTrekk([(int) $a['id']])[(int) $a['id']] ?? null;
             // Et trekk som henger paa «venter» etter forfall + retryDays er
@@ -778,17 +929,25 @@ final class Medlemskap
                 return (new DateTimeImmutable(substr($fra, 0, 10)))->modify('first day of this month')->format('Y-m-d');
             }
         }
-        $siste = self::sisteBetalinger([$id])[$id] ?? null;
-        if ($siste === null) {
+        // Alle betalte maaneder, ikke bare den siste (pengehull 3, 4. oktober
+        // 2026): den foerste ubetalte maaneden som ikke er fritatt, skyldes.
+        $rad = isset($medlem['medlemskap_type']) && array_key_exists('start_dato', $medlem) ? $medlem
+            : (DB::en('SELECT * FROM members WHERE id = :i', ['i' => $id]) ?? $medlem);
+        if (self::erEngangs((string) ($rad['medlemskap_type'] ?? ''))) {
             return null;
         }
-        $d = (new DateTimeImmutable(self::dekkerTil($siste)))->modify('first day of this month');
-        for ($n = 0; $d->format('Y-m-d') <= $idag && $n < 24; $d = $d->modify('first day of next month'), $n++) {
-            if (!self::fritattMaaned($id, $d->format('Y-m-d'))) {
-                return $d->format('Y-m-d');
-            }
+        $dekket = self::dekkedeMaaneder(self::betalteRader([$id])[$id] ?? []);
+        if ($dekket['forste'] === null) {
+            // Aldri betalt (pengehull 1, 4. oktober 2026): det skyldes fra
+            // maaneden verkstedet ellers ville tatt betalt for (Kassa: denne
+            // maaneden, eller neste for et nytt medlemskap kjoept etter den
+            // 20.) — med mindre en frys har fritatt den. Da staar medlemmet
+            // ikke som skyldig (betalingsstatus()), og det er ingenting aa betale.
+            $fra = self::gjelderFraForsteBetaling($id)
+                ?? (new DateTimeImmutable($idag))->modify('first day of this month')->format('Y-m-d');
+            return self::forsteUbetalte($id, substr($fra, 0, 7), [], $idag);
         }
-        return null;
+        return self::ubetaltMellom($rad, $a, $dekket, $idag);
     }
 
     /**
@@ -1036,8 +1195,6 @@ final class Medlemskap
      */
     public static function fornyPeriodePaa(array $medlem, array $avtale, ?string $idagFor): array
     {
-        // Fryst med noe utestaaende: betalingen gjelder maaneden som skyldes.
-        $skyldig = self::sperrFryst($medlem, false, $idagFor);
         $medlemId = (int) $medlem['id'];
         $avtaleId = (int) $avtale['id'];
         $planNavn = (string) $avtale['plan'];
@@ -1045,49 +1202,78 @@ final class Medlemskap
         if ($plan === null) {
             throw new RuntimeException('Ukjent medlemskap.');
         }
-
-        // Samme forsoek to ganger skal gi den samme betalingen, ikke to.
-        $igjen = DB::en(
-            "SELECT id FROM payments
-              WHERE subscription_id = :s AND formal = 'medlemskap' AND status IN ('opprettet','venter')
-                AND created_at > (UTC_TIMESTAMP() - INTERVAL 30 MINUTE)
-              ORDER BY id DESC LIMIT 1",
-            ['s' => $avtaleId]
-        );
-        $url = trim((string) (DB::verdi('SELECT vipps_url FROM subscriptions WHERE id = :i', ['i' => $avtaleId]) ?? ''));
-        if ($igjen !== null && $url !== '') {
-            return ['url' => $url, 'id' => $avtaleId, 'gjentakelse' => true];
-        }
-
         $idag = $idagFor ?? (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))->format('Y-m-d');
-        $siste = self::sisteBetalinger([$medlemId])[$medlemId] ?? null;
-        $gjelderFra = $idag;
-        if ($siste !== null) {
-            $slutt = self::dekkerTil($siste);
-            if ($slutt > $idag) {
-                $gjelderFra = $slutt;
-            }
-        }
-        if ($skyldig !== null) {
-            $gjelderFra = $skyldig;
-        }
-
         $pris = (int) $plan['pris_ore'];
         $referanse = Vipps::nyReferanse('MED');
-        $rad = [
-            'vipps_reference' => $referanse,
-            'type'            => 'epayment',
-            'formal'          => 'medlemskap',
-            'member_id'       => $medlemId,
-            'subscription_id' => $avtaleId,
-            'belop_ore'       => $pris,
-            'status'          => 'opprettet',
-            'idempotency_key' => Vipps::uuid(),
-        ];
-        if (DB::harKolonne('payments', 'gjelder_fra')) {
-            $rad['gjelder_fra'] = $gjelderFra;
+
+        // Pengehull 2 (betalingseksperten, 4. oktober 2026): Kassa og «Forny»
+        // kunne registrere den samme maaneden samtidig. Medlemmet laases —
+        // samme laas som Kassa tar (api/admin/medlemmer.php, L-12) — og
+        // perioden regnes og raden lagres under laasen. Kassa ser da raden
+        // som er paa vei, og nekter; «Forny» ser det Kassa har registrert.
+        $svar = DB::iTransaksjon(static function () use ($medlem, $avtaleId, $medlemId, $idag, $idagFor, $pris, $referanse): array {
+            DB::en('SELECT id FROM members WHERE id = :i FOR UPDATE', ['i' => $medlemId]);
+            // Fryst med noe utestaaende: betalingen gjelder maaneden som skyldes.
+            $skyldig = self::sperrFryst($medlem, false, $idagFor);
+
+            // Samme forsoek to ganger skal gi den samme betalingen, ikke to.
+            $igjen = DB::en(
+                "SELECT id FROM payments
+                  WHERE subscription_id = :s AND formal = 'medlemskap' AND status IN ('opprettet','venter')
+                    AND created_at > (UTC_TIMESTAMP() - INTERVAL 30 MINUTE)
+                  ORDER BY id DESC LIMIT 1",
+                ['s' => $avtaleId]
+            );
+            $url = trim((string) (DB::verdi('SELECT vipps_url FROM subscriptions WHERE id = :i', ['i' => $avtaleId]) ?? ''));
+            if ($igjen !== null && $url !== '') {
+                return ['url' => $url, 'id' => $avtaleId, 'gjentakelse' => true];
+            }
+            if ($igjen !== null) {
+                // Det foerste trykket er fortsatt paa vei til Vipps.
+                throw new RuntimeException('Betalingen pågår i Vipps. Prøv igjen om litt.');
+            }
+
+            // Perioden: en eldre maaned som skyldes, betales foerst (pengehull
+            // 3). Ellers den foerste maaneden fra denne som ikke er betalt —
+            // denne maaneden gjelder fra i dag, som foer.
+            $denne = (new DateTimeImmutable($idag))->modify('first day of this month')->format('Y-m-d');
+            $gjeld = $skyldig;
+            if ($gjeld === null) {
+                $rad = DB::en('SELECT * FROM members WHERE id = :i', ['i' => $medlemId]) ?? $medlem;
+                $eldre = self::skyldigMaaned($rad, $idag);
+                $gjeld = $eldre !== null && $eldre < $denne ? $eldre : null;
+            }
+            if ($gjeld !== null) {
+                $gjelderFra = $gjeld;
+            } else {
+                $dekket = self::dekkedeMaaneder(self::betalteRader([$medlemId])[$medlemId] ?? [])['maaneder'];
+                $d = new DateTimeImmutable($denne);
+                for ($n = 0; isset($dekket[$d->format('Y-m')]) && $n < 24; $n++) {
+                    $d = $d->modify('first day of next month');
+                }
+                $gjelderFra = $d->format('Y-m-d') === $denne ? $idag : $d->format('Y-m-d');
+            }
+
+            $rad = [
+                'vipps_reference' => $referanse,
+                'type'            => 'epayment',
+                'formal'          => 'medlemskap',
+                'member_id'       => $medlemId,
+                'subscription_id' => $avtaleId,
+                'belop_ore'       => $pris,
+                'status'          => 'opprettet',
+                'idempotency_key' => Vipps::uuid(),
+            ];
+            if (DB::harKolonne('payments', 'gjelder_fra')) {
+                $rad['gjelder_fra'] = $gjelderFra;
+            }
+            return ['betalingId' => DB::settInn('payments', $rad), 'gjelderFra' => $gjelderFra];
+        });
+        if (isset($svar['url'])) {
+            return $svar;
         }
-        $betalingId = DB::settInn('payments', $rad);
+        $betalingId = (int) $svar['betalingId'];
+        $gjelderFra = (string) $svar['gjelderFra'];
 
         try {
             $betaling = Vipps::opprettBetaling(
@@ -1471,6 +1657,36 @@ final class Medlemskap
      */
     public static function betalingsstatus(array $medlem, ?array $avtale, ?array $siste, ?array $trekk = null, ?string $idagFor = null): array
     {
+        $b = self::betalingsstatusRaa($medlem, $avtale, $siste, $trekk, $idagFor);
+        // Fryst, og ingenting aa betale (pengehull 1, 4. oktober 2026): staar
+        // det noe utestaaende uten at det finnes en maaned som skyldes
+        // (skyldigMaaned()), kunne verken Kassa eller Min side ta betalt for
+        // det. Da er det heller ikke utestaaende: maanedene er fritatt av
+        // frysen. Et trekk som feilet, eller en maaned frysen dekker under 15
+        // dager av, gir en maaned som skyldes — og staar som foer.
+        $medlemId = (int) ($medlem['id'] ?? 0);
+        if ($b['utestaaende'] && $medlemId > 0 && Frys::klar()) {
+            $idag = $idagFor ?? (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))->format('Y-m-d');
+            $fryst = Frys::frystNaa($medlem, $idag);
+            if ($fryst !== null && self::skyldigMaaned($medlem, $idag) === null) {
+                return ['tilstand' => 'fryst', 'tekst' => 'Fryst til ' . Booking::norskDatoKort($fryst['til'] . ' 12:00:00'),
+                        'forfalt' => false, 'utestaaende' => false];
+            }
+        }
+        return $b;
+    }
+
+    /**
+     * betalingsstatus() uten sluttsjekken for fryste medlemmer.
+     *
+     * @param array<string,mixed>      $medlem
+     * @param array<string,mixed>|null $avtale
+     * @param array<string,mixed>|null $siste
+     * @param array<string,mixed>|null $trekk
+     * @return array{tilstand:string,tekst:string,forfalt:bool,utestaaende:bool}
+     */
+    private static function betalingsstatusRaa(array $medlem, ?array $avtale, ?array $siste, ?array $trekk = null, ?string $idagFor = null): array
+    {
         // To forskjellige spoersmaal, og de ble blandet:
         //
         //   forfalt      — pengene skulle vaert her, og er det ikke. Roedt.
@@ -1526,8 +1742,33 @@ final class Medlemskap
         // (kontrolloeren og betalingseksperten, samme dag). Kalles bare fra
         // grenene der noe ellers ville staatt ubetalt fra og med $fra.
         $medlemId = (int) ($medlem['id'] ?? 0);
-        $fritak = static function (string $fra) use ($medlem, $medlemId, $idag, $ut, $kort): ?array {
+
+        // ── En ubetalt maaned foer den siste betalte ──────────────────────
+        //
+        // Pengehull 3 (betalingseksperten, 4. oktober 2026): «betalt» ble
+        // lest av den siste betalingen alene. Var februar ubetalt og mars
+        // betalt, sto medlemmet som betalt, og februar forsvant. Sjekkes bare
+        // der svaret ellers ville vaert «betalt» eller «fryst».
+        $hull = static function () use ($medlem, $avtale, $siste, $idag): ?string {
+            if ($siste === null) {
+                return null;
+            }
+            return self::ubetaltMellom($medlem, $avtale,
+                isset($siste['_dekket']) && is_array($siste['_dekket']) ? $siste['_dekket'] : null, $idag);
+        };
+        // «Forfalt <maaned> · sist betalt <dato>» — samme tekst som under.
+        $hullSvar = static function (?string $mnd) use ($siste, $ut, $kort): ?array {
+            return $mnd === null || $siste === null ? null
+                : $ut('forfalt', 'Forfalt ' . $kort($mnd) . ' · sist betalt '
+                    . $kort(substr((string) $siste['created_at'], 0, 10)), true);
+        };
+
+        $fritak = static function (string $fra) use ($medlem, $medlemId, $idag, $ut, $kort, $hull): ?array {
             if ($medlemId <= 0 || !Frys::klar() || !self::alleFritatt($medlemId, $fra, $idag)) {
+                return null;
+            }
+            // En ubetalt maaned foer frysen skjules ikke av den.
+            if ($hull() !== null) {
                 return null;
             }
             $fryst = Frys::frystNaa($medlem, $idag);
@@ -1589,6 +1830,9 @@ final class Medlemskap
                     return $ut('forfalt', 'Inneværende måned er ikke betalt · sist trukket '
                         . $kort(substr((string) $trekk['created_at'], 0, 10)), true);
                 }
+                if (($h = $hullSvar($hull())) !== null) {
+                    return $h;
+                }
                 return $ut('betalt', 'Trukket '
                     . $kort(substr((string) $trekk['created_at'], 0, 10))
                     . ($neste !== '' ? ' · neste ' . $kort($neste) : ''));
@@ -1600,6 +1844,9 @@ final class Medlemskap
             }
             if ($sist !== '') {
                 if ($siste !== null && self::dekkerTil($siste) > $idag) {
+                    if (($h = $hullSvar($hull())) !== null) {
+                        return $h;
+                    }
                     return $ut('betalt', 'Betalt ' . $kort(substr((string) $siste['created_at'], 0, 10))
                         . ($neste !== '' ? ' · neste ' . $kort($neste) : ''));
                 }
@@ -1713,6 +1960,9 @@ final class Medlemskap
             return $ut('forfalt', 'Forfalt ' . $kort($dekkerTil)
                 . ' · sist betalt ' . $kort($betaltDen), true);
         }
+        if (($h = $hullSvar($hull())) !== null) {
+            return $h;
+        }
         return $ut('betalt', 'Betalt ' . $kort($betaltDen) . ' · neste ' . $kort($dekkerTil));
     }
 
@@ -1773,25 +2023,48 @@ final class Medlemskap
         if ($medlemIder === []) {
             return [];
         }
-        $inn = implode(',', array_map('intval', $medlemIder));
+        // Ett oppslag for hele lista: alle betalte medlemsbetalinger.
+        //
+        // «Siste» er betalingen for den SENESTE perioden, ikke den sist
+        // registrerte (pengehull 3, 4. oktober 2026): betales en gammel
+        // ubetalt maaned i verkstedet etter at en senere er betalt, skal den
+        // ikke trekke «betalt til» tilbake. Lik periode: den sist registrerte.
+        // «_dekket» er alle maanedene betalingene dekker, til betalingsstatus().
         $ut = [];
-        // gjelder_fra: migrasjon 235 («Forny» fra der forrige periode slutter).
-        $fra = DB::harKolonne('payments', 'gjelder_fra') ? ', p.gjelder_fra' : '';
-        $utenTimepakke = DB::harTabell('timepakker')
-            ? 'AND NOT EXISTS (SELECT 1 FROM timepakker tp WHERE tp.payment_id = payments.id)' : '';
-        foreach (DB::alle(
-            "SELECT p.member_id, p.created_at, p.belop_ore, p.maate, p.type{$fra}
-               FROM payments p
-               JOIN (SELECT member_id, MAX(id) AS siste
-                       FROM payments
-                      WHERE formal = 'medlemskap'
-                        AND status IN ('betalt','delvis_refundert')
-                        AND annullert_at IS NULL
-                        AND member_id IN ({$inn})
-                        {$utenTimepakke}
-                   GROUP BY member_id) n ON n.siste = p.id"
-        ) as $r) {
-            $ut[(int) $r['member_id']] = $r;
+        $alle = self::betalteRader($medlemIder);
+        // Nyeste avtale per medlem (samme som betalingsstatusFor() leser):
+        // naar den ble laget, til skyldberegningen.
+        $laget = [];
+        if ($alle !== []) {
+            $inn = implode(',', array_map('intval', array_keys($alle)));
+            foreach (DB::alle(
+                "SELECT s.member_id, s.created_at FROM subscriptions s
+                   JOIN (SELECT member_id, MAX(id) AS siste FROM subscriptions
+                          WHERE member_id IN ({$inn}) GROUP BY member_id) n ON n.siste = s.id"
+            ) as $r) {
+                $laget[(int) $r['member_id']] = (string) $r['created_at'];
+            }
+        }
+        foreach ($alle as $medlemId => $rader) {
+            $best = null;
+            $bestNokkel = '';
+            foreach ($rader as $r) {
+                $periode = trim((string) ($r['gjelder_fra'] ?? '')) ?: substr((string) $r['created_at'], 0, 10);
+                $nokkel = $periode . '#' . str_pad((string) (int) $r['id'], 12, '0', STR_PAD_LEFT);
+                if ($best === null || $nokkel > $bestNokkel) {
+                    $best = $r;
+                    $bestNokkel = $nokkel;
+                }
+            }
+            if ($best === null) {
+                continue;
+            }
+            unset($best['engangs']);
+            if (!DB::harKolonne('payments', 'gjelder_fra')) {
+                unset($best['gjelder_fra']);
+            }
+            $best['_dekket'] = self::dekkedeMaaneder($rader) + ['avtaleLaget' => $laget[(int) $medlemId] ?? null];
+            $ut[(int) $medlemId] = $best;
         }
         return $ut;
     }

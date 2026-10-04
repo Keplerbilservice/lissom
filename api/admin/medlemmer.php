@@ -1370,13 +1370,21 @@ if (Foresporsel::metode() === 'POST') {
         // gjelder maaneden som skyldes, ikke den fryste maaneden. Medlemmer
         // med fast trekk betaler det utestaaende her, ikke paa Min side.
         $mRad = DB::en('SELECT * FROM members WHERE id = :i', ['i' => $id]);
-        if ($mRad !== null && Frys::frystNaa($mRad) !== null) {
+        $skyldig = null;
+        if ($mRad !== null) {
             $skyldig = Medlemskap::skyldigMaaned($mRad);
+        }
+        if ($mRad !== null && Frys::frystNaa($mRad) !== null) {
             // Skylder ingenting: da skal det ikke registreres en betaling for
             // en frosset maaned (betaling, 2. oktober 2026).
             if ($skyldig === null) {
                 throw new RuntimeException('Medlemmet er fryst og skylder ingenting.', 409);
             }
+            $fra = $skyldig;
+        } elseif ($skyldig !== null && $skyldig < $fra) {
+            // En eldre maaned som ikke er betalt, betales foerst (pengehull 3,
+            // 4. oktober 2026): ellers ble februar staaende ubetalt naar mars
+            // ble registrert, og kunne aldri betales.
             $fra = $skyldig;
         }
         $maaned = substr($fra, 0, 7);
@@ -1407,6 +1415,24 @@ if (Foresporsel::metode() === 'POST') {
         ) !== null) {
             throw new RuntimeException('Et fast trekk i Vipps for ' . $periode . ' er underveis for ' . $navn
                 . '. Betalingen er ikke registrert.', 409);
+        }
+        // Pengehull 2 (4. oktober 2026): medlemmet betaler den samme maaneden
+        // selv i Vipps («Forny») akkurat naa. «Forny» lagrer raden under den
+        // samme laasen (Medlemskap::fornyPeriodePaa), saa den ses her. En
+        // betaling som ikke er fullfoert paa en halvtime, er utloept i Vipps
+        // (samme grense som «Forny» bruker for et nytt trykk).
+        $harFra = DB::harKolonne('payments', 'gjelder_fra');
+        if (DB::verdi(
+            "SELECT id FROM payments
+              WHERE member_id = :m AND formal = 'medlemskap' AND type = 'epayment'
+                AND status IN ('opprettet','venter') AND annullert_at IS NULL
+                AND created_at > (UTC_TIMESTAMP() - INTERVAL 30 MINUTE)"
+                . ($harFra ? ' AND (gjelder_fra IS NULL OR (gjelder_fra >= :fra AND gjelder_fra < :til))' : '')
+                . ' LIMIT 1',
+            ['m' => $id] + ($harFra ? ['fra' => $maaned . '-01',
+             'til' => (new DateTimeImmutable($maaned . '-01'))->modify('first day of next month')->format('Y-m-d')] : [])
+        ) !== null) {
+            throw new RuntimeException('Betalingen pågår i Vipps. Prøv igjen om litt.', 409);
         }
         return $fra;
     };

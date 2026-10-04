@@ -75,6 +75,19 @@ if ($handling === 'fjern') {
     if ($b['payment_id'] !== null && in_array((string) $b['betalingsstatus'], $BETALT, true)) {
         Svar::feil('Denne er betalt gjennom Vipps. Bruk refusjon, ikke sletting.');
     }
+    // Ogsaa en Vipps-betaling som bare peker hit fra «payments.booking_id»
+    // (bookings.payment_id kan peke paa en manuell rad, eller staa tom) —
+    // samme sjekk som «Registrer betaling» (api/admin/kursbetaling.php).
+    // Pengehull 4, 4. oktober 2026.
+    if (DB::harKolonne('payments', 'booking_id') && DB::verdi(
+        "SELECT id FROM payments
+          WHERE booking_id = :b AND type <> 'manuell'
+            AND status IN ('autorisert','betalt','delvis_refundert')
+          LIMIT 1",
+        ['b' => $id]
+    ) !== null) {
+        Svar::feil('Denne er betalt gjennom Vipps. Bruk refusjon, ikke sletting.');
+    }
 
     DB::oppdater('bookings', [
         'status'       => 'avbestilt',
@@ -912,7 +925,8 @@ if ($handling === 'kontakt') {
 
 if ($handling === 'endre') {
     $rad = DB::en(
-        'SELECT b.id, b.antall, b.belop_ore, b.course_session_id, b.status
+        'SELECT b.id, b.antall, b.belop_ore, b.course_session_id, b.status,
+                b.member_id, b.betalt_maate, b.created_at
            FROM bookings b WHERE b.id = :i',
         ['i' => $id]
     );
@@ -977,22 +991,118 @@ if ($handling === 'endre') {
         Svar::feil('Ingenting å endre.');
     }
 
-    DB::oppdater('bookings', $felt, ['id' => $id]);
+    // ── Pengehull 4: betalt status foelger beloepet ───────────────────
+    //
+    // Betalingseksperten, 4. oktober 2026: «endre» rettet beloepet, men aldri
+    // statusen. Ekstra plasser paa en betalt paamelding ble staaende
+    // «Betalt», og ingen krevde inn resten. Naa som ved flytting med nytt
+    // beloep (L-7): det som er betalt, foeres som betaling (betalt for haand
+    // uten rad), og Booking::settBetaltStatus() regner status paa nytt —
+    // restbeloepet staar under «Ikke betalt», for mye sies fra om. En gratis
+    // plass er gratis som foer, og en reservert plass uten betalinger roeres
+    // ikke.
+    $gammeltBelop = (int) $rad['belop_ore'];
+    $nyttBelop = (int) ($felt['belop_ore'] ?? $gammeltBelop);
+    $nyPris = $nyttBelop !== $gammeltBelop
+        && !in_array((string) $rad['status'], ['avbestilt', 'ikke_mott'], true)
+        && (string) ($rad['betalt_maate'] ?? '') !== 'Gratis';
+
+    // Samme vakt som flyttingen: en betaling paa vei i Vipps ble startet med
+    // det gamle beloepet. Sjekkes foer (raskt svar) og under laas.
+    $harBookingId = DB::harKolonne('payments', 'booking_id');
+    $paaVei = static function (bool $laas) use ($id, $harBookingId): bool {
+        return DB::verdi(
+            "SELECT p.id FROM payments p
+              WHERE (p.id = (SELECT payment_id FROM bookings WHERE id = :b1)"
+                . ($harBookingId ? ' OR p.booking_id = :b2' : '') . ")
+                AND p.status IN ('opprettet', 'venter')
+              LIMIT 1" . ($laas ? ' FOR UPDATE' : ''),
+            $harBookingId ? ['b1' => $id, 'b2' => $id] : ['b1' => $id]
+        ) !== null;
+    };
+    if ($nyPris && $paaVei(false)) {
+        Svar::feil('Betalingen pågår i Vipps. Prøv igjen om litt.', 409);
+    }
+
+    try {
+        $etter = DB::iTransaksjon(static function () use ($id, $rad, $felt, $nyPris, $gammeltBelop, $admin, $paaVei): ?array {
+            // Laaserekkefoelge som flyttingen og Booking::markerBetalt():
+            // betaling, saa paamelding.
+            if ($nyPris && $paaVei(true)) {
+                throw new RuntimeException('Betalingen pågår i Vipps. Prøv igjen om litt.', 409);
+            }
+            $naa = DB::en(
+                'SELECT status, antall, belop_ore, betalt_maate FROM bookings WHERE id = :i FOR UPDATE',
+                ['i' => $id]
+            );
+            if ($naa === null
+                || (string) $naa['status'] !== (string) $rad['status']
+                || (int) $naa['antall'] !== (int) $rad['antall']
+                || (int) $naa['belop_ore'] !== (int) $rad['belop_ore']
+                || (string) ($naa['betalt_maate'] ?? '') !== (string) ($rad['betalt_maate'] ?? '')) {
+                throw new RuntimeException('Påmeldingen ble endret i mellomtiden. Last siden på nytt.', 409);
+            }
+            if (!$nyPris) {
+                DB::oppdater('bookings', $felt, ['id' => $id]);
+                return null;
+            }
+            $bet = Booking::betalingerFor($id);
+            // Betalt for haand foer betalingene ble foert: det som ble betalt,
+            // foeres med samme dato og beloep (som ved flytting).
+            if ((string) $rad['status'] === 'betalt' && $bet['rader'] === [] && $gammeltBelop > 0) {
+                $maate = trim((string) ($rad['betalt_maate'] ?? ''));
+                if ($maate !== '' && !Booking::maateGirPenger($maate)) {
+                    throw new RuntimeException('Prisen er ulik, og betalingen er ikke registrert. Registrer den i Kasse først.', 409);
+                }
+                $pid = Booking::manuellBetaling($id, $gammeltBelop, $maate !== '' ? $maate : 'Kontant',
+                    $rad['member_id'] !== null ? (int) $rad['member_id'] : null, (int) $admin['id'],
+                    'Betalt før endring');
+                DB::oppdater('payments', ['created_at' => (string) $rad['created_at']], ['id' => $pid]);
+                $bet = Booking::betalingerFor($id);
+            }
+            DB::oppdater('bookings', $felt, ['id' => $id]);
+            // En reservert plass uten noe betalt roeres ikke (ingen ny status).
+            if ((string) $rad['status'] !== 'betalt' && $bet['sum'] <= 0) {
+                return null;
+            }
+            return Booking::settBetaltStatus($id);
+        });
+    } catch (PDOException $e) {
+        if (!in_array((int) ($e->errorInfo[1] ?? 0), [1213, 1205], true)) {
+            throw $e;
+        }
+        Svar::feil('Påmeldingen ble endret i mellomtiden. Last siden på nytt.', 409);
+    } catch (RuntimeException $e) {
+        if ($e->getCode() !== 409) {
+            throw $e;
+        }
+        Svar::feil($e->getMessage(), 409);
+    }
 
     // Loggen skal si hva som sto for og hva som staar naa. Et tall som
     // endrer seg uten spor er det samme som et tall ingen kan etterproeve.
+    $forMye = $etter !== null ? max(0, $etter['sum'] - $nyttBelop) : 0;
     revider('pamelding_endret', 'booking', $id, [
         'antall_for' => (int) $rad['antall'],
         'antall_naa' => (int) ($felt['antall'] ?? $rad['antall']),
         'belop_for'  => (int) $rad['belop_ore'],
         'belop_naa'  => (int) ($felt['belop_ore'] ?? $rad['belop_ore']),
         'rabatt'     => $rabatt,
-    ]);
+    ] + ($etter !== null ? [
+        'betalt'  => $etter['sum'],
+        'skyldig' => $etter['skyldig'],
+        'for_mye' => $forMye,
+        'status'  => $etter['status'],
+    ] : []));
 
     Svar::ok([
-        'beskjed' => 'Påmeldingen er rettet.',
+        'beskjed' => 'Påmeldingen er rettet.'
+            . ($etter !== null && $etter['skyldig'] > 0 ? ' Skyldig: ' . Booking::kroner($etter['skyldig']) . '.' : '')
+            . ($forMye > 0 ? ' Betalt ' . Booking::kroner($forMye) . ' for mye — refunder differansen.' : ''),
         'antall'  => (int) ($felt['antall'] ?? $rad['antall']),
         'belop'   => Booking::kroner((int) ($felt['belop_ore'] ?? $rad['belop_ore'])),
+        'skyldigOre' => $etter['skyldig'] ?? null,
+        'forMyeOre'  => $etter !== null ? $forMye : null,
     ]);
 }
 

@@ -45440,8 +45440,9 @@ class Component extends DCLogic {
       // hoyere enn taket paa 240 px — saa pila falt tilbake til 10 px og la
       // seg oppaa logoen. Skuffen har sin egen «Lukk», og en rund pil oppaa
       // menyen er uansett i veien for det man skal velge.
+      // Ny Min side (fliser) har sin egen «← Min side» og menyen øverst; den runde pila la seg oppå hilsenen på mobil (eieren 04.10.2026).
       tilbakeVis: this.erPublisert() && side !== 'forside' && side !== 'adminoversikt'
-        && !this.state.admMobApen,
+        && !this.state.admMobApen && !(side === 'minside' && this.msNyPaa()),
       tilbakeGaa: () => {
         if (dybde > 0) { history.back(); return; }
         if (admin) { this.gaaAdmin('adminoversikt', {}); return; }

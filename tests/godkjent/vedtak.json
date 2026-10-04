@@ -5172,6 +5172,20 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "minside-ny-uten-rund-pil",
+            "dato": "2026-10-04",
+            "hva": "Den runde ←-pila vises ikke på ny Min side (fliser); undersidene har «← Min side», og pila la seg oppå hilsenen på mobil",
+            "hvor": "Min side",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "&& !this.state.admMobApen && !(side === 'minside' && this.msNyPaa()),"
+                    ]
+                }
+            ]
         }
     ]
 }

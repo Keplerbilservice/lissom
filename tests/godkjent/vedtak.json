@@ -4700,6 +4700,22 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "topp-ovn-inne-idag-kurs",
+            "dato": "2026-10-04",
+            "hva": "Ovnen (Ovn er tømt / Råbrann satt / Glasurbrann satt) og «Hvem er inne?» er alltid synlige i toppen ved siden av Stemple; I dag viser dagens kurs og notater",
+            "hvor": "admin-ny › topp og I dag",
+            "kode": [
+                {
+                    "fil": "admin-ny/app.js",
+                    "finnes": [
+                        "stempleKnapp(),ovnKnapp(),inneKnapp(),",
+                        "fetch('/api/ovn.php'",
+                        "card('Kurs og notater i dag'"
+                    ]
+                }
+            ]
         }
     ]
 }

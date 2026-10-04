@@ -4975,7 +4975,7 @@
         {
             "id": "pengehull-3-alle-ubetalte-maaneder",
             "dato": "2026-10-04",
-            "hva": "Pengehull 3: skyldig ser alle betalte måneder, ikke bare den siste. Første ubetalte måned som ikke er fritatt av frys skyldes (fra første betalte måned, ikke før innmeldingen eller nyeste avtale, høyst 12 måneder tilbake). betalingsstatus sier «Forfalt <måned> · sist betalt <dato>» i stedet for «Betalt» når en eldre måned mangler, også ved fast trekk med et feilet trekk før et vellykket. Kassa tar den eldste ubetalte måneden først. sisteBetalinger() velger betalingen for den seneste perioden (ikke den sist registrerte), og «Forny» lager aldri en betaling for en måned som alt er betalt.",
+            "hva": "Pengehull 3: skyldig ser alle betalte måneder, ikke bare den siste. Første ubetalte måned som ikke er fritatt av frys skyldes (fra første betalte måned, ikke før innmeldingen eller nyeste avtale, høyst 12 måneder tilbake). betalingsstatus sier «Forfalt <måned> · sist betalt <dato>» i stedet for «Betalt» når en eldre måned mangler, også ved fast trekk med et feilet trekk før et vellykket. Kassa tar den eldste ubetalte måneden først. sisteBetalinger() velger betalingen for den seneste perioden (ikke den sist registrerte), og «Forny» lager aldri en betaling for en måned som alt er betalt. Kontrolløren (4. oktober 2026, valgt av koordinator): hull før siste betaling telles bare fra oktober 2026 (HULL_FRA, utrullingsvern — eldre betalinger kan mangle gjelder_fra); måneder etter siste betaling skyldes som før. Et feilet/avbrutt trekk gir ikke lenger sin måned som skyldig når måneden er betalt på annen måte, og Kassa går bare bakover til en måned som ikke er betalt. Gjeldsstarten følger bare avtaler som løper eller er betalt på.",
             "hvor": "app/lib/medlemskap.php, api/admin/medlemmer.php",
             "kode": [
                 {
@@ -4983,13 +4983,17 @@
                     "finnes": [
                         "private static function dekkedeMaaneder(array $rader): array",
                         "private static function ubetaltMellom(",
+                            "public const HULL_FRA = '2026-10';",
+                            "private static function avtaleLaget(array $medlemIder): array",
+                            "if (self::betalingForMaaned($id, substr($mnd, 0, 7)) === null) {",
                         "$best['_dekket'] = self::dekkedeMaaneder($rader) + ['avtaleLaget'"
                     ]
                 },
                 {
                     "fil": "api/admin/medlemmer.php",
                     "finnes": [
-                        "} elseif ($skyldig !== null && $skyldig < $fra) {"
+                        "} elseif ($skyldig !== null && $skyldig < $fra",
+                            "&& Medlemskap::betalingForMaaned($id, substr($skyldig, 0, 7)) === null) {"
                     ]
                 }
             ]
@@ -4997,13 +5001,14 @@
         {
             "id": "pengehull-4-pamelding-endre-fjern",
             "dato": "2026-10-04",
-            "hva": "Pengehull 4: «endre» på en påmelding regner betalt status på nytt når beløpet endres, som flytting (L-7): det som er betalt for hånd uten rad, føres som betaling (kommentar «Betalt før endring»), og Booking::settBetaltStatus() gir restbeløp under «Ikke betalt» eller «for mye» i svaret. Gratis er gratis; reservert uten betalinger røres ikke; betaling på vei i Vipps gir 409. «fjern» nekter også en Vipps-betalt plass som bare er koblet via payments.booking_id (som kursbetaling.php). «til-venteliste» har den samme sjekken.",
+            "hva": "Pengehull 4: «endre» på en påmelding regner betalt status på nytt når beløpet endres, som flytting (L-7): det som er betalt for hånd uten rad, føres som betaling (kommentar «Betalt før endring»), og Booking::settBetaltStatus() gir restbeløp under «Ikke betalt» eller «for mye» i svaret. Gratis er gratis; reservert uten betalinger røres ikke; betaling på vei i Vipps gir 409. «fjern» nekter også en Vipps-betalt plass som bare er koblet via payments.booking_id (som kursbetaling.php). «til-venteliste» har den samme sjekken. Det betalte føres når summen av betalingene er 0 (ikke når det ikke finnes rader), så en mislykket Vipps-rad ikke gir falsk gjeld — både i «endre» og flyttingen.",
             "hvor": "api/admin/pamelding.php (endre, fjern)",
             "kode": [
                 {
                     "fil": "api/admin/pamelding.php",
                     "finnes": [
                         "'Betalt før endring');",
+                            "=== 'betalt' && $bet['sum'] <= 0 && $gammeltBelop > 0) {",
                         "return Booking::settBetaltStatus($id);",
                         "WHERE booking_id = :b AND type <> 'manuell'",
                         "// Samme sjekk som «fjern» (pengehull 4, 4. oktober 2026): ogsaa en"

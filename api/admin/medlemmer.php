@@ -1381,7 +1381,8 @@ if (Foresporsel::metode() === 'POST') {
                 throw new RuntimeException('Medlemmet er fryst og skylder ingenting.', 409);
             }
             $fra = $skyldig;
-        } elseif ($skyldig !== null && $skyldig < $fra) {
+        } elseif ($skyldig !== null && $skyldig < $fra
+            && Medlemskap::betalingForMaaned($id, substr($skyldig, 0, 7)) === null) {
             // En eldre maaned som ikke er betalt, betales foerst (pengehull 3,
             // 4. oktober 2026): ellers ble februar staaende ubetalt naar mars
             // ble registrert, og kunne aldri betales.

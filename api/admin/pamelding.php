@@ -419,7 +419,7 @@ if ($handling === 'flytt') {
             // som en betaling med samme dato og beloep — summen i hver periode
             // er den samme — og saa regnes resten som for alle andre.
             $bet = Booking::betalingerFor($id);
-            if ((string) $b['status'] === 'betalt' && $bet['rader'] === [] && $gammeltBelop > 0) {
+            if ((string) $b['status'] === 'betalt' && $bet['sum'] <= 0 && $gammeltBelop > 0) {
                 $maate = trim((string) ($b['betalt_maate'] ?? ''));
                 if ($maate !== '' && !Booking::maateGirPenger($maate)) {
                     throw new RuntimeException('Prisen er ulik, og betalingen er ikke registrert. Registrer den i Kasse først.', 409);
@@ -1060,7 +1060,7 @@ if ($handling === 'endre') {
             $bet = Booking::betalingerFor($id);
             // Betalt for haand foer betalingene ble foert: det som ble betalt,
             // foeres med samme dato og beloep (som ved flytting).
-            if ((string) $rad['status'] === 'betalt' && $bet['rader'] === [] && $gammeltBelop > 0) {
+            if ((string) $rad['status'] === 'betalt' && $bet['sum'] <= 0 && $gammeltBelop > 0) {
                 $maate = trim((string) ($rad['betalt_maate'] ?? ''));
                 if ($maate !== '' && !Booking::maateGirPenger($maate)) {
                     throw new RuntimeException('Prisen er ulik, og betalingen er ikke registrert. Registrer den i Kasse først.', 409);

@@ -264,50 +264,88 @@ try {
     sjekk('Kassa nekter mens den er paa vei (409)', $svar[0][0] === 409, $svar[0][0] . ' ' . $feiltekst($svar[0]));
 
     // ══ Hull 3: februar forsvinner ikke naar mars er betalt ══════════════
-    echo "\n── Hull 3a: forrige maaned ubetalt, denne betalt ──\n";
+    // Faste datoer i 2027 (etter utrullingsvernet HULL_FRA = 2026-10), med
+    // «i dag» satt: 15. mars 2027.
+    $J = '2027-01-01'; $F = '2027-02-01'; $M = '2027-03-01'; $A = '2027-04-01'; $D = '2027-03-15';
+    echo "\n── Hull 3a: februar ubetalt, januar og mars betalt (i dag $D) ──\n";
     [$d1, $d1S] = nyttMedlem($plan, 'Hull3 Hull');
-    betalt($d1, $d1S, $toSiden);
-    betalt($d1, $d1S, $denne);
-    $b = Medlemskap::betalingsstatusFor($medlem($d1));
+    betalt($d1, $d1S, $J);
+    betalt($d1, $d1S, $M);
+    $b = Medlemskap::betalingsstatusFor($medlem($d1), $D);
     sjekk('status forfalt og utestaaende (foer: «betalt»)', $b['tilstand'] === 'forfalt' && $b['utestaaende'] === true,
         json_encode($b, JSON_UNESCAPED_UNICODE));
-    sjekk("skyldigMaaned = $forrige", Medlemskap::skyldigMaaned($medlem($d1)) === $forrige, (string) Medlemskap::skyldigMaaned($medlem($d1)));
-    $svar = kall([[$porter[0], $API, $kontant($d1), $token]]);
+    sjekk("skyldigMaaned = $F", Medlemskap::skyldigMaaned($medlem($d1), $D) === $F, (string) Medlemskap::skyldigMaaned($medlem($d1), $D));
+    Medlemskap::fornyPeriodePaa($medlem($d1), $avtale($d1S), $D);
     $r = rader($d1);
-    sjekk("Kassa tar $forrige (200, 50000 øre)", $svar[0][0] === 200 && count($r) === 3 && $r[2]['gjelder_fra'] === $forrige
-        && (int) $r[2]['belop_ore'] === 50000, $svar[0][0] . ' ' . json_encode($r));
-    $b = Medlemskap::betalingsstatusFor($medlem($d1));
-    sjekk('… deretter betalt, ingenting skyldig', $b['tilstand'] === 'betalt' && Medlemskap::skyldigMaaned($medlem($d1)) === null,
+    sjekk("«Forny» betaler den eldste ($F) først", end($r)['gjelder_fra'] === $F, json_encode(end($r)));
+    DB::oppdater('payments', ['status' => 'betalt'], ['id' => (int) end($r)['id']]);
+    $b = Medlemskap::betalingsstatusFor($medlem($d1), $D);
+    sjekk('… deretter betalt, ingenting skyldig', $b['tilstand'] === 'betalt' && Medlemskap::skyldigMaaned($medlem($d1), $D) === null,
         json_encode($b, JSON_UNESCAPED_UNICODE));
     $siste = Medlemskap::sisteBetalinger([$d1])[$d1];
-    sjekk("«siste» er perioden $denne (ikke den sist registrerte), betalt til $neste",
-        Medlemskap::dekkerTil($siste) === $neste, Medlemskap::dekkerTil($siste));
-    $svar = kall([[$porter[0], $API, $kontant($d1), $token]]);
-    sjekk('ny Kassa-betaling nektes (409, denne maaneden er betalt)', $svar[0][0] === 409, (string) $svar[0][0]);
-    Medlemskap::fornyPeriode($medlem($d1), $avtale($d1S));
+    sjekk("«siste» er perioden $M (ikke den sist registrerte), betalt til $A", Medlemskap::dekkerTil($siste) === $A,
+        Medlemskap::dekkerTil($siste));
+    DB::oppdater('payments', ['created_at' => gmdate('Y-m-d H:i:s', time() - 31 * 60)], ['member_id' => $d1, 'status' => 'venter']);
+    Medlemskap::fornyPeriodePaa($medlem($d1), $avtale($d1S), $D);
     $r = rader($d1);
-    sjekk("«Forny» gjelder $neste (ikke $denne igjen)", end($r)['gjelder_fra'] === $neste, json_encode(end($r)));
+    sjekk("neste «Forny» gjelder $A (ikke $M igjen)", end($r)['gjelder_fra'] === $A, json_encode(end($r)));
 
-    echo "\n── Hull 3b: fast trekk — feilet trekk forrige maaned skjules ikke av et senere trekk ──\n";
+    echo "\n── Hull 3b: fast trekk — feilet trekk i februar skjules ikke av mars ──\n";
     [$d2, $d2S] = nyttMedlem($plan, 'Hull3 Trekk', 'agr-' . strtolower($tag) . '-3b');
-    betalt($d2, $d2S, $toSiden, 'recurring_charge', 'betalt', 'psp-1');
-    betalt($d2, $d2S, $forrige, 'recurring_charge', 'feilet', 'psp-2');
-    betalt($d2, $d2S, $denne, 'recurring_charge', 'betalt', 'psp-3');
-    $b = Medlemskap::betalingsstatusFor($medlem($d2));
+    betalt($d2, $d2S, $J, 'recurring_charge', 'betalt', 'psp-1');
+    betalt($d2, $d2S, $F, 'recurring_charge', 'feilet', 'psp-2');
+    betalt($d2, $d2S, $M, 'recurring_charge', 'betalt', 'psp-3');
+    $b = Medlemskap::betalingsstatusFor($medlem($d2), $D);
     sjekk('status forfalt (foer: «Trukket … betalt»)', $b['tilstand'] === 'forfalt' && $b['utestaaende'] === true,
         json_encode($b, JSON_UNESCAPED_UNICODE));
-    sjekk("skyldigMaaned = $forrige", Medlemskap::skyldigMaaned($medlem($d2)) === $forrige, (string) Medlemskap::skyldigMaaned($medlem($d2)));
+    sjekk("skyldigMaaned = $F", Medlemskap::skyldigMaaned($medlem($d2), $D) === $F, (string) Medlemskap::skyldigMaaned($medlem($d2), $D));
 
-    echo "\n── Hull 3c: maaned fritatt av frys mellom betalingene → ikke skyldig ──\n";
+    echo "\n── Hull 3c: februar fritatt av frys → ikke skyldig ──\n";
     [$d3, $d3S] = nyttMedlem($plan, 'Hull3 Fritatt');
-    betalt($d3, $d3S, $toSiden);
-    betalt($d3, $d3S, $denne);
-    DB::settInn('medlem_frys', ['member_id' => $d3, 'fra_dato' => $forrige,
-        'til_dato' => (new DateTimeImmutable($forrige))->modify('last day of this month')->format('Y-m-d'),
-        'status' => 'avsluttet', 'status_for' => 'aktiv']);
-    $b = Medlemskap::betalingsstatusFor($medlem($d3));
-    sjekk('status betalt, skyldigMaaned null', $b['tilstand'] === 'betalt' && Medlemskap::skyldigMaaned($medlem($d3)) === null,
+    betalt($d3, $d3S, $J);
+    betalt($d3, $d3S, $M);
+    $frys($d3, $F, '2027-02-28');
+    $b = Medlemskap::betalingsstatusFor($medlem($d3), $D);
+    sjekk('status betalt, skyldigMaaned null', $b['tilstand'] === 'betalt' && Medlemskap::skyldigMaaned($medlem($d3), $D) === null,
         json_encode($b, JSON_UNESCAPED_UNICODE));
+
+    echo "\n── Hull 3d: et ventende/stoppet forsøk flytter ikke gjeldsstarten ──\n";
+    [$d4, $d4S] = nyttMedlem($plan, 'Hull3 Forsok');
+    betalt($d4, $d4S, $J);
+    betalt($d4, $d4S, $M);
+    DB::settInn('subscriptions', ['member_id' => $d4, 'plan' => $plan, 'pris_ore' => 50000, 'status' => 'stoppet',
+        'created_at' => '2027-03-10 12:00:00']);
+    sjekk("skyldigMaaned = $F også med et nyere, stoppet forsøk", Medlemskap::skyldigMaaned($medlem($d4), $D) === $F,
+        (string) Medlemskap::skyldigMaaned($medlem($d4), $D));
+    sjekk('… og status forfalt', Medlemskap::betalingsstatusFor($medlem($d4), $D)['tilstand'] === 'forfalt');
+
+    echo "\n── Utrullingsvern: hull før oktober 2026 telles ikke ──\n";
+    [$u1, $u1S] = nyttMedlem($plan, 'Hull Utrulling');
+    // August 2026 uten gjelder_fra (som før migrasjonen), september ubetalt, oktober betalt.
+    DB::settInn('payments', ['vipps_reference' => $tag . '-AUG', 'type' => 'manuell', 'formal' => 'medlemskap', 'member_id' => $u1,
+        'subscription_id' => $u1S, 'belop_ore' => 50000, 'status' => 'betalt', 'idempotency_key' => Vipps::uuid(),
+        'created_at' => '2026-08-10 10:00:00']);
+    betalt($u1, $u1S, '2026-10-01');
+    $b = Medlemskap::betalingsstatusFor($medlem($u1), '2026-10-20');
+    sjekk('september 2026 gir ikke «Forfalt»: status betalt, ingenting skyldig', $b['tilstand'] === 'betalt'
+        && Medlemskap::skyldigMaaned($medlem($u1), '2026-10-20') === null, json_encode($b, JSON_UNESCAPED_UNICODE));
+    sjekk('… men november ubetalt etter oktober skyldes som før (i dag 5.11.2026)',
+        Medlemskap::skyldigMaaned($medlem($u1), '2026-11-05') === '2026-11-01',
+        (string) Medlemskap::skyldigMaaned($medlem($u1), '2026-11-05'));
+
+    echo "\n── Kontrollør 1: avbrutt Vipps, så Kassa — står ikke fast på måneden ──\n";
+    [$k1, $k1S] = nyttMedlem($plan, 'Hull Avbrutt');
+    DB::oppdater('subscriptions', ['status' => 'stoppet'], ['id' => $k1S]);
+    $ny = DB::settInn('subscriptions', ['member_id' => $k1, 'plan' => $plan, 'pris_ore' => 50000, 'status' => 'venter']);
+    DB::settInn('payments', ['vipps_reference' => $tag . '-AVBR', 'type' => 'epayment', 'formal' => 'medlemskap', 'member_id' => $k1,
+        'subscription_id' => $ny, 'belop_ore' => 50000, 'status' => 'avbrutt', 'gjelder_fra' => $denne, 'idempotency_key' => Vipps::uuid()]);
+    sjekk("før Kassa: skyldigMaaned = $denne", Medlemskap::skyldigMaaned($medlem($k1)) === $denne, (string) Medlemskap::skyldigMaaned($medlem($k1)));
+    $svar = kall([[$porter[0], $API, $kontant($k1), $token]]);
+    sjekk("Kassa registrerer $denne (200)", $svar[0][0] === 200, $svar[0][0] . ' ' . $feiltekst($svar[0]));
+    $nesteMidt = (new DateTimeImmutable($neste))->modify('+14 days')->format('Y-m-d');
+    sjekk("i dag: ingenting skyldig; neste måned ($nesteMidt): $neste, ikke $denne",
+        Medlemskap::skyldigMaaned($medlem($k1)) === null && Medlemskap::skyldigMaaned($medlem($k1), $nesteMidt) === $neste,
+        var_export(Medlemskap::skyldigMaaned($medlem($k1)), true) . ' / ' . var_export(Medlemskap::skyldigMaaned($medlem($k1), $nesteMidt), true));
 
     // ══ Hull 4: pamelding.php ════════════════════════════════════════════
     echo "\n── Hull 4: «endre» og «fjern» ──\n";
@@ -333,6 +371,27 @@ try {
     sjekk('a) … det betalte er foert (én kontant-rad 50000), restbeloep 50000 i «Ikke betalt»',
         count($bet['rader']) === 1 && $bet['sum'] === 50000 && ($svar[0][1]['skyldigOre'] ?? null) === 50000
         && str_contains((string) ($svar[0][1]['beskjed'] ?? ''), 'Skyldig: '), json_encode($svar[0][1], JSON_UNESCAPED_UNICODE));
+
+    // a2) Kontant for haand, men med en mislykket Vipps-rad fra foer (kontrolloeren 2).
+    $b1b = $plass(['betalt_maate' => 'Kontant']);
+    $vipps($b1b, 50000, 'feilet');
+    $svar = kall([[$porter[0], $PAM, ['handling' => 'endre', 'id' => $b1b, 'antall' => 2], $token]]);
+    $bet = Booking::betalingerFor($b1b);
+    sjekk('a2) mislykket Vipps-rad + kontant: kontanten føres (sum 50000), skyldig 50000 — ikke 100000',
+        $svar[0][0] === 200 && $bet['sum'] === 50000 && ($svar[0][1]['skyldigOre'] ?? null) === 50000,
+        $svar[0][0] . ' ' . json_encode($svar[0][1], JSON_UNESCAPED_UNICODE));
+    // Samme i flyttingen: til en dato med pris 70000.
+    $k2 = DB::settInn('courses', ['slug' => strtolower($tag . '-kurs2'), 'tittel' => 'Hull kurs 2', 'type' => 'kurs',
+        'pris_ore' => 70000, 'kapasitet' => 10, 'status' => 'publisert']);
+    $kurs[] = $k2;
+    $o2 = DB::settInn('course_sessions', ['course_id' => $k2, 'start_tid' => gmdate('Y-m-d H:i:s', time() + 11 * 86400), 'kapasitet' => 10]);
+    $okter[] = $o2;
+    $b1c = $plass(['betalt_maate' => 'Kontant']);
+    $vipps($b1c, 50000, 'feilet');
+    $svar = kall([[$porter[0], $PAM, ['handling' => 'flytt', 'id' => $b1c, 'oktId' => $o2], $token]]);
+    sjekk('a3) flytting med mislykket Vipps-rad: kontanten føres, skyldig 20000 — ikke 70000',
+        $svar[0][0] === 200 && Booking::betalingerFor($b1c)['sum'] === 50000 && ($svar[0][1]['skyldigOre'] ?? null) === 20000,
+        $svar[0][0] . ' ' . json_encode($svar[0][1], JSON_UNESCAPED_UNICODE));
 
     // b) Vipps-betalt 2 plasser, ned til 1: 50000 for mye.
     $b2 = $plass(['antall' => 2, 'belop_ore' => 100000]);

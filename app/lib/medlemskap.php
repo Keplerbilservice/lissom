@@ -584,9 +584,47 @@ final class Medlemskap
      *
      * @param array<string,mixed>|null $avtale den nyeste subscriptions-raden
      */
+    /**
+     * Foerste maaned hull foer siste betaling telles som skyldig. Betalinger
+     * foer 1. oktober 2026 kan mangle gjelder_fra (en «Forny» foer
+     * maanedsskiftet sto paa feil maaned), og ville gitt falsk «Forfalt» paa
+     * lissom.no (utrullingsvern, kontrolloeren 4. oktober 2026).
+     */
+    public const HULL_FRA = '2026-10';
+
+    /**
+     * Naar den nyeste avtalen som loeper eller er betalt paa, ble laget, per
+     * medlem. Et ventende eller stoppet forsoek uten betaling teller ikke.
+     *
+     * @param list<int> $medlemIder
+     * @return array<int,string>
+     */
+    private static function avtaleLaget(array $medlemIder): array
+    {
+        $medlemIder = array_values(array_filter(array_map('intval', $medlemIder), static fn(int $i): bool => $i > 0));
+        if ($medlemIder === []) {
+            return [];
+        }
+        $inn = implode(',', $medlemIder);
+        $ut = [];
+        foreach (DB::alle(
+            "SELECT s.member_id, s.created_at FROM subscriptions s
+               JOIN (SELECT s2.member_id, MAX(s2.id) AS siste FROM subscriptions s2
+                      WHERE s2.member_id IN ({$inn})
+                        AND (s2.status = 'aktiv' OR EXISTS (
+                             SELECT 1 FROM payments p WHERE p.subscription_id = s2.id AND p.formal = 'medlemskap'
+                                AND p.status IN ('betalt','delvis_refundert') AND p.annullert_at IS NULL))
+                   GROUP BY s2.member_id) n ON n.siste = s.id"
+        ) as $r) {
+            $ut[(int) $r['member_id']] = (string) $r['created_at'];
+        }
+        return $ut;
+    }
+
     private static function skyldFra(string $forsteYm, ?string $startDato, ?array $avtale, string $idag): string
     {
-        $fra = [$forsteYm, (new DateTimeImmutable($idag))->modify('first day of this month')->modify('-11 months')->format('Y-m')];
+        $fra = [$forsteYm, self::HULL_FRA,
+            (new DateTimeImmutable($idag))->modify('first day of this month')->modify('-11 months')->format('Y-m')];
         $start = trim((string) $startDato);
         if ($start !== '') {
             $fra[] = substr($start, 0, 7);
@@ -640,14 +678,18 @@ final class Medlemskap
         // Naar avtalen ble laget: listene i admin henter avtalen uten
         // created_at, saa den ligger ogsaa i «_dekket» fra sisteBetalinger().
         // Samme svar i lista og paa medlemmet.
-        $laget = $avtale['created_at'] ?? ($dekket['avtaleLaget'] ?? null);
-        if ($laget === null && isset($avtale['id'])) {
-            $laget = DB::verdi('SELECT created_at FROM subscriptions WHERE id = :i', ['i' => (int) $avtale['id']]);
-        }
-        return self::forsteUbetalte($id,
-            self::skyldFra($dekket['forste'], isset($medlem['start_dato']) ? (string) $medlem['start_dato'] : null,
-                $laget === null ? null : ['created_at' => (string) $laget], $idag),
-            $dekket['maaneder'], $idag);
+        // Bare en avtale som loeper eller er betalt paa (kontrolloeren, 4.
+        // oktober 2026): et ventende eller stoppet forsoek flytter ikke
+        // gjeldsstarten fram.
+        $laget = array_key_exists('avtaleLaget', $dekket) ? $dekket['avtaleLaget']
+            : (self::avtaleLaget([$id])[$id] ?? null);
+        $fra = self::skyldFra($dekket['forste'], isset($medlem['start_dato']) ? (string) $medlem['start_dato'] : null,
+            $laget === null ? null : ['created_at' => (string) $laget], $idag);
+        // Maanedene etter den siste betalte skyldes som foer, uansett
+        // utrullingsvernet (HULL_FRA gjelder bare hull foer siste betaling).
+        $sisteYm = (string) array_key_last($dekket['maaneder']);
+        $etter = (new DateTimeImmutable($sisteYm . '-01'))->modify('first day of next month')->format('Y-m');
+        return self::forsteUbetalte($id, min($fra, $etter), $dekket['maaneder'], $idag);
     }
 
     /**
@@ -926,7 +968,13 @@ final class Medlemskap
                     $fra = (new DateTimeImmutable((string) $t['created_at'], new DateTimeZone('UTC')))
                         ->setTimezone(new DateTimeZone('Europe/Oslo'))->format('Y-m-d');
                 }
-                return (new DateTimeImmutable(substr($fra, 0, 10)))->modify('first day of this month')->format('Y-m-d');
+                $mnd = (new DateTimeImmutable(substr($fra, 0, 10)))->modify('first day of this month')->format('Y-m-d');
+                // Er maaneden betalt paa en annen maate (Kassa, «Forny»), er
+                // den ikke skyldig lenger — ellers sto medlemmet fast paa den
+                // for alltid (kontrolloeren, 4. oktober 2026).
+                if (self::betalingForMaaned($id, substr($mnd, 0, 7)) === null) {
+                    return $mnd;
+                }
             }
         }
         // Alle betalte maaneder, ikke bare den siste (pengehull 3, 4. oktober
@@ -2032,19 +2080,9 @@ final class Medlemskap
         // «_dekket» er alle maanedene betalingene dekker, til betalingsstatus().
         $ut = [];
         $alle = self::betalteRader($medlemIder);
-        // Nyeste avtale per medlem (samme som betalingsstatusFor() leser):
-        // naar den ble laget, til skyldberegningen.
-        $laget = [];
-        if ($alle !== []) {
-            $inn = implode(',', array_map('intval', array_keys($alle)));
-            foreach (DB::alle(
-                "SELECT s.member_id, s.created_at FROM subscriptions s
-                   JOIN (SELECT member_id, MAX(id) AS siste FROM subscriptions
-                          WHERE member_id IN ({$inn}) GROUP BY member_id) n ON n.siste = s.id"
-            ) as $r) {
-                $laget[(int) $r['member_id']] = (string) $r['created_at'];
-            }
-        }
+        // Naar den nyeste avtalen som loeper eller er betalt paa, ble laget,
+        // til skyldberegningen (samme oppslag som ubetaltMellom()).
+        $laget = self::avtaleLaget(array_keys($alle));
         foreach ($alle as $medlemId => $rader) {
             $best = null;
             $bestNokkel = '';

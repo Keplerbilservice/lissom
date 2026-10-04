@@ -11,9 +11,11 @@
 -- Kontaktopplysningene staar i beskjeden: er det plass likevel, loeses det
 -- med en telefon, ikke med et nytt skjermbilde i admin.
 --
--- Gruppa «intern» gir ingen signatur, som de andre beskjedene om egen drift.
+-- Gruppa er «system», som de andre intern_-malene (migrasjon 112). Kolonna er
+-- en ENUM('system','ordre','kurs','nyhetsbrev') fra migrasjon 062 — «intern»
+-- er navnet paa signaturgruppa malTilAdmin() sender med, ikke en verdi her.
 -- Malen kan endres og slaas av under Markedsfoering › Tekst maler, som resten.
 INSERT INTO notification_templates (navn, kanal, emne, tekst, gruppe) VALUES
 ('intern_venteliste', 'epost', 'Venteliste: {kurs}{dato}',
- '{navn} står som nummer {posisjon} på ventelisten for {kurs}{dato}.\n\nE-post: {epost}\nTelefon: {telefon}', 'intern')
+ '{navn} står som nummer {posisjon} på ventelisten for {kurs}{dato}.\n\nE-post: {epost}\nTelefon: {telefon}', 'system')
 ON DUPLICATE KEY UPDATE navn = navn;

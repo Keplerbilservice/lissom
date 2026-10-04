@@ -4916,6 +4916,56 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "butikk-ta-ut-og-verkstedets-handleliste",
+            "dato": "2026-10-04",
+            "hva": "«Ta ut leire» i Butikk og på I dag: «Ta ut 1» trekker én fra lageret uten betaling («Tatt ut 1. Lageret er nå N.»), registreres i revisjonsloggen, og gir samme varsel og handleliste som et salg. Når en vare når min, legges den automatisk i handlelista under leverandøren som «Verkstedets lager» med maks − lager stk (min 5, maks 25 → 20); én linje per vare til den er bestilt. Verkstedet er med i frakten, men uten gebyr og uten Vipps-krav; admin velger selv når «Bestill» sendes. En vare uten Nettbutikken og Internt er «bare i admin» (f.eks. Toffee). Eieren 04.10, GO.",
+            "hvor": "admin-ny › Butikk, I dag og Handlelister; api/admin/handlelister.php",
+            "kode": [
+                {
+                    "fil": "app/lib/lager.php",
+                    "finnes": [
+                        "public static function tilHandlelista(array $v): void",
+                        "public static function leireListe(): array",
+                        "WHERE member_id IS NULL AND product_id = :p AND status = 'sendt' AND bestilt_at IS NULL"
+                    ]
+                },
+                {
+                    "fil": "api/admin/produkter.php",
+                    "finnes": [
+                        "if ($handling === 'taUt') {",
+                        "'beskjed' => 'Tatt ut 1. Lageret er nå ' . $naa . '.'"
+                    ],
+                    "ikkeFinnes": [
+                        "Kryss av for Nettbutikken, Internt eller begge."
+                    ]
+                },
+                {
+                    "fil": "api/admin/handlelister.php",
+                    "finnes": [
+                        "'intern'   => $l['member_id'] === null,",
+                        "|| !empty($m['intern'])) {",
+                        "COALESCE(m.navn, 'Verkstedets lager') AS medlemsnavn"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/app.js",
+                    "finnes": [
+                        "card('Ta ut leire'",
+                        "button('Ta ut 1'"
+                    ],
+                    "ikkeFinnes": [
+                        "Kryss av for Nettbutikken, Internt eller begge."
+                    ]
+                },
+                {
+                    "fil": "db/migrations/253_handleliste_verkstedets_lager.sql",
+                    "finnes": [
+                        "MODIFY member_id BIGINT UNSIGNED NULL"
+                    ]
+                }
+            ]
         }
     ]
 }

@@ -51,6 +51,7 @@ if ($mode==='cleanup') {
  // Varer laget i tests/nyadmin-butikk-lager.mjs, og varslene om dem.
  foreach (DB::alle('SELECT id FROM products WHERE tittel LIKE :t',['t'=>$s['tag'].'%']) as $v) {
   DB::kjor("DELETE FROM notifications WHERE ref_type='product' AND ref_id=:i",['i'=>$v['id']]);
+  if (DB::harTabell('handleliste_linjer')) DB::kjor('DELETE FROM handleliste_linjer WHERE product_id=:i AND member_id IS NULL',['i'=>$v['id']]);
   if ((int)DB::verdi('SELECT COUNT(*) FROM order_lines WHERE product_id=:i',['i'=>$v['id']])===0) DB::kjor('DELETE FROM products WHERE id=:i',['i'=>$v['id']]);
  }
  if (DB::harTabell('admin_kortbruk')) DB::kjor('DELETE FROM admin_kortbruk WHERE member_id=:i',['i'=>$s['admin']]);

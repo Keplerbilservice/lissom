@@ -7,6 +7,7 @@
  *   POST handling=bilde          bytt bildet paa en vare
  *   POST handling=slett          fjern en vare
  *   POST handling=fyllPaa        { id, antall } legg varer som kom inn til lageret
+ *   POST handling=taUt           { id }         ta én fra lageret, uten betaling
  *
  * Prisen som settes her er den kunden faktisk trekkes. Nettleseren sender
  * aldri belop ved kjop — den sender hvilke varer, og serveren regner ut
@@ -86,6 +87,8 @@ if (Foresporsel::metode() === 'GET') {
     'fraktOre' => (int) (DB::verdi('SELECT verdi FROM innstillinger WHERE nokkel = :n', ['n' => 'frakt_ore']) ?? 0),
     // Lite på lager: varene paa eller under min (eieren 04.10.2026).
     'litePaaLager' => Lager::bestillMer(),
+    // Ta ut leire (eieren 04.10.2026).
+    'taUtLeire'    => Lager::leireListe(),
     ]);
 }
 
@@ -134,6 +137,26 @@ if ($handling === 'fyllPaa') {
     $naa = (int) DB::verdi('SELECT lager FROM products WHERE id = :i', ['i' => $id]);
     revider('vare_fylt_paa', 'product', $id, ['antall' => $n, 'lager' => $naa]);
     Svar::ok(['id' => $id, 'lager' => $naa, 'beskjed' => 'Lageret er nå ' . $naa . '.']);
+}
+
+// ------------------------------------------------------------------ ta ut
+//
+// «Ta ut leire» (eieren 04.10.2026, GO): admin tar én pose fra lageret, uten
+// betaling. Trekkes i basen bare naar det er noe igjen, saa to trykk samtidig
+// ikke kan gi minus. Samme regel for varsel og handleliste som et salg.
+if ($handling === 'taUt') {
+    $vare = DB::en('SELECT id, tittel FROM products WHERE id = :i AND lager IS NOT NULL', ['i' => $id]);
+    if ($vare === null) {
+        Svar::feil('Fant ikke varen.');
+    }
+    $trukket = DB::kjor('UPDATE products SET lager = lager - 1 WHERE id = :i AND lager > 0', ['i' => $id])->rowCount();
+    if ($trukket !== 1) {
+        Svar::feil('Ingen igjen på lager.');
+    }
+    $naa = (int) DB::verdi('SELECT lager FROM products WHERE id = :i', ['i' => $id]);
+    revider('vare_tatt_ut', 'product', $id, ['tittel' => $vare['tittel'], 'lager' => $naa]);
+    Lager::etterSalg($id, 1);
+    Svar::ok(['id' => $id, 'lager' => $naa, 'beskjed' => 'Tatt ut 1. Lageret er nå ' . $naa . '.']);
 }
 
 // ------------------------------------------------------------------ bildet
@@ -238,11 +261,10 @@ if (Frakt::klar() && array_key_exists('vektKg', Foresporsel::kropp())) {
 // Bare hvis varen da ikke ville vaert noe sted (ikke internt, og bryteren
 // staar paa 0), settes den tilbake til NULL — altsaa i nettbutikken.
 if (Lager::harNettbutikkBryter()) {
+    // Ingen av dem = bare i admin (eieren 04.10.2026, GO): varen er paa
+    // lager, kan tas ut og varsles, men vises ikke for kunder eller medlemmer.
     if (array_key_exists('iNettbutikk', Foresporsel::kropp())) {
         $data['i_nettbutikk'] = Foresporsel::tekst('iNettbutikk') === 'ja' ? 1 : 0;
-        if ($data['i_nettbutikk'] === 0 && $data['kun_medlemmer'] === 0) {
-            Svar::feil('Kryss av for Nettbutikken, Internt eller begge.');
-        }
     } elseif ($id > 0 && $data['kun_medlemmer'] === 0
         && DB::verdi('SELECT i_nettbutikk FROM products WHERE id = :i', ['i' => $id]) !== null
         && (int) DB::verdi('SELECT i_nettbutikk FROM products WHERE id = :i', ['i' => $id]) === 0) {

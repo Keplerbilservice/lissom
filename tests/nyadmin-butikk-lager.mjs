@@ -21,10 +21,8 @@ try{
  await p.getByLabel('Varenavn',{exact:true}).fill(navn);await p.getByLabel('Pris i kroner',{exact:true}).fill('149');await p.getByLabel('Antall på lager',{exact:true}).fill('2');
  await p.getByLabel('Synlighet',{exact:true}).selectOption('publisert');await p.getByLabel('Internt',{exact:true}).check();
  await p.getByLabel('Bestill når lageret er under',{exact:true}).fill('5');await p.getByLabel('Fyll opp lageret til',{exact:true}).fill('20');
- // Ingen av bryterne: stopper.
- await p.getByLabel('Nettbutikken',{exact:true}).uncheck();await p.getByLabel('Internt',{exact:true}).uncheck();await p.getByRole('button',{name:'Lagre',exact:true}).click();
- await p.getByText('Kryss av for Nettbutikken, Internt eller begge.',{exact:true}).waitFor();
- await p.getByLabel('Nettbutikken',{exact:true}).check();await p.getByLabel('Internt',{exact:true}).check();
+ // Leire fra Scan-Form: kan tas ut, og legges i handlelista når den når min.
+ await p.getByLabel('Leire',{exact:true}).check();await p.getByLabel('Leverandør',{exact:true}).selectOption({label:'Scan-Form'});
  await p.getByRole('button',{name:'Lagre',exact:true}).click();await p.getByRole('dialog',{name:'Publiser varen?',exact:true}).getByRole('button',{name:'Publiser',exact:true}).click();
  await p.getByRole('dialog',{name:'Ny vare',exact:true}).waitFor({state:'detached'});
  let d=await varer(p);const v=d.varer.find(r=>r.tittel===navn);assert.ok(v,'varen er lagret');
@@ -52,11 +50,31 @@ try{
  await p.getByRole('dialog',{name:'Rediger vare',exact:true}).waitFor({state:'detached'});
  assert.ok(fixture('lagervarsel',{...s,vare:v.id}).antall>foer,'varsel når antallet settes under min for hånd');
  console.log('Antall satt til 3 for hånd: nytt e-postvarsel.');
+ // Handlelista: én linje «Verkstedets lager» under Scan-Form med det som fyller opp til maks (20 − 3 = 17), uten Vipps-krav.
+ const hl=await p.evaluate(async()=>await(await fetch('/api/admin/handlelister.php')).json());
+ const hv=hl.varer.find(r=>r.produktId===v.id);assert.ok(hv,'varen ligger i handlelista');assert.equal(hv.antall,17);assert.match(hv.hvem,/Verkstedets lager 17/);assert.equal(hv.leverandor,'Scan-Form');
+ const verk=hl.medlemmer.find(m=>m.intern);assert.ok(verk&&verk.navn==='Verkstedets lager'&&verk.gebyrOre===0,'verkstedet i oppgjøret, uten gebyr');
+ await p.goto(URL+'#handlelister');await p.getByText('Verkstedets lager',{exact:true}).first().waitFor();
+ assert.equal(await p.locator('main .row,main li').filter({hasText:'Verkstedets lager'}).getByText('Ikke krevd inn').count(),0,'ingen krav-merke på verkstedet');
+ console.log('Handlelista: «Verkstedets lager» 17 stk under Scan-Form, uten gebyr og uten krav.');
+ // Ta ut leire: én pose fra lageret, uten betaling.
+ await p.goto(URL+'#butikk');const tu=p.locator('section.card').filter({has:p.getByRole('heading',{name:'Ta ut leire',exact:true})});
+ await tu.getByText(navn,{exact:true}).waitFor();await tu.locator(`[data-taut="${v.id}"]`).click();await p.getByText('Tatt ut 1. Lageret er nå 2.',{exact:true}).waitFor();
+ d=await varer(p);assert.equal(d.varer.find(r=>r.id===v.id).lager,2);
+ const hl2=await p.evaluate(async()=>await(await fetch('/api/admin/handlelister.php')).json());assert.equal(hl2.varer.find(r=>r.produktId===v.id).antall,17,'samme linje, ikke en ny');
+ await p.goto(URL+'#idag');await p.locator('section.card').filter({has:p.getByRole('heading',{name:'Ta ut leire',exact:true})}).getByText(navn,{exact:true}).waitFor();
+ console.log('Ta ut leire: lageret 3 → 2, ingen ny linje i handlelista; kortet står også på I dag.');
+ // Bare i admin: ingen av bryterne — ikke for gjester eller medlemmer, men i admin.
+ const admin=await p.evaluate(async t=>await(await fetch('/api/admin/produkter.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({handling:'lagre',id:0,tittel:t,pris:250,lager:9,status:'publisert',iNettbutikk:'nei',kunMedlemmer:'nei',leire:'ja'})})).json(),s.tag+' Toffee');
+ assert.ok(admin.id,'bare i admin lagres');
  // Kunden: gjest ser varen i nettbutikken (ikke «kun medlemmer»), innlogget ser den også internt.
  const gjest=await browser.newContext();const g=await gjest.newPage();await g.goto('http://lokal.lissom.no:8140/');
  const gv=(await g.evaluate(async()=>await(await fetch('/api/butikk.php')).json())).varer.find(r=>r.id===v.id);
- assert.ok(gv,'gjest ser varen');assert.equal(gv.kunMedlemmer,false);assert.equal(gv.internt,true);assert.ok(gv.sti,'varen har egen side');await gjest.close();
- const mv=(await p.evaluate(async()=>await(await fetch('/api/butikk.php')).json())).varer.find(r=>r.id===v.id);assert.ok(mv&&mv.internt,'innlogget ser varen internt');
+ assert.ok(gv,'gjest ser varen');assert.equal(gv.kunMedlemmer,false);assert.equal(gv.internt,true);assert.ok(gv.sti,'varen har egen side');
+ assert.equal((await g.evaluate(async()=>await(await fetch('/api/butikk.php')).json())).varer.some(r=>r.id===admin.id),false,'gjest ser ikke Bare i admin');await gjest.close();
+ const mliste=(await p.evaluate(async()=>await(await fetch('/api/butikk.php')).json())).varer;const mv=mliste.find(r=>r.id===v.id);assert.ok(mv&&mv.internt,'innlogget ser varen internt');
+ assert.equal(mliste.some(r=>r.id===admin.id),false,'innlogget ser ikke Bare i admin');
+ await p.goto(URL+'#butikk');await p.locator('section.card').filter({has:p.getByRole('heading',{name:'Ta ut leire',exact:true})}).getByText(s.tag+' Toffee',{exact:true}).waitFor();
  console.log('Kunden: gjest ser varen i nettbutikken; innlogget ser den også i internbutikken.');
  // Mobil og nettbrett: Butikk uten sideveis rulling.
  for(const width of[390,820]){await p.setViewportSize({width,height:900});await p.goto(URL+'#butikk');await p.locator('.butikk-piller').waitFor();assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,width+' px');console.log(width+' px: Butikk uten sideveis rulling.');}

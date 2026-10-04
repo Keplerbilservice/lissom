@@ -4937,6 +4937,13 @@
                     "finnes": [
                         "ADD COLUMN IF NOT EXISTS i_nettbutikk TINYINT(1) NULL DEFAULT NULL"
                     ]
+                },
+                {
+                    "fil": "admin-ny/ui.js",
+                    "finnes": [
+                        "if(f.type==='heading'){grid.append(el('p',{class:'field wide form-heading',text:f.label}));continue;}",
+                        "const i=inputs[f.key];if(!i)continue;"
+                    ]
                 }
             ]
         },

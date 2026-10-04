@@ -764,9 +764,10 @@ $dagensBestillinger = (static function () use ($dagStart, $nyeMedlemskap): array
 
     foreach (DB::alle(
         "SELECT b.id, b.antall, b.status, b.belop_ore, b.created_at, b.course_session_id,
-                COALESCE(m.navn, b.gjest_navn) AS navn, c.tittel
+                COALESCE(m.navn, b.gjest_navn) AS navn, c.tittel, s.start_tid, s.slutt_tid
            FROM bookings b
            JOIN courses c ON c.id = b.course_id
+      LEFT JOIN course_sessions s ON s.id = b.course_session_id
       LEFT JOIN members m ON m.id = b.member_id
       LEFT JOIN payments p ON p.id = b.payment_id
           WHERE b.created_at >= :fra
@@ -780,12 +781,27 @@ $dagensBestillinger = (static function () use ($dagStart, $nyeMedlemskap): array
             'oktId'  => $b['course_session_id'] !== null ? (int) $b['course_session_id'] : null,
             'naar'   => (string) $b['created_at'], 'kl' => $klokke((string) $b['created_at']),
             'hva'    => (string) $b['tittel'] . ((int) $b['antall'] > 1 ? ' · ' . (int) $b['antall'] . ' plasser' : ''),
+            // Kursdatoen og ledige plasser paa den (eieren 04.10.2026, GO):
+            // samme dato som Kurs › Datoer, ledige fylles inn under.
+            'kursNaar' => $b['start_tid'] !== null ? Booking::norskPeriode((string) $b['start_tid'], $b['slutt_tid'] ?? null) : null,
+            'ledige'   => null,
             'belop'  => Booking::kroner((int) $b['belop_ore']),
             'navn'   => (string) $b['navn'],
             'status' => match ((string) $b['status']) {
                 'betalt', 'ikke_mott' => 'Betalt', 'refundert' => 'Refundert', default => 'Ikke betalt',
             },
         ];
+    }
+    // Ledige plasser regnes for alle kursdatoene i én runde, med samme regel som resten av huset.
+    $okter = array_values(array_filter(array_column($rader, 'oktId')));
+    if ($okter !== []) {
+        $ledige = Booking::ledigePlasserFlere($okter);
+        foreach ($rader as &$r) {
+            if ($r['oktId'] !== null && isset($ledige[$r['oktId']])) {
+                $r['ledige'] = max(0, (int) $ledige[$r['oktId']]);
+            }
+        }
+        unset($r);
     }
 
     if (DB::harTabell('orders')) {
@@ -1040,6 +1056,8 @@ Svar::json([
     // «Bestill mer» og «Lav aktivitet» (eieren, 28. september 2026). Bare
     // for verkstedet — se app/lib/lager.php og app/lib/aktivitet.php.
     'bestillMer'   => Lager::bestillMer(),
+    // Ta ut leire på I dag (eieren 04.10.2026).
+    'taUtLeire'    => Lager::leireListe(),
     'lavAktivitet' => ['antall' => count(Aktivitet::lave()), 'dager' => Aktivitet::dager()],
     'varsler'    => $varsler,
     'hengende'   => $hengendeListe,

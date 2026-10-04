@@ -105,7 +105,7 @@ final class Katalog
         $gjenstandFra = DB::harKolonne('courses', 'gjenstand_i_kassa')
             ? (int) (DB::verdi(
                 "SELECT MIN(pris_ore) FROM products
-                  WHERE status = 'publisert' AND kun_medlemmer = 0 AND pris_ore > 0
+                  WHERE status = 'publisert' AND " . Lager::iNettbutikkSql() . " AND pris_ore > 0
                     AND (lager IS NULL OR lager > 0)"
               ) ?? 0)
             : 0;

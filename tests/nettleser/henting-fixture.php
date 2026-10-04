@@ -28,7 +28,9 @@ if ($mode==='member') {
  // A fixed 30-minute offset made evening tests exercise automatic closing instead.
  DB::settInn('check_ins',['member_id'=>$s['admin'],'inn_tid'=>gmdate('Y-m-d H:i:s')]);
 }
-if ($mode==='kontakt') DB::oppdater('members',['start_dato'=>'2026-09-01','slutt_dato'=>'2027-09-01','timer_per_mnd'=>11],['id'=>$s['admin']]);
+// Lagervarselet (intern_bestill_mer) for en vare laget i tests/nyadmin-butikk-lager.mjs.
+if ($mode==='lagervarsel') { $v=DB::en('SELECT id FROM products WHERE id=:i AND tittel LIKE :t',['i'=>(int)$s['vare'],'t'=>$s['tag'].'%']); echo json_encode(['antall'=>$v?(int)DB::verdi("SELECT COUNT(*) FROM notifications WHERE ref_type='product' AND ref_id=:i",['i'=>$v['id']]):-1]); exit; }
+if ($mode==='kontakt')DB::oppdater('members',['start_dato'=>'2026-09-01','slutt_dato'=>'2027-09-01','timer_per_mnd'=>11],['id'=>$s['admin']]);
 if ($mode==='kontaktstatus') { echo json_encode(DB::en('SELECT start_dato,slutt_dato,timer_per_mnd,navn FROM members WHERE id=:i',['i'=>$s['admin']])); exit; }
 if ($mode==='regnskap') DB::oppdater('sessions',['maate'=>'passord'],['member_id'=>$s['admin']]);
 if ($mode==='regnskap' || $mode==='vanlig') DB::oppdater('members',['rolle'=>$mode==='regnskap'?'regnskap':'medlem'],['id'=>$s['admin']]);
@@ -41,6 +43,17 @@ if ($mode==='inspect') {
  echo json_encode(['stamp'=>DB::verdi('SELECT hentemelding_at FROM course_sessions WHERE id=:i',['i'=>$s['session']]),'notifications'=>DB::alle("SELECT kanal,tekst,html FROM notifications WHERE mal='ferdig_brent' AND ref_type='booking' AND ref_id=:i",['i'=>$s['booking']])]); exit;
 }
 if ($mode==='cleanup') {
+ // Kursholdere laget fra Brukere i tests/nyadmin-kursholder-bruker.mjs.
+ $kh=$s['tag'].'-kh%@e2e.lissom.test';
+ DB::kjor('DELETE FROM sessions WHERE member_id IN (SELECT id FROM members WHERE epost LIKE :e)',['e'=>$kh]);
+ DB::kjor('DELETE FROM members WHERE epost LIKE :e',['e'=>$kh]);
+ if (DB::harTabell('kursholdere')) DB::kjor('DELETE FROM kursholdere WHERE epost LIKE :e',['e'=>$kh]);
+ // Varer laget i tests/nyadmin-butikk-lager.mjs, og varslene om dem.
+ foreach (DB::alle('SELECT id FROM products WHERE tittel LIKE :t',['t'=>$s['tag'].'%']) as $v) {
+  DB::kjor("DELETE FROM notifications WHERE ref_type='product' AND ref_id=:i",['i'=>$v['id']]);
+  if (DB::harTabell('handleliste_linjer')) DB::kjor('DELETE FROM handleliste_linjer WHERE product_id=:i AND member_id IS NULL',['i'=>$v['id']]);
+  if ((int)DB::verdi('SELECT COUNT(*) FROM order_lines WHERE product_id=:i',['i'=>$v['id']])===0) DB::kjor('DELETE FROM products WHERE id=:i',['i'=>$v['id']]);
+ }
  if (DB::harTabell('admin_kortbruk')) DB::kjor('DELETE FROM admin_kortbruk WHERE member_id=:i',['i'=>$s['admin']]);
  DB::kjor('DELETE FROM check_ins WHERE member_id=:i',['i'=>$s['admin']]);
  DB::kjor('DELETE FROM payments WHERE booking_id=:i',['i'=>$s['booking']]);

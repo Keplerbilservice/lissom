@@ -54,7 +54,7 @@ foreach ($linjer as $l) {
     $antall = max(1, min(50, (int) ($l['antall'] ?? 1)));
 
     $vare = DB::en(
-        "SELECT id, tittel, pris_ore, lager, kun_medlemmer
+        "SELECT *
            FROM products WHERE id = :i AND status = 'publisert'",
         ['i' => $id]
     );
@@ -62,7 +62,8 @@ foreach ($linjer as $l) {
         Svar::feil('En av varene finnes ikke lenger. Last siden på nytt.', 409);
     }
     // «Kun for medlemmer» betyr godkjent medlem — ikke bare innlogget.
-    if ((int) $vare['kun_medlemmer'] === 1 && ($medlem === null || !er_aktivt_medlem($medlem))) {
+    // En vare som ogsaa er i nettbutikken (migrasjon 252), kan alle kjoepe.
+    if (!Lager::iNettbutikk($vare) && ($medlem === null || !er_aktivt_medlem($medlem))) {
         Svar::feil('En av varene er kun for medlemmer.', 403);
     }
     // Leire er inkludert i Prøv Lissom (eieren, 29. september 2026).

@@ -351,13 +351,14 @@ if ($d === null && str_starts_with($adresse, '/butikk/')) {
         $v = $vareId === null ? null : DB::en(
             "SELECT id, tittel, beskrivelse, bilde, pris_ore, lager, kun_medlemmer
                FROM products WHERE id = :i AND status = 'publisert'
-                AND (kun_medlemmer = 1 OR lager IS NULL OR lager > 0)",
+                AND " . Lager::iNettbutikkSql() . " AND (lager IS NULL OR lager > 0)",
             ['i' => $vareId]
         );
-        // Medlemsvarene — leire, ekstra brenning — er verkstedets interne
-        // hylle. De skal ikke ha en side i soket, og ikke en adresse noen
-        // kan dele. Da er det ingen side her.
-        if ($v !== null && (int) $v['kun_medlemmer'] === 0) {
+        // Varer som bare er internt — leire, ekstra brenning — er verkstedets
+        // interne hylle. De skal ikke ha en side i soket, og ikke en adresse
+        // noen kan dele. Spoerringen tar bare varer som er i nettbutikken
+        // (migrasjon 252: en vare kan vaere begge).
+        if ($v !== null) {
             $navn = (string) $v['tittel'];
             $meta = trim((string) preg_replace('/\s+/u', ' ', (string) ($v['beskrivelse'] ?? '')));
             if (mb_strlen($meta) > 158) {
@@ -496,7 +497,7 @@ if (!$finnes && is_array($alle)) {
                 // igjen (eieren, 27. september 2026).
                 $finnes = $vareId !== null && (int) DB::verdi(
                     "SELECT COUNT(*) FROM products WHERE id = :i AND status = 'publisert'
-                      AND (kun_medlemmer = 1 OR lager IS NULL OR lager > 0)",
+                      AND (kun_medlemmer = 1 OR (" . Lager::iNettbutikkSql() . " AND (lager IS NULL OR lager > 0)))",
                     ['i' => $vareId]
                 ) > 0;
             }

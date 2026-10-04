@@ -49,7 +49,7 @@ try{
   for(const n of ['SEO →','GEO →','Skisser →','Oppskrifter →'])assert.ok(!alle.includes(n),'Alle: '+n);
   assert.ok(alle.includes('Markedsføring →'));
   await p.goto('http://lokal.lissom.no:8140/admin-ny.html#verksted');await p.getByRole('heading',{name:'Verksted',exact:true}).waitFor();
-  const kort=await p.locator('main .verksted-kort strong').allTextContents();assert.deepEqual(kort,['Oppskrifter →','Keramikk maler →','Skisser →']);
+  const kort=await p.locator('main .verksted-kort strong').allTextContents();assert.deepEqual(kort.slice(0,3),['Oppskrifter →','Keramikk maler →','Skisser →']);/* Handlelister og Chat er kort under Verksted når de er slått på (eieren 04.10, cb6112e og 64fc7b9). */assert.ok(kort.slice(3).every(k=>['Handlelister →','Chat →'].includes(k)),'Verksted: '+kort.join(', '));
   assert.equal(await p.locator('main').getByRole('link',{name:'Oppskrifter',exact:true}).count(),0,'Oppskrifter står én gang');
   await p.locator('main .verksted-kort a').first().click();await p.waitForURL(/#oppskrifter$/);
   assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);

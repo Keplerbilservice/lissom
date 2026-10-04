@@ -9,6 +9,12 @@
  * portvakter og revisjonslogg som for, og den samme personen kan logge inn
  * med Vipps eller med passord uten aa bli to personer i systemet.
  *
+ * «Kursholder» under Tilgang (eieren 04.10.2026, GO): personen faar vanlig
+ * medlemsinnlogging og legges samtidig i kursholderregisteret med samme navn,
+ * e-post og telefon. E-posten er koblingen (Kursholder::forMedlem), saa den
+ * maa fylles ut. Velges «Medlem» paa en kursholder, settes hen som sluttet i
+ * registeret — som «Sett som sluttet» paa Kursholdere, historikken beholdes.
+ *
  * To sperrer mot aa laase seg selv ute: den siste admin-en kan verken slettes
  * eller settes ned til vanlig medlem, og du kan ikke slette din egen konto.
  */
@@ -48,6 +54,31 @@ $rensBrukernavn = static function (string $raa): string {
  */
 $antallAdmin = static fn(): int => antall_admin();
 
+/** Den aktive kursholderen med denne e-posten, eller null. Samme kobling som Min side. */
+$kursholderFor = static function (?string $epost): ?array {
+    $e = mb_strtolower(trim((string) $epost));
+    if ($e === '' || !DB::harTabell('kursholdere')) {
+        return null;
+    }
+    return DB::en(
+        'SELECT id FROM kursholdere WHERE aktiv = 1 AND LOWER(TRIM(epost)) = :e ORDER BY id LIMIT 1',
+        ['e' => $e]
+    );
+};
+
+/** Legger personen i kursholderregisteret, om hen ikke alt staar der. */
+$blirKursholder = static function (string $navn, string $epost, ?string $telefon) use ($kursholderFor): void {
+    if ($kursholderFor($epost)) {
+        return;
+    }
+    $id = DB::settInn('kursholdere', [
+        'navn'    => mb_substr($navn, 0, 191),
+        'epost'   => mb_substr($epost, 0, 191),
+        'telefon' => $telefon !== null && $telefon !== '' ? mb_substr($telefon, 0, 32) : null,
+    ]);
+    revider('kursholder_lagt_til', 'kursholder', $id, ['fra' => 'brukere']);
+};
+
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     // Numrene i secrets.php er admin ved kjoring uten aa staa som det i
     // databasen. Uten dem ville eieren ikke sett seg selv i lista, og trodd at
@@ -67,6 +98,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $numre
     );
 
+    // Hvem som staar i kursholderregisteret, paa e-post.
+    $holderEposter = DB::harTabell('kursholdere')
+        ? array_flip(array_map(
+            static fn($e): string => mb_strtolower(trim((string) $e)),
+            array_column(DB::alle("SELECT epost FROM kursholdere WHERE aktiv = 1 AND epost IS NOT NULL AND epost <> ''"), 'epost')
+        ))
+        : [];
+
     Svar::json([
         'brukere' => array_map(static fn(array $r): array => [
             'id'         => (int) $r['id'],
@@ -82,6 +121,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                                 : ((string) $r['rolle'] === 'regnskap' ? 'regnskap' : 'medlem'),
             'fraNodluke' => (string) $r['rolle'] !== 'admin'
                                 && in_array(normaliser_telefon((string) ($r['telefon'] ?? '')), $numre, true),
+            'kursholder' => isset($holderEposter[mb_strtolower(trim((string) ($r['epost'] ?? '')))]),
             'harPassord' => (bool) $r['har_passord'],
             'harVipps'   => (bool) $r['har_vipps'],
             'sist'       => $r['siste_innlogging']
@@ -102,6 +142,9 @@ $id       = Foresporsel::heltall('id');
 // regnskapsfoereren en egen innlogging framfor aa gi henne hele verkstedet.
 $rolle    = in_array(Foresporsel::tekst('rolle'), ['admin', 'regnskap'], true)
                 ? Foresporsel::tekst('rolle') : 'medlem';
+// «kursholder» er ingen egen rolle i basen: en medlemsinnlogging som i tillegg
+// staar i kursholderregisteret.
+$somKursholder = Foresporsel::tekst('rolle') === 'kursholder';
 
 /**
  * Taaler kolonnen rollen?
@@ -138,21 +181,32 @@ if ($handling === 'opprett') {
     if ($epost !== '' && !filter_var($epost, FILTER_VALIDATE_EMAIL)) {
         Svar::feil('E-postadressen ser ikke riktig ut.');
     }
+    if ($somKursholder && $epost === '') {
+        Svar::feil('Skriv e-posten til kursholderen.');
+    }
     $sjekkPassord($passord, $brukernavn);
 
     if (DB::verdi('SELECT COUNT(*) FROM members WHERE brukernavn = :b', ['b' => $brukernavn])) {
         Svar::feil('Brukernavnet er opptatt.');
     }
 
-    $nyId = DB::settInn('members', [
-        'brukernavn'   => $brukernavn,
-        'passord_hash' => password_hash($passord, PASSWORD_DEFAULT),
-        'navn'         => $navn,
-        'epost'        => $epost !== '' ? $epost : null,
-        'telefon'      => normaliser_telefon(Foresporsel::tekst('telefon')) ?: null,
-        'rolle'        => $rolle,
-        'status'       => 'ingen',
-    ]);
+    $telefon = normaliser_telefon(Foresporsel::tekst('telefon')) ?: null;
+    // Innloggingen og kursholderen lages sammen, eller ingen av dem.
+    $nyId = DB::iTransaksjon(static function () use ($brukernavn, $passord, $navn, $epost, $telefon, $rolle, $somKursholder, $blirKursholder): int {
+        $id = DB::settInn('members', [
+            'brukernavn'   => $brukernavn,
+            'passord_hash' => password_hash($passord, PASSWORD_DEFAULT),
+            'navn'         => $navn,
+            'epost'        => $epost !== '' ? $epost : null,
+            'telefon'      => $telefon,
+            'rolle'        => $rolle,
+            'status'       => 'ingen',
+        ]);
+        if ($somKursholder) {
+            $blirKursholder($navn, $epost, $telefon);
+        }
+        return $id;
+    });
 
     revider('bruker_opprettet', 'member', $nyId, ['brukernavn' => $brukernavn, 'rolle' => $rolle]);
     Svar::ok(['id' => $nyId]);
@@ -213,11 +267,31 @@ if ($handling === 'endre') {
         $data['passord_hash'] = password_hash($passord, PASSWORD_DEFAULT);
     }
 
+    $epostEtter = (string) ($data['epost'] ?? $bruker['epost'] ?? '');
+    if ($somKursholder && trim($epostEtter) === '') {
+        Svar::feil('Skriv e-posten til kursholderen.');
+    }
+
     if ($data === []) {
         Svar::feil('Ingenting å endre.');
     }
 
-    DB::oppdater('members', $data, ['id' => $id]);
+    // Kursholderen foelger innloggingen paa e-post. Byttes e-posten, flyttes
+    // koblingen med, ellers ville hen mistet kursene sine paa Min side.
+    $holderFoer = $kursholderFor($bruker['epost'] ?? null);
+    DB::iTransaksjon(static function () use ($data, $id, $bruker, $somKursholder, $holderFoer, $epostEtter, $blirKursholder): void {
+        DB::oppdater('members', $data, ['id' => $id]);
+        if ($somKursholder) {
+            if ($holderFoer) {
+                DB::oppdater('kursholdere', ['epost' => mb_substr($epostEtter, 0, 191)], ['id' => $holderFoer['id']]);
+            } else {
+                $blirKursholder((string) ($data['navn'] ?? $bruker['navn']), $epostEtter, $bruker['telefon'] ?? null);
+            }
+        } elseif ($holderFoer && Foresporsel::tekst('rolle') === 'medlem') {
+            DB::oppdater('kursholdere', ['aktiv' => 0], ['id' => $holderFoer['id']]);
+            revider('kursholder_sluttet', 'kursholder', (int) $holderFoer['id'], ['fra' => 'brukere']);
+        }
+    });
     // Nytt passord: alle andre innlogginger paa kontoen avsluttes. Den som
     // bytter, blir sittende i sin egen fane.
     if (isset($data['passord_hash'])) {

@@ -33208,7 +33208,8 @@ class Component extends DCLogic {
     const neste = plasser[0] || null;
 
     const chat = (this.state.chat || []).filter(m => !m.slettet);
-    const varer = (this.state.butikkvareListe || []).filter(v => v.kunMedlemmer).slice(0, 2);
+    // Internt (migrasjon 252): ogsaa varer som i tillegg er i nettbutikken.
+    const varer = (this.state.butikkvareListe || []).filter(v => (v.internt !== undefined ? v.internt : v.kunMedlemmer)).slice(0, 2);
     const salg = (this.state.mineSalg || []).slice(0, 3);
     const STATUS = { til_godkjenning: 'Til godkjenning', publisert: 'Ute i butikken', avvist: 'Ikke lagt ut', skjult: 'Tatt ned', solgt: 'Solgt' };
     const merke = (st) => ({
@@ -50187,7 +50188,9 @@ class Component extends DCLogic {
       }
     };
     const dagRader = (visAlleDag ? dagBest : dagBest.slice(0, 8)).map(r => ({
-      kl: r.kl || '', hva: r.hva || '', under: [r.belop, r.navn].filter(Boolean).join(' · '),
+      // Kurskjøp: kursdatoen og ledige plasser etter kursnavnet (eieren 04.10.2026, GO).
+      kl: r.kl || '', hva: [r.hva, r.kursNaar, r.ledige != null ? r.ledige + ' ledige' : ''].filter(Boolean).join(' · '),
+      under: [r.belop, r.navn].filter(Boolean).join(' · '),
       status: String(r.status || '').toUpperCase(), statusStil: pilleStil(r.status),
       velg: stopp(() => aapneBestilling(r)),
     }));
@@ -68654,7 +68657,7 @@ class Component extends DCLogic {
       // ekte siden. De ligger alt i basen, merket «kun medlemmer», og
       // api/butikk.php sender dem bare til den som er innlogget som medlem.
       internvarer: (this.state.butikkvareListe
-        ? this.state.butikkvareListe.filter(v => v.kunMedlemmer)
+        ? this.state.butikkvareListe.filter(v => (v.internt !== undefined ? v.internt : v.kunMedlemmer)) // Internt, ogsaa varer som i tillegg er i nettbutikken (migrasjon 252)
         : (this.erPublisert() ? [] : [
             { tittel: 'Leire, stengods grå', detalj: '10 kg pose', pris: 'kr. 290,-' },
             { tittel: 'Leire, hvit porselen', detalj: '5 kg pose', pris: 'kr. 340,-' },

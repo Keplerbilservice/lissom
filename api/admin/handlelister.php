@@ -173,11 +173,11 @@ function handleliste_linjer(): array
                     COALESCE(p.tittel, h.tekst) AS tittel,
                     COALESCE(NULLIF(p.artikkelnr, ''), h.artikkelnr) AS artikkelnr,
                     COALESCE(p.leverandor_id, h.leverandor_id) AS leverandor_id,
-                    m.navn AS medlemsnavn, m.telefon,
+                    COALESCE(m.navn, 'Verkstedets lager') AS medlemsnavn, m.telefon,
                     l.navn AS leverandor
                FROM handleliste_linjer h
           LEFT JOIN products p ON p.id = h.product_id
-               JOIN members  m ON m.id = h.member_id
+               LEFT JOIN members m ON m.id = h.member_id
           LEFT JOIN leverandorer l ON l.id = COALESCE(p.leverandor_id, h.leverandor_id)
               WHERE h.status IN ('sendt', 'fjernet')
               ORDER BY (h.product_id IS NULL), l.navn, artikkelnr, tittel, m.navn"
@@ -188,11 +188,11 @@ function handleliste_linjer(): array
         // teksten staar der tittelen ellers staar.
         "SELECT h.id, h.member_id, h.product_id, h.antall, h.status, h.pris_ore, h.order_id,
                 COALESCE(p.tittel, h.tekst) AS tittel, COALESCE(p.artikkelnr, '') AS artikkelnr, p.leverandor_id,
-                m.navn AS medlemsnavn, m.telefon,
+                COALESCE(m.navn, 'Verkstedets lager') AS medlemsnavn, m.telefon,
                 l.navn AS leverandor
            FROM handleliste_linjer h
       LEFT JOIN products p ON p.id = h.product_id
-           JOIN members  m ON m.id = h.member_id
+           LEFT JOIN members m ON m.id = h.member_id
       LEFT JOIN leverandorer l ON l.id = p.leverandor_id
           WHERE h.status IN ('sendt', 'fjernet')
           ORDER BY (h.product_id IS NULL), p.artikkelnr, p.tittel, h.tekst, m.navn"
@@ -203,6 +203,10 @@ function handleliste_linjer(): array
 function handleliste_fornavn(string $navn): string
 {
     $navn = trim($navn);
+    // Verkstedets eget lager (migrasjon 253) heter det samme hele veien.
+    if ($navn === 'Verkstedets lager') {
+        return $navn;
+    }
     if ($navn === '') {
         return 'et medlem';
     }
@@ -270,6 +274,9 @@ function handleliste_bilde(): array
                 'harTlf'   => trim((string) ($l['telefon'] ?? '')) !== '',
                 'varerOre' => 0,
                 'kravSendt'=> false,
+                // Verkstedets eget lager (member_id NULL, migrasjon 253):
+                // med i frakten, men uten gebyr og uten Vipps-krav.
+                'intern'   => $l['member_id'] === null,
             ];
         }
         $medlemmer[$n]['varerOre'] += (int) $l['pris_ore'] * (int) $l['antall'];
@@ -309,7 +316,7 @@ function handleliste_bilde(): array
                 $m['fraktOre'] += (int) ceil($ore / count($med));
             }
         }
-        $m['gebyrOre'] = (int) round($m['varerOre'] * $gebyr / 100);
+        $m['gebyrOre'] = $m['intern'] ? 0 : (int) round($m['varerOre'] * $gebyr / 100);
         $m['sumOre']   = $m['varerOre'] + $m['gebyrOre'] + $m['fraktOre'];
         $m['frakt']    = handleliste_kroner($m['fraktOre']);
         $m['varer']    = handleliste_kroner($m['varerOre']);
@@ -330,7 +337,7 @@ function handleliste_bilde(): array
     // under teller bare dem som har en pris — det er noe annet.
     $harSendt = [];
     foreach ($linjer as $l) {
-        if ($l['status'] === 'sendt') {
+        if ($l['status'] === 'sendt' && $l['member_id'] !== null) {
             $harSendt[(int) $l['member_id']] = true;
         }
     }
@@ -654,7 +661,7 @@ if ($handling === 'krav') {
     $feilet = [];
 
     foreach ($bilde['medlemmer'] as $m) {
-        if ($m['kravSendt'] || $m['sumOre'] <= 0) {
+        if ($m['kravSendt'] || $m['sumOre'] <= 0 || !empty($m['intern'])) {
             continue;
         }
         $medlemId = (int) $m['medlemId'];
@@ -786,10 +793,10 @@ if ($handling === 'bestill') {
     $nrSql  = handleliste_har208() ? "COALESCE(NULLIF(p.artikkelnr, ''), h.artikkelnr)" : 'p.artikkelnr';
     $linjer = DB::alle(
         "SELECT h.id, h.antall, COALESCE(p.tittel, h.tekst) AS tittel, {$nrSql} AS artikkelnr,
-                m.navn AS medlemsnavn, m.id AS mid
+                COALESCE(m.navn, 'Verkstedets lager') AS medlemsnavn, COALESCE(m.id, 0) AS mid
            FROM handleliste_linjer h
       LEFT JOIN products p ON p.id = h.product_id
-           JOIN members  m ON m.id = h.member_id
+           LEFT JOIN members m ON m.id = h.member_id
           WHERE h.status = 'sendt' AND {$levSql} = :l AND h.bestilt_at IS NULL
           ORDER BY m.navn, artikkelnr",
         ['l' => $leverandorId]

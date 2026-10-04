@@ -58,12 +58,18 @@ final class Maaling
         if (preg_match('~^GA1\.\d\.(\d+\.\d+)$~', (string) ($c['_ga'] ?? ''), $m) === 1) {
             $ut['cid'] = $m[1];
         }
-        // _ga_<måle-id uten G-> = GS1.1.<session_id>.<antall>.…
+        // _ga_<måle-id uten G->: økt-ID og økt-nummer (se lesOkt()).
         foreach ($c as $navn => $verdi) {
-            if (str_starts_with((string) $navn, '_ga_') && preg_match('~^GS\d\.\d\.(\d+)\.~', (string) $verdi, $m) === 1) {
-                $ut['sid'] = $m[1];
+            if (str_starts_with((string) $navn, '_ga_') && ($okt = self::lesOkt((string) $verdi)) !== null) {
+                $ut['sid'] = $okt['sid'];
+                $ut['sn']  = $okt['sn'];
                 break;
             }
+        }
+        // _gcl_aw = GCL.<tid>.<gclid> — Google Ads-klikket. Tas vare på til en
+        // senere import av frakoblede konverteringer.
+        if (preg_match('~^GCL\.\d+\.([\w-]{10,200})$~', (string) ($c['_gcl_aw'] ?? ''), $m) === 1) {
+            $ut['gclid'] = $m[1];
         }
         if (isset($c['_fbp']) && preg_match('~^fb\.\d\.\d+\.\d+$~', (string) $c['_fbp']) === 1) {
             $ut['fbp'] = (string) $c['_fbp'];
@@ -74,10 +80,123 @@ final class Maaling
         if ($ut === []) {
             return '';
         }
-        $ut['ip'] = mb_substr((string) ($_SERVER['REMOTE_ADDR'] ?? ''), 0, 45);
+        // Cookiene settes bare etter «ja» i samtykkeboksen, og «ja» gir alle
+        // fire Google-feltene på en gang (nett.js, appen). Det lagres her, så
+        // serveren sender samme samtykke som nettleseren hadde.
+        $ut['sam'] = 'ja';
+        $ut['ip'] =mb_substr((string) ($_SERVER['REMOTE_ADDR'] ?? ''), 0, 45);
         $ut['ua'] = mb_substr((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 300);
         $ut['t']  = time();
         return (string) json_encode($ut, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    }
+
+    /**
+     * Økt-ID og økt-nummer fra _ga_<id>-cookien. To formater finnes:
+     *   gammelt: GS1.1.<session_id>.<nummer>.<…>
+     *   nytt:    GS2.1.s<session_id>$o<nummer>$g…$t…
+     * Bare det gamle ble lest fram til 4. oktober 2026, så kjøp fra serveren
+     * kom uten økt og havnet som «Unassigned» i GA4.
+     * @return array{sid:string,sn:int}|null
+     */
+    public static function lesOkt(string $verdi): ?array
+    {
+        if (preg_match('~^GS\d\.\d+\.s(\d+)\$o(\d+)(?:\$|$)~', $verdi, $m) === 1
+            || preg_match('~^GS\d\.\d+\.(\d+)\.(\d+)(?:\.|$)~', $verdi, $m) === 1) {
+            return ['sid' => $m[1], 'sn' => (int) $m[2]];
+        }
+        return null;
+    }
+
+    /**
+     * Samtykket til GA4 (Measurement Protocol, «consent») slik det er lagret
+     * på betalingen. GRANTED bare når «sam» = «ja» står i sporingen; alt
+     * annet — også sporing lagret før feltet fantes — sendes som DENIED.
+     * @return array{ad_user_data:string,ad_personalization:string}
+     */
+    public static function ga4Samtykke(array $sporing): array
+    {
+        $v = ($sporing['sam'] ?? '') === 'ja' ? 'GRANTED' : 'DENIED';
+        return ['ad_user_data' => $v, 'ad_personalization' => $v];
+    }
+
+    /**
+     * Kroppen til GA4 Measurement Protocol: én hendelse med økt, samtykke og
+     * hashede brukerdata. Tom når client_id mangler.
+     * @param array{epost:string,telefon:string,navn:string,medlem:int,tittel:string,slug:string} $hvem
+     */
+    public static function ga4Kropp(array $sporing, string $hendelse, array $params, array $hvem): array
+    {
+        if (empty($sporing['cid'])) {
+            return [];
+        }
+        // Uten økt-ID og engasjementstid havner hendelsen utenfor økten, og
+        // Ads ser ingen kilde å tilskrive kjøpet.
+        $params['engagement_time_msec'] = 100;
+        if (!empty($sporing['sid'])) {
+            $params['session_id'] = (string) $sporing['sid'];
+        }
+        $kropp = [
+            'client_id' => (string) $sporing['cid'],
+            'consent'   => self::ga4Samtykke($sporing),
+            'events'    => [['name' => $hendelse, 'params' => $params]],
+        ];
+        // Brukeroppgitte data, hashet — samme som gtag('set','user_data') i
+        // nettleseren, så Google kan kjenne igjen kjøperen på tvers av enheter.
+        // Bare med samtykke.
+        if ($kropp['consent']['ad_user_data'] !== 'GRANTED') {
+            return $kropp;
+        }
+        $ud = [];
+        $e = self::normEpost($hvem['epost']);
+        if ($e !== '') {
+            $ud['sha256_email_address'] = hash('sha256', $e);
+        }
+        $t = self::e164($hvem['telefon']);
+        if ($t !== '') {
+            $ud['sha256_phone_number'] = hash('sha256', $t);
+        }
+        [$fornavn, $etternavn] = self::navnDeler($hvem['navn']);
+        if ($fornavn !== '' && $etternavn !== '') {
+            $ud['address'] = [[
+                'sha256_first_name' => hash('sha256', $fornavn),
+                'sha256_last_name'  => hash('sha256', $etternavn),
+                'country'           => 'NO',
+            ]];
+        }
+        if ($ud !== []) {
+            $kropp['user_data'] = $ud;
+        }
+        return $kropp;
+    }
+
+    /**
+     * Refusjon til GA4: «refund» med samme transaction_id som kjøpet
+     * («L<betalings-id>») og det beløpet som nettopp ble refundert. Bare når
+     * kjøpet hadde sporing (samtykke). Feiler stille, som kjop().
+     */
+    public static function refusjon(int $betalingId, int $belopOre): void
+    {
+        if ($belopOre <= 0) {
+            return;
+        }
+        try {
+            if (!DB::harKolonne('payments', 'sporing')) {
+                return;
+            }
+            $b = DB::en('SELECT id, formal, sporing FROM payments WHERE id = :id', ['id' => $betalingId]);
+            $sporing = json_decode((string) ($b['sporing'] ?? ''), true);
+            if ($b === null || !is_array($sporing) || $sporing === []) {
+                return;
+            }
+            $belop = round($belopOre / 100, 2);
+            self::tilGa4Hendelse($sporing, 'refund', [
+                'transaction_id' => 'L' . $betalingId,
+                'value'          => $belop,
+                'currency'       => 'NOK',
+            ], self::hvem((string) $b['formal'], $betalingId), 'L' . $betalingId);
+        } catch (Throwable $e) {
+            logg_feil('Måling av refusjon ' . $betalingId . ' feilet', $e);
+        }
     }
 
     /**
@@ -229,55 +348,29 @@ final class Maaling
     /** @param array{epost:string,telefon:string,navn:string,medlem:int,tittel:string,slug:string} $hvem */
     private static function tilGa4(array $sporing, string $id, float $belop, string $formal, string $vare, array $hvem): void
     {
-        $gaId = self::gaId();
-        $hemmelighet = trim((string) Config::hent('maal_ga_api_secret', ''));
-        if ($gaId === '' || $hemmelighet === '' || empty($sporing['cid'])) {
-            return;
-        }
-        $params = [
+        self::tilGa4Hendelse($sporing, 'purchase', [
             'transaction_id' => $id,
             'value'          => $belop,
             'currency'       => 'NOK',
             'items'          => [['item_id' => $formal, 'item_name' => $vare, 'price' => $belop, 'quantity' => 1]],
-            // Uten disse to havner hendelsen utenfor økten, og Ads ser ingen
-            // kilde å tilskrive kjøpet.
-            'engagement_time_msec' => 100,
-        ];
-        if (!empty($sporing['sid'])) {
-            $params['session_id'] = (string) $sporing['sid'];
-        }
-        $kropp = [
-            'client_id' => (string) $sporing['cid'],
-            'events'    => [['name' => 'purchase', 'params' => $params]],
-        ];
-        // Brukeroppgitte data, hashet — samme som gtag('set','user_data') i
-        // nettleseren, så Google kan kjenne igjen kjøperen på tvers av enheter.
-        $ud = [];
-        $e = self::normEpost($hvem['epost']);
-        if ($e !== '') {
-            $ud['sha256_email_address'] = hash('sha256', $e);
-        }
-        $t = self::e164($hvem['telefon']);
-        if ($t !== '') {
-            $ud['sha256_phone_number'] = hash('sha256', $t);
-        }
-        [$fornavn, $etternavn] = self::navnDeler($hvem['navn']);
-        if ($fornavn !== '' && $etternavn !== '') {
-            $ud['address'] = [[
-                'sha256_first_name' => hash('sha256', $fornavn),
-                'sha256_last_name'  => hash('sha256', $etternavn),
-                'country'           => 'NO',
-            ]];
-        }
-        if ($ud !== []) {
-            $kropp['user_data'] = $ud;
+        ], $hvem, $id);
+    }
+
+    /** @param array{epost:string,telefon:string,navn:string,medlem:int,tittel:string,slug:string} $hvem */
+    private static function tilGa4Hendelse(array $sporing, string $hendelse, array $params, array $hvem, string $id): void
+    {
+        $gaId = self::gaId();
+        $hemmelighet = trim((string) Config::hent('maal_ga_api_secret', ''));
+        $kropp = self::ga4Kropp($sporing, $hendelse, $params, $hvem);
+        if ($gaId === '' || $hemmelighet === '' || $kropp === []) {
+            return;
         }
         $url = 'https://www.google-analytics.com/mp/collect?measurement_id=' . rawurlencode($gaId)
              . '&api_secret=' . rawurlencode($hemmelighet);
         $svar = http_kall($url, 'POST', (string) json_encode($kropp, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
             ['Content-Type: application/json'], 6);
         if ($svar['status'] < 200 || $svar['status'] >= 300) {
-            logg_feil('GA4 svarte ' . $svar['status'] . ' på kjøp ' . $id . ': ' . mb_substr($svar['kropp'], 0, 300));
+            logg_feil('GA4 svarte ' . $svar['status'] . ' på ' . $hendelse . ' ' . $id . ': ' . mb_substr($svar['kropp'], 0, 300));
         }
     }
 

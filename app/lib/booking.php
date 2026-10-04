@@ -1355,11 +1355,15 @@ final class Booking
                     Vipps::refunder((string) $op['referanse'], (int) $op['amount_ore'], 'refund:' . $op['id']);
                 }
             }
-            return DB::iTransaksjon(static function () use ($paymentId, $op): array {
+            $maaltOre = 0;
+            $svar = DB::iTransaksjon(static function () use ($paymentId, $op, &$maaltOre): array {
                 self::laasKort(self::kortFor($paymentId));
                 $p = DB::en('SELECT * FROM payments WHERE id = :i FOR UPDATE', ['i' => $paymentId]);
                 // Webhook kan ha bekreftet samme aggregate mens kallet gikk.
                 $refundert = max((int) $p['refundert_ore'], (int) $op['before_ore'] + (int) $op['amount_ore']);
+                // Til GA4 (Maaling::refusjon): bare det denne runden hever
+                // «refundert_ore» med — har webhooken alt meldt det, er det 0.
+                $maaltOre = (int) $op['id'] > 0 ? max(0, $refundert - (int) $p['refundert_ore']) : 0;
                 $rest = max(0, (int) $p['belop_ore'] - $refundert);
                 if ((int) $op['id'] > 0) {
                     DB::oppdater('payments', ['refundert_ore' => $refundert,
@@ -1391,6 +1395,11 @@ final class Booking
                 }
                 return ['belop' => (int) $op['amount_ore'], 'refundert' => $refundert, 'gjenstaar' => $rest];
             });
+            // Etter transaksjonen, og feiler stille: målingen stopper aldri en refusjon.
+            if ($maaltOre > 0 && class_exists('Maaling')) {
+                Maaling::refusjon($paymentId, $maaltOre);
+            }
+            return $svar;
         } finally {
             DB::verdi('SELECT RELEASE_LOCK(:n)', ['n' => $laas]);
         }

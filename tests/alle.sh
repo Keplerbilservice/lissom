@@ -144,6 +144,7 @@ kjor "bestill mer, lav aktivitet" php tests/daglig.php
 kjor "eposter"       php tests/eposter.php
 kjor "sikkerhet (Codex C)" php tests/sikkerhet-c.php
 kjor "fryst medlem: ingen innstempling eller medlemstid" php tests/frys-tilgang.php
+kjor "måling: GA4-økt og samtykke" php tests/maaling-okt-samtykke.php
 
 # --- Betalingskjeden ende til ende mot en falsk Vipps -----------------------
 # Betalingsflyten henter en publisert, betalt kursokt fram i tid fra basen,

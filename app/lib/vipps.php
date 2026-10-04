@@ -1109,9 +1109,15 @@ final class Vipps
                 // paa plassen med akkurat det (Booking::prisavslagEtterDelrefusjon,
                 // kontrolloeren 2. oktober 2026). Samme hendelse to ganger, eller
                 // etter admins egen refusjon, gir 0 i differanse.
-                $oppdater = static function () use ($referanse, $refundert): void {
+                $maalt = ['id' => 0, 'ore' => 0];
+                $oppdater = static function () use ($referanse, $refundert, &$maalt): void {
                     $foer = DB::en('SELECT id, refundert_ore FROM payments WHERE vipps_reference = :r FOR UPDATE',
                         ['r' => $referanse]);
+                    if ($foer !== null) {
+                        // Til GA4 (Maaling::refusjon): bare det denne hendelsen
+                        // hever «refundert_ore» med, som prisavslaget under.
+                        $maalt = ['id' => (int) $foer['id'], 'ore' => max(0, $refundert - (int) $foer['refundert_ore'])];
+                    }
                     DB::kjor(
                         "UPDATE payments
                             SET status = CASE WHEN GREATEST(refundert_ore, :s) >= belop_ore
@@ -1129,6 +1135,11 @@ final class Vipps
                     }
                 };
                 DB::kobling()->inTransaction() ? $oppdater() : DB::iTransaksjon($oppdater);
+                // Refusjon i Vipps-portalen eller webhook foer appens eget svar:
+                // til GA4 her. Feiler stille.
+                if ($maalt['ore'] > 0 && class_exists('Maaling')) {
+                    Maaling::refusjon($maalt['id'], $maalt['ore']);
+                }
                 // L-3: hele beloepet tilbake — ogsaa naar det ble gjort i
                 // Vipps-portalen — gjor opp kjoepet (gavekort, timepakke,
                 // ordre, medlemskap). Trygt aa kalle flere ganger.

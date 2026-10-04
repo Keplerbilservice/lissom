@@ -5086,6 +5086,35 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "maaling-ga4-okt-samtykke-refund",
+            "dato": "2026-10-04",
+            "hva": "Kjøpsmålingen fra serveren: GA4-økten leses fra både gammelt (GS1) og nytt (GS2.1.s…$o…) _ga_-format; Measurement Protocol sender consent (ad_user_data/ad_personalization) — GRANTED bare når samtykket «ja» er lagret på betalingen, ellers DENIED og ingen brukerdata; gclid fra _gcl_aw tas vare på; refusjoner (appen og Vipps-webhook) sendes til GA4 som «refund» med samme transaction_id og beløpet som ble refundert.",
+            "hvor": "app/lib/maaling.php, Booking::refunderBetaling, Vipps::anvendTilstand (REFUNDED)",
+            "kode": [
+                {
+                    "fil": "app/lib/maaling.php",
+                    "finnes": [
+                        "public static function lesOkt(string $verdi): ?array",
+                        "$ut['sam'] = 'ja';",
+                        "'consent'   => self::ga4Samtykke($sporing),",
+                        "self::tilGa4Hendelse($sporing, 'refund', ["
+                    ]
+                },
+                {
+                    "fil": "app/lib/booking.php",
+                    "finnes": [
+                        "Maaling::refusjon($paymentId, $maaltOre);"
+                    ]
+                },
+                {
+                    "fil": "app/lib/vipps.php",
+                    "finnes": [
+                        "Maaling::refusjon($maalt['id'], $maalt['ore']);"
+                    ]
+                }
+            ]
         }
     ]
 }

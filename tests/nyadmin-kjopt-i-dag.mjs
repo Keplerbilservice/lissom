@@ -14,6 +14,13 @@ try{
   const linje=p.locator('.row',{hasText:s.tag}).first();await linje.waitFor();const tekst=await linje.innerText();
   assert.ok(tekst.includes(b.kursNaar),'datoen vises: '+tekst);assert.ok(tekst.includes(b.ledige+' ledige'),'ledige vises: '+tekst);
   assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,width+' px');assert.deepEqual(errors,[]);
-  console.log(width+' px: Kjøpt i dag viser «'+tekst.replace(/\s+/g,' ').trim()+'»');await c.close();
+  console.log(width+' px: Kjøpt i dag viser «'+tekst.replace(/\s+/g,' ').trim()+'»');
+  // Samme linje i admin2 (Betalt i dag) og gamle admin (Dagens bestillinger) — eieren 04.10: «du må endre overalt».
+  await p.goto('http://lokal.lissom.no:8140/admin2#i-dag');const a2=p.locator('[data-kort="betalt"]').getByText(s.tag,{exact:false}).first();await a2.waitFor();const t2=await a2.innerText();
+  assert.ok(t2.includes(b.kursNaar)&&t2.includes(b.ledige+' ledige'),'admin2: '+t2);
+  await p.goto('http://lokal.lissom.no:8140/admin');const g=p.locator('.lx-ovrad',{hasText:s.tag}).first();await g.waitFor({timeout:20000});const tg=await g.innerText();
+  assert.ok(tg.includes(b.kursNaar)&&tg.includes(b.ledige+' ledige'),'gamle admin: '+tg);
+  assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,width+' px gamle admin');assert.deepEqual(errors,[]);
+  console.log(width+' px: admin2 og gamle admin viser kursdato og ledige.');await c.close();
  }
 }finally{await browser.close();fixture('cleanup',s);}

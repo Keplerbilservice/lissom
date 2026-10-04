@@ -5321,6 +5321,21 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "minside-pc-flukt-hjerte",
+            "dato": "2026-10-04",
+            "hva": "PC: flisene starter i høyde med «Verkstedet nå», og hjertet fra logoen med gul-til-brun overgang ligger bak det tomme feltet under flisene",
+            "hvor": "Min side, PC",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        ".msny .ms-o-inn.msny-hoyre { padding-top: calc(var(--text-4xl) * 1.1 + var(--space-4)); }",
+                        "mask: url(/mark-heart.png) center / contain no-repeat;"
+                    ]
+                }
+            ]
         }
     ]
 }

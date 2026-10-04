@@ -4718,6 +4718,70 @@
             ]
         },
         {
+            "id": "adminny-spor-verkstedet",
+            "dato": "2026-10-04",
+            "hva": "Eieren, 4. oktober 2026: «Spør verkstedet» for admin i det nye adminet, med samme funksjon som Verkstedet → Spør verkstedet i gamle admin (faqSpor): spørsmålsfelt, «Leser fra»-piller per hovedkort, svaret og «Hentet fra Monicas kunnskapsbase». Samme kall til /api/spor-verkstedet.php, ingen ny AI-kobling. Står på Dokumenter-skjermen og finnes i søket og Alle funksjoner.",
+            "hvor": "admin-ny › Dokumenter og håndbøker",
+            "kode": [
+                {
+                    "fil": "admin-ny/spor-verkstedet.js",
+                    "finnes": [
+                        "fetch('/api/spor-verkstedet.php'",
+                        "'Skriv spørsmålet ditt'",
+                        "'Tenker …':'Spør'",
+                        "'Hentet fra Monicas kunnskapsbase'",
+                        "'AI-en svarte ikke. Prøv igjen.'",
+                        "'Fikk ikke kontakt med serveren.'"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/dokumenter-og-dubletter.js",
+                    "finnes": [
+                        "askWorkshop(d)"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/app.js",
+                    "finnes": [
+                        "['Spør verkstedet','#dokumenter']"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "adminny-designmaler",
+            "dato": "2026-10-04",
+            "hva": "Eieren, 4. oktober 2026: «Designmaler» (underlogoene og profilbildene, og Lissoms egne logoer) fra gamle admin som egen skjerm #designmaler under Markedsføring, mellom Mobilvisning og Tekstmaler. Samme filer og maler som designmalAdminVals(), ingen serverkall; nedlasting per format og «Kopier lenke».",
+            "hvor": "admin-ny › Markedsføring › Designmaler",
+            "kode": [
+                {
+                    "fil": "admin-ny/designmaler.js",
+                    "finnes": [
+                        "'design/underlogoer/'",
+                        "under('date-night')",
+                        "under('paint-on-pots')",
+                        "under('sip-and-clay')",
+                        "'Kopier lenke'",
+                        "'Kopiert ✓'"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/marked.js",
+                    "finnes": [
+                        "link('Designmaler','#designmaler')",
+                        "designmaler:async()=>designTemplates()"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/app.js",
+                    "finnes": [
+                        "'designmaler','maler']",
+                        "['Designmaler','#designmaler']"
+                    ]
+                }
+            ]
+        },
+        {
             "id": "adminny-chat",
             "dato": "2026-10-04",
             "hva": "Medlemschatten fra gamle admin står i admin-ny som egen side (#chat) med kort «Chat» under Verksted og treff i søket; bruker /api/chat.php (slett og angre sletting som før)",

@@ -20,7 +20,7 @@ import {STEDER} from '../nyadmin/steder.js';
 
 // A separate interface. No legacy administrator page is mounted or framed.
 const NAV=[['idag','I dag','◉'],['kalender','Kalender','▦'],['kurs','Kurs','◇'],['folk','Folk','♧'],['penger','Penger','○'],['verksted','Verksted','⌂'],['innhold','Innhold','✎'],['marked','Markedsføring','✦'],['alle','Alle funksjoner','☷']];
-const NAV_MARKED=['marked','kampanjer','seo','geo','kunnskap','referanser','kursvelger','videokurs','mobilvisning','maler'];
+const NAV_MARKED=['marked','kampanjer','seo','geo','kunnskap','referanser','kursvelger','videokurs','mobilvisning','designmaler','maler'];
 // Står én gang, under Markedsføring (SEO, GEO) eller Verksted (Skisser, Oppskrifter). Eieren 03.10. Søket finner dem fortsatt.
 const I_ANDRE_MENYER=/^\/admin\/(seo|geo)$|^\/skisser\.html$|^\/admin\/oppskrifter\?apne=oppskrifter$/;
 const NATIVE=new Map([['#i-dag','idag'],['/admin','idag'],['/admin/oversikt','idag'],['/admin/kurs','kurs'],['/admin/kurs/alle','kurs'],['/admin/kalender','kalender'],['/admin/medlemmer','folk'],['/admin/medlemmer/alle','folk'],['/admin/ferdigbrent','henting'],['/admin/ubesvarte','foresporsler'],['/admin/ubesvarte?apne=dugnad','dugnad'],['/admin/ressurser','ressurser'],['/admin/butikk','butikk'],['/admin/beskjeder','beskjeder'],['/admin/brukere','brukere']]);
@@ -30,8 +30,8 @@ setupRoutes.forEach(([u,r])=>NATIVE.set(u,r));
 contentRoutes.forEach(([u,r])=>NATIVE.set(u,r));
 extraRoutes.forEach(([u,r])=>NATIVE.set(u,r));
 adminRoutes.forEach(([u,r])=>NATIVE.set(u,r));
-const PLACES=[...STEDER,['Frys av medlemskap','#frys'],['Medlemsgaver','#gaver'],['Grupperabatter','#rabatter'],['Betalinger','#betalinger'],['Timeliste','#timeliste'],['Vervepremie','#verving'],['Medlemsbidrag og galleri','#medlemsbidrag'],['Kjøpsmåling','#maaling'],['AI-bilder og oppsett','#aibilder'],['Standardtekster for kurs','#kursstandard'],['Vipps og betalingsvarsler','#vippsoppsett'],['Nyttige lenker','#lenker'],['Bildebibliotek','#bilder'],['Dokumenter og håndbøker','#dokumenter'],['Dubletter i medlemslisten','#dubletter'],['Min side for medlemmer','#minside']];
-NATIVE.set('#betalinger','betalinger');NATIVE.set('#timeliste','timeliste');['frys','gaver','rabatter','kursstandard','vippsoppsett','lenker','bilder','verving','medlemsbidrag','maaling','aibilder','dokumenter','dubletter'].forEach(r=>NATIVE.set('#'+r,r));
+const PLACES=[...STEDER,['Frys av medlemskap','#frys'],['Medlemsgaver','#gaver'],['Grupperabatter','#rabatter'],['Betalinger','#betalinger'],['Timeliste','#timeliste'],['Vervepremie','#verving'],['Medlemsbidrag og galleri','#medlemsbidrag'],['Kjøpsmåling','#maaling'],['AI-bilder og oppsett','#aibilder'],['Standardtekster for kurs','#kursstandard'],['Vipps og betalingsvarsler','#vippsoppsett'],['Nyttige lenker','#lenker'],['Bildebibliotek','#bilder'],['Dokumenter og håndbøker','#dokumenter'],['Spør verkstedet','#dokumenter'],['Designmaler','#designmaler'],['Dubletter i medlemslisten','#dubletter'],['Min side for medlemmer','#minside']];
+NATIVE.set('#betalinger','betalinger');NATIVE.set('#timeliste','timeliste');['frys','gaver','rabatter','kursstandard','vippsoppsett','lenker','bilder','verving','medlemsbidrag','maaling','aibilder','dokumenter','dubletter','designmaler'].forEach(r=>NATIVE.set('#'+r,r));
 PLACES.push(...chatPlaces);NATIVE.set('#chat','chat');
 const main=document.querySelector('main');let generation=0;let people=[];let current='idag';let authenticated=false;let peopleRequested=false;let accountant=false;
 const route=()=>location.hash.slice(1).split('?')[0]||'idag';

@@ -31,10 +31,12 @@ if [ "${1:-}" = "--grupper" ]; then printf '%s\n' "${GRUPPER[@]}"; exit 0; fi
 # (sek.): «holder seg» ~450 (alene), «alle knapper» + «I dag» + menyer/skisser/
 # frakt ~360, Regresjon + medlemsreisene + Prøv/timepakke ~290, resten ~190.
 # Eieren 4. oktober 2026: admin2 slettet, og de tre flytene for den med.
-# Resten fordelt paa nytt, saa ingen gruppe staar tom.
+# Del 1 er det som var igjen av del 2. Del 2 og 3 er den gamle del 3 delt i
+# to, men «Prøv Lissom» og «Etter byttet» maa staa i samme del: «Etter
+# byttet» bygger paa byttet «Prøv Lissom» gjorde (feilet 04.10 da de ble skilt).
 FLYTDEL_1='Menyer og ark|Skisser:|Frakt ('
-FLYTDEL_2='Regresjon:|Google-anmeldelser|Medlemsreise|Prøv Lissom'
-FLYTDEL_3='Etter byttet|Oversikt paa mobil|Timepakke:|Utstempling'
+FLYTDEL_2='Regresjon:|Google-anmeldelser|Medlemsreise'
+FLYTDEL_3='Prøv Lissom|Etter byttet|Oversikt paa mobil|Timepakke:|Utstempling'
 FLYTDEL_4='Flytt deltaker|Delt betaling|Vervepremie|Galleri:|Tekst maler|Synlighet:|Oversikt: dagens|Bestill mer|Designmaler|Bilder:|Gavekortsida|Butikk:'
 sjekk_flytdeler() {
   local navn n treff d p feil=0

@@ -1110,7 +1110,7 @@ final class Booking
         $reservasjon = DB::iTransaksjon(static function () use (
             $okt, $oktId, $antall, $navn, $epost, $telefon, $medlemId,
             $folgeMedlem, $gratis, $belop, $aBetale, $gavekortId, $gavekortOre, $rabatt, $referanse,
-            $allergier, $oppmote
+            $allergier, $oppmote, $gjestMelding
         ): array {
             // Plassen sjekkes en gang til inne i transaksjonen. Uten dette kunne
             // to samtidige bookinger begge se den siste plassen som ledig.

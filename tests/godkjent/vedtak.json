@@ -5193,7 +5193,8 @@
                 {
                     "fil": ".htaccess",
                     "finnes": [
-                        "RewriteRule ^paint-on-pots/?$ /kurs/paint-on-pots [R=301,L]"
+                        "RewriteRule ^paint-on-pots/?$ /kurs/paint-on-pots [R=301,L]",
+                        "RewriteCond %{HTTP_HOST} ^ny\\.lissom\\.no$ [NC]"
                     ]
                 },
                 {

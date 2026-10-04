@@ -13,6 +13,13 @@ RewriteEngine On
 RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
 RewriteRule ^(.*)$ https://%1/$1 [R=301,L,NE]
 
+# ny.lissom.no var nettsida mens den ble bygget, og ligger fortsatt i
+# Googles indeks (Search Console 4. oktober 2026: 170 visninger). Navnet
+# finnes ikke lenger i DNS, saa regelen gjoer ingenting foer det peker hit
+# igjen — da gaar hver adresse til samme sti paa lissom.no med 301.
+RewriteCond %{HTTP_HOST} ^ny\.lissom\.no$ [NC]
+RewriteRule ^(.*)$ https://lissom.no/$1 [R=301,L,NE]
+
 # Alltid HTTPS. Sertifikatet er gratis og ligger allerede i cPanel.
 RewriteCond %{HTTPS} !=on
 RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L,NE]

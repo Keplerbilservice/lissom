@@ -4975,7 +4975,7 @@
         {
             "id": "pengehull-3-alle-ubetalte-maaneder",
             "dato": "2026-10-04",
-            "hva": "Pengehull 3: skyldig ser alle betalte måneder, ikke bare den siste. Første ubetalte måned som ikke er fritatt av frys skyldes (fra første betalte måned, ikke før innmeldingen eller nyeste avtale, høyst 12 måneder tilbake). betalingsstatus sier «Forfalt <måned> · sist betalt <dato>» i stedet for «Betalt» når en eldre måned mangler, også ved fast trekk med et feilet trekk før et vellykket. Kassa tar den eldste ubetalte måneden først. sisteBetalinger() velger betalingen for den seneste perioden (ikke den sist registrerte), og «Forny» lager aldri en betaling for en måned som alt er betalt. Kontrolløren (4. oktober 2026, valgt av koordinator): hull før siste betaling telles bare fra oktober 2026 (HULL_FRA, utrullingsvern — eldre betalinger kan mangle gjelder_fra); måneder etter siste betaling skyldes som før. Et feilet/avbrutt trekk gir ikke lenger sin måned som skyldig når måneden er betalt på annen måte, og Kassa går bare bakover til en måned som ikke er betalt. Gjeldsstarten følger bare avtaler som løper eller er betalt på.",
+            "hva": "Pengehull 3: skyldig ser alle betalte måneder, ikke bare den siste. Første ubetalte måned som ikke er fritatt av frys skyldes (fra første betalte måned, ikke før innmeldingen eller nyeste avtale, høyst 12 måneder tilbake). betalingsstatus sier «Forfalt <måned> · sist betalt <dato>» i stedet for «Betalt» når en eldre måned mangler, også ved fast trekk med et feilet trekk før et vellykket. Kassa tar den eldste ubetalte måneden først. sisteBetalinger() velger betalingen for den seneste perioden (ikke den sist registrerte), og «Forny» lager aldri en betaling for en måned som alt er betalt. Kontrolløren (4. oktober 2026, valgt av koordinator): hull før siste betaling telles bare fra oktober 2026 (HULL_FRA, utrullingsvern — eldre betalinger kan mangle gjelder_fra); måneder etter siste betaling skyldes som før — der viker bare utrullingsvernet; innmeldingen, avtalen og tolv måneder er fortsatt grenser (et opphold før ny innmelding skyldes ikke). Et feilet/avbrutt trekk gir ikke lenger sin måned som skyldig når måneden er betalt på annen måte, og Kassa går bare bakover til en måned som ikke er betalt. Gjeldsstarten følger bare avtaler som løper eller er betalt på.",
             "hvor": "app/lib/medlemskap.php, api/admin/medlemmer.php",
             "kode": [
                 {
@@ -4984,6 +4984,7 @@
                         "private static function dekkedeMaaneder(array $rader): array",
                         "private static function ubetaltMellom(",
                             "public const HULL_FRA = '2026-10';",
+                            "$fra = max(self::skyldFra($dekket['forste'], $start, $avt, $idag, false),",
                             "private static function avtaleLaget(array $medlemIder): array",
                             "if (self::betalingForMaaned($id, substr($mnd, 0, 7)) === null) {",
                         "$best['_dekket'] = self::dekkedeMaaneder($rader) + ['avtaleLaget'"

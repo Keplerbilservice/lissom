@@ -333,6 +333,18 @@ try {
         Medlemskap::skyldigMaaned($medlem($u1), '2026-11-05') === '2026-11-01',
         (string) Medlemskap::skyldigMaaned($medlem($u1), '2026-11-05'));
 
+    echo "\n── Ny innmelding etter opphold: sist betalt august 2026, meldt inn igjen i dag ──\n";
+    [$u2, $u2S] = nyttMedlem($plan, 'Hull Opphold');
+    DB::settInn('payments', ['vipps_reference' => $tag . '-AUG2', 'type' => 'manuell', 'formal' => 'medlemskap', 'member_id' => $u2,
+        'subscription_id' => $u2S, 'belop_ore' => 50000, 'status' => 'betalt', 'gjelder_fra' => '2026-08-01',
+        'idempotency_key' => Vipps::uuid(), 'created_at' => '2026-08-10 10:00:00']);
+    DB::oppdater('members', ['start_dato' => $idag], ['id' => $u2]);
+    sjekk("skyldigMaaned = $denne (ikke oppholdet før innmeldingen)", Medlemskap::skyldigMaaned($medlem($u2)) === $denne,
+        (string) Medlemskap::skyldigMaaned($medlem($u2)));
+    $svar = kall([[$porter[0], $API, $kontant($u2), $token]]);
+    $r = rader($u2);
+    sjekk("Kassa tar $denne (200)", $svar[0][0] === 200 && end($r)['gjelder_fra'] === $denne, $svar[0][0] . ' ' . json_encode(end($r)));
+
     echo "\n── Kontrollør 1: avbrutt Vipps, så Kassa — står ikke fast på måneden ──\n";
     [$k1, $k1S] = nyttMedlem($plan, 'Hull Avbrutt');
     DB::oppdater('subscriptions', ['status' => 'stoppet'], ['id' => $k1S]);

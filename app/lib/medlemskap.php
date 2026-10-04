@@ -577,14 +577,6 @@ final class Medlemskap
     }
 
     /**
-     * Maaneden (Y-m) skyldberegningen begynner i: den foerste betalte
-     * maaneden, men ikke foer innmeldingen, ikke foer den nyeste avtalen ble
-     * laget (et nytt medlemskap etter et opphold skal ikke arve hullet), og
-     * hoeyst tolv maaneder tilbake.
-     *
-     * @param array<string,mixed>|null $avtale den nyeste subscriptions-raden
-     */
-    /**
      * Foerste maaned hull foer siste betaling telles som skyldig. Betalinger
      * foer 1. oktober 2026 kan mangle gjelder_fra (en «Forny» foer
      * maanedsskiftet sto paa feil maaned), og ville gitt falsk «Forfalt» paa
@@ -621,10 +613,23 @@ final class Medlemskap
         return $ut;
     }
 
-    private static function skyldFra(string $forsteYm, ?string $startDato, ?array $avtale, string $idag): string
+    /**
+     * Maaneden (Y-m) skyldberegningen begynner i: den foerste betalte
+     * maaneden, men ikke foer innmeldingen, ikke foer den nyeste avtalen ble
+     * laget (et nytt medlemskap etter et opphold skal ikke arve hullet), og
+     * hoeyst tolv maaneder tilbake.
+     *
+     * $medVern: ogsaa ikke foer HULL_FRA (utrullingsvernet).
+     *
+     * @param array<string,mixed>|null $avtale den nyeste subscriptions-raden
+     */
+    private static function skyldFra(string $forsteYm, ?string $startDato, ?array $avtale, string $idag, bool $medVern = true): string
     {
-        $fra = [$forsteYm, self::HULL_FRA,
+        $fra = [$forsteYm,
             (new DateTimeImmutable($idag))->modify('first day of this month')->modify('-11 months')->format('Y-m')];
+        if ($medVern) {
+            $fra[] = self::HULL_FRA;
+        }
         $start = trim((string) $startDato);
         if ($start !== '') {
             $fra[] = substr($start, 0, 7);
@@ -683,13 +688,18 @@ final class Medlemskap
         // gjeldsstarten fram.
         $laget = array_key_exists('avtaleLaget', $dekket) ? $dekket['avtaleLaget']
             : (self::avtaleLaget([$id])[$id] ?? null);
-        $fra = self::skyldFra($dekket['forste'], isset($medlem['start_dato']) ? (string) $medlem['start_dato'] : null,
-            $laget === null ? null : ['created_at' => (string) $laget], $idag);
-        // Maanedene etter den siste betalte skyldes som foer, uansett
-        // utrullingsvernet (HULL_FRA gjelder bare hull foer siste betaling).
+        $start = isset($medlem['start_dato']) ? (string) $medlem['start_dato'] : null;
+        $avt = $laget === null ? null : ['created_at' => (string) $laget];
+        // Maanedene etter den siste betalte skyldes som foer: der viker bare
+        // utrullingsvernet (HULL_FRA gjelder hull foer siste betaling). De
+        // andre grensene — innmeldingen, avtalen, tolv maaneder — staar
+        // (kontrolloeren, 4. oktober 2026: et opphold etter ny innmelding
+        // skal ikke skyldes).
         $sisteYm = (string) array_key_last($dekket['maaneder']);
         $etter = (new DateTimeImmutable($sisteYm . '-01'))->modify('first day of next month')->format('Y-m');
-        return self::forsteUbetalte($id, min($fra, $etter), $dekket['maaneder'], $idag);
+        $fra = max(self::skyldFra($dekket['forste'], $start, $avt, $idag, false),
+            min(self::skyldFra($dekket['forste'], $start, $avt, $idag, true), $etter));
+        return self::forsteUbetalte($id, $fra, $dekket['maaneder'], $idag);
     }
 
     /**

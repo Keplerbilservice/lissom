@@ -4926,6 +4926,30 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "adminny-kursholder-under-brukere",
+            "dato": "2026-10-04",
+            "hva": "Ny kursholder legges til under Folk › Brukere › Ny bruker: «Kursholder» under Tilgang gir medlemsinnlogging og legger personen under Kursholdere med samme navn, e-post og telefon. E-post må fylles ut. Merket «Kursholder» i lista.",
+            "hvor": "admin-ny › Folk › Brukere › Ny bruker",
+            "kode": [
+                {
+                    "fil": "admin-ny/app.js",
+                    "finnes": [
+                        "['kursholder','Kursholder']",
+                        "'Denne personen får medlemstilgang og blir lagt til under Kursholdere.'",
+                        "r.kursholder?badge('Kursholder'):null"
+                    ]
+                },
+                {
+                    "fil": "api/admin/brukere.php",
+                    "finnes": [
+                        "$somKursholder = Foresporsel::tekst('rolle') === 'kursholder';",
+                        "$blirKursholder($navn, $epost, $telefon);",
+                        "Svar::feil('Skriv e-posten til kursholderen.');"
+                    ]
+                }
+            ]
         }
     ]
 }

@@ -41,6 +41,11 @@ if ($mode==='inspect') {
  echo json_encode(['stamp'=>DB::verdi('SELECT hentemelding_at FROM course_sessions WHERE id=:i',['i'=>$s['session']]),'notifications'=>DB::alle("SELECT kanal,tekst,html FROM notifications WHERE mal='ferdig_brent' AND ref_type='booking' AND ref_id=:i",['i'=>$s['booking']])]); exit;
 }
 if ($mode==='cleanup') {
+ // Kursholdere laget fra Brukere i tests/nyadmin-kursholder-bruker.mjs.
+ $kh=$s['tag'].'-kh%@e2e.lissom.test';
+ DB::kjor('DELETE FROM sessions WHERE member_id IN (SELECT id FROM members WHERE epost LIKE :e)',['e'=>$kh]);
+ DB::kjor('DELETE FROM members WHERE epost LIKE :e',['e'=>$kh]);
+ if (DB::harTabell('kursholdere')) DB::kjor('DELETE FROM kursholdere WHERE epost LIKE :e',['e'=>$kh]);
  if (DB::harTabell('admin_kortbruk')) DB::kjor('DELETE FROM admin_kortbruk WHERE member_id=:i',['i'=>$s['admin']]);
  DB::kjor('DELETE FROM check_ins WHERE member_id=:i',['i'=>$s['admin']]);
  DB::kjor('DELETE FROM payments WHERE booking_id=:i',['i'=>$s['booking']]);

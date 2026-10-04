@@ -15,6 +15,7 @@ import {contentScreens,contentRoutes} from './innhold-og-kurs.js';
 import {setupScreens,setupRoutes} from './meldinger-og-oppsett.js';
 import {commerceScreens,commerceRoutes} from './kasse-og-handel.js';
 import {marketScreens,marketRoutes} from './marked.js';
+import {chatScreens,chatPlaces} from './chat.js';
 import {STEDER} from '../nyadmin/steder.js';
 
 // A separate interface. No legacy administrator page is mounted or framed.
@@ -31,6 +32,7 @@ extraRoutes.forEach(([u,r])=>NATIVE.set(u,r));
 adminRoutes.forEach(([u,r])=>NATIVE.set(u,r));
 const PLACES=[...STEDER,['Frys av medlemskap','#frys'],['Medlemsgaver','#gaver'],['Grupperabatter','#rabatter'],['Betalinger','#betalinger'],['Timeliste','#timeliste'],['Vervepremie','#verving'],['Medlemsbidrag og galleri','#medlemsbidrag'],['Kjøpsmåling','#maaling'],['AI-bilder og oppsett','#aibilder'],['Standardtekster for kurs','#kursstandard'],['Vipps og betalingsvarsler','#vippsoppsett'],['Nyttige lenker','#lenker'],['Bildebibliotek','#bilder'],['Dokumenter og håndbøker','#dokumenter'],['Dubletter i medlemslisten','#dubletter'],['Min side for medlemmer','#minside']];
 NATIVE.set('#betalinger','betalinger');NATIVE.set('#timeliste','timeliste');['frys','gaver','rabatter','kursstandard','vippsoppsett','lenker','bilder','verving','medlemsbidrag','maaling','aibilder','dokumenter','dubletter'].forEach(r=>NATIVE.set('#'+r,r));
+PLACES.push(...chatPlaces);NATIVE.set('#chat','chat');
 const main=document.querySelector('main');let generation=0;let people=[];let current='idag';let authenticated=false;let peopleRequested=false;let accountant=false;
 const route=()=>location.hash.slice(1).split('?')[0]||'idag';
 const params=()=>new URLSearchParams(location.hash.split('?')[1]||'');
@@ -122,6 +124,7 @@ function loginPanel(){const user=el('input',{name:'brukernavn',autocomplete:'use
 RENDERERS.betalinger=async()=>{const d=await api('betalinger.php');return el('div',{},title('Betalinger','Registrerte innbetalinger og refusjoner.'),searchable(d.betalinger,r=>item(r.medlem||r.kurs||r.formal,[r.tidspunkt,r.maate,r.kurs,r.belop].filter(Boolean).join(' · '),[badge(r.status),r.refundert?badge('Refundert '+r.refundert):null,!accountant&&r.referanse&&(r.bookingId||r.ordreId)?button('Send kvittering på nytt',()=>act('betalinger.php',{handling:'kvittering',referanse:r.referanse},'Send kvitteringen på nytt for betalingen '+r.belop+'.','Send kvittering')):null,!accountant&&r.referanse&&r.kanRefunderes&&r.belopOre>r.refundertOre?button('Refunder',()=>{form('Refunder betaling',[field('hele','Hele gjenstående beløpet','checkbox'),field('belop','Delbeløp i hele kroner','number',{min:1,max:Math.floor((r.belopOre-r.refundertOre)/100),step:1})],{hele:true},async v=>{const belop=v.hele?0:v.belop;if(!v.hele&&!(belop>0))throw Error('Oppgi delbeløpet.');if(!await confirm('Refunder betalingen?','Betal tilbake '+(v.hele?money(r.belopOre-r.refundertOre):money(belop*100))+' gjennom Vipps.','Refunder'))throw Error('Avbrutt.');const key='lissom-refund:'+r.referanse+':'+belop;await api('betalinger.php',{referanse:r.referanse,belop,operasjonId:refundId(key)});finishRefund(key);refresh();});},'danger'):null]),{placeholder:'Søk betaling, navn eller referanse'}));};
 RENDERERS.lenker=()=>usefulLinks(refresh);
 RENDERERS.bilder=()=>imageLibrary(refresh);
+Object.assign(RENDERERS,chatScreens());
 Object.assign(RENDERERS,standardScreens(refresh),adminScreens(refresh),marketingExtras(refresh),recordScreens(refresh),extraScreens(refresh),contentScreens(refresh),setupScreens(refresh),commerceScreens(refresh),marketScreens(refresh));
 let lastHash=location.hash;
 document.querySelector('.skip').addEventListener('click',e=>{e.preventDefault();main.focus();});

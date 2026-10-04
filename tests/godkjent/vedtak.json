@@ -4716,6 +4716,39 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "adminny-chat",
+            "dato": "2026-10-04",
+            "hva": "Medlemschatten fra gamle admin står i admin-ny som egen side (#chat) med kort «Chat» under Verksted og treff i søket; bruker /api/chat.php (slett og angre sletting som før)",
+            "hvor": "admin-ny › Verksted › Chat",
+            "kode": [
+                {
+                    "fil": "admin-ny/chat.js",
+                    "finnes": [
+                        "api('../chat.php'",
+                        "'Medlemschat'",
+                        "'Synlig for alle medlemmer'",
+                        "button('Slett',",
+                        "button('Angre sletting',",
+                        "handling:tilbake?'angre-slett':'slett'"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/app.js",
+                    "finnes": [
+                        "import {chatScreens,chatPlaces} from './chat.js';",
+                        "NATIVE.set('#chat','chat')",
+                        "Object.assign(RENDERERS,chatScreens());"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/arbeidsoppgaver.js",
+                    "finnes": [
+                        "['Chat','#chat','Åpnes her']"
+                    ]
+                }
+            ]
         }
     ]
 }

@@ -38,6 +38,10 @@ if (Foresporsel::metode() === 'GET') {
     if (DB::harKolonne('course_sessions', 'vis_fullt')) {
         $ekstra .= ', vis_fullt';
     }
+    // «Aapne for Paint on Pots» paa den enkelte oekta (migrasjon 257).
+    if (DB::harKolonne('course_sessions', 'apen_plass_antall')) {
+        $ekstra .= ', apen_plass_antall';
+    }
     // Kursholderen paa den enkelte datoen (migrasjon 085). Kolonnen kan
     // mangle om vedlikeholdet ikke er kjort — da staar feltet tomt i skjemaet
     // og alt annet virker som for.
@@ -56,6 +60,19 @@ if (Foresporsel::metode() === 'GET') {
         $holderNavn[(int) $h['id']] = (string) $h['navn'];
     }
     $kursIder = array_map(static fn(array $k): int => (int) $k['id'], $kurs);
+
+    // Ukeplanene, hentet én gang. Ett oppslag per kurs ville vaert like
+    // mange sporringer som datoene en gang var — se kommentaren over.
+    $ukeplaner = [];
+    if (DB::harTabell('kurs_ukeplan') && $kursIder !== []) {
+        foreach (DB::alle('SELECT course_id, ukedag, fra, til FROM kurs_ukeplan ORDER BY ukedag') as $u) {
+            $ukeplaner[(int) $u['course_id']][] = [
+                'ukedag' => (int) $u['ukedag'],
+                'fra'    => substr((string) $u['fra'], 0, 5),
+                'til'    => substr((string) $u['til'], 0, 5),
+            ];
+        }
+    }
 
     $okterPerKurs = [];
     $datoerFramover = [];
@@ -160,6 +177,13 @@ if (Foresporsel::metode() === 'GET') {
             // Hva kurset legger beslag paa i verkstedet (migrasjon 103).
             // Null betyr ingen delt grense — da gjelder bare plasstallet.
             'ressursId'       => (int) ($k['ressurs_id'] ?? 0),
+            // Ukeplanen, plasslengden og «ingen plassgrense» (migrasjon 257).
+            // Eieren, 4. oktober 2026: «la meg velge dager og til og fra i
+            // admin». Tom ukeplan = kurset foelger aapningstidene som foer.
+            'ukeplan'         => $ukeplaner[(int) $k['id']] ?? [],
+            'plassMinutter'   => isset($k['plass_minutter']) && $k['plass_minutter'] !== null
+                                   ? (int) $k['plass_minutter'] : 0,
+            'utenPlassgrense' => (bool) ($k['uten_plassgrense'] ?? 0),
             'mal'             => Kursmal::forKurs($k),
             // Varigheten regnet av oektene, slik kunden faktisk ser den.
             'varighetVist'    => Kursmal::varighetFor($k, array_map(static fn($o) => [
@@ -177,6 +201,10 @@ if (Foresporsel::metode() === 'GET') {
                 'sluttUtc'  => $o['slutt_tid'],
                 'status'    => $o['status'],
                 'visFullt'  => (bool) ($o['vis_fullt'] ?? false),
+                // «Aapne for Paint on Pots» i denne oektas tidsrom, med N
+                // plasser. 0 = av.
+                'apenPlass' => isset($o['apen_plass_antall']) && $o['apen_plass_antall'] !== null
+                                 ? (int) $o['apen_plass_antall'] : 0,
                 'kapasitet' => $o['kapasitet'] === null ? null : (int) $o['kapasitet'],
                 'ledige'    => $ledigeKart[(int) $o['id']] ?? 0,
                 // Pris og informasjon som gjelder bare denne datoen. NULL
@@ -1237,6 +1265,109 @@ switch ($handling) {
                     ? 'Datoen er åpen igjen — ' . $ledige
                       . ($ledige === 1 ? ' ledig plass.' : ' ledige plasser.')
                     : 'Datoen er åpen igjen, men den er full av seg selv.'),
+        ]);
+
+    // ── Ukeplanen: hvilke dager kurset er aapent, og mellom hvilke klokkeslett
+    //
+    // Eieren, 4. oktober 2026: «la meg velge dager og til og fra i admin».
+    // Her ligger ogsaa plasslengden og «ingen plassgrense», fordi de tre hoerer
+    // til det samme kortet og skal lagres i ett trykk.
+    //
+    // Tom dagliste tar planen bort: da foelger kurset aapningstidene som foer.
+    case 'ukeplan':
+        $kursId = Foresporsel::heltall('kursId');
+        if (DB::en('SELECT id FROM courses WHERE id = :i', ['i' => $kursId]) === null) {
+            Svar::feil('Fant ikke kurset.', 404);
+        }
+        if (!DB::harTabell('kurs_ukeplan')) {
+            Svar::feil('Vedlikeholdet må kjøres først (oppdatering 257).');
+        }
+
+        $fra = trim(Foresporsel::tekst('fra'));
+        $til = trim(Foresporsel::tekst('til'));
+        $dager = array_values(array_unique(array_filter(
+            array_map('intval', array_filter(explode(',', Foresporsel::tekst('dager')), 'strlen')),
+            static fn(int $d): bool => $d >= 1 && $d <= 7
+        )));
+        sort($dager);
+
+        if ($dager !== []) {
+            // Klokkeslettene skal se ut som klokkeslett, og slutten skal komme
+            // etter starten. Uten dette kunne «20:00 til 17:00» lagres, og da
+            // ville ingen tider dukket opp uten at noe sa hvorfor.
+            if (!preg_match('/^\d{2}:\d{2}$/', $fra) || !preg_match('/^\d{2}:\d{2}$/', $til)) {
+                Svar::feil('Skriv klokkeslettene som 17:00 og 20:00.');
+            }
+            if ($til <= $fra) {
+                Svar::feil('«Til» må være etter «Fra».');
+            }
+        }
+
+        DB::kjor('DELETE FROM kurs_ukeplan WHERE course_id = :c', ['c' => $kursId]);
+        foreach ($dager as $d) {
+            DB::settInn('kurs_ukeplan', [
+                'course_id' => $kursId,
+                'ukedag'    => $d,
+                'fra'       => $fra . ':00',
+                'til'       => $til . ':00',
+            ]);
+        }
+
+        $endring = [];
+        if (DB::harKolonne('courses', 'plass_minutter')) {
+            $min = Foresporsel::heltall('plassMinutter');
+            // Null eller tomt betyr «bruk standarden». Over et doegn er ikke
+            // en plass, det er en skrivefeil.
+            $endring['plass_minutter'] = ($min >= 15 && $min <= 1440) ? $min : null;
+        }
+        if (DB::harKolonne('courses', 'uten_plassgrense')) {
+            $endring['uten_plassgrense'] = Foresporsel::tekst('utenPlassgrense') === 'ja' ? 1 : 0;
+        }
+        if ($endring !== []) {
+            DB::oppdater('courses', $endring, ['id' => $kursId]);
+        }
+
+        revider('kurs_ukeplan', 'course', $kursId, [
+            'dager' => $dager, 'fra' => $fra, 'til' => $til,
+        ] + $endring);
+
+        Svar::ok([
+            'dager'   => $dager,
+            'beskjed' => $dager === []
+                ? 'Ukeplanen er tom. Kurset følger åpningstidene.'
+                : count($dager) . ($dager === [1] || count($dager) === 1 ? ' dag' : ' dager')
+                  . ' lagret, ' . $fra . '–' . $til . '.',
+        ]);
+
+    // ── «Aapne for Paint on Pots» paa en planlagt oekt ──────────────────────
+    //
+    // Eieren, 4. oktober 2026: «naar jeg har planlagte kurs, kan jeg faa knapp,
+    // vis ogsaa paint on pots tilgjengelig» — i noeyaktig det tidsrommet kurset
+    // gaar. Tallet er det aapne kursets egne plasser den kvelden; kurset som
+    // gaar samtidig mister ingenting.
+    case 'apenPlass':
+        $oktId = Foresporsel::heltall('oktId');
+        if (DB::en('SELECT id FROM course_sessions WHERE id = :o', ['o' => $oktId]) === null) {
+            Svar::feil('Fant ikke datoen.', 404);
+        }
+        if (!DB::harKolonne('course_sessions', 'apen_plass_antall')) {
+            Svar::feil('Vedlikeholdet må kjøres først (oppdatering 257).');
+        }
+
+        $paa = Foresporsel::tekst('paa') === 'ja';
+        $antall = Foresporsel::heltall('antall');
+        if ($paa && ($antall < 1 || $antall > 99)) {
+            Svar::feil('Skriv hvor mange plasser du åpner for, fra 1 til 99.');
+        }
+        DB::oppdater('course_sessions', ['apen_plass_antall' => $paa ? $antall : null], ['id' => $oktId]);
+        revider('dato_apen_plass', 'course_session', $oktId, ['paa' => $paa, 'antall' => $antall]);
+
+        Svar::ok([
+            'paa'     => $paa,
+            'antall'  => $paa ? $antall : null,
+            'beskjed' => $paa
+                ? 'Åpent i kursets tidsrom, ' . $antall . ($antall === 1 ? ' plass.' : ' plasser.')
+                : 'Stengt igjen. Dagen følger ukeplanen.',
         ]);
 
     // Avlysingen angres.

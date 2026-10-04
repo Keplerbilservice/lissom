@@ -646,8 +646,60 @@ foreach ($okter as $o) {
     }
 }
 
+// ── Dagene et kurs staar aapent ─────────────────────────────────────────
+//
+// Eieren, 4. oktober 2026, om Paint on Pots: «hver onsdag og torsdag 17-20
+// er jeg der». Oektene lages foerst naar noen booker, saa en aapen onsdag
+// uten bestillinger var helt tom i kalenderen — ingenting sa at det var
+// aapent.
+//
+// Linja tegnes av ukeplanen, ikke av en rad i course_sessions. Den er en
+// egen type, som «medlemmer innsjekket» og brenningene: oktId og kap staar
+// paa null, saa «2 økter · 8 påmeldt» i dagshodet teller den ikke med.
+$apneDager = [];
+if (DB::harTabell('kurs_ukeplan')) {
+    $planer = [];
+    foreach (DB::alle(
+        'SELECT u.course_id, u.ukedag, u.fra, u.til, c.tittel
+           FROM kurs_ukeplan u JOIN courses c ON c.id = u.course_id
+          WHERE c.status = :s',
+        ['s' => 'publisert']
+    ) as $u) {
+        $planer[(int) $u['ukedag']][] = $u;
+    }
+    if ($planer !== []) {
+        $dag  = new DateTimeImmutable($iOslo($fra, 'Y-m-d') . ' 00:00:00', $oslo);
+        $sist = new DateTimeImmutable($iOslo($til, 'Y-m-d') . ' 00:00:00', $oslo);
+        while ($dag <= $sist) {
+            foreach ($planer[(int) $dag->format('N')] ?? [] as $u) {
+                $apneDager[] = [
+                    'id'     => 'apen-' . $u['course_id'] . '-' . $dag->format('Y-m-d'),
+                    'dato'   => $dag->format('Y-m-d'),
+                    'tid'    => substr((string) $u['fra'], 0, 5),
+                    'slutt'  => substr((string) $u['til'], 0, 5),
+                    'tittel' => (string) $u['tittel'] . ' åpent',
+                    // Samme type som kursets egne oekter, saa linja faar farge
+                    // og filter av seg selv. Ingen ny type aa vedlikeholde.
+                    'type'   => $typeFor(['tema' => '', 'tittel' => (string) $u['tittel'], 'type' => '']),
+                    'holder' => '',
+                    'kursId' => (int) $u['course_id'],
+                    'kap'    => 0,
+                    'pameldt'=> 0,
+                    'deltakere' => [],
+                    'venteliste' => [],
+                    'nye'    => 0,
+                    'avlyst' => false,
+                    'intern' => false,
+                    'oktId'  => 0,
+                ];
+            }
+            $dag = $dag->modify('+1 day');
+        }
+    }
+}
+
 Svar::json([
-    'hendelser' => array_merge($hendelser, $verksted, $brenninger, $notater),
+    'hendelser' => array_merge($hendelser, $verksted, $apneDager, $brenninger, $notater),
     'stengte'   => $stengt,
     // Kursholderne, saa kolonnene i dagsvisningen kan settes opp uten et
     // kall til. «standard» er den som vanligvis holder kursene — den staar

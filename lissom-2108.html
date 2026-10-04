@@ -3890,7 +3890,7 @@ window.__resources = {
                 <sc-if value="{{ visKontaktfelt }}" hint-placeholder-val="{{ true }}">
                   <sc-if value="{{ visAntallPlasser }}" hint-placeholder-val="{{ true }}">
                   <div>
-                    <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 8px;">Antall plasser</label>
+                    <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 8px;">{{ bAntallEtikett }}</label>
                     <div style="display: inline-flex; align-items: center; gap: var(--space-2); border: 2px solid var(--lissom-brown); border-radius: var(--radius-pill); padding: 5px;">
                       <button type="button" onClick="{{ bAntMinus }}" aria-label="Færre plasser" style="appearance: none; cursor: pointer; width: 34px; height: 34px; border-radius: 50%; border: none; background: var(--clay-100); color: var(--lissom-brown); font-size: 20px; font-weight: 700; line-height: 1; display: flex; align-items: center; justify-content: center;">−</button>
                       <span style="min-width: 92px; text-align: center; font-family: var(--font-display); font-weight: 800; font-size: var(--text-base); color: var(--text-heading);">{{ bAntTekst }}</span>
@@ -3924,6 +3924,16 @@ window.__resources = {
                        slik de faar tak i folk samme dag. -->
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Telefon" icon="phone" placeholder="+47 000 00 000" value="{{ bTelefon }}" on-change="{{ settBTelefon }}" hint-size="100%,66px"></x-import>
                   <div style="margin-top: 6px; font-size: var(--text-xs); color: var(--text-muted);">Vi bruker det bare hvis vi må få tak i deg om kurset — for eksempel hvis en dato må flyttes.</div>
+                  <!-- «Noe vi boer vite?» — bare paa kurs uten plassgrense.
+                       Eieren, 4. oktober 2026: «de kan jo skrive antall personer
+                       og litt tekst». Valgfritt: den som ikke har noe aa si skal
+                       ikke stoppes av et tomt felt. -->
+                  <sc-if value="{{ bVisMelding }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin-top: var(--space-4);">
+                      <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Noe vi bør vite?</label>
+                      <textarea value="{{ bMelding }}" onChange="{{ settBMelding }}" rows="3" placeholder="F.eks. bursdag, to barn, eller at dere kommer litt senere." style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 10px 12px; font: var(--type-body-sm); font-family: inherit; background: var(--surface-card); color: var(--text-heading); resize: vertical;"></textarea>
+                    </div>
+                  </sc-if>
                 </sc-if>
                 <sc-if value="{{ visIdentitet }}" hint-placeholder-val="{{ true }}">
                   <div style="background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-5); display: flex; align-items: center; gap: var(--space-4);">
@@ -56721,6 +56731,7 @@ class Component extends DCLogic {
         harAllergier: this.state.bAllergiKryss ? 'ja' : 'nei',
         allergier: this.state.bAllergiKryss ? allergier : '',
         betaling: betaling === 'oppmote' ? 'oppmote' : '',
+        melding: (this.state.bMelding || '').trim(),
         // Gjesten skriver navnet selv; for et medlem henter serveren det.
         navn: this.state.innlogget ? '' : (this.state.bNavn || '').trim(),
       }),
@@ -59833,6 +59844,12 @@ class Component extends DCLogic {
       // som e-posten rett over.
       bTelefon: this.state.bTelefon ?? (this.state.medlemTelefon || ''),
       settBTelefon: e => this.setState({ bTelefon: e.target.value }),
+      // Kurs uten plassgrense teller folk, ikke plasser. Eieren, 4. oktober
+      // 2026: «de kan jo skrive antall personer og litt tekst».
+      bAntallEtikett: this.katalogKurs().utenPlassgrense ? 'Hvor mange kommer dere?' : 'Antall plasser',
+      bVisMelding: !!this.katalogKurs().utenPlassgrense,
+      bMelding: this.state.bMelding || '',
+      settBMelding: e => this.setState({ bMelding: e.target.value }),
       visIdentitet: (this.state.valgtKurs && (this.state.valgtKurs.price === 'Gratis' || this.state.valgtKurs.level === 'Kun for medlemmer')),
       visKontaktfelt: !(this.state.valgtKurs && (this.state.valgtKurs.price === 'Gratis' || this.state.valgtKurs.level === 'Kun for medlemmer')),
       erBookKvittert: !!this.state.bookKvittert,

@@ -92,6 +92,9 @@ final class Katalog
         // Hvilken ressurs kurset legger beslag paa — dreieskive eller bordplass.
         // Sto i basen, men ble aldri sendt ut; se «ressursId» lenger nede.
         $ressursFelt = DB::harKolonne('courses', 'ressurs_id') ? ', ressurs_id' : '';
+        // Ingen plassgrense (eieren, 4. oktober 2026: «ikke ta hensyn til
+        // plasser»). Kom med migrasjon 257.
+        $grenseFelt = DB::harKolonne('courses', 'uten_plassgrense') ? ', uten_plassgrense' : '';
 
         // ── Billigste gjenstanden i butikken ────────────────────────────────────
         //
@@ -111,7 +114,7 @@ final class Katalog
             : 0;
 
         $kurs = DB::alle(
-            "SELECT id, slug, tittel, type, tema, pris_ore, kapasitet, beskrivelse, bilde{$bilderFelt}{$karusellFelt}{$utenDatoFelt}{$oppsettFelt}{$tekstFelt}{$kassaFelt}{$apenFelt}{$vinduFelt}{$ressursFelt}
+            "SELECT id, slug, tittel, type, tema, pris_ore, kapasitet, beskrivelse, bilde{$bilderFelt}{$karusellFelt}{$utenDatoFelt}{$oppsettFelt}{$tekstFelt}{$kassaFelt}{$apenFelt}{$vinduFelt}{$ressursFelt}{$grenseFelt}
                FROM courses
               WHERE status = 'publisert' AND {$hvor}
               ORDER BY type, tittel"
@@ -273,12 +276,15 @@ final class Katalog
                     if (!($k['folger_apningstid'] ?? 0)) {
                         return ['folgerApningstid' => false];
                     }
-                    $min = Apent::PLASS_MINUTTER;
+                    $min = Apent::plassMinutter((int) $k['id']);
                     $ord = [30 => 'en halvtime', 45 => 'tre kvarter', 60 => 'én time',
                             90 => 'halvannen time', 120 => 'to timer', 150 => 'to og en halv time',
                             180 => 'tre timer', 240 => 'fire timer'];
                     return [
                         'folgerApningstid' => true,
+                        // Ingen plassgrense: skjermen spoer om antall og en melding
+                        // i stedet for aa telle plasser. Eieren, 4. oktober 2026.
+                        'utenPlassgrense'  => (int) ($k['uten_plassgrense'] ?? 0) === 1,
                         'plassMinutter'    => $min,
                         // Hvor langt fram det kan bookes, saa kalenderen kan si
                         // hvorfor en dag lenger fram ikke kan velges.

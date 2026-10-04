@@ -374,7 +374,7 @@ final class Apent
         $utc  = new DateTimeZone('UTC');
         $naa  = new DateTimeImmutable('now', $oslo);
 
-        $vinduer = self::vinduer($naa)[$dato] ?? [];
+        $vinduer = self::vinduer($naa, $kursId)[$dato] ?? [];
         if ($vinduer === []) {
             return $tomt;
         }
@@ -396,7 +396,7 @@ final class Apent
                 $start = self::nesteKvarter($naa);
             }
             while ($start < $slutt) {
-                $til = $start->modify('+' . self::PLASS_MINUTTER . ' minutes');
+                $til = $start->modify('+' . self::plassMinutter($kursId) . ' minutes');
                 if ($til > $slutt) {
                     break;
                 }
@@ -487,12 +487,12 @@ final class Apent
             throw new RuntimeException('Tidspunktet har passert. Velg et nytt.');
         }
 
-        $slutt = $start->modify('+' . self::PLASS_MINUTTER . ' minutes');
+        $slutt = $start->modify('+' . self::plassMinutter($kursId) . ' minutes');
         $dato  = $start->format('Y-m-d');
 
         // Inne i et aapent vindu, med hele lengden.
         $passer = false;
-        foreach (self::vinduer($naa)[$dato] ?? [] as $v) {
+        foreach (self::vinduer($naa, $kursId)[$dato] ?? [] as $v) {
             $vFra = new DateTimeImmutable($dato . ' ' . $v['fra'], $oslo);
             $vTil = new DateTimeImmutable($dato . ' ' . $v['til'], $oslo);
             if ($start >= $vFra && $slutt <= $vTil) {
@@ -550,6 +550,50 @@ final class Apent
     }
 
     /**
+     * Hvor lenge en plass varer paa dette kurset, i minutter.
+     *
+     * Sto som konstanten PLASS_MINUTTER, ett tall for alle kurs. Det var
+     * grunnen til at et vindu paa 17-19 bare ga ETT mulig oppmoete: en plass
+     * paa to timer i et vindu paa to timer. Eieren, 4. oktober 2026, valgte
+     * aa styre den selv. Tom kolonne = konstanten som foer.
+     */
+    public static function plassMinutter(int $kursId): int
+    {
+        if ($kursId <= 0 || !DB::harKolonne('courses', 'plass_minutter')) {
+            return self::PLASS_MINUTTER;
+        }
+        $m = DB::verdi('SELECT plass_minutter FROM courses WHERE id = :i', ['i' => $kursId]);
+        $m = (int) $m;
+        return $m > 0 ? $m : self::PLASS_MINUTTER;
+    }
+
+    /**
+     * Ukeplanen til et kurs: ukedag => fra og til.
+     *
+     * Eieren, 4. oktober 2026: «la meg velge dager og til og fra i admin».
+     * Tom plan = kurset foelger verkstedets aapningstider, som foer.
+     *
+     * @return array<int, array{fra:string,til:string}>
+     */
+    public static function ukeplan(int $kursId): array
+    {
+        if ($kursId <= 0 || !DB::harTabell('kurs_ukeplan')) {
+            return [];
+        }
+        $ut = [];
+        foreach (DB::alle(
+            'SELECT ukedag, fra, til FROM kurs_ukeplan WHERE course_id = :c ORDER BY ukedag',
+            ['c' => $kursId]
+        ) as $r) {
+            $ut[(int) $r['ukedag']] = [
+                'fra' => substr((string) $r['fra'], 0, 5),
+                'til' => substr((string) $r['til'], 0, 5),
+            ];
+        }
+        return $ut;
+    }
+
+    /**
      * Vinduene doeren staar aapen i, dato for dato.
      *
      * Sto inne i leggUtPaaApneTider() og bare der. Da bestillingen skulle
@@ -559,13 +603,28 @@ final class Apent
      *
      * Tidene er norsk tid, «HH:MM», under datoen de hoerer til.
      *
+     * ── Kursets egen ukeplan ────────────────────────────────────────────
+     *
+     * Har kurset en ukeplan, er det DEN som gjelder, ikke verkstedets
+     * aapningstider. Eieren, 4. oktober 2026: «hver onsdag og torsdag 17-20
+     * er jeg der». Da er det aapent de dagene enten verkstedet ellers staar
+     * som aapent eller ikke — han sier jo at han ER der.
+     *
+     * I tillegg kommer de oektene noen har trykket «Aapne for Paint on Pots»
+     * paa: de aapner kursets tidsrom paa en dag som ikke staar i ukeplanen.
+     *
      * @return array<string, list<array{fra:string,til:string}>>
      */
-    private static function vinduer(DateTimeImmutable $naa): array
+    private static function vinduer(DateTimeImmutable $naa, int $kursId = 0): array
     {
         $oslo = new DateTimeZone('Europe/Oslo');
         $naa  = $naa->setTimezone($oslo);
         $idag = $naa->format('Y-m-d');
+
+        $plan = self::ukeplan($kursId);
+        if ($plan !== []) {
+            return self::medApnePlasser(self::ukeplanVinduer($naa, $plan), $naa, $kursId);
+        }
 
         // ── Vinduene doeren staar aapen i ──────────────────────────────────
         //
@@ -621,6 +680,75 @@ final class Apent
         }
 
 
+        return self::medApnePlasser($vinduer, $naa, $kursId);
+    }
+
+    /**
+     * Vinduene fra kursets egen ukeplan, dag for dag framover.
+     *
+     * @param  array<int, array{fra:string,til:string}> $plan
+     * @return array<string, list<array{fra:string,til:string}>>
+     */
+    private static function ukeplanVinduer(DateTimeImmutable $naa, array $plan): array
+    {
+        $vinduer = [];
+        $dag = $naa->setTime(0, 0);
+        for ($i = 0; $i <= self::BOOK_DAGER_FRAM; $i++) {
+            // N er 1 for mandag og 7 for soendag, som ukedag-kolonna.
+            $nr = (int) $dag->format('N');
+            if (isset($plan[$nr])) {
+                $vinduer[$dag->format('Y-m-d')] = [$plan[$nr]];
+            }
+            $dag = $dag->modify('+1 day');
+        }
+        return $vinduer;
+    }
+
+    /**
+     * Oektene noen har trykket «Aapne for Paint on Pots» paa.
+     *
+     * Eieren, 4. oktober 2026: «naar jeg har planlagte kurs, kan jeg faa
+     * knapp, vis ogsaa paint on pots tilgjengelig» — i noeyaktig det
+     * tidsrommet kurset gaar. Vinduet legges paa den dagen, ved siden av det
+     * som alt staar der; overlapper de, slaas de sammen som ellers.
+     *
+     * @param  array<string, list<array{fra:string,til:string}>> $vinduer
+     * @return array<string, list<array{fra:string,til:string}>>
+     */
+    private static function medApnePlasser(array $vinduer, DateTimeImmutable $naa, int $kursId): array
+    {
+        if ($kursId <= 0 || !DB::harKolonne('course_sessions', 'apen_plass_antall')) {
+            return $vinduer;
+        }
+        $oslo = new DateTimeZone('Europe/Oslo');
+        $fra  = $naa->setTime(0, 0)->setTimezone(new DateTimeZone('UTC'));
+        $til  = $naa->setTime(0, 0)->modify('+' . self::BOOK_DAGER_FRAM . ' days')
+                    ->setTimezone(new DateTimeZone('UTC'));
+
+        foreach (DB::alle(
+            "SELECT cs.start_tid, COALESCE(cs.slutt_tid, cs.start_tid + INTERVAL 3 HOUR) AS slutt_tid
+               FROM course_sessions cs
+              WHERE cs.apen_plass_antall IS NOT NULL
+                AND cs.status = 'planlagt'
+                AND cs.start_tid >= :fra AND cs.start_tid < :til",
+            ['fra' => $fra->format('Y-m-d H:i:s'), 'til' => $til->format('Y-m-d H:i:s')]
+        ) as $r) {
+            $s = (new DateTimeImmutable((string) $r['start_tid'], new DateTimeZone('UTC')))->setTimezone($oslo);
+            $e = (new DateTimeImmutable((string) $r['slutt_tid'], new DateTimeZone('UTC')))->setTimezone($oslo);
+            $dato = $s->format('Y-m-d');
+            $vinduer[$dato][] = ['fra' => $s->format('H:i'), 'til' => $e->format('H:i')];
+            usort($vinduer[$dato], static fn(array $a, array $b): int => strcmp($a['fra'], $b['fra']));
+            $slaatt = [];
+            foreach ($vinduer[$dato] as $v) {
+                $siste = $slaatt === [] ? null : array_key_last($slaatt);
+                if ($siste !== null && $v['fra'] <= $slaatt[$siste]['til']) {
+                    $slaatt[$siste]['til'] = max($slaatt[$siste]['til'], $v['til']);
+                    continue;
+                }
+                $slaatt[] = $v;
+            }
+            $vinduer[$dato] = array_values($slaatt);
+        }
         return $vinduer;
     }
 
@@ -678,7 +806,8 @@ final class Apent
         $naa  = $naaInn !== null ? $naaInn->setTimezone($oslo) : new DateTimeImmutable('now', $oslo);
         $idag = $naa->format('Y-m-d');
 
-        $vinduer = self::vinduer($naa);
+        // Vinduene er kursets egne: ukeplanen naar den finnes, ellers
+        // aapningstidene. Hentes derfor inne i loekka, per kurs.
 
         $laget = 0;
         $fjernet = 0;
@@ -686,8 +815,9 @@ final class Apent
         foreach ($kurs as $k) {
             $kursId = (int) $k['id'];
 
-            // Vinduene er aapningstidene, og bare dem.
-            $mineVinduer = $vinduer;
+            // Vinduene er kursets egne: ukeplanen naar kurset har en, ellers
+            // aapningstidene. Sto utenfor loekka da alle kurs delte dem.
+            $mineVinduer = self::vinduer($naa, $kursId);
             $takPerDag = self::PLASSER_PER_DAG;
 
             // Kursets egne oekter, lagt inn for haand eller av ukereglene.
@@ -705,7 +835,7 @@ final class Apent
                     'start' => $s0,
                     'slutt' => $rad['slutt_tid'] !== null
                         ? new DateTimeImmutable((string) $rad['slutt_tid'], $utc)
-                        : $s0->modify('+' . self::PLASS_MINUTTER . ' minutes'),
+                        : $s0->modify('+' . self::plassMinutter($kursId) . ' minutes'),
                 ];
             }
 
@@ -732,7 +862,7 @@ final class Apent
                         $start = self::nesteKvarter($naa);
                     }
                     while ($start < $slutt && $paaDagen < $takPerDag) {
-                        $til = $start->modify('+' . self::PLASS_MINUTTER . ' minutes');
+                        $til = $start->modify('+' . self::plassMinutter($kursId) . ' minutes');
                         // Hele lengden, eller ingenting.
                         //
                         // Her ble resten av vinduet klippet til det som var

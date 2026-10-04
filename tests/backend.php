@@ -370,7 +370,8 @@ if (DB::harKolonne('course_sessions', 'fra_apningstid')
                         WHERE fra_apningstid = 1') as $r) {
         $a = new DateTimeImmutable((string) $r['start_tid'], $utc2);
         $b2 = new DateTimeImmutable((string) $r['slutt_tid'], $utc2);
-        if ($b2->getTimestamp() - $a->getTimestamp() > Apent::PLASS_MINUTTER * 60) {
+        // Lengden er kursets egen etter 4. oktober 2026, ikke én konstant.
+        if ($b2->getTimestamp() - $a->getTimestamp() > Apent::plassMinutter((int) $r['course_id']) * 60) {
             $forLange++;
         }
         $lokal = $a->setTimezone($oslo2);
@@ -380,11 +381,19 @@ if (DB::harKolonne('course_sessions', 'fra_apningstid')
         $nokkel2 = $r['course_id'] . ' ' . $dag;
         $perDag[$nokkel2] = ($perDag[$nokkel2] ?? 0) + 1;
 
-        // Plassen skal ligge inne i dagens aapningstid — hele den, fra det
-        // forste begynner til det siste slutter.
-        if (!isset($dagerRad[$dag])
-            || $lokal->format('H:i') < $dagerRad[$dag]['fra']
-            || $b2->setTimezone($oslo2)->format('H:i') > $dagerRad[$dag]['til']) {
+        // Plassen skal ligge inne i kursets eget vindu den dagen.
+        //
+        // For 4. oktober 2026 var det alltid aapningstida. Har kurset en
+        // ukeplan, er det DEN som gjelder — eieren: «hver onsdag og torsdag
+        // 17-20 er jeg der», og da er det aapent de dagene enten verkstedet
+        // ellers staar som aapent eller ikke.
+        $plan2 = Apent::ukeplan((int) $r['course_id']);
+        $vindu2 = $plan2 !== []
+            ? ($plan2[(int) $lokal->format('N')] ?? null)
+            : ($dagerRad[$dag] ?? null);
+        if ($vindu2 === null
+            || $lokal->format('H:i') < $vindu2['fra']
+            || $b2->setTimezone($oslo2)->format('H:i') > $vindu2['til']) {
             $iHull++;
         }
     }
@@ -2590,7 +2599,9 @@ sjekk('brenningens slag er et valg, ikke fritekst',
 sjekk('brenningene staar i kalenderen, vaktene ikke',
     str_contains($kalFil, "'type'      => 'brenning',")
     && !str_contains($kalFil, "'type'   => 'vakt',")
-    && str_contains($kalFil, 'array_merge($hendelser, $verksted, $brenninger, $notater)'));
+    // «$apneDager» kom 4. oktober 2026: dagene et kurs staar aapent,
+    // tegnet av ukeplanen og ikke av en rad i course_sessions.
+    && str_contains($kalFil, 'array_merge($hendelser, $verksted, $apneDager, $brenninger, $notater)'));
 // Uten tabellen skal endepunktet svare, ikke doe.
 sjekk('kalenderen taaler at migrasjon 088 ikke er kjort',
     str_contains($kalFil, "DB::harTabell('brenninger')"));
@@ -17669,7 +17680,7 @@ sjekk('notatene har sin egen tabell, ikke en kolonne paa den gamle',
 
 sjekk('notatene kommer ut av kalenderen som hendelser, som alt annet',
     str_contains($knKal, "'type'    => 'notat',")
-    && str_contains($knKal, "array_merge(\$hendelser, \$verksted, \$brenninger, \$notater)"),
+    && str_contains($knKal, "array_merge(\$hendelser, \$verksted, \$apneDager, \$brenninger, \$notater)"),
     'da tegner maaned, uke og liste dem uten aa vite at de er nye');
 
 sjekk('… og kalenderen taaler at oppdateringen ikke er kjort ennaa',
@@ -18326,15 +18337,19 @@ $skjerm   = (string) les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 
 // Vinduene doeren staar aapen i sto inne i utleggingen. To veier trenger det
 // samme svaret naa, og da skal det ikke regnes to steder.
+// Vinduene tar naa imot kurset: har det en ukeplan, er det den som gjelder,
+// ellers aapningstidene (eieren, 4. oktober 2026). Utleggingen henter dem
+// derfor per kurs, inne i loekka — ikke én gang for alle.
 sjekk('vinduene regnes ett sted',
-    str_contains($apentFil, '    private static function vinduer(DateTimeImmutable $naa): array')
-    && str_contains($apentFil, '        $vinduer = self::vinduer($naa);')
+    str_contains($apentFil, '    private static function vinduer(DateTimeImmutable $naa, int $kursId = 0): array')
+    && str_contains($apentFil, '            $mineVinduer = self::vinduer($naa, $kursId);')
     // Lukka som sto inne i utleggingen er borte; metoden har tatt over.
     && !str_contains($apentFil, '$nesteKvarter = static function'));
 
 // Hele lengden, eller ingenting: siste start i 10:00-13:00 er 11:30.
+// Lengden er kursets egen etter 4. oktober 2026 — se plassMinutter().
 sjekk('kvarterene slutter naar hele lengden ikke lenger faar plass',
-    str_contains($apentFil, "                \$til = \$start->modify('+' . self::PLASS_MINUTTER . ' minutes');\n                if (\$til > \$slutt) {\n                    break;\n                }")
+    str_contains($apentFil, "                \$til = \$start->modify('+' . self::plassMinutter(\$kursId) . ' minutes');\n                if (\$til > \$slutt) {\n                    break;\n                }")
     && str_contains($apentFil, "                \$start = \$start->modify('+15 minutes');"));
 
 // Oppslaget skal ikke lage rader. Ellers kunne hvem som helst fylt

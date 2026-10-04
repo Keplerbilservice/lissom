@@ -5452,6 +5452,131 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "pop-ukeplan-i-admin",
+            "dato": "2026-10-04",
+            "hva": "Kurset har en ukeplan: dager og fra/til, valgt i admin. Tom plan = kurset foelger aapningstidene.",
+            "hvor": "Admin → Kurs → Aapent for booking",
+            "kode": [
+                {
+                    "fil": "app/lib/apent.php",
+                    "finnes": [
+                        "public static function ukeplan(int $kursId): array",
+                        "private static function vinduer(DateTimeImmutable $naa, int $kursId = 0): array"
+                    ]
+                },
+                {
+                    "fil": "api/admin/kurs.php",
+                    "finnes": [
+                        "case 'ukeplan':"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kursdetaljer.js",
+                    "finnes": [
+                        "button('Åpent for booking'"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "pop-plasslengde-per-kurs",
+            "dato": "2026-10-04",
+            "hva": "Hvor lenge en plass varer er kursets eget felt, ikke én konstant for alle.",
+            "hvor": "Velg tidspunkt",
+            "kode": [
+                {
+                    "fil": "app/lib/apent.php",
+                    "finnes": [
+                        "public static function plassMinutter(int $kursId): int"
+                    ]
+                },
+                {
+                    "fil": "app/lib/katalog.php",
+                    "finnes": [
+                        "$min = Apent::plassMinutter((int) $k['id']);"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "pop-uten-plassgrense",
+            "dato": "2026-10-04",
+            "hva": "Et kurs uten plassgrense staar utenfor ressursregnskapet og kan aldri bli fullt.",
+            "hvor": "Ledige plasser",
+            "kode": [
+                {
+                    "fil": "app/lib/booking.php",
+                    "finnes": [
+                        "public static function utenPlassgrense(int $kursId): bool",
+                        "public const UTEN_GRENSE = 9999;"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "pop-apne-paa-en-okt",
+            "dato": "2026-10-04",
+            "hva": "«Aapne for Paint on Pots» paa en planlagt oekt aapner kursets tidsrom med N plasser. Tallet vinner over ukeplanen.",
+            "hvor": "Admin → Kalender → oekta",
+            "kode": [
+                {
+                    "fil": "api/admin/kurs.php",
+                    "finnes": [
+                        "case 'apenPlass':"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kalender-ark.js",
+                    "finnes": [
+                        "'Åpne for Paint on Pots'"
+                    ]
+                },
+                {
+                    "fil": "app/lib/booking.php",
+                    "finnes": [
+                        "private static function apenPlassTak("
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "pop-apne-dager-i-kalenderen",
+            "dato": "2026-10-04",
+            "hva": "Kalenderen viser dagene et kurs staar aapent, tegnet av ukeplanen — ogsaa naar ingen har booket.",
+            "hvor": "Admin → Kalender",
+            "kode": [
+                {
+                    "fil": "api/admin/kalender.php",
+                    "finnes": [
+                        "// ── Dagene et kurs staar aapent",
+                        "array_merge($hendelser, $verksted, $apneDager, $brenninger, $notater)"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "pop-kundefeltene",
+            "dato": "2026-10-04",
+            "hva": "Paa kurs uten plassgrense spoer bestillinga «Hvor mange kommer dere?» og «Noe vi boer vite?». Navn, e-post og telefon staar som foer.",
+            "hvor": "Bestilling",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "bVisMelding: !!this.katalogKurs().utenPlassgrense,",
+                        "Noe vi bør vite?",
+                        "melding: (this.state.bMelding || '').trim(),"
+                    ]
+                },
+                {
+                    "fil": "api/book.php",
+                    "finnes": [
+                        "Foresporsel::tekst('melding')"
+                    ]
+                }
+            ]
         }
     ]
 }

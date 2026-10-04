@@ -1930,7 +1930,7 @@
         {
             "id": "admin2-ved-siden-av",
             "dato": "2026-09-30",
-            "hva": "Det nye admin bygges på /admin2 VED SIDEN AV det gamle, og byttes når alt er klart. Egen side (admin2.html) og egne moduler under /nyadmin (I dag · Kurs · Folk · Penger · Mer), hver med egen fil og bryter (Vis/admin2_<modul>). «I dag» henter tallene fra de samme API-ene som Oversikt, med uendret svarformat. «Er du sikker?» før viktige trykk, Angre før ovnen settes, hurtigvalg eieren velger selv («Tilpass», lagret per admin), og én «+»-knapp. Det gamle admin er urørt, bortsett fra pilla «Prøv nytt admin» i toppstripa, som bare vises når bryteren «Nytt admin (prøve)» under Synlighet er på (av fra start).",
+            "hva": "Det nye admin bygges på /admin2 VED SIDEN AV det gamle, og byttes når alt er klart. Egen side (admin2.html) og egne moduler under /nyadmin (I dag · Kurs · Folk · Penger · Mer), hver med egen fil og bryter (Vis/admin2_<modul>). «I dag» henter tallene fra de samme API-ene som Oversikt, med uendret svarformat. «Er du sikker?» før viktige trykk, Angre før ovnen settes, hurtigvalg eieren velger selv («Tilpass», lagret per admin), og én «+»-knapp. Det gamle admin er urørt, bortsett fra pilla «Prøv nytt admin» i toppstripa, som bare vises når bryteren «Nytt admin (prøve)» under Synlighet er på (av fra start). ENDRET 2026-10-04 (eieren): /admin2 sendes nå til /admin-ny, se admin2-til-admin-ny.",
             "hvor": "/admin2, og pilla i toppstripa i det gamle admin",
             "kode": [
                 {
@@ -1971,7 +1971,7 @@
                 {
                     "fil": ".htaccess",
                     "finnes": [
-                        "RewriteRule ^admin2/?$ /admin2.html [L]"
+                        "RewriteRule ^admin2(\\.html)?/?$ /admin-ny [R=302,L]"
                     ]
                 },
                 {
@@ -4680,6 +4680,23 @@
                     "fil": "tests/nettleser/kjor.sh",
                     "finnes": [
                         "nyadmin-stemple-meny"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "admin2-til-admin-ny",
+            "dato": "2026-10-04",
+            "hva": "/admin2 sendes til det nyeste admin (/admin-ny), så det bare finnes ett nytt admin med Kalender i mobilmenyen",
+            "hvor": "lissom.no/admin2",
+            "kode": [
+                {
+                    "fil": ".htaccess",
+                    "finnes": [
+                        "RewriteRule ^admin2(\\.html)?/?$ /admin-ny [R=302,L]"
+                    ],
+                    "ikkeFinnes": [
+                        "RewriteRule ^admin2/?$ /admin2.html [L]"
                     ]
                 }
             ]

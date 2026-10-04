@@ -6,6 +6,7 @@
  *   POST handling=lagre          opprett eller endre en vare
  *   POST handling=bilde          bytt bildet paa en vare
  *   POST handling=slett          fjern en vare
+ *   POST handling=fyllPaa        { id, antall } legg varer som kom inn til lageret
  *
  * Prisen som settes her er den kunden faktisk trekkes. Nettleseren sender
  * aldri belop ved kjop — den sender hvilke varer, og serveren regner ut
@@ -59,7 +60,10 @@ if (Foresporsel::metode() === 'GET') {
         'pris'         => (int) $v['pris_ore'] / 100,
         'mva'          => (int) $v['mva_prosent'],
         'lager'        => $v['lager'] === null ? null : (int) $v['lager'],
+        // kunMedlemmer = Internt (internbutikken). iNettbutikk = nettbutikken.
+        // En vare kan vaere begge, med felles lager (migrasjon 252, eieren 04.10.2026).
         'kunMedlemmer' => (bool) $v['kun_medlemmer'],
+        'iNettbutikk'  => Lager::iNettbutikk($v),
         'status'       => $v['status'],
         // Handlelista, migrasjon 184. Er den ikke kjoert, staar feltene tomme
         // og skjemaet viser dem som tomme — det er riktig svar da.
@@ -80,6 +84,8 @@ if (Foresporsel::metode() === 'GET') {
     // Frakten. Sto som «kr. 89,-» skrevet inn i nettleseren, og kunne ikke
     // endres uten aa endre koden. Naa staar den i basen.
     'fraktOre' => (int) (DB::verdi('SELECT verdi FROM innstillinger WHERE nokkel = :n', ['n' => 'frakt_ore']) ?? 0),
+    // Lite på lager: varene paa eller under min (eieren 04.10.2026).
+    'litePaaLager' => Lager::bestillMer(),
     ]);
 }
 
@@ -108,6 +114,26 @@ if ($handling === 'frakt') {
     Config::glemBasen();
     revider('frakt_lagret', 'innstilling', null, ['kroner' => $kr]);
     Svar::ok(['beskjed' => 'Frakten er satt til kr. ' . $kr . ',-.', 'fraktOre' => $kr * 100]);
+}
+
+// --------------------------------------------------------------- fyll paa
+//
+// «Fyll på» (eieren 04.10.2026): varer som kom inn legges til lageret.
+// Antallet legges til i basen (lager + n), ikke skrevet over — da kan et
+// salg som skjer imens ikke forsvinne.
+if ($handling === 'fyllPaa') {
+    $n = Foresporsel::heltall('antall');
+    if ($n < 1 || $n > 100000) {
+        Svar::feil('Skriv hvor mange som kom inn.');
+    }
+    $vare = DB::en('SELECT id, tittel FROM products WHERE id = :i', ['i' => $id]);
+    if ($vare === null) {
+        Svar::feil('Fant ikke varen.');
+    }
+    DB::kjor('UPDATE products SET lager = COALESCE(lager, 0) + :n WHERE id = :i', ['n' => $n, 'i' => $id]);
+    $naa = (int) DB::verdi('SELECT lager FROM products WHERE id = :i', ['i' => $id]);
+    revider('vare_fylt_paa', 'product', $id, ['antall' => $n, 'lager' => $naa]);
+    Svar::ok(['id' => $id, 'lager' => $naa, 'beskjed' => 'Lageret er nå ' . $naa . '.']);
 }
 
 // ------------------------------------------------------------------ bildet
@@ -206,6 +232,24 @@ if (Frakt::klar() && array_key_exists('vektKg', Foresporsel::kropp())) {
         Svar::feil($e->getMessage());
     }
 }
+// Nettbutikken (migrasjon 252). Sendes «iNettbutikk» med (admin-ny), gjelder
+// den. Sendes den ikke (gamle admin har bare «Kun for medlemmer»), roeres
+// bryteren ikke: NULL betyr «som foer», og en vare som er begge beholder det.
+// Bare hvis varen da ikke ville vaert noe sted (ikke internt, og bryteren
+// staar paa 0), settes den tilbake til NULL — altsaa i nettbutikken.
+if (Lager::harNettbutikkBryter()) {
+    if (array_key_exists('iNettbutikk', Foresporsel::kropp())) {
+        $data['i_nettbutikk'] = Foresporsel::tekst('iNettbutikk') === 'ja' ? 1 : 0;
+        if ($data['i_nettbutikk'] === 0 && $data['kun_medlemmer'] === 0) {
+            Svar::feil('Kryss av for Nettbutikken, Internt eller begge.');
+        }
+    } elseif ($id > 0 && $data['kun_medlemmer'] === 0
+        && DB::verdi('SELECT i_nettbutikk FROM products WHERE id = :i', ['i' => $id]) !== null
+        && (int) DB::verdi('SELECT i_nettbutikk FROM products WHERE id = :i', ['i' => $id]) === 0) {
+        $data['i_nettbutikk'] = null;
+    }
+}
+
 // Leire, inkludert i Prøv Lissom (eieren, 29. september 2026).
 if (DB::harKolonne('products', 'leire')) {
     $data['leire'] = Foresporsel::tekst('leire') === 'ja' ? 1 : 0;
@@ -215,14 +259,20 @@ if (DB::harKolonne('products', 'leire')) {
 // en som alt het det samme, og den forste ble stille overskrevet — to like
 // kopper kunne ikke ligge ute samtidig.
 if ($id > 0) {
-    if (DB::en('SELECT id FROM products WHERE id = :i', ['i' => $id]) === null) {
+    $foer = DB::en('SELECT * FROM products WHERE id = :i', ['i' => $id]);
+    if ($foer === null) {
         Svar::feil('Fant ikke varen.');
     }
     DB::oppdater('products', $data, ['id' => $id]);
     revider('vare_endret', 'product', $id, ['tittel' => $tittel]);
+    // Varsling ogsaa naar antall eller min endres for haand (eieren 04.10.2026).
+    Lager::etterEndring($id,
+        $foer['lager'] === null ? null : (int) $foer['lager'],
+        isset($foer['lager_min']) && $foer['lager_min'] !== null ? (int) $foer['lager_min'] : null);
     Svar::ok(['id' => $id, 'beskjed' => $tittel . ' er lagret.']);
 }
 
 $nyId = DB::settInn('products', $data);
 revider('vare_opprettet', 'product', $nyId, ['tittel' => $tittel]);
+Lager::etterEndring($nyId, null, null);
 Svar::ok(['id' => $nyId, 'beskjed' => $tittel . ' er lagt ut i butikken.']);

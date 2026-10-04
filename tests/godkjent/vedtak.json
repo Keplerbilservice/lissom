@@ -498,7 +498,7 @@
         {
             "id": "utsolgt-borte",
             "dato": "2026-09-27",
-            "hva": "«lite på lager i varselet vil jeg ikke ha som varsel, annet enn på interne varer, så når en vare i nettbutikken er solgt ut, så skal den bli borte»",
+            "hva": "«lite på lager i varselet vil jeg ikke ha som varsel, annet enn på interne varer, så når en vare i nettbutikken er solgt ut, så skal den bli borte» ENDRET 2026-10-04 (eieren, Butikk): samme regel, men «i nettbutikken» er nå bryteren Nettbutikken (Lager::iNettbutikkSql), fordi en vare kan være både i nettbutikken og internt.",
             "hvor": "Oversikt › Nettbutikk, butikken på lissom.no, sitemap, vareadresser",
             "kode": [
                 {
@@ -510,7 +510,7 @@
                 {
                     "fil": "api/butikk.php",
                     "finnes": [
-                        "AND (kun_medlemmer = 1 OR lager IS NULL OR lager > 0)"
+                        "\"(({$iNett} AND (lager IS NULL OR lager > 0)) OR kun_medlemmer = 1)\""
                     ]
                 },
                 {
@@ -537,7 +537,7 @@
                 {
                     "fil": "side.php",
                     "finnes": [
-                        "AND (kun_medlemmer = 1 OR lager IS NULL OR lager > 0)"
+                        "AND (kun_medlemmer = 1 OR (\" . Lager::iNettbutikkSql() . \" AND (lager IS NULL OR lager > 0)))"
                     ]
                 }
             ]
@@ -4868,6 +4868,51 @@
                     "fil": ".htaccess",
                     "finnes": [
                         "RewriteRule ^admin2(\\.html)?/?$ /admin-ny [R=302,L]"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "adminny-butikk-lager",
+            "dato": "2026-10-04",
+            "hva": "Butikk i hovedmenyen i admin-ny (mellom Penger og Verksted). Én vare kan ligge i både Nettbutikken og Internt, med felles lager (vareskjemaet: «Hvor skal varen vises?» ☐ Nettbutikken ☐ Internt; migrasjon 252, kolonnen i_nettbutikk, NULL = som før). Filterpiller Alle · Nettbutikk · Internt · Lite på lager N. «Lite på lager» i Butikk og på I dag («2 igjen · min 5 · fyll til 20», Fyll på, Åpne butikken). Fyll på legger antallet til lageret («Lageret er nå N.»). E-postvarselet intern_bestill_mer går også når antall eller min endres for hånd. Kunden: gjester ser varer i nettbutikken, medlemmer i tillegg det som er Internt.",
+            "hvor": "admin-ny › Butikk og I dag; api/butikk.php; Min side › internbutikken",
+            "kode": [
+                {
+                    "fil": "admin-ny/app.js",
+                    "finnes": [
+                        "['butikk','Butikk','▢']",
+                        "field('hvor','Hvor skal varen vises?','heading'),field('iNettbutikk','Nettbutikken','checkbox'),field('kunMedlemmer','Internt','checkbox')",
+                        "card('Lite på lager'",
+                        "link('Åpne butikken',href('butikk'))",
+                        "form('Fyll på · '+navn"
+                    ]
+                },
+                {
+                    "fil": "api/admin/produkter.php",
+                    "finnes": [
+                        "if ($handling === 'fyllPaa') {",
+                        "'litePaaLager' => Lager::bestillMer(),",
+                        "Lager::etterEndring($id,"
+                    ]
+                },
+                {
+                    "fil": "app/lib/lager.php",
+                    "finnes": [
+                        "public static function iNettbutikkSql(",
+                        "public static function etterEndring("
+                    ]
+                },
+                {
+                    "fil": "api/butikk.php",
+                    "finnes": [
+                        "'internt'      => (bool) $v['kun_medlemmer'],"
+                    ]
+                },
+                {
+                    "fil": "db/migrations/252_nettbutikk_og_internt.sql",
+                    "finnes": [
+                        "ADD COLUMN IF NOT EXISTS i_nettbutikk TINYINT(1) NULL DEFAULT NULL"
                     ]
                 }
             ]

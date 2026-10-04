@@ -14,7 +14,14 @@ require __DIR__ . '/_boot.php';
 Foresporsel::krevMetode('GET');
 
 $medlem = Sesjon::medlem();
-$hvor = $medlem === null ? 'kun_medlemmer = 0' : '1';
+// Nettbutikken og Internt (migrasjon 252, eieren 04.10.2026): en vare kan
+// vaere begge. Gjester faar nettbutikkvarene; innloggede ogsaa internvarene.
+// En utsolgt vare vises ikke i nettbutikken, og kommer tilbake naar den er
+// paa lager igjen (eieren, 27. september 2026). Internvarene staar.
+$iNett = Lager::iNettbutikkSql();
+$hvor = $medlem === null
+    ? "{$iNett} AND (lager IS NULL OR lager > 0)"
+    : "(({$iNett} AND (lager IS NULL OR lager > 0)) OR kun_medlemmer = 1)";
 // Leire er inkludert i Prøv Lissom (eieren, 29. september 2026): den som
 // har den, faar ikke leirevarene i medlemsbutikken. Se Lager::skjulLeire().
 if (Lager::skjulLeire($medlem)) {
@@ -33,12 +40,9 @@ $fraktOre = (int) (DB::harTabell('innstillinger')
 $oppmoteButikk = Oppmote::butikk();
 
 $varer = DB::alle(
-    "SELECT id, tittel, beskrivelse, bilde, kategori, pris_ore, lager, kun_medlemmer
+    "SELECT *
        FROM products
       WHERE status = 'publisert' AND {$hvor}
-        -- En utsolgt nettbutikkvare vises ikke, og kommer tilbake naar den
-        -- er paa lager igjen (eieren, 27. september 2026). Internvarene staar.
-        AND (kun_medlemmer = 1 OR lager IS NULL OR lager > 0)
       ORDER BY kun_medlemmer, kategori, tittel"
 );
 
@@ -46,8 +50,8 @@ Svar::json(['varer' => array_map(static fn($v) => [
     'id'           => (int) $v['id'],
     // Varens egen adresse. Regnes her, ett sted, saa nettsida og serveren
     // ikke kan lage hver sin — det er serveren som svarer paa den.
-    // Medlemsvarene faar ingen: de skal ikke ha en side noen kan lenke til.
-    'sti'          => (int) $v['kun_medlemmer'] === 1
+    // Bare internvarer faar ingen: de skal ikke ha en side noen kan lenke til.
+    'sti'          => !Lager::iNettbutikk($v)
                         ? '' : Lenker::vare((int) $v['id'], (string) $v['tittel']),
     'tittel'       => $v['tittel'],
     'detalj'       => $v['beskrivelse'],
@@ -59,7 +63,11 @@ Svar::json(['varer' => array_map(static fn($v) => [
     'utenForskudd' => $oppmoteButikk,
     'prisOre'      => (int) $v['pris_ore'],
     'utsolgt'      => $v['lager'] !== null && (int) $v['lager'] <= 0,
-    'kunMedlemmer' => (bool) $v['kun_medlemmer'],
+    // «kunMedlemmer» = bare internt (ikke i nettbutikken) — nettsida skiller
+    // nettbutikk og internbutikk paa den. «internt» = i internbutikken, ogsaa
+    // naar varen i tillegg er i nettbutikken (migrasjon 252).
+    'kunMedlemmer' => !Lager::iNettbutikk($v),
+    'internt'      => (bool) $v['kun_medlemmer'],
 ], $varer),
     'fokus'    => Bilder::fokus(),
     'fraktOre' => $fraktOre,

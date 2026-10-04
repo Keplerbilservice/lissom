@@ -188,7 +188,7 @@ final class Robottekst
         $ut = [];
         foreach (DB::alle(
             "SELECT id, tittel, beskrivelse, bilde, pris_ore, lager, status FROM products
-              WHERE status = 'publisert' AND kun_medlemmer = 0
+              WHERE status = 'publisert' AND " . Lager::iNettbutikkSql() . "
                 AND (lager IS NULL OR lager > 0)
            ORDER BY tittel"
         ) as $v) {

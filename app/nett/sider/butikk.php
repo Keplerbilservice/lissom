@@ -40,7 +40,7 @@ $vareId = Nett::$vareId;
 $varer = DB::alle(
     "SELECT id, tittel, beskrivelse, bilde, kategori, pris_ore, lager
        FROM products
-      WHERE status = 'publisert' AND kun_medlemmer = 0
+      WHERE status = 'publisert' AND " . Lager::iNettbutikkSql() . "
         -- Utsolgt forsvinner, og kommer tilbake naar den er paa lager igjen
         -- (eieren, 27. september 2026).
         AND (lager IS NULL OR lager > 0)

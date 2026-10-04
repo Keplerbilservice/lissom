@@ -4950,6 +4950,33 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "adminny-kjopt-i-dag-dato-ledige",
+            "dato": "2026-10-04",
+            "hva": "«Kjøpt i dag» viser kursdatoen (samme format som Kurs › Datoer) og antall ledige plasser på kurskjøp — i admin-ny og gamle admin: klokkeslett · kurs · kursdato · N ledige. Eieren 04.10: «du må endre overalt».",
+            "hvor": "admin-ny › I dag › Kjøpt i dag; gamle admin › Oversikt › Dagens bestillinger",
+            "kode": [
+                {
+                    "fil": "admin-ny/app.js",
+                    "finnes": [
+                        "[b.kl,b.hva,b.kursNaar,b.ledige!=null?b.ledige+' ledige':'']"
+                    ]
+                },
+                {
+                    "fil": "api/admin/oversikt.php",
+                    "finnes": [
+                        "'kursNaar' => $b['start_tid'] !== null ? Booking::norskPeriode((string) $b['start_tid'], $b['slutt_tid'] ?? null) : null,",
+                        "$ledige = Booking::ledigePlasserFlere($okter);"
+                    ]
+                },
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "hva: [r.hva, r.kursNaar, r.ledige != null ? r.ledige + ' ledige' : ''].filter(Boolean).join(' · '),"
+                    ]
+                }
+            ]
         }
     ]
 }

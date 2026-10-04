@@ -50187,7 +50187,9 @@ class Component extends DCLogic {
       }
     };
     const dagRader = (visAlleDag ? dagBest : dagBest.slice(0, 8)).map(r => ({
-      kl: r.kl || '', hva: r.hva || '', under: [r.belop, r.navn].filter(Boolean).join(' · '),
+      // Kurskjøp: kursdatoen og ledige plasser etter kursnavnet (eieren 04.10.2026, GO).
+      kl: r.kl || '', hva: [r.hva, r.kursNaar, r.ledige != null ? r.ledige + ' ledige' : ''].filter(Boolean).join(' · '),
+      under: [r.belop, r.navn].filter(Boolean).join(' · '),
       status: String(r.status || '').toUpperCase(), statusStil: pilleStil(r.status),
       velg: stopp(() => aapneBestilling(r)),
     }));

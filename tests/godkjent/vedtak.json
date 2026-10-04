@@ -4930,8 +4930,8 @@
         {
             "id": "adminny-kjopt-i-dag-dato-ledige",
             "dato": "2026-10-04",
-            "hva": "«Kjøpt i dag» viser kursdatoen (samme format som Kurs › Datoer) og antall ledige plasser på kurskjøp — i admin-ny, gamle admin og nyadmin (admin2): klokkeslett · kurs · kursdato · N ledige. Eieren 04.10: «du må endre overalt».",
-            "hvor": "admin-ny › I dag › Kjøpt i dag; gamle admin › Oversikt › Dagens bestillinger; admin2 › I dag › Betalt i dag",
+            "hva": "«Kjøpt i dag» viser kursdatoen (samme format som Kurs › Datoer) og antall ledige plasser på kurskjøp — i admin-ny og gamle admin: klokkeslett · kurs · kursdato · N ledige. Eieren 04.10: «du må endre overalt».",
+            "hvor": "admin-ny › I dag › Kjøpt i dag; gamle admin › Oversikt › Dagens bestillinger",
             "kode": [
                 {
                     "fil": "admin-ny/app.js",
@@ -4950,12 +4950,6 @@
                     "fil": "lissom-2108.html",
                     "finnes": [
                         "hva: [r.hva, r.kursNaar, r.ledige != null ? r.ledige + ' ledige' : ''].filter(Boolean).join(' · '),"
-                    ]
-                },
-                {
-                    "fil": "nyadmin/idag.js",
-                    "finnes": [
-                        "[b.kl, b.navn, b.hva, b.kursNaar, b.ledige != null ? b.ledige + \" ledige\" : \"\"]"
                     ]
                 }
             ]

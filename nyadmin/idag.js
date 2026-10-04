@@ -52,8 +52,7 @@ function betaltIdag(ov) {
   const best = ov.dagensBestillinger || [];
   // Maks fem rader i kortet, saa det ikke vokser nedover. Resten i et ark.
   // Eieren, 30.09: «kortenes plassering maa optimaliseres».
-  // Kurskjøp: kursdatoen og ledige plasser etter kursnavnet (eieren 04.10.2026, GO).
-  const linje = (b) => rad([b.kl, b.navn, b.hva, b.kursNaar, b.ledige != null ? b.ledige + " ledige" : ""].filter(Boolean).join(" · "),
+  const linje = (b) => rad([b.kl, b.navn, b.hva].filter(Boolean).join(" · "),
     el("span", {}, el("b", { tekst: String(b.belop || "").replace(/^kr\.\s/u, "kr ").replace(/,-$/, "") }), " ",
       el("span", { class: "tag" + (b.status === "Betalt" ? "" : " u"), tekst: b.status === "Betalt" ? "Betalt" : "Ubetalt" })),
     "/admin/oversikt");

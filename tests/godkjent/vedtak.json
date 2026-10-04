@@ -4828,6 +4828,90 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "adminny-test-vipps",
+            "dato": "2026-10-04",
+            "hva": "«⚡ Test Vipps» i det nye adminet: samme sjekk og samme tekster som gamle admin (/api/vipps-test.php), under Vipps og betalingsvarsler og i Vedlikehold",
+            "hvor": "admin-ny › Vipps og betalingsvarsler, Vedlikehold og verktøy",
+            "kode": [
+                {
+                    "fil": "admin-ny/verktoy-knapper.js",
+                    "finnes": [
+                        "fetch('/api/vipps-test.php',{credentials:'same-origin',cache:'no-store'})",
+                        "'Alt virker':'Noe mangler ennå'",
+                        "Prøvebetalingen på én krone ble avbrutt med det samme — ingen penger er flyttet.",
+                        "'Det Vipps svarte, ord for ord:'",
+                        "button('Sjekk på nytt'"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kursstandard-og-vipps.js",
+                    "finnes": [
+                        "text:'⚡ Test Vipps',onclick:e=>testVipps(e.currentTarget)"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/administrasjon.js",
+                    "finnes": [
+                        "text:'⚡ Test Vipps',onclick:e=>testVipps(e.currentTarget)"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "adminny-meld-inn-feil",
+            "dato": "2026-10-04",
+            "hva": "«⚑ Meld inn feil» i det nye adminet: samme dialog og tekster som gamle admin (/api/feil.php, med skjermbilde), i sidehodet på Feilmeldinger og i Vedlikehold",
+            "hvor": "admin-ny › Feilmeldinger, Vedlikehold og verktøy",
+            "kode": [
+                {
+                    "fil": "admin-ny/verktoy-knapper.js",
+                    "finnes": [
+                        "fetch('/api/feil.php',{method:'POST'",
+                        "slag:'melding'",
+                        "sheet('Hva gikk galt?'",
+                        "'Skriv hva du prøvde å gjøre, og hva som skjedde'",
+                        "'E-post eller telefon, om du vil ha svar (valgfritt)'",
+                        "'Skjermbilde, om du har ett (valgfritt)'",
+                        "'Skriv litt om hva som gikk galt, så vet vi hvor vi skal lete.'"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/arbeidsoppgaver.js",
+                    "finnes": [
+                        "button('⚑ Meld inn feil',()=>meldFeil(refresh),'primary')"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/administrasjon.js",
+                    "finnes": [
+                        "button('⚑ Meld inn feil',()=>meldFeil())"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "adminny-sok-spor-verkstedet",
+            "dato": "2026-10-04",
+            "hva": "Søkefeltet i toppen: treffet «Spør verkstedet» tar med spørsmålet til Dokumenter, og det sendes rett til AI-en",
+            "hvor": "admin-ny › søkefeltet › Spør verkstedet",
+            "kode": [
+                {
+                    "fil": "admin-ny/app.js",
+                    "finnes": [
+                        "href('dokumenter','spor='+encodeURIComponent(search.value.trim()))"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/spor-verkstedet.js",
+                    "finnes": [
+                        ".get('spor');",
+                        "history.replaceState(null,'','#dokumenter');",
+                        "queueMicrotask(spor);"
+                    ]
+                }
+            ]
         }
     ]
 }

@@ -712,6 +712,82 @@ img{max-width:100%;display:block}
 }
 
 .lx-mshjem.lx-msdeltaker .ms-o-beskjeder { order: 22; }
+/* Internbutikken med varebilde (eieren, 4. oktober 2026), gammel og ny Min side. */
+.ms-varer { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.ms-vare { background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 14px; overflow: hidden; display: grid; grid-template-rows: auto 1fr; min-width: 0; }
+.ms-vare-bilde { aspect-ratio: 1 / 1; background: var(--clay-100); overflow: hidden; }
+.ms-vare-bilde img { width: 100%; height: 100%; object-fit: cover; display: block; max-width: 100%; }
+.ms-vare-tekst { padding: 8px 10px 10px; display: grid; gap: 6px; align-content: start; justify-items: start; min-width: 0; }
+.ms-vare-tekst b { font-size: 14px; line-height: 1.2; color: var(--text-heading); overflow-wrap: anywhere; }
+.ms-vare-tekst small { color: var(--text-muted); font-size: 12px; line-height: 1.25; overflow-wrap: anywhere; }
+/* Ny Min side (eieren, 4. oktober 2026, skissen TBPaVdMts5oSTmJgPsozNz), bak
+   bryteren Vis/minsideny. Kortene ligger der de alltid har ligget i malen,
+   merket data-msny="<underside>"; bare undersiden som staar aapen vises.
+   «-» = staar ikke i ny Min side (innholdet er samlet i Verkstedet naa eller
+   flisene). Uten .msny slaar ingenting her inn. Se msNyEtter(). */
+.msny { display: flex; flex-direction: column; gap: var(--space-5); }
+.msny > *, .msny .ms-o-inn > * { margin: 0 !important; order: 50; min-width: 0; }
+.msny .ms-o-inn { display: contents !important; }
+.msny .msny-hode { order: 0; display: grid; gap: 10px; justify-items: start; }
+.msny .ms-o-topp { order: 1; }
+.msny .msny-varsel { order: 2; }
+.msny .msny-verksted { order: 3; }
+.msny .msny-medl { order: 4; }
+.msny .msny-banner, .msny .ms-kmp { order: 5; }
+.msny .msny-fliser { order: 6; }
+.msny .msny-khm { order: 7; }
+.msny #minside-abonnement { order: 10; }
+.msny .msny-timer { order: 11; }
+.msny .msny-skjul { display: none !important; }
+.msny .lx-split[data-msny="butikk"] { display: flex !important; flex-direction: column; gap: var(--space-5); }
+.msny .ms-o-kol { display: contents !important; }
+.msny #minside-internbutikk { order: -1; }
+/* «Ta med barn» staar inne i ovnkortet i malen. Ovnen er i Verkstedet naa;
+   paa Medlemskapet staar bare barne-delen, uten ovnkortets gule drakt. */
+.msny .ms-o-ovn { background: none !important; border: 0 !important; padding: 0 !important; box-shadow: none !important; animation: none !important; display: block !important; }
+.msny .ms-o-ovn > :not(.ms-o-barn) { display: none !important; }
+.msny .ms-o-ovn:not(:has(.ms-o-barn)) { display: none !important; }
+.msny .ms-o-barn { margin: 0 !important; max-width: none !important; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); }
+.msny-tittel { margin: 0; font-family: var(--font-display); font-size: var(--text-2xl); color: var(--text-heading); }
+.msny-kort { background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5); display: grid; gap: 10px; min-width: 0; box-sizing: border-box; }
+.msny-kort h3 { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: 20px; color: var(--text-heading); }
+.msny-rad { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.msny-ressurs, .msny-glemt, .msny-ovn, .msny-inne { display: grid; gap: 8px; border-top: 1px solid var(--border-subtle); padding-top: 10px; }
+.msny-pille { appearance: none; border: 1.5px solid var(--lissom-brown); background: transparent; color: var(--lissom-brown); border-radius: 999px; padding: 9px 15px; font: 800 14px/1 var(--font-sans); cursor: pointer; white-space: nowrap; }
+.msny-pille.fylt { background: var(--lissom-brown); color: var(--clay-50, #fff); }
+.msny-pille.msny-liten { padding: 7px 12px; font-size: 13px; }
+.msny-pille:disabled { opacity: .5; cursor: default; }
+.msny-dor { cursor: default; }
+.msny-dor b { letter-spacing: .06em; margin-left: 4px; }
+.msny-tid { width: 74px; border: 1px solid var(--border-subtle); border-radius: 999px; padding: 8px 12px; font: var(--type-body-sm); font-variant-numeric: tabular-nums; background: var(--clay-50); color: var(--text-heading); }
+.msny-status { font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty; min-width: 0; }
+.msny-status b { color: var(--text-heading); }
+.msny-navn + .msny-navn::before { content: ", "; }
+.msny-fliser { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+@media (min-width: 761px) { .msny-fliser { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.msny-flis { appearance: none; text-align: left; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 16px; padding: 14px; cursor: pointer; color: var(--text-heading); font: inherit; display: grid; gap: 2px; align-content: start; min-height: 86px; min-width: 0; box-sizing: border-box; }
+.msny-flis b { font: 800 17px/1.15 var(--font-sans); color: var(--text-heading); }
+.msny-flis small { color: var(--text-muted); font-size: 13px; line-height: 1.3; }
+.msny-merke { display: inline-block; background: var(--terracotta-600); color: #fff; border-radius: 999px; font: 800 11px/1 var(--font-sans); padding: 4px 7px; margin-left: 6px; vertical-align: 2px; }
+.msny-medl { min-height: 0; gap: 6px; }
+.msny-medl b { font-size: 20px; font-family: var(--font-display); }
+.msny-bar { display: block; height: 8px; border-radius: 999px; background: var(--clay-200); overflow: hidden; }
+.msny-bar i { display: block; height: 100%; background: var(--lissom-yellow); }
+.msny-varsellinje { border-left: 4px solid var(--sage-600, #4f7a46); background: var(--surface-card); border-radius: 10px; padding: 10px 12px; font-size: 15px; }
+.msny-flis:focus-visible, .msny-pille:focus-visible { outline: 3px solid var(--lissom-yellow); outline-offset: 2px; }
+.msny-flis:hover { border-color: var(--lissom-brown); }
+/* Bare den aapne undersiden. Sist, saa den vinner over reglene over. */
+.msny-hjem [data-msny]:not([data-msny~="hjem"]),
+.msny-kurs [data-msny]:not([data-msny~="kurs"]),
+.msny-butikk [data-msny]:not([data-msny~="butikk"]),
+.msny-medlemskap [data-msny]:not([data-msny~="medlemskap"]),
+.msny-chat [data-msny]:not([data-msny~="chat"]),
+.msny-fellesskap [data-msny]:not([data-msny~="fellesskap"]),
+.msny-hjelp [data-msny]:not([data-msny~="hjelp"]),
+.msny-d-hjem [data-msny]:not([data-msny~="d-hjem"]),
+.msny-d-kurs [data-msny]:not([data-msny~="d-kurs"]),
+.msny-d-bevis [data-msny]:not([data-msny~="d-bevis"]),
+.msny-d-bli [data-msny]:not([data-msny~="d-bli"]) { display: none !important; }
 @media (min-width: 900px) {
   .lx-mshjem { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
   .lx-mshjem > *, .lx-mshjem .ms-o-inn > * { grid-column: 1 / -1; }
@@ -5379,7 +5455,7 @@ window.__resources = {
                fem andre kort. Eieren, 5. september: «Dørkode kan stå fast
                mer diskret lenger opp». Den staar naa som en liten pille ved
                navnet, og aapner Nyttig info naar man trykker paa den. -->
-          <div class="ms-o-topp" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5);">
+          <div data-msny="hjem d-hjem" class="ms-o-topp" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5);">
             <div style="display: grid; gap: 6px; min-width: 0;">
               <sc-if value="{{ msIkkeVelkomst }}" hint-placeholder-val="{{ true }}">
               <h1 style="margin: 0; font-size: var(--text-4xl);">{{ minsideHilsen }}</h1>
@@ -5416,6 +5492,138 @@ window.__resources = {
 
           </div>
 
+          <!-- ── Ny Min side: fliser (eieren, 4. oktober 2026) ────────────
+               Skissen TBPaVdMts5oSTmJgPsozNz, «ja, perfekt». Bak bryteren
+               «Ny Min side (fliser)» (Vis/minsideny, av som standard). Av:
+               ingenting her tegnes, og Min side er som foer.
+               Paa: tre faste ting oeverst (Verkstedet naa, medlemskapet,
+               varsler) og seks fliser. Hver flis aapner en underside med de
+               SAMME kortene som foer — de ligger der de alltid har ligget i
+               malen, merket data-msny="<underside>", og CSS viser bare den
+               aapne. Se msNyEtter(). -->
+          <sc-if value="{{ msNyUnderside }}" hint-placeholder-val="{{ false }}">
+            <div class="msny-hode">
+              <button type="button" class="msny-pille msny-tilbake" onClick="{{ msNyTilbake }}">← Min side</button>
+              <h2 class="msny-tittel">{{ msNyTittel }}</h2>
+            </div>
+          </sc-if>
+          <sc-if value="{{ msNyFrysStarterVis }}" hint-placeholder-val="{{ false }}">
+            <div class="msny-varsel msny-varsellinje">{{ frysStarterTekst }}</div>
+          </sc-if>
+          <!-- Verkstedet naa: stempling, doerkoden, ovnen og hvem som er
+               inne — samlet. Samme verdier og handlinger som de gamle
+               kortene (stempel, inne, ovn); hver del foelger bryteren sin. -->
+          <sc-if value="{{ msNyVerkstedVis }}" hint-placeholder-val="{{ false }}">
+            <div class="msny-kort msny-verksted">
+              <h3>Verkstedet nå</h3>
+              <div class="msny-rad">
+                <sc-if value="{{ msNyStempelVis }}" hint-placeholder-val="{{ false }}">
+                  <button type="button" class="{{ msNyStempelKlasse }}" onClick="{{ vekslStempling }}">{{ stemplingKnapp }}</button>
+                </sc-if>
+                <sc-if value="{{ msNyStempelTom }}" hint-placeholder-val="{{ false }}">
+                  <button type="button" class="msny-pille" disabled="{{ sant }}">Stemple inn</button>
+                </sc-if>
+                <sc-if value="{{ msNyDorVis }}" hint-placeholder-val="{{ false }}">
+                  <span class="msny-pille msny-dor">Dørkode <b>{{ dorkode }}</b></span>
+                </sc-if>
+              </div>
+              <sc-if value="{{ msNyStempelTekstVis }}" hint-placeholder-val="{{ false }}">
+                <div class="msny-status">{{ stemplingTekst }}</div>
+              </sc-if>
+              <sc-if value="{{ msNyRessursVis }}" hint-placeholder-val="{{ false }}">
+                <div class="msny-ressurs">
+                  <div class="msny-status">{{ msRessursHjelp }}</div>
+                  <div class="msny-rad">
+                    <sc-for list="{{ msRessursValg }}" as="r" hint-placeholder-count="2">
+                      <button type="button" onClick="{{ r.velg }}" style="{{ r.boksStil }}"><b style="display: block; font-size: 15px;">{{ r.navn }}</b><small style="display: block; font-size: 12px; opacity: .8;">{{ r.ledig }}</small></button>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ msNyGlemtVis }}" hint-placeholder-val="{{ false }}">
+                <div class="msny-glemt">
+                  <div class="msny-status">{{ msGlemtTekst }}</div>
+                  <sc-if value="{{ msGlemtSkjul }}" hint-placeholder-val="{{ true }}">
+                    <div class="msny-rad"><button type="button" class="msny-pille" onClick="{{ apneMsGlemt }}">Glemt å stemple ut</button></div>
+                  </sc-if>
+                  <sc-if value="{{ msGlemtApen }}" hint-placeholder-val="{{ false }}">
+                    <div class="msny-rad">
+                      <input type="text" inputmode="numeric" maxlength="5" placeholder="15:30" aria-label="Klokkeslettet du gikk" value="{{ msGlemtTid }}" onChange="{{ settMsGlemtTid }}" class="msny-tid">
+                      <button type="button" class="msny-pille fylt" onClick="{{ lagreMsGlemt }}">Lagre</button>
+                      <button type="button" class="msny-pille" onClick="{{ lukkMsGlemt }}">Avbryt</button>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-if>
+              <sc-if value="{{ msNyOvnVis }}" hint-placeholder-val="{{ false }}">
+                <div class="msny-ovn">
+                  <sc-if value="{{ ovnVis }}" hint-placeholder-val="{{ false }}">
+                    <div class="msny-rad">
+                      <div class="msny-status"><b>{{ ovnTittel }}</b> · {{ ovnLinje }}</div>
+                      <sc-if value="{{ ovnUsett }}" hint-placeholder-val="{{ false }}">
+                        <button type="button" onClick="{{ ovnSettNaa }}" style="{{ ovnSettStil }}">Sett</button>
+                      </sc-if>
+                    </div>
+                  </sc-if>
+                  <div class="msny-rad">
+                    <button type="button" class="msny-pille msny-liten" onClick="{{ ovnRaabrannNaa }}">Råbrann satt</button>
+                    <button type="button" class="msny-pille msny-liten" onClick="{{ ovnGlasurNaa }}">Glasurbrann satt</button>
+                    <button type="button" class="msny-pille msny-liten" onClick="{{ ovnTomtNaa }}">Ovn er tømt</button>
+                  </div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ msNyInneVis }}" hint-placeholder-val="{{ false }}">
+                <div class="msny-inne">
+                  <div class="msny-status">
+                    <b>{{ antallInne }} inne</b><sc-if value="{{ msNyHarInne }}" hint-placeholder-val="{{ false }}">: <sc-for list="{{ inne }}" as="m" hint-placeholder-count="2"><span class="msny-navn">{{ m.navn }}</span></sc-for></sc-if>
+                  </div>
+                  <sc-if value="{{ harSkjulteInne }}" hint-placeholder-val="{{ false }}">
+                    <div class="msny-status">{{ skjulteInneTekst }}</div>
+                  </sc-if>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Vis meg for andre medlemmer" checked="{{ synlig }}" on-change="{{ vekslSynlig }}" hint-size="100%,28px"></x-import>
+                </div>
+              </sc-if>
+            </div>
+          </sc-if>
+          <!-- Medlemskapet i én flis: navnet, timene denne maaneden og hvor
+               lenge det er betalt. Hele flisen aapner Medlemskapet. -->
+          <sc-if value="{{ msNyMedlVis }}" hint-placeholder-val="{{ false }}">
+            <button type="button" class="msny-flis msny-medl" onClick="{{ msNyTilMedlemskap }}">
+              <b>{{ mittAbo }}</b>
+              <sc-if value="{{ msNyTimerVis }}" hint-placeholder-val="{{ false }}"><small>{{ msNyTimerTekst }}</small></sc-if>
+              <sc-if value="{{ msNyBarVis }}" hint-placeholder-val="{{ false }}"><span class="msny-bar"><i style="{{ msNyBarStil }}"></i></span></sc-if>
+              <sc-if value="{{ msNyBetaltVis }}" hint-placeholder-val="{{ false }}"><small>{{ msNyBetaltTekst }}</small></sc-if>
+            </button>
+          </sc-if>
+          <sc-if value="{{ msNyFliserVis }}" hint-placeholder-val="{{ false }}">
+            <div class="msny-fliser">
+              <sc-for list="{{ msNyFliser }}" as="f" hint-placeholder-count="6">
+                <button type="button" class="msny-flis" onClick="{{ f.velg }}"><b>{{ f.navn }}<sc-if value="{{ f.harMerke }}" hint-placeholder-val="{{ false }}"><span class="msny-merke">{{ f.merke }}</span></sc-if></b><small>{{ f.under }}</small></button>
+              </sc-for>
+            </div>
+          </sc-if>
+          <!-- Timene paa Medlemskapet-sida: samme tall, stolpe og linjer som
+               sto i stemplingskortet (det kortet staar ikke i ny Min side). -->
+          <sc-if value="{{ msNyTimerDetalj }}" hint-placeholder-val="{{ false }}">
+            <div class="msny-kort msny-timer">
+              <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
+                <div style="font-family: var(--font-display); font-weight: 800; font-size: 36px; line-height: 1; color: var(--text-heading);">{{ timerIgjen }}</div>
+                <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ timerMaks }}</span>
+              </div>
+              <div style="height: 8px; border-radius: 999px; background: var(--clay-200); overflow: hidden;">
+                <div style="{{ timerBarStil }}"></div>
+              </div>
+              <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ timerUndertekst }}</p>
+              <sc-if value="{{ timerHarEkstra }}" hint-placeholder-val="{{ false }}">
+                <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-2);">
+                  <sc-for list="{{ timerLinjer }}" as="l" hint-placeholder-count="3">
+                    <div style="display: flex; justify-content: space-between; gap: var(--space-3); font-size: var(--text-xs); padding: 3px 0; color: var(--text-muted);"><span>{{ l.navn }}</span><strong style="{{ l.stil }}">{{ l.timer }}</strong></div>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+          </sc-if>
+
           <!-- ── De samme sju stedene, som piller ─────────────────────
                Bunnmenyen var ment for telefonen. Paa en PC er den festet
                til bunnen av VINDUET, ikke til bunnen av sida — saa paa en
@@ -5431,7 +5639,7 @@ window.__resources = {
                oppe: da folger den med naar vinduet endrer stoerrelse,
                uten at skjermen maa tegnes om. 760 px, som resten av sida. -->
           <sc-if value="{{ visUbetaltMedlemskap }}" hint-placeholder-val="{{ false }}">
-<section class="ms-o-stempel" style="background:var(--surface-card);border:2px solid var(--terracotta-600);border-radius:var(--radius-lg);padding:var(--space-6);">
+<section class="ms-o-stempel msny-varsel" data-msny="hjem d-hjem" style="background:var(--surface-card);border:2px solid var(--terracotta-600);border-radius:var(--radius-lg);padding:var(--space-6);">
 <sc-if value="{{ ubetaltFryst }}" hint-placeholder-val="{{ false }}"><h2>{{ frystTittel }}</h2></sc-if>
 <sc-if value="{{ ubetaltIkkeFryst }}" hint-placeholder-val="{{ true }}"><h2>Medlemskapet venter på betaling</h2><p>Perioden er ikke betalt. Medlemstilgang og nye timer åpnes når betalingen er registrert.</p></sc-if>
 <sc-if value="{{ ubetaltHarSkyldig }}" hint-placeholder-val="{{ false }}"><p>{{ ubetaltSkyldigTekst }}</p></sc-if>
@@ -5484,7 +5692,7 @@ window.__resources = {
                    seg mellom pilleraden og «Verkstedet ditt». -->
               <sc-if value="{{ erMedlem }}" hint-placeholder-val="{{ true }}">
               <sc-if value="{{ msVerkstedVis }}" hint-placeholder-val="{{ false }}">
-              <div class="ms-o-inne" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);" data-ms-modul="inne">
+              <div data-msny="-" class="ms-o-inne" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);" data-ms-modul="inne">
 <div class="ms-modulvalg"><strong>{{ msModuler.inne.navn }}</strong><button type="button" role="switch" aria-label="I verkstedet nå: vis/skjul" aria-checked="{{ msModuler.inne.aria }}" onClick="{{ msModuler.inne.veksle }}" class="ms-modulbryter">{{ msModuler.inne.tekst }}</button></div>
 <sc-if value="{{ msModuler.inne.vis }}" hint-placeholder-val="{{ true }}">
 
@@ -5532,7 +5740,7 @@ window.__resources = {
                    info — og bare naar eieren har slaatt den paa for
                    medlemmer («Vises for medlemmer» under Verkstedet). -->
               <sc-if value="{{ msFaq }}" hint-placeholder-val="{{ false }}">
-              <div class="ms-o-faq" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6);" data-ms-modul="faq">
+              <div data-msny="hjelp" class="ms-o-faq" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6);" data-ms-modul="faq">
 <div class="ms-modulvalg"><strong>{{ msModuler.faq.navn }}</strong><button type="button" role="switch" aria-label="Spør o store krukkemester: vis/skjul" aria-checked="{{ msModuler.faq.aria }}" onClick="{{ msModuler.faq.veksle }}" class="ms-modulbryter">{{ msModuler.faq.tekst }}</button></div>
 <sc-if value="{{ msModuler.faq.vis }}" hint-placeholder-val="{{ true }}">
 
@@ -5574,7 +5782,7 @@ window.__resources = {
                statusen — det siste trykket — oeverst i det samme kortet.
                Pulserer til man selv har trykket «Sett»; borte etter 24
                timer. Se ovnVals(). -->
-          <div class="{{ ovnKortKlasse }} ms-o-ovn" style="{{ ovnKortStil }}" data-ms-modul="ovn">
+          <div data-msny="medlemskap" class="{{ ovnKortKlasse }} ms-o-ovn" style="{{ ovnKortStil }}" data-ms-modul="ovn">
 <div class="ms-modulvalg"><strong>{{ msModuler.ovn.navn }}</strong><button type="button" role="switch" aria-label="Ovnen: vis/skjul" aria-checked="{{ msModuler.ovn.aria }}" onClick="{{ msModuler.ovn.veksle }}" class="ms-modulbryter">{{ msModuler.ovn.tekst }}</button></div>
 <sc-if value="{{ msModuler.ovn.vis }}" hint-placeholder-val="{{ true }}">
 
@@ -5629,7 +5837,7 @@ window.__resources = {
 </div>
             </sc-if>
 </div>
-          <div class="ms-o-stempel" style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-6);" data-ms-modul="stempel">
+          <div data-msny="-" class="ms-o-stempel" style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-6);" data-ms-modul="stempel">
 <div class="ms-modulvalg"><strong>{{ msModuler.stempel.navn }}</strong><button type="button" role="switch" aria-label="Stemple inn og timene dine: vis/skjul" aria-checked="{{ msModuler.stempel.aria }}" onClick="{{ msModuler.stempel.veksle }}" class="ms-modulbryter">{{ msModuler.stempel.tekst }}</button></div>
 <sc-if value="{{ msModuler.stempel.vis }}" hint-placeholder-val="{{ true }}">
 
@@ -5768,7 +5976,7 @@ window.__resources = {
 </sc-if>
 </div>
             <sc-if value="{{ dugVis }}" hint-placeholder-val="{{ false }}">
-            <div class="ms-o-kort ms-o-dugnad" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6);" data-ms-modul="dugnad">
+            <div data-msny="fellesskap" class="ms-o-kort ms-o-dugnad" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6);" data-ms-modul="dugnad">
 <div class="ms-modulvalg"><strong>{{ msModuler.dugnad.navn }}</strong><button type="button" role="switch" aria-label="Dugnad: vis/skjul" aria-checked="{{ msModuler.dugnad.aria }}" onClick="{{ msModuler.dugnad.veksle }}" class="ms-modulbryter">{{ msModuler.dugnad.tekst }}</button></div>
 <sc-if value="{{ msModuler.dugnad.vis }}" hint-placeholder-val="{{ true }}">
 
@@ -5820,7 +6028,7 @@ window.__resources = {
                og «butikk, selg mine produkter paa forsiden»). Hver flis viser et
                utdrag og aapner fanen der alt ligger; knappene i dem gjoer det
                samme som i fanen. -->
-          <div class="ms-o-kort ms-o-chat ms-flis" role="button" tabindex="0" onClick="{{ msPlChat.velg }}" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6);">
+          <div data-msny="-" class="ms-o-kort ms-o-chat ms-flis" role="button" tabindex="0" onClick="{{ msPlChat.velg }}" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6);">
             <div style="display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); margin-bottom: var(--space-3);">
               <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-lg); color: var(--text-heading);">Chat</span>
               <sc-if value="{{ chatHarNytt }}" hint-placeholder-val="{{ false }}"><span style="font-weight: 800; color: var(--terracotta-600);">Nytt</span></sc-if>
@@ -5840,7 +6048,7 @@ window.__resources = {
             </div>
           </div>
           <sc-if value="{{ visInternbutikk }}" hint-placeholder-val="{{ true }}">
-          <div class="ms-o-kort ms-o-butikk ms-flis" role="button" tabindex="0" onClick="{{ msPlButikk.velg }}" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6);">
+          <div data-msny="-" class="ms-o-kort ms-o-butikk ms-flis" role="button" tabindex="0" onClick="{{ msPlButikk.velg }}" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6);">
             <div style="display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); margin-bottom: var(--space-3);">
               <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-lg); color: var(--text-heading);">Internbutikk</span>
               <span style="font-size: var(--text-sm); color: var(--text-muted);">Leire og brenning</span>
@@ -5868,7 +6076,7 @@ window.__resources = {
           </div>
           </sc-if>
           <sc-if value="{{ msKanSelge }}" hint-placeholder-val="{{ true }}">
-          <div class="ms-o-kort ms-o-selg ms-flis" role="button" tabindex="0" onClick="{{ msPlSelg.velg }}" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6);">
+          <div data-msny="-" class="ms-o-kort ms-o-selg ms-flis" role="button" tabindex="0" onClick="{{ msPlSelg.velg }}" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6);">
             <div style="display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); margin-bottom: var(--space-3);">
               <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-lg); color: var(--text-heading);">Selg mine produkter</span>
               <sc-if value="{{ msSelgHarSolgt }}" hint-placeholder-val="{{ false }}"><span class="ms-fn">Solgt {{ msSelgSolgt }}</span></sc-if>
@@ -5891,7 +6099,7 @@ window.__resources = {
                bekreftes. Eieren, 26. september 2026 (GO paa skissen).
                Kjennes igjen paa e-posten — se api/kursholder.php. -->
           <sc-if value="{{ khmVis }}" hint-placeholder-val="{{ false }}">
-          <div class="ms-o-etter" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); box-sizing: border-box;">
+          <div class="ms-o-etter msny-khm" data-msny="hjem d-hjem" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); box-sizing: border-box;">
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--sage-600, #5f6a4e); margin-bottom: var(--space-2);">Kurs du holder</div>
             <sc-if value="{{ khmIngenKurs }}" hint-placeholder-val="{{ false }}">
               <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted);">Ingen kurs de neste tre ukene.</p>
@@ -5937,7 +6145,7 @@ window.__resources = {
                fulle innholdet, som staar der det sto (ms-vis-*). -->
           <sc-if value="{{ msFaneHjem }}" hint-placeholder-val="{{ true }}">
             <sc-if value="{{ harPameldinger }}" hint-placeholder-val="{{ true }}">
-            <div class="ms-o-kort ms-o-pamld2 ms-flis" role="button" tabindex="0" onClick="{{ msApnePamld }}" style="{{ msFlisStil }}">
+            <div data-msny="-" class="ms-o-kort ms-o-pamld2 ms-flis" role="button" tabindex="0" onClick="{{ msApnePamld }}" style="{{ msFlisStil }}">
               <div class="ms-fh"><span class="ms-ft">Mine påmeldinger</span><span class="ms-fn">{{ msPamldAntall }}</span></div>
               <sc-for list="{{ minePameldinger }}" as="p" hint-placeholder-count="2">
                 <sc-if value="{{ p.kommende }}" hint-placeholder-val="{{ true }}">
@@ -5952,7 +6160,7 @@ window.__resources = {
             <!-- Skisser: egen modul paa egen side (skisser.html). Flisen er bare
                  en lenke; serveren avgjoer om den vises (hentSkisserPaa). -->
             <sc-if value="{{ visSkisser }}" hint-placeholder-val="{{ false }}">
-              <div class="ms-o-kort ms-flis" role="button" tabindex="0" onClick="{{ msApneSkisser }}" style="{{ msFlisStil }}" data-skisser="1" data-ms-modul="skisser">
+              <div data-msny="fellesskap" class="ms-o-kort ms-flis" role="button" tabindex="0" onClick="{{ msApneSkisser }}" style="{{ msFlisStil }}" data-skisser="1" data-ms-modul="skisser">
 <div class="ms-modulvalg"><strong>{{ msModuler.skisser.navn }}</strong><button type="button" role="switch" aria-label="Skisser: vis/skjul" aria-checked="{{ msModuler.skisser.aria }}" onClick="{{ msModuler.skisser.veksle }}" class="ms-modulbryter">{{ msModuler.skisser.tekst }}</button></div>
 <sc-if value="{{ msModuler.skisser.vis }}" hint-placeholder-val="{{ true }}">
 
@@ -5962,7 +6170,7 @@ window.__resources = {
             </sc-if>
             <sc-if value="{{ erMedlem }}" hint-placeholder-val="{{ true }}">
               <sc-if value="{{ visForslag }}" hint-placeholder-val="{{ true }}">
-              <div class="ms-o-kort ms-o-forslag2 ms-flis" role="button" tabindex="0" onClick="{{ msApneForslag }}" style="{{ msFlisStil }}">
+              <div data-msny="-" class="ms-o-kort ms-o-forslag2 ms-flis" role="button" tabindex="0" onClick="{{ msApneForslag }}" style="{{ msFlisStil }}">
                 <div class="ms-fh"><span class="ms-ft">Del på Instagram og i galleriet</span></div>
                 <div class="ms-fr"><div class="ms-fm"><b>Vis fram det du har laget</b><small>Send oss et bilde eller en kort video.</small></div></div>
                 <sc-for list="{{ fsMine }}" as="f" hint-placeholder-count="1">
@@ -5976,7 +6184,7 @@ window.__resources = {
               </div>
               </sc-if>
               <sc-if value="{{ dugVis }}" hint-placeholder-val="{{ false }}">
-              <div class="ms-o-kort ms-o-dugnad2 ms-flis" role="button" tabindex="0" onClick="{{ msApneDugnad }}" style="{{ msFlisStil }}">
+              <div data-msny="-" class="ms-o-kort ms-o-dugnad2 ms-flis" role="button" tabindex="0" onClick="{{ msApneDugnad }}" style="{{ msFlisStil }}">
                 <div class="ms-fh"><span class="ms-ft">Dugnad</span><sc-if value="{{ dugMerkeVis }}" hint-placeholder-val="{{ false }}"><span class="ms-fn">{{ dugMerke }}</span></sc-if></div>
                 <sc-if value="{{ dugKanSporre }}" hint-placeholder-val="{{ true }}">
                   <div class="ms-fr"><div class="ms-fm"><b>Send forespørsel</b><small>{{ dugTekstLinje }}</small></div></div>
@@ -5997,7 +6205,7 @@ window.__resources = {
               </sc-if>
             </sc-if>
             <sc-if value="{{ msKursbevisVis }}" hint-placeholder-val="{{ false }}">
-            <div id="ms-bevis-flis" class="ms-o-kort ms-o-bevis2 ms-flis" style="{{ msFlisStil }}">
+            <div data-msny="-" id="ms-bevis-flis" class="ms-o-kort ms-o-bevis2 ms-flis" style="{{ msFlisStil }}">
               <div class="ms-fh"><span class="ms-ft">Kursbevis</span><span class="ms-fn">{{ msBevisAntall }}</span></div>
               <sc-for list="{{ mineBevis }}" as="kb" hint-placeholder-count="2">
                 <div class="ms-fr ms-fr-knapp" role="button" tabindex="0" onClick="{{ kb.apne }}"><div class="ms-fm"><b>{{ kb.tittel }}</b><small>{{ kb.naar }}</small></div></div>
@@ -6029,7 +6237,7 @@ window.__resources = {
                For en kursdeltaker staar de fortsatt her: hun har to av dem,
                paameldingene og beskjedene, og ingen bunnmeny. -->
           <sc-if value="{{ msViserSnarveierNaa }}" hint-placeholder-val="{{ false }}">
-            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-6);">
+            <div data-msny="-" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-6);">
               <sc-for list="{{ minsideSnarveier }}" as="s" hint-placeholder-count="3">
                 <button type="button" onClick="{{ s.velg }}" style="appearance: none; cursor: pointer; border: 1.5px solid var(--border-subtle); background: var(--surface-card); color: var(--text-heading); border-radius: var(--radius-pill); padding: 9px 15px; font: var(--type-body-sm); font-weight: 700;" style-hover="border-color: var(--lissom-brown);">{{ s.navn }}</button>
               </sc-for>
@@ -6043,7 +6251,7 @@ window.__resources = {
                Alle andre far «Bli medlem» i stedet, og beholder sine egne
                plasser og kvitteringer lenger nede. -->
           <sc-if value="{{ erMedlem }}" hint-placeholder-val="{{ true }}">
-          <div style="{{ timerVarselStil }}">{{ timerVarsel }}</div>
+          <div class="msny-varsel" data-msny="hjem" style="{{ timerVarselStil }}">{{ timerVarsel }}</div>
 
           <!-- Forslaget om en storre plan.
                Staar bare naar medlemmet naadde taket i minst to av de tre
@@ -6051,7 +6259,7 @@ window.__resources = {
                én. En travel maaned er en travel maaned; det er naar det
                gjentar seg at planen er for liten. Se «visOppgrader». -->
           <sc-if value="{{ visOppgrader }}" hint-placeholder-val="{{ false }}">
-            <div class="ms-o-etter" style="{{ oppStil }}">
+            <div class="ms-o-etter msny-banner" data-msny="hjem" style="{{ oppStil }}">
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-brown); margin-bottom: 4px;">{{ oppTittel }}</div>
               <p style="margin: 0 0 var(--space-4); font-size: var(--text-base); color: var(--lissom-brown); text-wrap: pretty;">{{ oppTekst }}</p>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" on-click="{{ oppVelg }}" hint-size="auto,40px">{{ oppKnapp }}</x-import>
@@ -6062,7 +6270,7 @@ window.__resources = {
                infoen bak hvert sitt menyvalg. Rutene er de samme som for. -->
           <div class="ms-o-inn" style="{{ msRuterStil }}">
             <sc-if value="{{ msFaneHjem }}" hint-placeholder-val="{{ true }}">
-            <div class="ms-o-kort ms-o-skiver" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5); box-sizing: border-box; min-width: 0; overflow-wrap: anywhere;" data-ms-modul="skiver">
+            <div data-msny="kurs" class="ms-o-kort ms-o-skiver" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5); box-sizing: border-box; min-width: 0; overflow-wrap: anywhere;" data-ms-modul="skiver">
 <div class="ms-modulvalg"><strong>{{ msModuler.skiver.navn }}</strong><button type="button" role="switch" aria-label="Dreieskivene denne uka: vis/skjul" aria-checked="{{ msModuler.skiver.aria }}" onClick="{{ msModuler.skiver.veksle }}" class="ms-modulbryter">{{ msModuler.skiver.tekst }}</button></div>
 <sc-if value="{{ msModuler.skiver.vis }}" hint-placeholder-val="{{ true }}">
 
@@ -6113,7 +6321,7 @@ window.__resources = {
                  Kortformen staar i «Verkstedet ditt» paa forsiden; her staar
                  alt. Samme kort som for — flyttet bak menyvalget. -->
             <sc-if value="{{ msFaneMedlemskap }}" hint-placeholder-val="{{ false }}">
-            <div id="minside-abonnement" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); box-sizing: border-box; display: flex; flex-direction: column;" data-ms-modul="abonnement">
+            <div data-msny="medlemskap" id="minside-abonnement" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); box-sizing: border-box; display: flex; flex-direction: column;" data-ms-modul="abonnement">
 <div class="ms-modulvalg"><strong>{{ msModuler.abonnement.navn }}</strong><button type="button" role="switch" aria-label="Medlemskapet ditt: vis/skjul" aria-checked="{{ msModuler.abonnement.aria }}" onClick="{{ msModuler.abonnement.veksle }}" class="ms-modulbryter">{{ msModuler.abonnement.tekst }}</button></div>
 <sc-if value="{{ msModuler.abonnement.vis }}" hint-placeholder-val="{{ true }}">
 
@@ -6150,7 +6358,7 @@ window.__resources = {
                    kunne rette den. Staar bare naar det er noe aa rette — en oekt
                    som gaar naa, eller en systemet lukket klokka 23. -->
               <sc-if value="{{ msGlemtVis }}" hint-placeholder-val="{{ false }}">
-                <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-4); padding-top: var(--space-3);">
+                <div class="msny-skjul" style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-4); padding-top: var(--space-3);">
                   <div style="font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty; margin-bottom: 8px;">{{ msGlemtTekst }}</div>
                   <sc-if value="{{ msGlemtSkjul }}" hint-placeholder-val="{{ true }}">
                     <button type="button" onClick="{{ apneMsGlemt }}" style="appearance: none; background: transparent; border: none; padding: 0; cursor: pointer; text-align: left; font: var(--type-body-sm); font-weight: 700; color: var(--terracotta-600); text-decoration: underline; text-underline-offset: 3px;">Glemt å stemple ut</button>
@@ -6220,7 +6428,7 @@ window.__resources = {
                  rett her. Eieren, 15. september 2026: «nyttig info paa min
                  side aapner kortene direkte». Samme lister som den aapne
                  sida (plakatKort, nyttigArtikler, nyttigeLenker). -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: var(--space-4); align-items: stretch; margin-top: var(--space-5);" data-ms-modul="nyttig">
+            <div data-msny="hjelp" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: var(--space-4); align-items: stretch; margin-top: var(--space-5);" data-ms-modul="nyttig">
 <div class="ms-modulvalg"><strong>Nyttig info</strong><button type="button" role="switch" aria-label="Nyttig info: vis/skjul" aria-checked="{{ msModuler.nyttig.aria }}" onClick="{{ msModuler.nyttig.veksle }}" class="ms-modulbryter">{{ msModuler.nyttig.tekst }}</button></div>
 <sc-if value="{{ msModuler.nyttig.vis }}" hint-placeholder-val="{{ true }}">
               <sc-for list="{{ plakatKort }}" as="p" hint-placeholder-count="3">
@@ -6249,7 +6457,7 @@ window.__resources = {
 </sc-if>
 </div>
             <sc-if value="{{ mdHarNoe }}" hint-placeholder-val="{{ false }}">
-              <div style="margin-top: var(--space-6);">
+              <div data-msny="hjelp" style="margin-top: var(--space-6);">
                   <sc-if value="{{ mdHarKort }}" hint-placeholder-val="{{ true }}">
                     <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl, 22px); padding: var(--space-7); margin-bottom: var(--space-6);">
                       <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-2);">
@@ -6348,7 +6556,7 @@ window.__resources = {
                        Skrevet som han skrev det. Gjelder overalt den vises:
                        her, i kalenderen og i adminfanen. -->
                   <sc-if value="{{ mdFaq }}" hint-placeholder-val="{{ false }}">
-                    <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl, 22px); padding: var(--space-7);">
+                    <div class="msny-skjul" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl, 22px); padding: var(--space-7);">
                       <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-2);">
                         <h2 style="margin: 0; font-size: var(--text-2xl); letter-spacing: 0;">Spør o store krukkemester</h2>
                         <span style="{{ mdLaasStil }}">Kun for innloggede</span>
@@ -6395,7 +6603,7 @@ window.__resources = {
           </sc-if>
 
           <sc-if value="{{ visBliMedlem }}" hint-placeholder-val="{{ false }}">
-            <div id="bli-medlem" class="ms-o-full" style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-8); margin-bottom: var(--space-8);">
+            <div data-msny="d-bli" id="bli-medlem" class="ms-o-full" style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-8); margin-bottom: var(--space-8);">
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Medlemskap</div>
               <h2 style="margin: 0 0 var(--space-3); font-size: var(--text-2xl);">{{ bmTittel }}</h2>
               <p style="margin: 0 0 var(--space-6); font-size: var(--text-base); color: var(--text-body); max-width: 60ch; text-wrap: pretty;">{{ bmTekst }}</p>
@@ -6466,7 +6674,7 @@ window.__resources = {
 
 
           <sc-if value="{{ harVennegave }}" hint-placeholder-val="{{ true }}">
-            <div class="ms-o-etter" style="background: var(--lissom-yellow); border-radius: var(--radius-lg); padding: var(--space-4) var(--space-6); margin-top: var(--space-5); display: flex; align-items: center; justify-content: space-between; gap: var(--space-6); flex-wrap: wrap;" data-theme="sun">
+            <div class="ms-o-etter msny-banner" data-msny="hjem" style="background: var(--lissom-yellow); border-radius: var(--radius-lg); padding: var(--space-4) var(--space-6); margin-top: var(--space-5); display: flex; align-items: center; justify-content: space-between; gap: var(--space-6); flex-wrap: wrap;" data-theme="sun">
               <div style="display: flex; align-items: baseline; gap: var(--space-4); flex-wrap: wrap; min-width: 240px;">
                 <span style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--brown-500);">Gave fra Monica</span>
                 <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-lg); color: var(--lissom-brown);">{{ gaveTittel }}</span>
@@ -6486,7 +6694,7 @@ window.__resources = {
                det plassen til det man kom for. -->
           <sc-if value="{{ msFaneMedlemskap }}" hint-placeholder-val="{{ false }}">
           <sc-if value="{{ frysVis }}" hint-placeholder-val="{{ false }}">
-            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); margin-top: var(--space-5);" data-ms-modul="frys">
+            <div data-msny="medlemskap" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); margin-top: var(--space-5);" data-ms-modul="frys">
 <div class="ms-modulvalg"><strong>Frys av medlemskap</strong><button type="button" role="switch" aria-label="Frys av medlemskap: vis/skjul" aria-checked="{{ msModuler.frys.aria }}" onClick="{{ msModuler.frys.veksle }}" class="ms-modulbryter">{{ msModuler.frys.tekst }}</button></div>
 <sc-if value="{{ msModuler.frys.vis }}" hint-placeholder-val="{{ true }}">
               <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-3);">
@@ -6578,8 +6786,8 @@ window.__resources = {
                kjoepshistorikken ved siden av. «Del paa Instagram» staar paa
                forsiden (msFaneHjem). -->
           <sc-if value="{{ msFaneButikk }}" hint-placeholder-val="{{ false }}">
-          <div class="lx-split" style="display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: var(--space-6); margin-top: var(--space-6); align-items: start;">
-            <div style="display: flex; flex-direction: column; gap: var(--space-6); min-width: 0;">
+          <div data-msny="butikk" class="lx-split" style="display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: var(--space-6); margin-top: var(--space-6); align-items: start;">
+            <div class="ms-o-kol" style="display: flex; flex-direction: column; gap: var(--space-6); min-width: 0;">
               <!-- Handlelista. Internbutikken over selger det som ligger paa
                    lager, med betaling i kassa med en gang. Dette er den andre
                    veien: det som maa skaffes. Medlemmet samler opp, sender, og
@@ -6705,7 +6913,7 @@ window.__resources = {
 </div>
               </sc-if>
             </div>
-            <div style="display: flex; flex-direction: column; gap: var(--space-6); min-width: 0;">
+            <div class="ms-o-kol" style="display: flex; flex-direction: column; gap: var(--space-6); min-width: 0;">
               <sc-if value="{{ visInternbutikk }}" hint-placeholder-val="{{ true }}">
               <div id="minside-internbutikk" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);" data-ms-modul="butikk">
 <div class="ms-modulvalg"><strong>{{ msModuler.butikk.navn }}</strong><button type="button" role="switch" aria-label="Internbutikk: vis/skjul" aria-checked="{{ msModuler.butikk.aria }}" onClick="{{ msModuler.butikk.veksle }}" class="ms-modulbryter">{{ msModuler.butikk.tekst }}</button></div>
@@ -6720,14 +6928,23 @@ window.__resources = {
                     <button type="button" onClick="{{ apneOrdre }}" style="appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: var(--lissom-yellow); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 8px 14px; font: var(--type-body-sm); font-weight: 700;">Se bestillingen · {{ kurvAntall }}</button>
                   </sc-if>
                 </div>
-                <div style="display: flex; flex-direction: column;">
+                <!-- Varene med bilde (eieren, 4. oktober 2026: «bilder i
+                     internbutikken»). Kort med varebildet (products.bilde)
+                     oeverst, to i bredden. Uten bilde: en rolig flate, ikke et
+                     brutt bilde. Samme navn, tekst og knapp som foer. -->
+                <div class="ms-varer">
                   <sc-for list="{{ internvarer }}" as="v" hint-placeholder-count="4">
-                    <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); border-top: 1px solid var(--border-subtle); padding: var(--space-3) 0;">
-                      <div style="flex: 1; min-width: 0;">
-                        <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ v.navn }}</div>
-                        <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ v.detalj }}</div>
+                    <div class="ms-vare">
+                      <div class="ms-vare-bilde">
+                        <sc-if value="{{ v.harBilde }}" hint-placeholder-val="{{ false }}">
+                          <img data-src="{{ v.bilde }}" sizes="(max-width: 760px) 45vw, 220px" alt="" loading="lazy" decoding="async">
+                        </sc-if>
                       </div>
-                      <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" on-click="{{ v.kjopNaa }}" hint-size="auto,34px">{{ v.knappetekst }}</x-import>
+                      <div class="ms-vare-tekst">
+                        <b>{{ v.navn }}</b>
+                        <small>{{ v.detalj }}</small>
+                        <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" on-click="{{ v.kjopNaa }}" hint-size="auto,34px">{{ v.knappetekst }}</x-import>
+                      </div>
                     </div>
                   </sc-for>
                 </div>
@@ -6784,14 +7001,14 @@ window.__resources = {
                    Bryteren laa som to — «salgsskjema» og «medlemssalg» — som
                    begge maatte staa paa. Slaatt sammen 12. september 2026. -->
               <sc-if value="{{ msSelgAv }}" hint-placeholder-val="{{ false }}">
-                <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);">
+                <div data-msny="fellesskap" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);">
                   <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 6px;">Selg keramikk</div>
                   <h3 style="margin: 0 0 var(--space-3); font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">Ikke åpent akkurat nå</h3>
                   <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">{{ msSelgAvTekst }}</p>
                 </div>
               </sc-if>
               <sc-if class="lx-ms-selg" value="{{ visSalgSkjema }}" hint-placeholder-val="{{ true }}">
-              <div id="minside-salg" class="lx-ms-selg" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);" data-ms-modul="salg">
+              <div data-msny="fellesskap" id="minside-salg" class="lx-ms-selg" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);" data-ms-modul="salg">
 <div class="ms-modulvalg"><strong>{{ msModuler.salg.navn }}</strong><button type="button" role="switch" aria-label="Selg mine produkter: vis/skjul" aria-checked="{{ msModuler.salg.aria }}" onClick="{{ msModuler.salg.veksle }}" class="ms-modulbryter">{{ msModuler.salg.tekst }}</button></div>
 <sc-if value="{{ msModuler.salg.vis }}" hint-placeholder-val="{{ true }}">
 
@@ -6963,7 +7180,7 @@ window.__resources = {
                    du skal se, ikke noe du skal lete etter i en meny. -->
               <sc-if value="{{ msFaneHjem }}" hint-placeholder-val="{{ true }}">
               <sc-if value="{{ harBeskjeder }}" hint-placeholder-val="{{ true }}">
-              <div id="minside-beskjeder" class="ms-o-kort ms-o-beskjeder" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);" data-ms-modul="beskjeder">
+              <div data-msny="chat d-kurs" id="minside-beskjeder" class="ms-o-kort ms-o-beskjeder" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);" data-ms-modul="beskjeder">
 <div class="ms-modulvalg"><strong>{{ msModuler.beskjeder.navn }}</strong><button type="button" role="switch" aria-label="Beskjeder: vis/skjul" aria-checked="{{ msModuler.beskjeder.aria }}" onClick="{{ msModuler.beskjeder.veksle }}" class="ms-modulbryter">{{ msModuler.beskjeder.tekst }}</button></div>
 <sc-if value="{{ msModuler.beskjeder.vis }}" hint-placeholder-val="{{ true }}">
 
@@ -7009,7 +7226,7 @@ window.__resources = {
                    «den må ligge på forsiden»). -->
               <sc-if value="{{ msFaneHjem }}" hint-placeholder-val="{{ true }}">
               <sc-if value="{{ visForslag }}" hint-placeholder-val="{{ true }}">
-              <div id="minside-forslag" class="ms-o-kort ms-o-forslag" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);" data-ms-modul="forslag">
+              <div data-msny="fellesskap" id="minside-forslag" class="ms-o-kort ms-o-forslag" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);" data-ms-modul="forslag">
 <div class="ms-modulvalg"><strong>{{ msModuler.forslag.navn }}</strong><button type="button" role="switch" aria-label="Del på Instagram og i galleriet: vis/skjul" aria-checked="{{ msModuler.forslag.aria }}" onClick="{{ msModuler.forslag.veksle }}" class="ms-modulbryter">{{ msModuler.forslag.tekst }}</button></div>
 <sc-if value="{{ msModuler.forslag.vis }}" hint-placeholder-val="{{ true }}">
 
@@ -7089,7 +7306,7 @@ window.__resources = {
                    medlemmer»-kursene som foer, lagt ut i admin som vanlige kurs;
                    paameldingen gaar samme vei og havner i kalenderen. -->
               <sc-if value="{{ harMedlemskurs }}" hint-placeholder-val="{{ true }}">
-              <div id="minside-internkurs" class="ms-o-banner" style="{{ msBannerStil }}" data-ms-modul="internkurs">
+              <div data-msny="kurs" id="minside-internkurs" class="ms-o-banner" style="{{ msBannerStil }}" data-ms-modul="internkurs">
 <div class="ms-modulvalg"><strong>{{ msModuler.internkurs.navn }}</strong><button type="button" role="switch" aria-label="Kurs for medlemmer: vis/skjul" aria-checked="{{ msModuler.internkurs.aria }}" onClick="{{ msModuler.internkurs.veksle }}" class="ms-modulbryter">{{ msModuler.internkurs.tekst }}</button></div>
 <sc-if value="{{ msModuler.internkurs.vis }}" hint-placeholder-val="{{ true }}">
 
@@ -7111,7 +7328,7 @@ window.__resources = {
               <!-- Kampanjebanneret for kursdeltakere: salgskampanjen som staar ute
                    (Nettbutikk › Kampanjer), slaatt paa under ⊙ Synlighet. -->
               <sc-if value="{{ msKmpVis }}" hint-placeholder-val="{{ false }}">
-              <div class="ms-kmp" style="{{ msBannerStil }}">
+              <div class="ms-kmp" data-msny="hjem d-hjem" style="{{ msBannerStil }}">
                 <div style="min-width: 0; flex: 1 1 320px;">
                   <div style="font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--lissom-yellow);">{{ kampanjeMerke }}</div>
                   <h3 style="margin: 4px 0 6px; font-family: var(--font-display); font-weight: 800; font-size: 26px; line-height: 1.2; color: #fff;">{{ kampanjeTittel }}</h3>
@@ -7128,7 +7345,7 @@ window.__resources = {
                    venn til aarsmedlemskap og faa timer i verkstedet. Slaas av og
                    paa, og timene settes, i Markedsfoering › Vervepremie. -->
               <sc-if value="{{ msVervVis }}" hint-placeholder-val="{{ false }}">
-              <div id="minside-verving" class="ms-o-banner" style="{{ msBannerStil }}" data-ms-modul="verving">
+              <div data-msny="medlemskap" id="minside-verving" class="ms-o-banner" style="{{ msBannerStil }}" data-ms-modul="verving">
 <div class="ms-modulvalg"><strong>{{ msModuler.verving.navn }}</strong><button type="button" role="switch" aria-label="Verv en venn: vis/skjul" aria-checked="{{ msModuler.verving.aria }}" onClick="{{ msModuler.verving.veksle }}" class="ms-modulbryter">{{ msModuler.verving.tekst }}</button></div>
 <sc-if value="{{ msModuler.verving.vis }}" hint-placeholder-val="{{ true }}">
 
@@ -7146,7 +7363,7 @@ window.__resources = {
 
 
               <sc-if value="{{ harPameldinger }}" hint-placeholder-val="{{ true }}">
-              <div id="minside-pameldinger" class="ms-o-kort ms-o-pamld" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);" data-ms-modul="pameldinger">
+              <div data-msny="kurs d-kurs" id="minside-pameldinger" class="ms-o-kort ms-o-pamld" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);" data-ms-modul="pameldinger">
 <div class="ms-modulvalg"><strong>{{ msModuler.pameldinger.navn }}</strong><button type="button" role="switch" aria-label="Mine påmeldinger: vis/skjul" aria-checked="{{ msModuler.pameldinger.aria }}" onClick="{{ msModuler.pameldinger.veksle }}" class="ms-modulbryter">{{ msModuler.pameldinger.tekst }}</button></div>
 <sc-if value="{{ msModuler.pameldinger.vis }}" hint-placeholder-val="{{ true }}">
 
@@ -7215,7 +7432,7 @@ window.__resources = {
                    man skal stemple inn. -->
               </sc-if>
               <sc-if value="{{ msKursbevisVis }}" hint-placeholder-val="{{ false }}">
-              <div id="minside-kursbevis" class="ms-o-kort ms-o-bevis" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);" data-ms-modul="kursbevis">
+              <div data-msny="kurs d-bevis" id="minside-kursbevis" class="ms-o-kort ms-o-bevis" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);" data-ms-modul="kursbevis">
 <div class="ms-modulvalg"><strong>{{ msModuler.kursbevis.navn }}</strong><button type="button" role="switch" aria-label="Kursbevis: vis/skjul" aria-checked="{{ msModuler.kursbevis.aria }}" onClick="{{ msModuler.kursbevis.veksle }}" class="ms-modulbryter">{{ msModuler.kursbevis.tekst }}</button></div>
 <sc-if value="{{ msModuler.kursbevis.vis }}" hint-placeholder-val="{{ true }}">
 
@@ -7261,7 +7478,7 @@ window.__resources = {
                    en samtale som ruller nedover der tar plassen fra
                    verkstedet og timene dine. -->
               <sc-if value="{{ msFaneChat }}" hint-placeholder-val="{{ false }}">
-              <div id="minside-chat" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); display: flex; flex-direction: column;" data-ms-modul="chat">
+              <div data-msny="chat" id="minside-chat" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); display: flex; flex-direction: column;" data-ms-modul="chat">
 <div class="ms-modulvalg"><strong>{{ msModuler.chat.navn }}</strong><button type="button" role="switch" aria-label="Medlemschat: vis/skjul" aria-checked="{{ msModuler.chat.aria }}" onClick="{{ msModuler.chat.veksle }}" class="ms-modulbryter">{{ msModuler.chat.tekst }}</button></div>
 <sc-if value="{{ msModuler.chat.vis }}" hint-placeholder-val="{{ true }}">
 
@@ -7324,7 +7541,7 @@ window.__resources = {
                info, sammen med doerkoden og guidene. -->
           <sc-if value="{{ msFaneNyttig }}" hint-placeholder-val="{{ false }}">
           <sc-if value="{{ erMedlem }}" hint-placeholder-val="{{ true }}">
-          <div id="minside-ordensregler" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6) var(--space-8); margin-top: var(--space-6);" data-ms-modul="hms">
+          <div data-msny="hjelp" id="minside-ordensregler" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6) var(--space-8); margin-top: var(--space-6);" data-ms-modul="hms">
 <div class="ms-modulvalg"><strong>{{ msModuler.hms.navn }}</strong><button type="button" role="switch" aria-label="Ordensregler og HMS: vis/skjul" aria-checked="{{ msModuler.hms.aria }}" onClick="{{ msModuler.hms.veksle }}" class="ms-modulbryter">{{ msModuler.hms.tekst }}</button></div>
 <sc-if value="{{ msModuler.hms.vis }}" hint-placeholder-val="{{ true }}">
 
@@ -7354,7 +7571,7 @@ window.__resources = {
                bruker sidene mest, og som stanser paa noe som ikke virker.
                Staar bare naar eieren har slaatt innmeldingen paa. -->
           <sc-if value="{{ fmKnappVis }}" hint-placeholder-val="{{ false }}">
-            <p class="ms-o-slutt" style="margin: var(--space-8) 0 0; font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">Er det noe som ikke virker? <button type="button" onClick="{{ fmAapne }}" style="appearance: none; background: transparent; border: none; padding: 0; cursor: pointer; font: inherit; color: var(--lissom-brown); font-weight: 700; text-decoration: underline; text-underline-offset: 3px;">Meld inn feil</button>, så ser vi på det.</p>
+            <p class="ms-o-slutt" data-msny="hjelp" style="margin: var(--space-8) 0 0; font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">Er det noe som ikke virker? <button type="button" onClick="{{ fmAapne }}" style="appearance: none; background: transparent; border: none; padding: 0; cursor: pointer; font: inherit; color: var(--lissom-brown); font-weight: 700; text-decoration: underline; text-underline-offset: 3px;">Meld inn feil</button>, så ser vi på det.</p>
           </sc-if>
 
           <!-- Menyen ligger fast over innholdet. Uten denne luften blir det
@@ -33177,6 +33394,171 @@ class Component extends DCLogic {
     return { msModuler: moduler, msAdminAv: adminAv.join(' ') };
   }
 
+  // ── Ny Min side: fliser og undersider (eieren, 4. oktober 2026) ───────
+  //
+  // Skissen TBPaVdMts5oSTmJgPsozNz, «ja, perfekt». Bak bryteren «Ny Min side
+  // (fliser)» — Vis/minsideny, AV som standard (bryterPaa() svarer «paa» for
+  // en bryter som ikke er lagret, derfor sjekkes «ja» her). Av: Min side er
+  // noeyaktig som foer.
+  //
+  // Ingen nye funksjoner: undersidene viser de samme kortene som foer. De er
+  // merket data-msny="<underside>" i malen, og CSS viser bare den aapne
+  // (.msny-<underside>). Verkstedet naa og medlemskapsflisen leser de samme
+  // verdiene som stemplings-, ovn- og «inne»-kortene.
+  msNyPaa() {
+    if ((this.state.side || '') !== 'minside') return false;
+    return (this.state.innholdLagret || {})['Vis/minsideny'] === 'ja';
+  }
+
+  // Undersiden som staar aapen. Medlem: hjem, kurs, butikk, medlemskap,
+  // chat, fellesskap, hjelp. Kursdeltaker: d-hjem, d-kurs, d-bevis, d-bli.
+  // En gammel fane (/min-side/butikk osv.) aapner den tilsvarende flisen.
+  msNySide() {
+    const medlem = this.medlemsvisning();
+    const lov = medlem
+      ? ['hjem', 'kurs', 'butikk', 'medlemskap', 'chat', 'fellesskap', 'hjelp']
+      : ['d-hjem', 'd-kurs', 'd-bevis', 'd-bli'];
+    const fraFane = { medlemskap: 'medlemskap', butikk: 'butikk', selg: 'fellesskap', chat: 'chat', nyttig: 'hjelp' };
+    // msNyGaa() setter alltid fanen tilbake til «hjem»; staar det en annen
+    // fane, er den det siste som ble valgt.
+    const fane = medlem ? fraFane[this.state.msFane] : '';
+    let s = fane || this.state.msNy || '';
+    if (!s || s === 'hjem' || s === 'd-hjem') s = medlem ? 'hjem' : 'd-hjem';
+    return lov.indexOf(s) === -1 ? lov[0] : s;
+  }
+
+  msNyGaa(s) {
+    return () => {
+      this.setState({ msNy: s, msFane: 'hjem', msTlMeny: false, msApne: '' });
+      window.scrollTo(0, 0);
+    };
+  }
+
+  // Verdiene til ny Min side, regnet av de ferdige verdiene (v) i
+  // renderVals(). Bryteren av: ingenting overstyres.
+  msNyEtter(v) {
+    if (!this.msNyPaa() || v.msVelkomst) return {};
+    const medlem = this.medlemsvisning();
+    // En gammel fane i tilstanden (fra adressen eller en knapp) blir til
+    // flisen sin; fanen selv settes tilbake til «hjem», saa alle kortene
+    // tegnes og CSS velger.
+    if ((this.state.msFane || 'hjem') !== 'hjem' && !this._msNyFane) {
+      this._msNyFane = true;
+      const til = this.msNySide();
+      setTimeout(() => { this._msNyFane = false; this.setState({ msNy: til, msFane: 'hjem' }); }, 0);
+    }
+    const side = this.msNySide();
+    const hjem = side === 'hjem' || side === 'd-hjem';
+    const M = v.msModuler || {};
+    const vis = (id) => !!(M[id] && M[id].vis);
+    const gaa = (s) => this.msNyGaa(s);
+    const chatNye = this.state.chatNye || 0;
+    const NAVN = { kurs: 'Kurs', butikk: 'Butikk', medlemskap: 'Medlemskapet', chat: 'Chat', fellesskap: 'Fellesskap', hjelp: 'Hjelp',
+      'd-kurs': 'Kursene mine', 'd-bevis': 'Kursbevis', 'd-bli': 'Bli medlem' };
+    // Hver flis staar bare naar minst én av delene under den er paa — slaar
+    // eieren av alle, er flisen borte.
+    const alle = medlem ? [
+      { id: 'kurs', under: 'Påmeldinger, kursbevis, dreieskiver',
+        paa: (v.harMedlemskurs && vis('internkurs')) || (v.harPameldinger && vis('pameldinger')) || vis('kursbevis') || vis('skiver') },
+      { id: 'butikk', under: 'Leire, brenning, handleliste',
+        paa: (v.visInternbutikk && vis('butikk')) || (v.visHandleliste && vis('handleliste')) || vis('historikk') },
+      { id: 'medlemskap', under: 'Betaling, frys, ta med barn',
+        paa: vis('abonnement') || (v.frysVis && vis('frys')) || (v.barnVis && vis('barn')) || (!!this.state.verving && vis('verving')) },
+      { id: 'chat', under: 'Med de andre medlemmene', merke: chatNye > 0 ? String(chatNye) : '',
+        paa: vis('chat') || (v.harBeskjeder && vis('beskjeder')) },
+      { id: 'fellesskap', under: 'Dugnad, selg, del, skisser',
+        paa: (v.dugVis && vis('dugnad')) || (this.kanSelge() && (vis('salg') || !!v.msSelgAv)) || (v.visForslag && vis('forslag')) || (v.visSkisser && vis('skisser')) },
+      { id: 'hjelp', under: 'Nyttig info, spør krukkemesteren',
+        paa: vis('nyttig') || (v.msFaq && vis('faq')) || vis('hms') || !!v.fmKnappVis },
+    ] : [
+      { id: 'd-kurs', under: 'Påmeldinger og datoer',
+        paa: (v.harPameldinger && vis('pameldinger')) || (v.harBeskjeder && vis('beskjeder')) },
+      { id: 'd-bevis', under: 'Last ned eller del', paa: vis('kursbevis') },
+      { id: 'nytt', navn: 'Finn nytt kurs', under: 'Alle kurs med ledige plasser', paa: true, velg: this.go('kurs') },
+      { id: 'd-bli', under: 'Prøv Lissom i én måned', paa: !!v.visBliMedlem },
+    ];
+    const fliser = alle.filter(f => f.paa).map(f => ({
+      navn: f.navn || NAVN[f.id], under: f.under, merke: f.merke || '', harMerke: !!f.merke,
+      velg: f.velg || gaa(f.id),
+    }));
+    const lukk = (fn) => () => { this.setState({ msTlMeny: false }); fn(); };
+    const faner = [{ navn: 'Min side', klasse: hjem ? 'p' : '', velg: gaa(medlem ? 'hjem' : 'd-hjem') }]
+      .concat(alle.filter(f => f.paa).map(f => ({ navn: f.navn || NAVN[f.id], klasse: side === f.id ? 'p' : '', velg: lukk(f.velg || gaa(f.id)) })));
+
+    // Medlemskapsflisen: «Brukt X av Y timer i <måned>» og «Betalt til
+    // <dato>». Timene er de samme som i stemplingskortet (api/stempling.php).
+    const st = this.state.stempling;
+    const t = st && st.timer;
+    const tall = (x) => String(x).replace('.', ',');
+    const osloNaa = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Oslo' }));
+    const maaned = osloNaa.toLocaleDateString('nb-NO', { month: 'long' });
+    const timerTekst = !t ? ''
+      : t.perMnd === null ? 'Brukt ' + tall(t.brukt) + ' timer i ' + maaned
+      : 'Brukt ' + tall(t.brukt) + ' av ' + tall(t.perMnd) + ' timer i ' + maaned;
+    // Betalt: perioden er betalt naar serveren ikke melder betaling som
+    // mangler (betalingMangler) og medlemskapet ikke er fryst. En periode er
+    // en kalendermaaned (Medlemskap::dekkerTil); Proev Lissom gjelder til
+    // datoen serveren sender (gjelderTil).
+    const a = this.state.minAvtale || null;
+    let betaltTil = '';
+    if (!this.state.betalingMangler && !this.state.fryst) {
+      if (a && a.engangs && a.gjelderTil) betaltTil = a.gjelderTil;
+      else {
+        const slutt = new Date(osloNaa.getFullYear(), osloNaa.getMonth() + 1, 0);
+        betaltTil = slutt.getDate() + '. ' + slutt.toLocaleDateString('nb-NO', { month: 'long' });
+      }
+    }
+    const plasser = (this.state.minePlasser || []).filter(p => !p.kursbevis && (this.state.avbestilt || []).indexOf(p.tittel) === -1);
+    const verksted = medlem && side === 'hjem';
+    const stempelVis = vis('stempel') && !!v.harTimer;
+    const dorVis = !!this.medlemsvisning() && !this.state.fryst && (!this.erPublisert() || !!this.dorkodeNaa());
+
+    return {
+      msNyPaa: true,
+      msHjemKlasse: 'msny msny-' + side + (medlem ? '' : ' msny-deltaker'),
+      msNyUnderside: !hjem,
+      msNyTittel: NAVN[side] || '',
+      msNyTilbake: gaa(medlem ? 'hjem' : 'd-hjem'),
+      msNyFliserVis: hjem && fliser.length > 0,
+      msNyFliser: fliser,
+      // Alle kortene tegnes; CSS velger undersiden.
+      msFaneHjem: true, msFaneMedlemskap: true, msFaneButikk: true, msFaneNyttig: true, msFaneChat: true,
+      msFaneSelg: this.kanSelge(),
+      msKursbevisVis: true,
+      msVerkstedVis: medlem,
+      msVervVis: medlem && !!this.state.verving,
+      msKmpVis: !medlem && this.bryterPaa('salgsuke'),
+      msNesteVis: !medlem && plasser.length > 0,
+      msNesteVelg: gaa('d-kurs'),
+      // Doerkoden staar bare i Verkstedet naa, ikke i menylinja.
+      msVisDorkode: false,
+      msTlFaner: faner,
+      // Verkstedet naa
+      msNyVerkstedVis: verksted && (stempelVis || (vis('stempel') && !!v.erTom) || dorVis || vis('ovn') || vis('inne') || !!v.msGlemtVis),
+      msNyStempelVis: stempelVis,
+      msNyStempelTom: vis('stempel') && !!v.erTom,
+      msNyStempelKlasse: 'msny-pille' + (this.erInne() ? '' : ' fylt'),
+      msNyStempelTekstVis: vis('stempel') && (!!v.harTimer || !!v.erTom) && !!v.stemplingTekst,
+      msNyDorVis: dorVis,
+      msNyRessursVis: stempelVis && !!v.msHarRessurser,
+      msNyGlemtVis: !!v.msGlemtVis,
+      msNyOvnVis: vis('ovn'),
+      msNyInneVis: vis('inne'),
+      msNyHarInne: (v.inne || []).length > 0,
+      msNyFrysStarterVis: medlem && hjem && !!v.frysStarterVis,
+      // Medlemskapet
+      msNyMedlVis: verksted && !!v.msHarEgenPlan && (vis('abonnement') || vis('stempel')),
+      msNyTilMedlemskap: gaa('medlemskap'),
+      msNyTimerVis: !!timerTekst && vis('stempel'),
+      msNyTimerTekst: timerTekst,
+      msNyBarVis: !!t && t.perMnd !== null && vis('stempel'),
+      msNyBarStil: { width: Math.max(0, Math.min(100, Number(t && t.andel) || 0)) + '%' },
+      msNyBetaltVis: !!betaltTil && vis('abonnement'),
+      msNyBetaltTekst: betaltTil ? 'Betalt til ' + betaltTil : '',
+      msNyTimerDetalj: medlem && side === 'medlemskap' && !!v.msHarEgenPlan && vis('stempel'),
+    };
+  }
+
   msNyVals() {
     const side = this.state.side || '';
     const fane = this.msFane ? this.msFane() : 'hjem';
@@ -45025,6 +45407,7 @@ class Component extends DCLogic {
       tilbakeGaa: () => {
         if (dybde > 0) { history.back(); return; }
         if (admin) { this.gaaAdmin('adminoversikt', {}); return; }
+        if (side === 'minside' && this.msNyPaa() && this.msNySide() !== 'hjem' && this.msNySide() !== 'd-hjem') { this.msNyGaa('hjem')(); return; }
         if (side === 'minside' && (this.state.msFane || 'hjem') !== 'hjem') { this.setState({ msFane: 'hjem' }); window.scrollTo(0, 0); return; }
         this.setState({ side: 'forside', fhRolle: '', fhFra: '' });
         window.scrollTo(0, 0);
@@ -68669,6 +69052,10 @@ class Component extends DCLogic {
         detalj: [v.detalj, v.pris].filter(Boolean).join(' · '),
         knappetekst: v.utsolgt ? 'Tomt' : 'Legg til',
         kjopNaa: v.utsolgt ? () => {} : () => this.leggTil(v.id ? '#' + v.id : v.tittel),
+        // Varebildet (products.bilde), eieren 4. oktober 2026. Uten bilde
+        // staar en rolig flate i ruta (.ms-vare-bilde).
+        harBilde: !!(v.bilde && String(v.bilde).trim()),
+        bilde: v.bilde ? String(v.bilde).trim() : '',
       })),
       // Tom seksjon er verre enn ingen: et medlem som ser «Internbutikk» over
       // et tomt felt tror noe er i stykker.
@@ -69218,7 +69605,9 @@ class Component extends DCLogic {
       // 2026: «det må ligge under nyttig info».
       ...(() => {
         const iNyttig = side === 'nyttig' || (side === 'minside' && this.msFane() === 'nyttig');
-        if (!iNyttig) return { mdHarNoe: false, mdHarKort: false, mdFaq: false };
+        // Ny Min side: Nyttig info staar under flisen Hjelp.
+        const iHjelp = side === 'minside' && this.msNyPaa() && this.msNySide() === 'hjelp';
+        if (!iNyttig && !iHjelp) return { mdHarNoe: false, mdHarKort: false, mdFaq: false };
         this.minDokHent();
         const d = this.state.minDok || {};
         // Kort i kortet: malene ligger som underkort under «Keramikk maler»,
@@ -76586,6 +76975,10 @@ class Component extends DCLogic {
       })(),
       produkter: this.forsideProdukter(),
     };
+
+    // Ny Min side (eieren, 4. oktober 2026): flisene og undersidene regnes
+    // av de ferdige verdiene over, og overstyrer fanene naar bryteren er paa.
+    if (side === 'minside') Object.assign(vals, this.msNyEtter(vals));
 
     return this.utenNedtrekk(vals);
   }

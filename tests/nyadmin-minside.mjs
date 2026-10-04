@@ -23,7 +23,7 @@ try{
   }
   // 3) Min side: bryter per modul.
   await p.goto(`${ADR}/admin-ny.html#minside`);await p.getByRole('heading',{name:'Min side',exact:true}).waitFor();
-  assert.equal(await p.locator('article.list-item').count(),23,'alle modulene står i lista');
+  assert.equal(await p.locator('article.list-item').count(),24,'alle modulene står i lista');
   const rad=p.locator('article.list-item').filter({hasText:'Stemple inn og timene dine'});
   if(await rad.getByRole('button',{name:'Slå på',exact:true}).count()){await rad.getByRole('button',{name:'Slå på',exact:true}).click();await p.getByRole('dialog').getByRole('button',{name:'Slå på',exact:true}).click();await p.waitForTimeout(800);}
   await rad.getByRole('button',{name:'Slå av',exact:true}).click();await p.getByRole('dialog').getByRole('button',{name:'Slå av',exact:true}).click();

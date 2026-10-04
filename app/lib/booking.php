@@ -67,6 +67,80 @@ final class Booking
     private static ?array $tak = null;
 
     /**
+     * Et tall som betyr «ingen grense».
+     *
+     * Plassene er alltid et tall: katalogen, pilla og sperren mot aa booke
+     * leser det samme. Et kurs uten grense maatte derfor ha et tall ogsaa,
+     * og da er det bedre at det staar her med navn enn som 9999 spredt
+     * utover. ledigTekst() i nettsida gjor alt over seks om til «Ledige
+     * plasser», saa kunden ser aldri selve tallet.
+     */
+    public const UTEN_GRENSE = 9999;
+
+    /**
+     * Har kurset ingen plassgrense?
+     *
+     * Eieren, 4. oktober 2026, om Paint on Pots: «ikke ta hensyn til
+     * plasser». Kolonna kom med migrasjon 257.
+     */
+    public static function utenPlassgrense(int $kursId): bool
+    {
+        if ($kursId <= 0 || !DB::harKolonne('courses', 'uten_plassgrense')) {
+            return false;
+        }
+        return (int) DB::verdi(
+            'SELECT COALESCE(uten_plassgrense, 0) FROM courses WHERE id = :i',
+            ['i' => $kursId]
+        ) === 1;
+    }
+
+    /**
+     * Taket paa en kveld verkstedet har aapnet for drop-in ved siden av et kurs.
+     *
+     * Eieren, 4. oktober 2026: en knapp paa kurskortet i kalenderen som
+     * aapner det aapne kurset i noeyaktig det tidsrommet kurset gaar, med et
+     * tall han setter selv. Ligger tidsrommet utenfor en slik kveld, er det
+     * ingen grense i det hele tatt.
+     *
+     * Plassene paa pilla er det aapne kursets egne. Kurset som gaar
+     * samtidig mister ingenting paa at noen kommer og maler.
+     */
+    private static function apenPlassTak(int $kursId, string $startUtc, string $sluttUtc): int
+    {
+        if (!DB::harKolonne('course_sessions', 'apen_plass_antall')) {
+            return self::UTEN_GRENSE;
+        }
+        $slutt2 = 'COALESCE(cs2.slutt_tid, cs2.start_tid + INTERVAL 3 HOUR)';
+        $rad = DB::en(
+            "SELECT cs2.id, cs2.apen_plass_antall, cs2.start_tid, {$slutt2} AS slutt_tid
+               FROM course_sessions cs2
+              WHERE cs2.apen_plass_antall IS NOT NULL
+                AND cs2.status = 'planlagt'
+                AND cs2.start_tid < :til AND {$slutt2} > :fra
+              ORDER BY cs2.start_tid
+              LIMIT 1",
+            ['fra' => $startUtc, 'til' => $sluttUtc]
+        );
+        if ($rad === null) {
+            return self::UTEN_GRENSE;
+        }
+
+        // Hva det aapne kurset alt har tatt av den kvelden. Samme definisjon
+        // av «aktiv booking» som ellers.
+        $aktiv = self::aktivSql('b');
+        $brukt = (int) DB::verdi(
+            "SELECT COALESCE(SUM(b.antall), 0)
+               FROM bookings b
+               JOIN course_sessions cs ON cs.id = b.course_session_id
+              WHERE cs.course_id = :k
+                AND cs.start_tid < :til AND COALESCE(cs.slutt_tid, cs.start_tid + INTERVAL 3 HOUR) > :fra
+                AND {$aktiv}",
+            ['k' => $kursId, 'fra' => (string) $rad['start_tid'], 'til' => (string) $rad['slutt_tid']]
+        );
+        return max(0, (int) $rad['apen_plass_antall'] - $brukt);
+    }
+
+    /**
      * Ressursen innstemplede medlemmer teller mot.
      *
      * Et medlem som stempler inn sier ikke hva det skal gjore. Eieren ville
@@ -270,6 +344,20 @@ final class Booking
         // deltakere teller (eieren, 4. oktober 2026), er de to like, og
         // skillet hadde ingenting igjen aa gjore.
 
+        // ── Kurs uten plassgrense ───────────────────────────────────────
+        //
+        // Eieren, 4. oktober 2026, om Paint on Pots: «drop in eller bestill
+        // time, ikke ta hensyn til plasser». Da er det ingen kapasitet aa
+        // regne mot, og kurset kan verken bli fullt eller sperre noe annet.
+        //
+        // Med ett unntak: de kveldene verkstedet har trykket «Aapne for
+        // Paint on Pots» paa en planlagt oekt, gjelder tallet paa den pilla.
+        // Da er det et kurs i huset samtidig, og eieren satte selv hvor
+        // mange som faar komme i tillegg.
+        if (self::utenPlassgrense($kursId)) {
+            return self::apenPlassTak($kursId, $startUtc, $sluttUtc);
+        }
+
         $aktiv2 = self::aktivSql('b2');
         $slutt2 = 'COALESCE(cs2.slutt_tid, cs2.start_tid + INTERVAL 3 HOUR)';
 
@@ -457,9 +545,15 @@ final class Booking
         $inneNa = self::inneNaa();
         $naa = new DateTimeImmutable('now', new DateTimeZone('UTC'));
 
+        // Kolonna kom med migrasjon 257. Spoerres det foer den er kjoert,
+        // svarer alle kurs som foer — samme vakt som ressurstabellen har.
+        $grenseKol = DB::harKolonne('courses', 'uten_plassgrense')
+            ? 'COALESCE(c.uten_plassgrense, 0)' : '0';
+
         $ut = [];
         foreach (DB::alle(
             "SELECT cs.id, cs.start_tid, {$slutt} AS slutt_reell, c.ressurs_id,
+                    {$grenseKol} AS uten_grense,
                     GREATEST(0,
                         COALESCE(cs.kapasitet, c.kapasitet)
                         - COALESCE(cs.manuelt_opptatt, 0)
@@ -521,6 +615,15 @@ final class Booking
                JOIN courses c ON c.id = cs.course_id
               WHERE cs.status = 'planlagt' AND cs.id IN ({$inn})"
         ) as $r) {
+            // Kurs uten plassgrense staar utenfor hele regnestykket. Eieren,
+            // 4. oktober 2026: «ikke ta hensyn til plasser». De kan verken
+            // bli fulle eller sperre noe annet — grensa de kveldene det gaar
+            // et kurs samtidig staar paa pilla, og leses av ledigeIVindu().
+            if ((int) ($r['uten_grense'] ?? 0) === 1) {
+                $ut[(int) $r['id']] = self::UTEN_GRENSE;
+                self::$sperret[(int) $r['id']] = false;
+                continue;
+            }
             // Uten ressurs — eller med en som er satt inaktiv — gjelder bare
             // kursets eget plasstall, slik det gjorde for 30. august.
             $ressurs = $r['ressurs_id'] === null ? 0 : (int) $r['ressurs_id'];
@@ -903,7 +1006,11 @@ final class Booking
         bool $utenForskudd = false,
         // Aktivt medlem (se faarMedlemsrabatt()). Avgjores av den som kaller,
         // fra sesjonen — aldri av noe nettleseren sender.
-        bool $medlemsrabatt = false
+        bool $medlemsrabatt = false,
+        // «Noe vi boer vite?» paa bestillinga. Eieren, 4. oktober 2026: «de
+        // kan jo skrive antall personer og litt tekst». Antallet staar fra
+        // foer i $antall; dette er teksten.
+        ?string $gjestMelding = null
     ): array {
         // Prisen paa datoen gaar foran kursets, naar den er satt. COALESCE
         // og ikke to sporringer: da er det ett sted prisen kommer fra, og
@@ -1071,6 +1178,14 @@ final class Booking
             // plassen. Skjemaet sier fra om det samme.
             if ($allergier !== null && $allergier !== '' && DB::harKolonne('bookings', 'allergier')) {
                 $felter['allergier'] = $allergier;
+            }
+
+            // Samme vakt som allergier: kolonna kom med migrasjon 257, og en
+            // booking skal gaa gjennom ogsaa for den er kjoert. Da mister vi
+            // meldinga, ikke plassen.
+            if ($gjestMelding !== null && trim($gjestMelding) !== ''
+                && DB::harKolonne('bookings', 'gjest_melding')) {
+                $felter['gjest_melding'] = mb_substr(trim($gjestMelding), 0, 255);
             }
 
             $bookingId = DB::settInn('bookings', $felter);

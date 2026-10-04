@@ -145,7 +145,9 @@ try {
         // betaling i forkant.
         Foresporsel::tekst('betaling') === 'oppmote',
         // Medlemsrabatt: fra sesjonen, bare for aktive medlemmer.
-        Booking::faarMedlemsrabatt($medlem)
+        Booking::faarMedlemsrabatt($medlem),
+        // «Noe vi boer vite?» — valgfritt, og bare paa kurs uten plassgrense.
+        Foresporsel::tekst('melding')
     );
 } catch (RuntimeException $e) {
     // Meldingene herfra er skrevet for aa vises til kunden.

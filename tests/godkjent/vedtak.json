@@ -5424,6 +5424,34 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "kurskort-like-hoye",
+            "dato": "2026-10-04",
+            "hva": "Broedteksten paa kurskortet staar paa tre linjer uansett lengde, saa kortene ved siden av hverandre blir like hoeye.",
+            "hvor": "Kurskortene, forsida og kurslista",
+            "kode": [
+                {
+                    "fil": "app/nett/deler.php",
+                    "finnes": [
+                        "line-height: 1.4; height: 4.2em; color: var(--text-muted)"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "forsida-finn-ditt-kurs",
+            "dato": "2026-10-04",
+            "hva": "Kickeren over de fire kortene paa forsida heter «Finn ditt kurs».",
+            "hvor": "Forsida",
+            "kode": [
+                {
+                    "fil": "innhold-standard.json",
+                    "finnes": [
+                        "\"Forside/1/Kicker\": \"Finn ditt kurs\""
+                    ]
+                }
+            ]
         }
     ]
 }

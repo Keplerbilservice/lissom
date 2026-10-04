@@ -1830,7 +1830,7 @@
                     "finnes": [
                         "$sperre = handleliste_fraktsperre();",
                         "$sperre = handleliste_fraktsperre($leverandorId);",
-                        "$m['gebyrOre'] = (int) round($m['varerOre'] * $gebyr / 100);"
+                        "$m['gebyrOre'] = $m['intern'] ? 0 : (int) round($m['varerOre'] * $gebyr / 100);"
                     ]
                 },
                 {

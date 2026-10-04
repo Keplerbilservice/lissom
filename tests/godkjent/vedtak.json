@@ -1878,7 +1878,7 @@
         {
             "id": "omsetning-uten-mva",
             "dato": "2026-09-30",
-            "hva": "Omsetning vises uten mva, med mva på egen linje. Omsetningen (det store tallet og totalen, i dag og denne måneden) er summen UTEN mva for alle kontoene. Hver konto viser beløpet uten mva; kontoene med mva får «Mva 25 %» (satsen fra mva-koden i regnskapsoppsettet) på egen linje, som informasjon. Det innbetalte med mva står som en liten linje «Innbetalt inkl. mva», ikke som omsetning. Regnes i øre fra én kilde (Omsetning::mvaFor / sumUtenMva); brutto = eks + mva. Dagsoppgjøret (bilaget) er uendret og balanserer mot innbetalingene. De gamle API-feltene (idagOre, manedOre, omsetning) er fortsatt med mva; de nye ligger ved siden av.",
+            "hva": "Omsetning vises uten mva, med mva på egen linje. Omsetningen (det store tallet og totalen, i dag og denne måneden) er summen UTEN mva for alle kontoene. Hver konto viser beløpet uten mva; kontoene med mva får «Mva 25 %» (satsen fra mva-koden i regnskapsoppsettet) på egen linje, som informasjon. Det innbetalte med mva står som en liten linje «Innbetalt inkl. mva», ikke som omsetning. Regnes i øre fra én kilde (Omsetning::mvaFor / sumUtenMva); brutto = eks + mva. Dagsoppgjøret (bilaget) er uendret og balanserer mot innbetalingene. De gamle API-feltene (idagOre, manedOre, omsetning) er fortsatt med mva; de nye ligger ved siden av. ENDRET 2026-10-04 (eieren): admin2 (/admin2, nyadmin/) er slettet; sjekkene som gjaldt den er tatt ut. /admin2 sendes fortsatt til /admin-ny.",
             "hvor": "Admin › Oversikt (Omsetning, I dag og Denne måneden), Admin › Økonomi, nytt admin (/admin2) › I dag og Penger",
             "kode": [
                 {
@@ -1916,58 +1916,15 @@
                     "ikkeFinnes": [
                         "Sum inkl. mva"
                     ]
-                },
-                {
-                    "fil": "nyadmin/omsetning.js",
-                    "finnes": [
-                        "tekst: 'Omsetning (uten mva)'",
-                        "'Mva ' + l.mvaSats + ' %'",
-                        "'Innbetalt inkl. mva '"
-                    ]
                 }
             ]
         },
         {
             "id": "admin2-ved-siden-av",
             "dato": "2026-09-30",
-            "hva": "Det nye admin bygges på /admin2 VED SIDEN AV det gamle, og byttes når alt er klart. Egen side (admin2.html) og egne moduler under /nyadmin (I dag · Kurs · Folk · Penger · Mer), hver med egen fil og bryter (Vis/admin2_<modul>). «I dag» henter tallene fra de samme API-ene som Oversikt, med uendret svarformat. «Er du sikker?» før viktige trykk, Angre før ovnen settes, hurtigvalg eieren velger selv («Tilpass», lagret per admin), og én «+»-knapp. Det gamle admin er urørt, bortsett fra pilla «Prøv nytt admin» i toppstripa, som bare vises når bryteren «Nytt admin (prøve)» under Synlighet er på (av fra start). ENDRET 2026-10-04 (eieren): /admin2 sendes nå til /admin-ny, se admin2-til-admin-ny.",
+            "hva": "Det nye admin bygges på /admin2 VED SIDEN AV det gamle, og byttes når alt er klart. Egen side (admin2.html) og egne moduler under /nyadmin (I dag · Kurs · Folk · Penger · Mer), hver med egen fil og bryter (Vis/admin2_<modul>). «I dag» henter tallene fra de samme API-ene som Oversikt, med uendret svarformat. «Er du sikker?» før viktige trykk, Angre før ovnen settes, hurtigvalg eieren velger selv («Tilpass», lagret per admin), og én «+»-knapp. Det gamle admin er urørt, bortsett fra pilla «Prøv nytt admin» i toppstripa, som bare vises når bryteren «Nytt admin (prøve)» under Synlighet er på (av fra start). ENDRET 2026-10-04 (eieren): /admin2 sendes nå til /admin-ny, se admin2-til-admin-ny. ENDRET 2026-10-04 (eieren): admin2 (/admin2, nyadmin/) er slettet; sjekkene som gjaldt den er tatt ut. /admin2 sendes fortsatt til /admin-ny.",
             "hvor": "/admin2, og pilla i toppstripa i det gamle admin",
             "kode": [
-                {
-                    "fil": "admin2.html",
-                    "finnes": [
-                        "<script type=\"module\" src=\"/nyadmin/app.js\"></script>"
-                    ]
-                },
-                {
-                    "fil": "nyadmin/app.js",
-                    "finnes": [
-                        "const MODULER = [idag, kurs, folk, penger, mer];",
-                        "oppsett.moduler[m.id] !== false"
-                    ]
-                },
-                {
-                    "fil": "nyadmin/kjerne.js",
-                    "finnes": [
-                        "el('h2', { tekst: 'Er du sikker?' })",
-                        "export function medAngre("
-                    ]
-                },
-                {
-                    "fil": "nyadmin/idag.js",
-                    "finnes": [
-                        "hent('/api/admin/oversikt.php')",
-                        "medAngre(navn,",
-                        "'✎ Tilpass'"
-                    ]
-                },
-                {
-                    "fil": "api/admin/admin2.php",
-                    "finnes": [
-                        "$admin = krev_admin();",
-                        "'admin2_hurtigvalg_' . $id"
-                    ]
-                },
                 {
                     "fil": ".htaccess",
                     "finnes": [
@@ -2078,30 +2035,14 @@
             "id": "admin2-i-dag-oppsett",
             "dato": "2026-09-30",
             "sitat": "kortenes plassering må optimaliseres, nå bygges det nedover og ikke fordeles ut på siden for et visuelt godt inntrykk",
-            "hva": "«I dag» i /admin2 fordeler kortene utover siden i et rutenett (grid-template-areas), ikke to lange søyler. PC: summen til venstre over hele høyden, Kurs i dag og I verkstedet nå øverst, Må gjøres (to kolonner) og Ovnen under, maksbredde 1600 px for hele /admin2, og radlistene i Kurs, Folk og Penger i flere kolonner på store skjermer. Nettbrett: to balanserte kolonner. Mobil: sum, kurs, Må gjøres, ovn, inne. «Betalt i dag» viser maks fem betalinger, resten under «Vis alle (N)».",
+            "hva": "«I dag» i /admin2 fordeler kortene utover siden i et rutenett (grid-template-areas), ikke to lange søyler. PC: summen til venstre over hele høyden, Kurs i dag og I verkstedet nå øverst, Må gjøres (to kolonner) og Ovnen under, maksbredde 1600 px for hele /admin2, og radlistene i Kurs, Folk og Penger i flere kolonner på store skjermer. Nettbrett: to balanserte kolonner. Mobil: sum, kurs, Må gjøres, ovn, inne. «Betalt i dag» viser maks fem betalinger, resten under «Vis alle (N)». ENDRET 2026-10-04 (eieren): admin2 (/admin2, nyadmin/) er slettet; sjekkene som gjaldt den er tatt ut. /admin2 sendes fortsatt til /admin-ny.",
             "hvor": "/admin2 «I dag»",
-            "kode": [
-                {
-                    "fil": "admin2.html",
-                    "finnes": [
-                        "grid-template-areas:\"betalt kurs inne\" \"betalt maa maa\" \"betalt ovn ovn\"",
-                        "main{max-width:1600px;",
-                        ".rader{display:grid;gap:6px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}"
-                    ]
-                },
-                {
-                    "fil": "nyadmin/idag.js",
-                    "finnes": [
-                        "best.slice(0, 5).map(linje)",
-                        "\"Vis alle (\" + best.length + \")\""
-                    ]
-                }
-            ]
+            "kode": []
         },
         {
             "id": "admin2-alle-knapper",
             "dato": "2026-09-30",
-            "hva": "Alle knapper i admin2 går til riktig funksjon. Knappene som ikke er flyttet ennå, lenker til det gamle admin med dyplenker som åpner selve funksjonen: ?apne=kursstart (Kursstart for dagens økt), ?apne=nydato (Ny kursdato), ?apne=dagsoppgjor (dagsoppgjøret for i dag), ?apne=lav (Medlemmer filtrert på lav aktivitet), ?apne=bestillmer (internbutikken), ?apne=innboks (Innboks-fanen) og ?maaned=AAAA-MM (måneden i kalenderen). Nettlesertesten «Nytt admin: alle knapper går til riktig funksjon» trykker på hver lenke og knapp på PC og 390 px og sjekker hvor den havner.",
+            "hva": "Alle knapper i admin2 går til riktig funksjon. Knappene som ikke er flyttet ennå, lenker til det gamle admin med dyplenker som åpner selve funksjonen: ?apne=kursstart (Kursstart for dagens økt), ?apne=nydato (Ny kursdato), ?apne=dagsoppgjor (dagsoppgjøret for i dag), ?apne=lav (Medlemmer filtrert på lav aktivitet), ?apne=bestillmer (internbutikken), ?apne=innboks (Innboks-fanen) og ?maaned=AAAA-MM (måneden i kalenderen). Nettlesertesten «Nytt admin: alle knapper går til riktig funksjon» trykker på hver lenke og knapp på PC og 390 px og sjekker hvor den havner. ENDRET 2026-10-04 (eieren): admin2 (/admin2, nyadmin/) er slettet; sjekkene som gjaldt den er tatt ut. /admin2 sendes fortsatt til /admin-ny.",
             "sitat": "dette vil jeg ikke bruke tid på",
             "hvor": "/admin2 og dyplenkene i det gamle admin",
             "kode": [
@@ -2112,29 +2053,13 @@
                         "kursstart:   () => this.kursstartVals().ksAapne(0),",
                         "maaned:      () => this.gaaAdmin('adminkalender', { klAnker: maaned + '-01', klVisning: 'maned' }),"
                     ]
-                },
-                {
-                    "fil": "nyadmin/idag.js",
-                    "finnes": [
-                        "maal: '/admin/oversikt?apne=kursstart'",
-                        "'/admin/kalender?apne=nydato'",
-                        "'/admin/oversikt?apne=dagsoppgjor'",
-                        "'/admin/medlemmer/alle?apne=lav'",
-                        "'/admin/butikk?apne=bestillmer'"
-                    ]
-                },
-                {
-                    "fil": "tests/nettleser/flyter.mjs",
-                    "finnes": [
-                        "await flyt('Nytt admin: alle knapper går til riktig funksjon'"
-                    ]
                 }
             ]
         },
         {
             "id": "arskalender-maaned-klikkbar",
             "dato": "2026-09-30",
-            "hva": "Årskalender: hver av de tolv månedene kan trykkes (månedsnavnet) og åpner måneden i kalenderen (Måned-visning). /admin/kalender?maaned=AAAA-MM gjør det samme. I /admin2 åpner «Årskalender (hele året)» under Kurs og hurtigvalget «Årskalender» hele året.",
+            "hva": "Årskalender: hver av de tolv månedene kan trykkes (månedsnavnet) og åpner måneden i kalenderen (Måned-visning). /admin/kalender?maaned=AAAA-MM gjør det samme. I /admin2 åpner «Årskalender (hele året)» under Kurs og hurtigvalget «Årskalender» hele året. ENDRET 2026-10-04 (eieren): admin2 (/admin2, nyadmin/) er slettet; sjekkene som gjaldt den er tatt ut. /admin2 sendes fortsatt til /admin-ny.",
             "sitat": "kan man klikke og åpne hele året?",
             "hvor": "Årskalender i admin, /admin2 Kurs og hurtigvalg",
             "kode": [
@@ -2143,12 +2068,6 @@
                     "finnes": [
                         "data-aar-mnd=\"{{ m.mndIso }}\"",
                         "aapneKalender: () => this.gaaAdmin('adminkalender'"
-                    ]
-                },
-                {
-                    "fil": "nyadmin/kurs.js",
-                    "finnes": [
-                        "rad('Årskalender (hele året)', null, '/admin/arskalender')"
                     ]
                 }
             ]
@@ -2204,18 +2123,9 @@
             "id": "nytt-admin-holder-seg",
             "dato": "2026-09-30",
             "sitat": "når jeg bruker prøv ny admin, så bør den holde seg der også når jeg klikker inn på funksjonene helt til jeg trykker lukk ny admin eller gå til gammel admin",
-            "hva": "Nytt admin holder seg til du lukker det. Funksjoner som ikke er flyttet ennå, åpnes i en ramme inni /admin2 (adresse /admin2#vis/admin/…), med den nye menyen rundt; det gamle admin skjuler da sin egen toppstripe, meny og kalenderflik. Tilbake og oppdatering blir stående. Bare «Lukk nytt admin» og «Gammelt admin» går til /admin. Skriptene i /nyadmin og skisser.js mellomlagres med «no-cache», så en ny utgave vises med en gang. På telefon står «Prøv nytt admin» også som flis i menyskuffen i det gamle admin, bak den samme bryteren (Vis/admin2).",
+            "hva": "Nytt admin holder seg til du lukker det. Funksjoner som ikke er flyttet ennå, åpnes i en ramme inni /admin2 (adresse /admin2#vis/admin/…), med den nye menyen rundt; det gamle admin skjuler da sin egen toppstripe, meny og kalenderflik. Tilbake og oppdatering blir stående. Bare «Lukk nytt admin» og «Gammelt admin» går til /admin. Skriptene i /nyadmin og skisser.js mellomlagres med «no-cache», så en ny utgave vises med en gang. På telefon står «Prøv nytt admin» også som flis i menyskuffen i det gamle admin, bak den samme bryteren (Vis/admin2). ENDRET 2026-10-04 (eieren): admin2 (/admin2, nyadmin/) er slettet; sjekkene som gjaldt den er tatt ut. /admin2 sendes fortsatt til /admin-ny.",
             "hvor": "/admin2 og det gamle admin i ramme (lx-innebygd)",
             "kode": [
-                {
-                    "fil": "nyadmin/app.js",
-                    "finnes": [
-                        "const RAMME = '#vis';",
-                        "'Lukk nytt admin'",
-                        "function visRamme() {",
-                        "if (!tilRamme(href)) return;"
-                    ]
-                },
                 {
                     "fil": "lissom-2108.html",
                     "finnes": [
@@ -2225,21 +2135,9 @@
                     ]
                 },
                 {
-                    "fil": "nyadmin/.htaccess",
-                    "finnes": [
-                        "Header set Cache-Control \"no-cache, must-revalidate\""
-                    ]
-                },
-                {
                     "fil": ".htaccess",
                     "finnes": [
                         "<FilesMatch \"^skisser\\.js$\">"
-                    ]
-                },
-                {
-                    "fil": "tests/nettleser/flyter.mjs",
-                    "finnes": [
-                        "await flyt('Nytt admin holder seg til du lukker det'"
                     ]
                 }
             ],
@@ -2661,21 +2559,9 @@
         {
             "id": "nyadmin-kalender-og-minside-20261001",
             "dato": "2026-10-01",
-            "hva": "Egen kalender i ny admin, alle adminfunksjoner tilgjengelige, og tilgjengelige Min side-moduler synlige med personlige Vis/skjul-brytere. Utstempling holdes tilgjengelig uten gjenværende timer.",
+            "hva": "Egen kalender i ny admin, alle adminfunksjoner tilgjengelige, og tilgjengelige Min side-moduler synlige med personlige Vis/skjul-brytere. Utstempling holdes tilgjengelig uten gjenværende timer. ENDRET 2026-10-04 (eieren): admin2 (/admin2, nyadmin/) er slettet; sjekkene som gjaldt den er tatt ut. /admin2 sendes fortsatt til /admin-ny.",
             "hvor": "Ny admin og Min side",
             "kode": [
-                {
-                    "fil": "nyadmin/kurs.js",
-                    "finnes": [
-                        "await tegnKalender(main);"
-                    ]
-                },
-                {
-                    "fil": "nyadmin/mer.js",
-                    "finnes": [
-                        "['Alle funksjoner', STEDER.filter"
-                    ]
-                },
                 {
                     "fil": "lissom-2108.html",
                     "finnes": [
@@ -2724,24 +2610,9 @@
         {
             "id": "uavhengig-adminsjekk-20261001",
             "dato": "2026-10-01",
-            "hva": "Ny uavhengig kontroll av alle admininnganger mot registrerte ruter, egne moduler og dyplenker på PC og mobil.",
+            "hva": "Ny uavhengig kontroll av alle admininnganger mot registrerte ruter, egne moduler og dyplenker på PC og mobil. ENDRET 2026-10-04 (eieren): admin2 (/admin2, nyadmin/) er slettet; sjekkene som gjaldt den er tatt ut. /admin2 sendes fortsatt til /admin-ny.",
             "hvor": "Ny admin",
-            "kode": [
-                {
-                    "fil": "tests/nyadmin-uavhengig.mjs",
-                    "finnes": [
-                        "const mangler=ruter.filter",
-                        "rad.apiFeil=[...apiFeil]"
-                    ]
-                },
-                {
-                    "fil": "tests/nyadmin-dyplenker.mjs",
-                    "finnes": [
-                        "Avbryt stempling gjør ingen endring",
-                        "Logg inn først"
-                    ]
-                }
-            ],
+            "kode": [],
             "kontroll": "51 innganger åpnet på 390 og 1280 px, 102 kontroller totalt. Ingen manglende registrerte ruter, skriptfeil, API-feil eller vannrett overløp. Fem egne moduler, syv dyplenker, innloggingskrav og avbryt kontrollert separat. Navigasjonskontroll er ikke full ende-til-ende-kontroll av alle skrivehandlinger."
         },
         {
@@ -4974,6 +4845,29 @@
                     "fil": "lissom-2108.html",
                     "finnes": [
                         "hva: [r.hva, r.kursNaar, r.ledige != null ? r.ledige + ' ledige' : ''].filter(Boolean).join(' · '),"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "admin2-slettet",
+            "dato": "2026-10-04",
+            "hva": "Bare to admin gjelder: Admin (/admin) og Prøv nytt admin (/admin-ny). Admin2 (admin2.html, nyadmin/, api/admin/admin2.php) er slettet. /admin2 sendes fortsatt til /admin-ny, og stedslista som /admin-ny bruker er flyttet til admin-ny/steder.js. Eieren 04.10: «det er kun admin og prøv nytt admin som gjelder, den andre kan du slette».",
+            "hvor": "/admin2, nyadmin/, admin-ny",
+            "kode": [
+                {
+                    "fil": "admin-ny/app.js",
+                    "finnes": [
+                        "import {STEDER} from './steder.js';"
+                    ],
+                    "ikkeFinnes": [
+                        "../nyadmin/"
+                    ]
+                },
+                {
+                    "fil": ".htaccess",
+                    "finnes": [
+                        "RewriteRule ^admin2(\\.html)?/?$ /admin-ny [R=302,L]"
                     ]
                 }
             ]

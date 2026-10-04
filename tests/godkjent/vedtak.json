@@ -5119,7 +5119,7 @@
         {
             "id": "minside-ny-fliser",
             "dato": "2026-10-04",
-            "hva": "Ny Min side etter skissen TBPaVdMts5oSTmJgPsozNz («ja, perfekt»): bak bryteren «Ny Min side (fliser)» (Vis/minsideny, av som standard; av = Min side som før). På: Hilsen, kortet «Verkstedet nå» (stempling, dørkode, ovnen, hvem er inne, glemt å stemple ut), medlemskapsflisen («Brukt X av Y timer i <måned>», gul stolpe, «Betalt til <dato>»), varsler når de gjelder, kampanjebanner, og seks fliser (Kurs, Butikk, Medlemskapet, Chat, Fellesskap, Hjelp) som åpner hver sin underside med «← Min side» og de eksisterende kortene. Kursdeltaker: Neste kurs og flisene Kursene mine, Kursbevis, Finn nytt kurs, Bli medlem. Modulbryterne virker fortsatt. Internbutikken viser varebildet (products.bilde) i to spalter, både i gammel og ny Min side; uten bilde en rolig flate.",
+            "hva": "Ny Min side etter skissen TBPaVdMts5oSTmJgPsozNz («ja, perfekt»): bak bryteren «Ny Min side (fliser)» (Vis/minsideny, av som standard; av = Min side som før). På: Hilsen, kortet «Verkstedet nå» (stempling, dørkode, ovnen, hvem er inne, glemt å stemple ut), medlemskapsflisen («Brukt X av Y timer i <måned>», gul stolpe, «Betalt til <dato>» bare når serveren sender min.betaltTil fra den faktisk betalte perioden; ellers ingen linje), varsler når de gjelder, kampanjebanner, og seks fliser (Kurs, Butikk, Medlemskapet, Chat, Fellesskap, Hjelp) som åpner hver sin underside med «← Min side» og de eksisterende kortene. Kursdeltaker: Neste kurs og flisene Kursene mine, Kursbevis, Finn nytt kurs, Bli medlem. Modulbryterne virker fortsatt. Internbutikken viser varebildet (products.bilde) i to spalter, både i gammel og ny Min side; uten bilde en rolig flate.",
             "hvor": "lissom-2108.html (malen, msNyEtter, CSS .msny/.ms-vare), admin-ny/innhold-og-kurs.js (bryteren), tests/minside-ny.mjs",
             "kode": [
                 {
@@ -5137,13 +5137,21 @@
                         "under: 'Nyttig info, spør krukkemesteren'",
                         "'Betalt til ' + betaltTil",
                         "<div class=\"ms-varer\">",
-                        "<img data-src=\"{{ v.bilde }}\""
+                        "<img data-src=\"{{ v.bilde }}\"",
+                        "const betaltTil = (a && a.betaltTil) || '';"
                     ]
                 },
                 {
                     "fil": "admin-ny/innhold-og-kurs.js",
                     "finnes": [
                         "['Ny Min side (fliser)','Vis/minsideny',false]"
+                    ]
+                },
+                {
+                    "fil": "api/medlemskap.php",
+                    "finnes": [
+                        "'betaltTil'  => (static function () use ($medlem, $a, $engangs): ?string {",
+                        "if ($b['tilstand'] !== 'betalt') return null;"
                     ]
                 }
             ]

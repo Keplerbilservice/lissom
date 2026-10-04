@@ -139,6 +139,27 @@ if (Foresporsel::metode() === 'GET') {
                     $plan = Medlemskap::planUansett((string) $a['plan']);
                     return $plan === null ? 1 : max(0, (int) ($plan['oppsigelse_mnd'] ?? 1));
                 })(),
+                // Siste dag den betalte perioden dekker, til «Betalt til» paa
+                // ny Min side (eieren, 4. oktober 2026). Samme regel som admin
+                // (api/admin/medlemmer.php): bare naar betalingsstatus() sier
+                // betalt, fra den betalte perioden (dekkerTil minus én dag).
+                // Proev Lissom: sluttdatoen. Ellers null — ingen gjetning.
+                'betaltTil'  => (static function () use ($medlem, $a, $engangs): ?string {
+                    $id = (int) $medlem['id'];
+                    $siste = Medlemskap::sisteBetalinger([$id])[$id] ?? null;
+                    $trekk = Medlemskap::sisteTrekk([(int) $a['id']])[(int) $a['id']] ?? null;
+                    $b = Medlemskap::betalingsstatus($medlem, $a, $siste, $trekk);
+                    if ($b['tilstand'] !== 'betalt') return null;
+                    if ($engangs) {
+                        return !empty($medlem['slutt_dato'])
+                            ? Booking::norskDatoKort((string) $medlem['slutt_dato'] . ' 12:00:00') : null;
+                    }
+                    $kilde = $siste ?? $trekk;
+                    if ($kilde === null || !empty($medlem['betaler_ikke'])) return null;
+                    $til = (new DateTimeImmutable(Medlemskap::dekkerTil($kilde), new DateTimeZone('Europe/Oslo')))
+                        ->modify('-1 day')->format('Y-m-d');
+                    return Booking::norskDatoKort($til . ' 12:00:00');
+                })(),
             ];
         }
     }

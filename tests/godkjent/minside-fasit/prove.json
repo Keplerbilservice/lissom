@@ -36,6 +36,7 @@
       "min": {
         "avtalePlan": null,
         "avtalePris": "kr. 990,-",
+        "betaltTil": "<dato>",
         "binding": null,
         "bundetTil": null,
         "engangs": true,

@@ -33495,19 +33495,11 @@ class Component extends DCLogic {
     const timerTekst = !t ? ''
       : t.perMnd === null ? 'Brukt ' + tall(t.brukt) + ' timer i ' + maaned
       : 'Brukt ' + tall(t.brukt) + ' av ' + tall(t.perMnd) + ' timer i ' + maaned;
-    // Betalt: perioden er betalt naar serveren ikke melder betaling som
-    // mangler (betalingMangler) og medlemskapet ikke er fryst. En periode er
-    // en kalendermaaned (Medlemskap::dekkerTil); Proev Lissom gjelder til
-    // datoen serveren sender (gjelderTil).
+    // Betalt til: serveren regner den fra den faktisk betalte perioden
+    // (api/medlemskap.php → min.betaltTil). Uten den staar ingen linje —
+    // ubetalt-varselet dekker resten. Ingen gjetning her.
     const a = this.state.minAvtale || null;
-    let betaltTil = '';
-    if (!this.state.betalingMangler && !this.state.fryst) {
-      if (a && a.engangs && a.gjelderTil) betaltTil = a.gjelderTil;
-      else {
-        const slutt = new Date(osloNaa.getFullYear(), osloNaa.getMonth() + 1, 0);
-        betaltTil = slutt.getDate() + '. ' + slutt.toLocaleDateString('nb-NO', { month: 'long' });
-      }
-    }
+    const betaltTil = (a && a.betaltTil) || '';
     const plasser = (this.state.minePlasser || []).filter(p => !p.kursbevis && (this.state.avbestilt || []).indexOf(p.tittel) === -1);
     const verksted = medlem && side === 'hjem';
     const stempelVis = vis('stempel') && !!v.harTimer;

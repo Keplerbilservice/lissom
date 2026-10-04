@@ -5408,14 +5408,19 @@
         {
             "id": "venteliste-varsler-verkstedet",
             "dato": "2026-10-04",
-            "hva": "Verkstedet faar beskjed naar noen setter seg paa venteliste, med navn, posisjon og kontaktopplysninger.",
+            "hva": "Verkstedet faar beskjed naar noen setter seg paa venteliste, med navn, posisjon og kontaktopplysninger. Som en mal eieren kan endre, ikke tekst i koden.",
             "hvor": "Venteliste",
             "kode": [
                 {
                     "fil": "api/venteliste.php",
                     "finnes": [
-                        "Varsel::tilAdmin(",
-                        "' står som nummer '"
+                        "Varsel::malTilAdmin('intern_venteliste'"
+                    ]
+                },
+                {
+                    "fil": "app/lib/maler.php",
+                    "finnes": [
+                        "'intern_venteliste' => ["
                     ]
                 }
             ]

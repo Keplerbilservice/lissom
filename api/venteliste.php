@@ -123,14 +123,17 @@ $naar = $paaDato
 //
 // Kontaktopplysningene staar i beskjeden: er det plass likevel, er det en
 // telefon som loeser det, ikke et nytt skjermbilde i admin.
-Varsel::tilAdmin(
-    'Venteliste: ' . (string) $kurs['tittel'] . $naar,
-    $navn . ' står som nummer ' . $posisjon . ' på ventelisten for '
-        . (string) $kurs['tittel'] . $naar . '.'
-        . "\n\nE-post: " . $epost
-        . ($telefon !== '' ? "\nTelefon: " . $telefon : ''),
-    'waitlist',
-    $id
-);
+//
+// Som en mal, ikke som tekst her. Eieren, 1. september: «ja, alle 29» — alt
+// som gaar ut skal kunne endres og slaas av under Tekst maler. Teksten staar
+// i migrasjon 256.
+Varsel::malTilAdmin('intern_venteliste', [
+    'navn'     => $navn,
+    'kurs'     => (string) $kurs['tittel'],
+    'dato'     => $naar,
+    'posisjon' => (string) $posisjon,
+    'epost'    => $epost,
+    'telefon'  => $telefon !== '' ? $telefon : '—',
+], 'waitlist', $id);
 
 Svar::ok(['posisjon' => $posisjon, 'kurs' => $kurs['tittel']]);

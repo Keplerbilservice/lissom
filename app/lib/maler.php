@@ -219,6 +219,18 @@ final class Maler
                 'posisjon' => 'Hvilken plass i køen de har',
             ],
         ],
+        'intern_venteliste' => [
+            'tittel' => 'Venteliste: beskjed til verkstedet',
+            'hvor'   => 'Sendes til verkstedet når noen setter seg på ventelisten.',
+            'felter' => [
+                'navn'     => 'Navnet på den som venter',
+                'kurs'     => 'Kurset de venter på',
+                'dato'     => 'Datoen, eller tom hvis den ikke er satt',
+                'posisjon' => 'Hvilken plass i køen de har',
+                'epost'    => 'E-postadressen deres',
+                'telefon'  => 'Telefonnummeret, eller en strek',
+            ],
+        ],
         'venteliste_ledig' => [
             'tittel' => 'Det ble ledig plass',
             'hvor'   => 'Sendes til dem på ventelisten når en plass blir ledig.',

@@ -18362,18 +18362,35 @@ sjekk('plassregelen staar ett sted, og brukes begge veier',
     && str_contains($bookFil, "        \$aktiv2 = self::aktivSql('b2');")
     && str_contains($bookFil, '    public static function ledigeIVindu(int $kursId, string $startUtc, string $sluttUtc): int'));
 
-// De aapne plassene holder bare det som er booket — ellers ville en tom aapen
-// plass sperret dreiekurset ved siden av.
-sjekk('et tidsrom regnes med samme unntak som en oekt',
-    str_contains($bookFil, "                        CASE WHEN cs2.fra_apningstid = 1 OR {\$egenApen} = 1 THEN 0\n                             ELSE COALESCE(cs2.kapasitet, c2.kapasitet) END,"));
+// Et kurs legger beslag paa DELTAKERNE sine, ikke plasstallet sitt.
+//
+// Eieren, 4. oktober 2026: «Jeg kan ha 8 paa dreieskive, og 12 paa
+// verkstedet. Og det er saa klart regnes mot deltakere ikke hvor mange som
+// kanskje kommer.»
+//
+// Her sto tre proever paa det motsatte, fra 24. september: de voktet unntaket
+// som lot de aapne plassene telle bare paameldte, mens et planlagt kurs holdt
+// hele kapasiteten sin. Det unntaket kostet en kunde 4. oktober — Paint on
+// Pots sto «Fullbooket» med ni stoler ledige, og hun ble sendt ni dager fram.
+// Naar bare folk teller, er de to tilfellene like, og unntaket er borte.
+//
+// Proevene staar igjen, men vokter den nye regelen: kommer kapasiteten
+// tilbake inn i regnestykket, blir de roede.
+sjekk('et kurs legger beslag paa deltakerne sine, ikke plasstallet (oekt)',
+    str_contains($bookFil, "                    COALESCE((
+                        SELECT SUM(
+                            COALESCE(cs2.manuelt_opptatt, 0)")
+    && !str_contains($bookFil, 'ELSE COALESCE(cs2.kapasitet, c2.kapasitet) END'));
 
-// Eieren, 24. september 2026: Paint on Pots sto «utsolgt» uten en booking
-// fordi et tomt Store fat-kurs holdt hele verkstedet. En aapen plass skal
-// bare sperres av folk som faktisk er paameldt paa kursene rundt.
-sjekk('en aapen plass teller bare paameldte paa kursene rundt (oekt)',
-    str_contains($bookFil, 'CASE WHEN cs2.fra_apningstid = 1 OR cs.fra_apningstid = 1 THEN 0'));
-sjekk('en aapen plass teller bare paameldte paa kursene rundt (tidsrom)',
-    str_contains($bookFil, "\$egenApen = (int) (\$kurs['folger_apningstid'] ?? 0) === 1 ? 1 : 0;"));
+sjekk('… og det samme for et tidsrom',
+    str_contains($bookFil, "            \"SELECT COALESCE(SUM(
+                        COALESCE(cs2.manuelt_opptatt, 0)")
+    && !str_contains($bookFil, "\$egenApen = (int) (\$kurs['folger_apningstid'] ?? 0) === 1 ? 1 : 0;"));
+
+// Skillet mellom aapne plasser og planlagte kurs skal ikke snike seg inn
+// igjen gjennom en ny CASE.
+sjekk('ingen unntak for aapne plasser i regnestykket',
+    !str_contains($bookFil, 'CASE WHEN cs2.fra_apningstid = 1'));
 
 sjekk('oppslaget svarer med vindu, tider og neste ledige',
     str_contains($tiderFil, "\$svar = Apent::ledigeKvarter(\$kursId, \$dato, \$antall);")
@@ -18394,9 +18411,19 @@ sjekk('skjermen har ett tidsfelt, ikke en vegg av knapper',
     && str_contains($skjerm, '          bVisTidsknapper: !this.folgerApningstid(),')
     && str_contains($skjerm, '<sc-if value="{{ bVisTidsknapper }}" hint-placeholder-val="{{ true }}">'));
 
+// Datoen skrives ut, ikke som ISO. Eieren, 4. oktober 2026: «dag. maaned og
+// aar er riktig, og du kan droppe aa vise aar». Sto «2026-10-13» paa skjermen.
 sjekk('… og sier hva som er neste ledige naar dagen er full',
-    str_contains($skjerm, "            return 'Fullt denne dagen. Første ledige er ' + f.dato + ' kl. ' + f.tid + '.';")
+    str_contains($skjerm, "            return 'Fullt denne dagen. Første ledige er ' + (this.norskDag(f.dato) || f.dato) + ' kl. ' + f.tid + '.';")
     && str_contains($skjerm, '          bTidTaForslag: () => {'));
+
+// Skjermen og bestillingen leser samme dato. «Ta den tiden» flyttet bare
+// bTidDato, saa det sto torsdag 8. oktober paa skjermen mens bestillingen
+// gikk til tirsdag 13. En kunde betalte for den 13. den 4. oktober 2026.
+sjekk('datoen paa skjermen er den som blir booket',
+    str_contains($skjerm, '  visningsDato() {')
+    && str_contains($skjerm, '      bookOrdreDato: (this.visningsDato())')
+    && !str_contains($skjerm, '      bookOrdreDato: (this.state.bDato) ||'));
 
 sjekk('… og sender kurset og tida, ikke en oekt',
     str_contains($skjerm, '    const kursId = velgerTid ? this.kursIdNaa() : 0;')

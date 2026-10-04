@@ -4912,6 +4912,20 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "feil-admin-alltid",
+            "dato": "2026-10-04",
+            "hva": "Innloggede administratorer kan alltid melde inn feil, også når rapportknappen for nettsiden er av",
+            "hvor": "api/feil.php",
+            "kode": [
+                {
+                    "fil": "api/feil.php",
+                    "finnes": [
+                        "if ($apenTil() === '' && !Sesjon::erAdmin()) {"
+                    ]
+                }
+            ]
         }
     ]
 }

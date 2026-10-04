@@ -84,7 +84,8 @@ if ($slag === 'melding') {
     if ($melding === null) {
         Svar::feil('Skriv gjerne litt om hva som gikk galt.');
     }
-    if ($apenTil() === '') {
+    // Eieren 04.10: innloggede administratorer kan alltid melde inn feil (⚑ Meld inn feil i admin-ny).
+    if ($apenTil() === '' && !Sesjon::erAdmin()) {
         Svar::feil('Takk, men innmelding av feil er stengt akkurat nå.');
     }
 }

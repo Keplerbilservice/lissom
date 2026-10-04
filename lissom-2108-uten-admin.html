@@ -5128,7 +5128,7 @@ window.__resources = {
                     <div class="msny-rad">
                       <div class="msny-status"><b>{{ ovnTittel }}</b> · {{ ovnLinje }}</div>
                       <sc-if value="{{ ovnUsett }}" hint-placeholder-val="{{ false }}">
-                        <button type="button" onClick="{{ ovnSettNaa }}" style="{{ ovnSettStil }}">Sett</button>
+                        <button type="button" class="msny-sett" onClick="{{ ovnSettNaa }}" style="{{ ovnSettStil }}">Sett</button>
                       </sc-if>
                     </div>
                   </sc-if>
@@ -5784,7 +5784,7 @@ window.__resources = {
               </sc-if>
             </sc-if>
             <sc-if value="{{ msKursbevisVis }}" hint-placeholder-val="{{ false }}">
-            <div data-msny="-" id="ms-bevis-flis" class="ms-o-kort ms-o-bevis2 ms-flis" style="{{ msFlisStil }}">
+            <div id="ms-bevis-flis" data-msny="-" class="ms-o-kort ms-o-bevis2 ms-flis" style="{{ msFlisStil }}">
               <div class="ms-fh"><span class="ms-ft">Kursbevis</span><span class="ms-fn">{{ msBevisAntall }}</span></div>
               <sc-for list="{{ mineBevis }}" as="kb" hint-placeholder-count="2">
                 <div class="ms-fr ms-fr-knapp" role="button" tabindex="0" onClick="{{ kb.apne }}"><div class="ms-fm"><b>{{ kb.tittel }}</b><small>{{ kb.naar }}</small></div></div>
@@ -5900,7 +5900,7 @@ window.__resources = {
                  Kortformen staar i «Verkstedet ditt» paa forsiden; her staar
                  alt. Samme kort som for — flyttet bak menyvalget. -->
             <sc-if value="{{ msFaneMedlemskap }}" hint-placeholder-val="{{ false }}">
-            <div data-msny="medlemskap" id="minside-abonnement" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); box-sizing: border-box; display: flex; flex-direction: column;" data-ms-modul="abonnement">
+            <div id="minside-abonnement" data-msny="medlemskap" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); box-sizing: border-box; display: flex; flex-direction: column;" data-ms-modul="abonnement">
 <div class="ms-modulvalg"><strong>{{ msModuler.abonnement.navn }}</strong><button type="button" role="switch" aria-label="Medlemskapet ditt: vis/skjul" aria-checked="{{ msModuler.abonnement.aria }}" onClick="{{ msModuler.abonnement.veksle }}" class="ms-modulbryter">{{ msModuler.abonnement.tekst }}</button></div>
 <sc-if value="{{ msModuler.abonnement.vis }}" hint-placeholder-val="{{ true }}">
 
@@ -6182,7 +6182,7 @@ window.__resources = {
           </sc-if>
 
           <sc-if value="{{ visBliMedlem }}" hint-placeholder-val="{{ false }}">
-            <div data-msny="d-bli" id="bli-medlem" class="ms-o-full" style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-8); margin-bottom: var(--space-8);">
+            <div id="bli-medlem" data-msny="d-bli" class="ms-o-full" style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-8); margin-bottom: var(--space-8);">
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Medlemskap</div>
               <h2 style="margin: 0 0 var(--space-3); font-size: var(--text-2xl);">{{ bmTittel }}</h2>
               <p style="margin: 0 0 var(--space-6); font-size: var(--text-base); color: var(--text-body); max-width: 60ch; text-wrap: pretty;">{{ bmTekst }}</p>
@@ -6587,7 +6587,7 @@ window.__resources = {
                 </div>
               </sc-if>
               <sc-if class="lx-ms-selg" value="{{ visSalgSkjema }}" hint-placeholder-val="{{ true }}">
-              <div data-msny="fellesskap" id="minside-salg" class="lx-ms-selg" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);" data-ms-modul="salg">
+              <div id="minside-salg" data-msny="fellesskap" class="lx-ms-selg" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);" data-ms-modul="salg">
 <div class="ms-modulvalg"><strong>{{ msModuler.salg.navn }}</strong><button type="button" role="switch" aria-label="Selg mine produkter: vis/skjul" aria-checked="{{ msModuler.salg.aria }}" onClick="{{ msModuler.salg.veksle }}" class="ms-modulbryter">{{ msModuler.salg.tekst }}</button></div>
 <sc-if value="{{ msModuler.salg.vis }}" hint-placeholder-val="{{ true }}">
 
@@ -6759,7 +6759,7 @@ window.__resources = {
                    du skal se, ikke noe du skal lete etter i en meny. -->
               <sc-if value="{{ msFaneHjem }}" hint-placeholder-val="{{ true }}">
               <sc-if value="{{ harBeskjeder }}" hint-placeholder-val="{{ true }}">
-              <div data-msny="chat d-kurs" id="minside-beskjeder" class="ms-o-kort ms-o-beskjeder" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);" data-ms-modul="beskjeder">
+              <div id="minside-beskjeder" data-msny="chat d-kurs" class="ms-o-kort ms-o-beskjeder" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);" data-ms-modul="beskjeder">
 <div class="ms-modulvalg"><strong>{{ msModuler.beskjeder.navn }}</strong><button type="button" role="switch" aria-label="Beskjeder: vis/skjul" aria-checked="{{ msModuler.beskjeder.aria }}" onClick="{{ msModuler.beskjeder.veksle }}" class="ms-modulbryter">{{ msModuler.beskjeder.tekst }}</button></div>
 <sc-if value="{{ msModuler.beskjeder.vis }}" hint-placeholder-val="{{ true }}">
 
@@ -6805,7 +6805,7 @@ window.__resources = {
                    «den må ligge på forsiden»). -->
               <sc-if value="{{ msFaneHjem }}" hint-placeholder-val="{{ true }}">
               <sc-if value="{{ visForslag }}" hint-placeholder-val="{{ true }}">
-              <div data-msny="fellesskap" id="minside-forslag" class="ms-o-kort ms-o-forslag" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);" data-ms-modul="forslag">
+              <div id="minside-forslag" data-msny="fellesskap" class="ms-o-kort ms-o-forslag" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);" data-ms-modul="forslag">
 <div class="ms-modulvalg"><strong>{{ msModuler.forslag.navn }}</strong><button type="button" role="switch" aria-label="Del på Instagram og i galleriet: vis/skjul" aria-checked="{{ msModuler.forslag.aria }}" onClick="{{ msModuler.forslag.veksle }}" class="ms-modulbryter">{{ msModuler.forslag.tekst }}</button></div>
 <sc-if value="{{ msModuler.forslag.vis }}" hint-placeholder-val="{{ true }}">
 
@@ -6885,7 +6885,7 @@ window.__resources = {
                    medlemmer»-kursene som foer, lagt ut i admin som vanlige kurs;
                    paameldingen gaar samme vei og havner i kalenderen. -->
               <sc-if value="{{ harMedlemskurs }}" hint-placeholder-val="{{ true }}">
-              <div data-msny="kurs" id="minside-internkurs" class="ms-o-banner" style="{{ msBannerStil }}" data-ms-modul="internkurs">
+              <div id="minside-internkurs" data-msny="kurs" class="ms-o-banner" style="{{ msBannerStil }}" data-ms-modul="internkurs">
 <div class="ms-modulvalg"><strong>{{ msModuler.internkurs.navn }}</strong><button type="button" role="switch" aria-label="Kurs for medlemmer: vis/skjul" aria-checked="{{ msModuler.internkurs.aria }}" onClick="{{ msModuler.internkurs.veksle }}" class="ms-modulbryter">{{ msModuler.internkurs.tekst }}</button></div>
 <sc-if value="{{ msModuler.internkurs.vis }}" hint-placeholder-val="{{ true }}">
 
@@ -6924,7 +6924,7 @@ window.__resources = {
                    venn til aarsmedlemskap og faa timer i verkstedet. Slaas av og
                    paa, og timene settes, i Markedsfoering › Vervepremie. -->
               <sc-if value="{{ msVervVis }}" hint-placeholder-val="{{ false }}">
-              <div data-msny="medlemskap" id="minside-verving" class="ms-o-banner" style="{{ msBannerStil }}" data-ms-modul="verving">
+              <div id="minside-verving" data-msny="medlemskap" class="ms-o-banner" style="{{ msBannerStil }}" data-ms-modul="verving">
 <div class="ms-modulvalg"><strong>{{ msModuler.verving.navn }}</strong><button type="button" role="switch" aria-label="Verv en venn: vis/skjul" aria-checked="{{ msModuler.verving.aria }}" onClick="{{ msModuler.verving.veksle }}" class="ms-modulbryter">{{ msModuler.verving.tekst }}</button></div>
 <sc-if value="{{ msModuler.verving.vis }}" hint-placeholder-val="{{ true }}">
 
@@ -6942,7 +6942,7 @@ window.__resources = {
 
 
               <sc-if value="{{ harPameldinger }}" hint-placeholder-val="{{ true }}">
-              <div data-msny="kurs d-kurs" id="minside-pameldinger" class="ms-o-kort ms-o-pamld" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);" data-ms-modul="pameldinger">
+              <div id="minside-pameldinger" data-msny="kurs d-kurs" class="ms-o-kort ms-o-pamld" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);" data-ms-modul="pameldinger">
 <div class="ms-modulvalg"><strong>{{ msModuler.pameldinger.navn }}</strong><button type="button" role="switch" aria-label="Mine påmeldinger: vis/skjul" aria-checked="{{ msModuler.pameldinger.aria }}" onClick="{{ msModuler.pameldinger.veksle }}" class="ms-modulbryter">{{ msModuler.pameldinger.tekst }}</button></div>
 <sc-if value="{{ msModuler.pameldinger.vis }}" hint-placeholder-val="{{ true }}">
 
@@ -7011,7 +7011,7 @@ window.__resources = {
                    man skal stemple inn. -->
               </sc-if>
               <sc-if value="{{ msKursbevisVis }}" hint-placeholder-val="{{ false }}">
-              <div data-msny="kurs d-bevis" id="minside-kursbevis" class="ms-o-kort ms-o-bevis" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);" data-ms-modul="kursbevis">
+              <div id="minside-kursbevis" data-msny="kurs d-bevis" class="ms-o-kort ms-o-bevis" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);" data-ms-modul="kursbevis">
 <div class="ms-modulvalg"><strong>{{ msModuler.kursbevis.navn }}</strong><button type="button" role="switch" aria-label="Kursbevis: vis/skjul" aria-checked="{{ msModuler.kursbevis.aria }}" onClick="{{ msModuler.kursbevis.veksle }}" class="ms-modulbryter">{{ msModuler.kursbevis.tekst }}</button></div>
 <sc-if value="{{ msModuler.kursbevis.vis }}" hint-placeholder-val="{{ true }}">
 
@@ -7057,7 +7057,7 @@ window.__resources = {
                    en samtale som ruller nedover der tar plassen fra
                    verkstedet og timene dine. -->
               <sc-if value="{{ msFaneChat }}" hint-placeholder-val="{{ false }}">
-              <div data-msny="chat" id="minside-chat" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); display: flex; flex-direction: column;" data-ms-modul="chat">
+              <div id="minside-chat" data-msny="chat" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); display: flex; flex-direction: column;" data-ms-modul="chat">
 <div class="ms-modulvalg"><strong>{{ msModuler.chat.navn }}</strong><button type="button" role="switch" aria-label="Medlemschat: vis/skjul" aria-checked="{{ msModuler.chat.aria }}" onClick="{{ msModuler.chat.veksle }}" class="ms-modulbryter">{{ msModuler.chat.tekst }}</button></div>
 <sc-if value="{{ msModuler.chat.vis }}" hint-placeholder-val="{{ true }}">
 
@@ -7120,7 +7120,7 @@ window.__resources = {
                info, sammen med doerkoden og guidene. -->
           <sc-if value="{{ msFaneNyttig }}" hint-placeholder-val="{{ false }}">
           <sc-if value="{{ erMedlem }}" hint-placeholder-val="{{ true }}">
-          <div data-msny="hjelp" id="minside-ordensregler" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6) var(--space-8); margin-top: var(--space-6);" data-ms-modul="hms">
+          <div id="minside-ordensregler" data-msny="hjelp" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6) var(--space-8); margin-top: var(--space-6);" data-ms-modul="hms">
 <div class="ms-modulvalg"><strong>{{ msModuler.hms.navn }}</strong><button type="button" role="switch" aria-label="Ordensregler og HMS: vis/skjul" aria-checked="{{ msModuler.hms.aria }}" onClick="{{ msModuler.hms.veksle }}" class="ms-modulbryter">{{ msModuler.hms.tekst }}</button></div>
 <sc-if value="{{ msModuler.hms.vis }}" hint-placeholder-val="{{ true }}">
 

@@ -20971,7 +20971,7 @@ sjekk('enhver vei videre i admin lukker skuffen',
 // Skuffen gjoer stripa 650 px hoy. Da fant tilbakeTopp() ingen linje aa legge
 // seg under, og pila falt til 10 px — oppaa logoen.
 sjekk('tilbakepila staar ikke oppaa den aapne skuffen',
-    str_contains($msSida, "      tilbakeVis: this.erPublisert() && side !== 'forside' && side !== 'adminoversikt'\n        && !this.state.admMobApen,"));
+    str_contains($msSida, "      tilbakeVis: this.erPublisert() && side !== 'forside' && side !== 'adminoversikt'\n        && !this.state.admMobApen && !(side === 'minside' && this.msNyPaa()),"));
 // Skuffen lukker seg fortsatt selv naar man velger noe i den.
 sjekk('skuffens egne knapper lukker den som for',
     str_contains($msSida, "    const lukkOg = (fn) => () => { this.setState({ admMobApen: false }); fn(); };"));

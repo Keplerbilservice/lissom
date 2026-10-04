@@ -776,6 +776,27 @@ img{max-width:100%;display:block}
 .msny-varsellinje { border-left: 4px solid var(--sage-600, #4f7a46); background: var(--surface-card); border-radius: 10px; padding: 10px 12px; font-size: 15px; }
 .msny-flis:focus-visible, .msny-pille:focus-visible { outline: 3px solid var(--lissom-yellow); outline-offset: 2px; }
 .msny-flis:hover { border-color: var(--lissom-brown); }
+/* Venstre kolonne (hilsen, Verkstedet naa, medlemskapet) og hoeyre (resten).
+   Under 900 px er begge «display: contents», saa rekkefoelgen over gjelder
+   som paa mobil; kolonnen staar da bare paa forsiden. */
+.msny .ms-o-topp { display: none !important; }
+.msny .msny-venstre { display: contents; }
+.msny .msny-hilsen { order: 1; display: grid; gap: var(--space-3); }
+.msny-neste { min-height: 0; gap: 4px; }
+.msny-neste b { font-family: var(--font-display); font-size: 24px; line-height: 1.1; }
+@media (max-width: 899px) {
+  .msny:not(.msny-hjem):not(.msny-d-hjem) .msny-venstre { display: none !important; }
+}
+@media (min-width: 761px) and (max-width: 899px) { .msny-fliser { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 900px) {
+  .msny { display: grid !important; grid-template-columns: 300px minmax(0, 1fr); gap: 22px; align-items: start; }
+  .msny > * { grid-column: 1 / -1; }
+  .msny .msny-venstre { grid-column: 1; display: grid; gap: var(--space-4); align-content: start; position: sticky; top: 84px; }
+  .msny .ms-o-inn.msny-hoyre { grid-column: 2; display: flex !important; flex-direction: column; gap: var(--space-5); min-width: 0; }
+  .msny .msny-hoyre > * { margin: 0 !important; }
+  .msny .ms-varer { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .msny .lx-split[data-msny="butikk"] { max-width: none; }
+}
 /* Bare den aapne undersiden. Sist, saa den vinner over reglene over. */
 .msny-hjem [data-msny]:not([data-msny~="hjem"]),
 .msny-kurs [data-msny]:not([data-msny~="kurs"]),
@@ -5501,15 +5522,25 @@ window.__resources = {
                SAMME kortene som foer — de ligger der de alltid har ligget i
                malen, merket data-msny="<underside>", og CSS viser bare den
                aapne. Se msNyEtter(). -->
-          <sc-if value="{{ msNyUnderside }}" hint-placeholder-val="{{ false }}">
-            <div class="msny-hode">
-              <button type="button" class="msny-pille msny-tilbake" onClick="{{ msNyTilbake }}">← Min side</button>
-              <h2 class="msny-tittel">{{ msNyTittel }}</h2>
+          <!-- PC (eieren, 4. oktober 2026, «På PC» i skissen): fra 900 px står
+               hilsenen, Verkstedet nå og medlemskapsflisen i en fast kolonne til
+               venstre, og flisene og undersiden til høyre (.msny-hoyre). Under
+               900 px er kolonnen «display: contents», som på mobil. -->
+          <sc-if value="{{ msNyPaa }}" hint-placeholder-val="{{ false }}">
+          <div class="msny-venstre">
+            <div class="msny-hilsen">
+              <h1 style="margin: 0; font-size: var(--text-4xl);">{{ minsideHilsen }}</h1>
+              <sc-if value="{{ msErDeltaker }}" hint-placeholder-val="{{ false }}">
+                <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted);">Her finner du kursene dine, kursbevisene og beskjeder fra verkstedet.</p>
+              </sc-if>
+              <sc-if value="{{ msNesteVis }}" hint-placeholder-val="{{ false }}">
+                <button type="button" onClick="{{ msNesteVelg }}" class="msny-flis msny-neste">
+                  <span style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Neste kurs</span>
+                  <b>{{ msNesteNaar }}</b>
+                  <small>{{ msNesteLinje }}</small>
+                </button>
+              </sc-if>
             </div>
-          </sc-if>
-          <sc-if value="{{ msNyFrysStarterVis }}" hint-placeholder-val="{{ false }}">
-            <div class="msny-varsel msny-varsellinje">{{ frysStarterTekst }}</div>
-          </sc-if>
           <!-- Verkstedet naa: stempling, doerkoden, ovnen og hvem som er
                inne — samlet. Samme verdier og handlinger som de gamle
                kortene (stempel, inne, ovn); hver del foelger bryteren sin. -->
@@ -5594,6 +5625,18 @@ window.__resources = {
               <sc-if value="{{ msNyBarVis }}" hint-placeholder-val="{{ false }}"><span class="msny-bar"><i style="{{ msNyBarStil }}"></i></span></sc-if>
               <sc-if value="{{ msNyBetaltVis }}" hint-placeholder-val="{{ false }}"><small>{{ msNyBetaltTekst }}</small></sc-if>
             </button>
+          </sc-if>
+          </div>
+          </sc-if>
+          <div class="ms-o-inn msny-hoyre">
+          <sc-if value="{{ msNyUnderside }}" hint-placeholder-val="{{ false }}">
+            <div class="msny-hode">
+              <button type="button" class="msny-pille msny-tilbake" onClick="{{ msNyTilbake }}">← Min side</button>
+              <h2 class="msny-tittel">{{ msNyTittel }}</h2>
+            </div>
+          </sc-if>
+          <sc-if value="{{ msNyFrysStarterVis }}" hint-placeholder-val="{{ false }}">
+            <div class="msny-varsel msny-varsellinje">{{ frysStarterTekst }}</div>
           </sc-if>
           <sc-if value="{{ msNyFliserVis }}" hint-placeholder-val="{{ false }}">
             <div class="msny-fliser">
@@ -7579,6 +7622,7 @@ window.__resources = {
           <sc-if value="{{ msHarBunnmeny }}" hint-placeholder-val="{{ true }}">
             <div class="ms-bunnluft" style="{{ msBunnLuft }}"></div>
           </sc-if>
+          </div>
         </div>
       </section>
 
@@ -33501,7 +33545,9 @@ class Component extends DCLogic {
     const a = this.state.minAvtale || null;
     const betaltTil = (a && a.betaltTil) || '';
     const plasser = (this.state.minePlasser || []).filter(p => !p.kursbevis && (this.state.avbestilt || []).indexOf(p.tittel) === -1);
-    const verksted = medlem && side === 'hjem';
+    // Paa PC staar Verkstedet naa og medlemskapsflisen ogsaa ved undersidene
+    // (venstre kolonne); paa mobil skjuler CSS dem der.
+    const verksted = medlem;
     const stempelVis = vis('stempel') && !!v.harTimer;
     const dorVis = !!this.medlemsvisning() && !this.state.fryst && (!this.erPublisert() || !!this.dorkodeNaa());
 

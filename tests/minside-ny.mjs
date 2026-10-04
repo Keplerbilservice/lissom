@@ -54,6 +54,7 @@ try{for(const width of [390,1280]){
   assert.match(await p.locator('.msny-medl').innerText(),/Brukt [\d,]+ av [\d,]+ timer i \p{L}+/u,'medlemskapsflisen viser timene');
   assert.match(await p.locator('.msny-medl').innerText(),/Betalt til \d+\. \p{L}+/u,'medlemskapsflisen viser betalt til');
   for(const n of ['Kurs','Butikk','Medlemskapet','Chat','Fellesskap','Hjelp'])assert.equal(await flis(p,n).isVisible(),true,'flis '+n);
+  if(width>=900){assert.equal(await p.locator('.msny-fliser').evaluate(e=>getComputedStyle(e).gridTemplateColumns.split(' ').length),3,'PC: flisene i 3 kolonner');const v=await p.locator('.msny-verksted').boundingBox(),fl=await p.locator('.msny-fliser').boundingBox();assert.ok(v.x<fl.x&&Math.abs(v.y-fl.y)<400,'PC: Verkstedet nå til venstre for flisene');}else assert.equal(await p.locator('.msny-fliser').evaluate(e=>getComputedStyle(e).gridTemplateColumns.split(' ').length),2,'mobil: flisene i 2 kolonner');
   for(const m of ['stempel','inne','chat','abonnement','butikk','hms'])assert.equal(await p.locator('[data-ms-modul="'+m+'"]').isVisible(),false,m+' står ikke på forsiden');
   assert.equal(await p.locator('.ms-tl-pille',{hasText:'Dørkode'}).count(),0,'dørkoden ikke i menylinja');
   assert.equal(await p.getByText('Glemt å stemple ut',{exact:true}).count()<=1,true,'glemt å stemple ut står høyst ett sted');
@@ -63,8 +64,10 @@ try{for(const width of [390,1280]){
   for(const [n,sel] of [['Butikk','#minside-internbutikk'],['Medlemskapet','#minside-abonnement'],['Chat','#minside-chat'],['Hjelp','[data-ms-modul="hms"]'],['Kurs','#minside-kursbevis'],['Fellesskap','#minside-salg']]){
    await flis(p,n).click();await p.locator('.msny-hode').getByRole('heading',{name:n,exact:true}).waitFor();
    assert.equal(await p.locator(sel).first().isVisible(),true,n+': kortet står');
-   assert.equal(await p.getByText('Verkstedet nå',{exact:true}).isVisible(),false,n+': forsiden er borte');
-   if(n==='Butikk'){assert.ok(await p.locator('#minside-internbutikk .ms-vare img').count()>=1,'Butikk: varebilde');await p.screenshot({path:join(BILDER,'minside-ny-butikk-'+width+'.png'),fullPage:true}).catch(()=>{});}
+   // Mobil: undersiden alene. PC (eieren 04.10, «På PC»): venstre kolonne står, undersiden til høyre.
+   assert.equal(await p.getByText('Verkstedet nå',{exact:true}).isVisible(),width>=900,n+': venstre kolonne '+(width>=900?'står':'er borte'));
+   if(width>=900){const v=await p.locator('.msny-venstre').boundingBox(),h=await p.locator('.msny-hoyre').boundingBox();assert.ok(v&&h&&v.x+v.width<=h.x&&Math.abs(v.width-300)<2,n+': to kolonner, venstre 300 px');}
+   if(n==='Butikk'){if(width>=900)assert.equal(await p.locator('#minside-internbutikk .ms-varer').evaluate(e=>getComputedStyle(e).gridTemplateColumns.split(' ').length),3,'PC: varene i 3 kolonner');assert.ok(await p.locator('#minside-internbutikk .ms-vare img').count()>=1,'Butikk: varebilde');await p.screenshot({path:join(BILDER,'minside-ny-butikk-'+width+'.png'),fullPage:true}).catch(()=>{});}
    assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,n+': ingen vannrett rulling');
    await p.getByRole('button',{name:'← Min side',exact:true}).click();await p.locator('.msny-hjem').waitFor();
   }
@@ -80,6 +83,7 @@ try{for(const width of [390,1280]){
  ({c,p}=await side(deltaker.token,width));
  try{await p.goto(ADR+'/min-side');await p.locator('.msny-d-hjem').waitFor();await p.waitForTimeout(1200);
   for(const n of ['Kursene mine','Finn nytt kurs'])assert.equal(await flis(p,n).isVisible(),true,'deltaker: flis '+n);
+  if(width>=900){const ne=await p.locator('.msny-neste').boundingBox(),fl=await p.locator('.msny-fliser').boundingBox();assert.ok(ne&&ne.x<fl.x,'PC: Neste kurs til venstre, flisene til høyre');}
   assert.equal(await p.getByText('Verkstedet nå',{exact:true}).count(),0,'deltaker: ingen Verkstedet nå');
   await flis(p,'Kursene mine').click();await p.locator('.msny-hode').getByRole('heading',{name:'Kursene mine',exact:true}).waitFor();
   assert.equal(await p.locator('#minside-pameldinger').isVisible(),true,'deltaker: påmeldingene');

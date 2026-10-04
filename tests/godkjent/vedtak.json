@@ -5155,6 +5155,23 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "minside-ny-pc",
+            "dato": "2026-10-04",
+            "hva": "Ny Min side på PC («På PC» i skissen, eieren: «ok, bygg det»): bare med Vis/minsideny på og fra 900 px — venstre kolonne 300 px fast (sticky) med hilsen, «Verkstedet nå» og medlemskapsflisen; høyre kolonne med de seks flisene i tre kolonner, og undersiden som åpnes vises til høyre mens venstre blir stående; internbutikkens varer i tre kolonner. Kursdeltaker: Neste kurs til venstre, flisene til høyre. Under 900 px som mobil. Ingen nye tekster.",
+            "hvor": "lissom-2108.html (.msny-venstre/.msny-hoyre, CSS @media (min-width: 900px))",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "<div class=\"msny-venstre\">",
+                        "<div class=\"ms-o-inn msny-hoyre\">",
+                        ".msny { display: grid !important; grid-template-columns: 300px minmax(0, 1fr); gap: 22px; align-items: start; }",
+                        ".msny .ms-varer { grid-template-columns: repeat(3, minmax(0, 1fr)); }"
+                    ]
+                }
+            ]
         }
     ]
 }

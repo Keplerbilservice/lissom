@@ -4854,14 +4854,15 @@
         {
             "id": "pengehull-2-kassa-og-forny",
             "dato": "2026-10-04",
-            "hva": "Pengehull 2: Kassa og egenbetaling («Forny») kan ikke betale samme måned. fornyPeriodePaa tar medlemslåsen (samme som Kassa, L-12) og regner perioden og lagrer raden under låsen; Kassa nekter (409, eksisterende tekst «Betalingen pågår i Vipps. Prøv igjen om litt.») mens en egenbetaling for måneden er opprettet/venter og er yngre enn 30 minutter. Et nytt «Forny»-trykk mens det første fortsatt er på vei til Vipps, får den samme teksten.",
+            "hva": "Pengehull 2: Kassa og egenbetaling («Forny») kan ikke betale samme måned. fornyPeriodePaa tar medlemslåsen (samme som Kassa, L-12) og regner perioden og lagrer raden under låsen; Kassa nekter (409, eksisterende tekst «Betalingen pågår i Vipps. Prøv igjen om litt.») mens en egenbetaling for måneden er opprettet/venter og er yngre enn 30 minutter. Et nytt «Forny»-trykk mens det første fortsatt er på vei til Vipps, får den samme teksten. startEngangs (nytt medlemskap som gjøres opp selv) tar den samme låsen og lagrer avtalen og betalingsraden under den.",
             "hvor": "app/lib/medlemskap.php (fornyPeriodePaa), api/admin/medlemmer.php ($medlemsperiode)",
             "kode": [
                 {
                     "fil": "app/lib/medlemskap.php",
                     "finnes": [
                         "DB::en('SELECT id FROM members WHERE id = :i FOR UPDATE', ['i' => $medlemId]);",
-                        "throw new RuntimeException('Betalingen pågår i Vipps. Prøv igjen om litt.');"
+                        "throw new RuntimeException('Betalingen pågår i Vipps. Prøv igjen om litt.');",
+                            "DB::en('SELECT id FROM members WHERE id = :i FOR UPDATE', ['i' => (int) $medlem['id']]);"
                     ]
                 },
                 {
@@ -4898,7 +4899,7 @@
         {
             "id": "pengehull-4-pamelding-endre-fjern",
             "dato": "2026-10-04",
-            "hva": "Pengehull 4: «endre» på en påmelding regner betalt status på nytt når beløpet endres, som flytting (L-7): det som er betalt for hånd uten rad, føres som betaling (kommentar «Betalt før endring»), og Booking::settBetaltStatus() gir restbeløp under «Ikke betalt» eller «for mye» i svaret. Gratis er gratis; reservert uten betalinger røres ikke; betaling på vei i Vipps gir 409. «fjern» nekter også en Vipps-betalt plass som bare er koblet via payments.booking_id (som kursbetaling.php).",
+            "hva": "Pengehull 4: «endre» på en påmelding regner betalt status på nytt når beløpet endres, som flytting (L-7): det som er betalt for hånd uten rad, føres som betaling (kommentar «Betalt før endring»), og Booking::settBetaltStatus() gir restbeløp under «Ikke betalt» eller «for mye» i svaret. Gratis er gratis; reservert uten betalinger røres ikke; betaling på vei i Vipps gir 409. «fjern» nekter også en Vipps-betalt plass som bare er koblet via payments.booking_id (som kursbetaling.php). «til-venteliste» har den samme sjekken.",
             "hvor": "api/admin/pamelding.php (endre, fjern)",
             "kode": [
                 {
@@ -4906,7 +4907,8 @@
                     "finnes": [
                         "'Betalt før endring');",
                         "return Booking::settBetaltStatus($id);",
-                        "WHERE booking_id = :b AND type <> 'manuell'"
+                        "WHERE booking_id = :b AND type <> 'manuell'",
+                            "// Samme sjekk som «fjern» (pengehull 4, 4. oktober 2026): ogsaa en"
                     ]
                 }
             ]

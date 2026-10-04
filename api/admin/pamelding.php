@@ -169,6 +169,17 @@ if ($handling === 'til-venteliste') {
     if ($b['payment_id'] !== null && in_array((string) $b['betalingsstatus'], $BETALT_VIPPS, true)) {
         Svar::feil('Denne er betalt gjennom Vipps. Bruk refusjon, ikke ventelista.');
     }
+    // Samme sjekk som «fjern» (pengehull 4, 4. oktober 2026): ogsaa en
+    // Vipps-betaling som bare peker hit fra payments.booking_id.
+    if (DB::harKolonne('payments', 'booking_id') && DB::verdi(
+        "SELECT id FROM payments
+          WHERE booking_id = :b AND type <> 'manuell'
+            AND status IN ('autorisert','betalt','delvis_refundert')
+          LIMIT 1",
+        ['b' => $id]
+    ) !== null) {
+        Svar::feil('Denne er betalt gjennom Vipps. Bruk refusjon, ikke ventelista.');
+    }
     if (trim((string) ($b['navn'] ?? '')) === '') {
         Svar::feil('Påmeldingen har ikke noe navn å sette på lista.');
     }

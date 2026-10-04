@@ -2466,6 +2466,20 @@ final class Medlemskap
         self::avlysMotsattForsok((int) $medlem['id'], $planNavn, false);
 
         $binding = (int) ($plan['engangs'] ?? 0) === 1 ? 0 : (int) $plan['binding_mnd'];
+        $referanse = Vipps::nyReferanse('MED');
+
+        // Samme medlemslaas som «Forny» og Kassa (pengehull 2, 4. oktober
+        // 2026): avtalen og betalingsraden lagres under laasen, saa Kassa ser
+        // betalingen som er paa vei, og to trykk ikke gir to betalinger.
+        $svar = DB::iTransaksjon(static function () use ($medlem, $planNavn, $plan, $binding, $referanse): array {
+        DB::en('SELECT id FROM members WHERE id = :i FOR UPDATE', ['i' => (int) $medlem['id']]);
+        $igjen = self::paagaaendeForsok((int) $medlem['id'], $planNavn, false);
+        if ($igjen !== null) {
+            return ['url' => (string) $igjen['vipps_url'], 'id' => (int) $igjen['id'], 'gjentakelse' => true];
+        }
+        if (self::hindrerNytt(self::avtale((int) $medlem['id']), $planNavn)) {
+            throw new RuntimeException('Du har alt et medlemskap. Si det opp først, eller bytt fra Min side.');
+        }
         $id = DB::settInn('subscriptions', [
             'member_id'          => (int) $medlem['id'],
             'plan'               => $planNavn,
@@ -2500,7 +2514,6 @@ final class Medlemskap
                 : null,
         ]);
 
-        $referanse = Vipps::nyReferanse('MED');
         $forsteRad = [
             'vipps_reference' => $referanse,
             'type'            => 'epayment',
@@ -2524,7 +2537,13 @@ final class Medlemskap
         if ($gjelderFra !== null && DB::harKolonne('payments', 'gjelder_fra')) {
             $forsteRad['gjelder_fra'] = $gjelderFra;
         }
-        $betalingId = DB::settInn('payments', $forsteRad);
+        return ['avtale' => $id, 'betaling' => DB::settInn('payments', $forsteRad)];
+        });
+        if (isset($svar['url'])) {
+            return $svar;
+        }
+        $id = (int) $svar['avtale'];
+        $betalingId = (int) $svar['betaling'];
 
         try {
             $betaling = Vipps::opprettBetaling(

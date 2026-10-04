@@ -50,7 +50,7 @@ if (($argv[1] ?? '') === '--forny') {
     $m = DB::en('SELECT * FROM members WHERE id = :i', ['i' => (int) $argv[2]]);
     $a = DB::en('SELECT * FROM subscriptions WHERE id = :i', ['i' => (int) $argv[3]]);
     try {
-        Medlemskap::fornyPeriode($m, $a);
+        $a === null ? Medlemskap::startEngangs($m, (string) $argv[4]) : Medlemskap::fornyPeriode($m, $a);
     } catch (Throwable $e) {
         fwrite(STDERR, $e->getMessage() . "\n");
         exit(2);
@@ -240,6 +240,29 @@ try {
     sjekk("etter laasen: Kassa $denne, «Forny» $neste (ikke samme maaned)", count($r) === 2
         && $r[0]['gjelder_fra'] === $denne && $r[1]['gjelder_fra'] === $neste, json_encode($r));
 
+    echo "\n── Hull 2d: nytt medlemskap (startEngangs) venter paa den samme laasen ──\n";
+    [$c4, $c4S] = nyttMedlem($plan, 'Hull2 Nytt');
+    DB::kjor('DELETE FROM subscriptions WHERE id = :s', ['s' => $c4S]);
+    DB::oppdater('members', ['status' => 'ingen'], ['id' => $c4]);
+    $holder = new PDO($dsn, $oppsett['db_bruker'], $oppsett['db_passord'], [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+    $holder->beginTransaction();
+    $holder->query('SELECT id FROM members WHERE id = ' . $c4 . ' FOR UPDATE')->fetchAll();
+    $proc = proc_open([PHP_BINARY, '-c', php_ini_loaded_file(), __FILE__, '--forny', (string) $c4, '0', $plan],
+        [0 => ['pipe', 'r'], 1 => ['file', $nul, 'w'], 2 => ['file', $logg, 'a']], $pp, $rot);
+    fclose($pp[0]);
+    usleep(1_500_000);
+    $avtaler = static fn(int $m): int => (int) DB::verdi('SELECT COUNT(*) FROM subscriptions WHERE member_id = :m', ['m' => $m]);
+    sjekk('mens medlemmet er laast, er verken avtale eller betaling lagret', $avtaler($c4) === 0 && count(rader($c4)) === 0,
+        $avtaler($c4) . ' / ' . json_encode(rader($c4)));
+    $holder->commit();
+    $slutt = time() + 30;
+    while (proc_get_status($proc)['running'] && time() < $slutt) { usleep(100_000); }
+    proc_close($proc);
+    sjekk('etter laasen: én avtale og én ventende betaling', $avtaler($c4) === 1 && count(rader($c4)) === 1
+        && rader($c4)[0]['status'] === 'venter', json_encode(rader($c4)));
+    $svar = kall([[$porter[0], $API, $kontant($c4), $token]]);
+    sjekk('Kassa nekter mens den er paa vei (409)', $svar[0][0] === 409, $svar[0][0] . ' ' . $feiltekst($svar[0]));
+
     // ══ Hull 3: februar forsvinner ikke naar mars er betalt ══════════════
     echo "\n── Hull 3a: forrige maaned ubetalt, denne betalt ──\n";
     [$d1, $d1S] = nyttMedlem($plan, 'Hull3 Hull');
@@ -339,6 +362,14 @@ try {
     sjekk('e) fjern nektes («betalt gjennom Vipps»), plassen staar', $svar[0][0] !== 200
         && str_contains($feiltekst($svar[0]), 'betalt gjennom Vipps') && $bok($b5)['status'] === 'betalt',
         $svar[0][0] . ' ' . $feiltekst($svar[0]));
+    // «til-venteliste» har den samme sjekken.
+    $b7 = $plass(['gjest_epost' => strtolower($tag) . '-vente@lissom.test']);
+    $vipps($b7, 50000);
+    $svar = kall([[$porter[0], $PAM, ['handling' => 'til-venteliste', 'id' => $b7], $token]]);
+    sjekk('e) til-venteliste nektes («betalt gjennom Vipps»), plassen staar, ingen paa ventelista', $svar[0][0] !== 200
+        && str_contains($feiltekst($svar[0]), 'betalt gjennom Vipps') && $bok($b7)['status'] === 'betalt'
+        && (int) DB::verdi('SELECT COUNT(*) FROM waitlist WHERE course_session_id = :o', ['o' => $o]) === 0,
+        $svar[0][0] . ' ' . $feiltekst($svar[0]));
     // Ubetalt plass kan fortsatt fjernes.
     $b6 = $plass(['status' => 'reservert', 'betalt_maate' => 'Ikke betalt']);
     $svar = kall([[$porter[0], $PAM, ['handling' => 'fjern', 'id' => $b6], $token]]);
@@ -356,6 +387,7 @@ try {
             DB::kjor("DELETE FROM notifications WHERE ref_type = 'booking' AND ref_id = :b", ['b' => $b]);
         }
         DB::kjor('DELETE FROM bookings WHERE course_session_id = :o', ['o' => $o]);
+        DB::kjor('DELETE FROM waitlist WHERE course_session_id = :o', ['o' => $o]);
         DB::kjor('DELETE FROM course_sessions WHERE id = :o', ['o' => $o]);
     }
     foreach ($kurs as $k) { DB::kjor('DELETE FROM courses WHERE id = :k', ['k' => $k]); }

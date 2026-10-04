@@ -1056,6 +1056,8 @@ Svar::json([
     // «Bestill mer» og «Lav aktivitet» (eieren, 28. september 2026). Bare
     // for verkstedet — se app/lib/lager.php og app/lib/aktivitet.php.
     'bestillMer'   => Lager::bestillMer(),
+    // Ta ut leire på I dag (eieren 04.10.2026).
+    'taUtLeire'    => Lager::leireListe(),
     'lavAktivitet' => ['antall' => count(Aktivitet::lave()), 'dager' => Aktivitet::dager()],
     'varsler'    => $varsler,
     'hengende'   => $hengendeListe,

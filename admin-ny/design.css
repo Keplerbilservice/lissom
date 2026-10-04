@@ -20,3 +20,6 @@
 .topp-hoyre{display:flex;align-items:center;gap:10px;margin-left:auto;flex:none}
 .topp-hoyre .account{display:flex;align-items:center;gap:10px;margin-left:6px;padding-left:16px;border-left:1px solid var(--line)}
 @media(max-width:760px){#topp{flex-wrap:wrap;gap:10px;justify-content:flex-start}#topp .topp-hoyre{order:-1;margin-left:0;flex:1 1 100%;gap:8px}#topp .topp-hoyre .account{display:none}#topp .search-wrap{flex:1 1 100%;width:100%}#topp .stemple{flex:0 0 auto;padding-left:12px;padding-right:12px}}
+/* Butikk (eieren 04.10.2026): filterpillene over lista, og «Hvor skal varen vises?» som overskrift i vareskjemaet. */
+.butikk-piller{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 18px}.butikk-piller+.card{margin-bottom:22px}
+.form-heading{margin:6px 0 -8px;font-weight:700}

@@ -498,7 +498,7 @@
         {
             "id": "utsolgt-borte",
             "dato": "2026-09-27",
-            "hva": "«lite på lager i varselet vil jeg ikke ha som varsel, annet enn på interne varer, så når en vare i nettbutikken er solgt ut, så skal den bli borte»",
+            "hva": "«lite på lager i varselet vil jeg ikke ha som varsel, annet enn på interne varer, så når en vare i nettbutikken er solgt ut, så skal den bli borte» ENDRET 2026-10-04 (eieren, Butikk): samme regel, men «i nettbutikken» er nå bryteren Nettbutikken (Lager::iNettbutikkSql), fordi en vare kan være både i nettbutikken og internt.",
             "hvor": "Oversikt › Nettbutikk, butikken på lissom.no, sitemap, vareadresser",
             "kode": [
                 {
@@ -510,7 +510,7 @@
                 {
                     "fil": "api/butikk.php",
                     "finnes": [
-                        "AND (kun_medlemmer = 1 OR lager IS NULL OR lager > 0)"
+                        "\"(({$iNett} AND (lager IS NULL OR lager > 0)) OR kun_medlemmer = 1)\""
                     ]
                 },
                 {
@@ -537,7 +537,7 @@
                 {
                     "fil": "side.php",
                     "finnes": [
-                        "AND (kun_medlemmer = 1 OR lager IS NULL OR lager > 0)"
+                        "AND (kun_medlemmer = 1 OR (\" . Lager::iNettbutikkSql() . \" AND (lager IS NULL OR lager > 0)))"
                     ]
                 }
             ]
@@ -1830,7 +1830,7 @@
                     "finnes": [
                         "$sperre = handleliste_fraktsperre();",
                         "$sperre = handleliste_fraktsperre($leverandorId);",
-                        "$m['gebyrOre'] = (int) round($m['varerOre'] * $gebyr / 100);"
+                        "$m['gebyrOre'] = $m['intern'] ? 0 : (int) round($m['varerOre'] * $gebyr / 100);"
                     ]
                 },
                 {
@@ -4891,6 +4891,101 @@
                     "finnes": [
                         ".search-wrap input{border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent;",
                         ".topp-hoyre{display:flex;align-items:center;gap:10px;margin-left:auto;flex:none}"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "adminny-butikk-lager",
+            "dato": "2026-10-04",
+            "hva": "Butikk i hovedmenyen i admin-ny (mellom Penger og Verksted). Én vare kan ligge i både Nettbutikken og Internt, med felles lager (vareskjemaet: «Hvor skal varen vises?» ☐ Nettbutikken ☐ Internt; migrasjon 252, kolonnen i_nettbutikk, NULL = som før). Filterpiller Alle · Nettbutikk · Internt · Lite på lager N. «Lite på lager» i Butikk og på I dag («2 igjen · min 5 · fyll til 20», Fyll på, Åpne butikken). Fyll på legger antallet til lageret («Lageret er nå N.»). E-postvarselet intern_bestill_mer går også når antall eller min endres for hånd. Kunden: gjester ser varer i nettbutikken, medlemmer i tillegg det som er Internt.",
+            "hvor": "admin-ny › Butikk og I dag; api/butikk.php; Min side › internbutikken",
+            "kode": [
+                {
+                    "fil": "admin-ny/app.js",
+                    "finnes": [
+                        "['butikk','Butikk','▢']",
+                        "field('hvor','Hvor skal varen vises?','heading'),field('iNettbutikk','Nettbutikken','checkbox'),field('kunMedlemmer','Internt','checkbox')",
+                        "card('Lite på lager'",
+                        "link('Åpne butikken',href('butikk'))",
+                        "form('Fyll på · '+navn"
+                    ]
+                },
+                {
+                    "fil": "api/admin/produkter.php",
+                    "finnes": [
+                        "if ($handling === 'fyllPaa') {",
+                        "'litePaaLager' => Lager::bestillMer(),",
+                        "Lager::etterEndring($id,"
+                    ]
+                },
+                {
+                    "fil": "app/lib/lager.php",
+                    "finnes": [
+                        "public static function iNettbutikkSql(",
+                        "public static function etterEndring("
+                    ]
+                },
+                {
+                    "fil": "api/butikk.php",
+                    "finnes": [
+                        "'internt'      => (bool) $v['kun_medlemmer'],"
+                    ]
+                },
+                {
+                    "fil": "db/migrations/252_nettbutikk_og_internt.sql",
+                    "finnes": [
+                        "ADD COLUMN IF NOT EXISTS i_nettbutikk TINYINT(1) NULL DEFAULT NULL"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "butikk-ta-ut-og-verkstedets-handleliste",
+            "dato": "2026-10-04",
+            "hva": "«Ta ut leire» i Butikk og på I dag: «Ta ut 1» trekker én fra lageret uten betaling («Tatt ut 1. Lageret er nå N.»), registreres i revisjonsloggen, og gir samme varsel og handleliste som et salg. Når en vare når min, legges den automatisk i handlelista under leverandøren som «Verkstedets lager» med maks − lager stk (min 5, maks 25 → 20); én linje per vare til den er bestilt. Verkstedet er med i frakten, men uten gebyr og uten Vipps-krav; admin velger selv når «Bestill» sendes. En vare uten Nettbutikken og Internt er «bare i admin» (f.eks. Toffee). Eieren 04.10, GO.",
+            "hvor": "admin-ny › Butikk, I dag og Handlelister; api/admin/handlelister.php",
+            "kode": [
+                {
+                    "fil": "app/lib/lager.php",
+                    "finnes": [
+                        "public static function tilHandlelista(array $v): void",
+                        "public static function leireListe(): array",
+                        "WHERE member_id IS NULL AND product_id = :p AND status = 'sendt' AND bestilt_at IS NULL"
+                    ]
+                },
+                {
+                    "fil": "api/admin/produkter.php",
+                    "finnes": [
+                        "if ($handling === 'taUt') {",
+                        "'beskjed' => 'Tatt ut 1. Lageret er nå ' . $naa . '.'"
+                    ],
+                    "ikkeFinnes": [
+                        "Kryss av for Nettbutikken, Internt eller begge."
+                    ]
+                },
+                {
+                    "fil": "api/admin/handlelister.php",
+                    "finnes": [
+                        "'intern'   => $l['member_id'] === null,",
+                        "|| !empty($m['intern'])) {",
+                        "COALESCE(m.navn, 'Verkstedets lager') AS medlemsnavn"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/app.js",
+                    "finnes": [
+                        "card('Ta ut leire'",
+                        "button('Ta ut 1'"
+                    ],
+                    "ikkeFinnes": [
+                        "Kryss av for Nettbutikken, Internt eller begge."
+                    ]
+                },
+                {
+                    "fil": "db/migrations/253_handleliste_verkstedets_lager.sql",
+                    "finnes": [
+                        "MODIFY member_id BIGINT UNSIGNED NULL"
                     ]
                 }
             ]

@@ -139,6 +139,46 @@ try {
     // Da staar de fjorten faste sidene alene.
 }
 
+/**
+ * Paint on Pots: prisen og datoene fra kursdata, ikke fra GEO-teksten.
+ *
+ * GEO-svaret er skrevet én gang i admin, og prisen og datoene ble da
+ * skrevet inn som tekst. Det ga «Prisen er kr. 0,-» og datoer fra
+ * september paa lissom.no/llms.txt (eieren, 4. oktober 2026). Prisen
+ * hentes naa fra kurset, per gjenstand («det er pr gjenstand»), og
+ * datolinja tas bort — de kommende datoene staar i kurslista over.
+ *
+ * @return array{0:string,1:string}
+ */
+function popLive(string $sv, string $fakta): array
+{
+    $pris = '';
+    try {
+        foreach (Robottekst::kurs() as $k) {
+            if ($k['slug'] === 'paint-on-pots' && $k['pris_ore'] > 0) {
+                $pris = ($k['fra_pris'] ? 'fra ' : '') . Robottekst::kroner($k['pris_ore']) . ' per gjenstand';
+            }
+        }
+    } catch (Throwable) {
+    }
+    $sv = trim((string) preg_replace('/\s*Prisen er .*?,-\.?/u', $pris !== '' ? ' Prisen er ' . $pris . '.' : '', $sv));
+    $linjer = [];
+    foreach (preg_split('/\r?\n/', $fakta) ?: [] as $linje) {
+        $t = trim($linje);
+        if (preg_match('/^Pris\s*:/iu', $t)) {
+            if ($pris !== '') {
+                $linjer[] = 'Pris: ' . $pris;
+            }
+            continue;
+        }
+        if (preg_match('/^Datoer\b/iu', $t)) {
+            continue;
+        }
+        $linjer[] = $linje;
+    }
+    return [$sv, implode("\n", $linjer)];
+}
+
 try {
     $svar = [];
     foreach (DB::alle("SELECT nokkel, verdi FROM content_blocks WHERE nokkel LIKE 'GEO/%'") as $r) {
@@ -155,7 +195,11 @@ try {
         if ($sp === '' || $sv === '') {
             continue;
         }
-        $svar[] = [$sp, $sv, trim((string) ($d['fakta'] ?? '')), $GEO_SIDER[$id]];
+        $fakta = trim((string) ($d['fakta'] ?? ''));
+        if ($id === 'paintonpots') {
+            [$sv, $fakta] = popLive($sv, $fakta);
+        }
+        $svar[] = [$sp, $sv, $fakta, $GEO_SIDER[$id]];
     }
 
     if ($svar !== []) {

@@ -5262,6 +5262,65 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "paint-on-pots-per-gjenstand",
+            "dato": "2026-10-04",
+            "hva": "Paint on Pots koster fra 450 kr per gjenstand, ikke per person (eieren: «det er pr gjenstand»). Bookingboksen på /kurs/paint-on-pots sier «per gjenstand» (bare PoP, andre kurs «per person»); artikkelen sier «Cirka to timer» og har ikke drop-in (migrasjon 255); llms.txt henter PoP-prisen fra kurset med «per gjenstand» og har ikke den gamle datolinja",
+            "hvor": "/kurs/paint-on-pots, /nyheter/paint-on-pots-slik-fungerer-det, /llms.txt",
+            "kode": [
+                {
+                    "fil": "app/nett/sider/kursside.php",
+                    "finnes": [
+                        "$prisNote = $gratis ? 'for medlemmer' : ($erPop ? 'per gjenstand' : 'per person');"
+                    ]
+                },
+                {
+                    "fil": "api/llms.php",
+                    "finnes": [
+                        "[$sv, $fakta] = popLive($sv, $fakta);",
+                        "' per gjenstand'"
+                    ]
+                },
+                {
+                    "fil": "db/migrations/255_paint_on_pots_artikkel_to_timer.sql",
+                    "finnes": [
+                        "Cirka to timer.",
+                        "-- godkjent av eieren: 2026-10-04"
+                    ]
+                }
+            ],
+            "live": [
+                {
+                    "sti": "/kurs/paint-on-pots",
+                    "finnes": [
+                        "per gjenstand</span>"
+                    ],
+                    "ikkeFinnes": [
+                        "per person</span>"
+                    ]
+                },
+                {
+                    "sti": "/nyheter/paint-on-pots-slik-fungerer-det",
+                    "finnes": [
+                        "Cirka to timer."
+                    ],
+                    "ikkeFinnes": [
+                        "halvannen time",
+                        "drop-in"
+                    ]
+                },
+                {
+                    "sti": "/llms.txt",
+                    "finnes": [
+                        "per gjenstand"
+                    ],
+                    "ikkeFinnes": [
+                        "Prisen er kr. 0,-",
+                        "Pris: kr. 0,-"
+                    ]
+                }
+            ]
         }
     ]
 }

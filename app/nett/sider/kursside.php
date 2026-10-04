@@ -318,7 +318,9 @@ if ((!empty($kat['gjenstandIKassa']) || !empty($kat['fraPris'])) && !empty($kat[
     }
     $rabattTeaser = ($maks > 0 && !$gratis) ? 'Ta med venner og få opptil ' . rtrim(rtrim(number_format($maks, 1, ',', ''), '0'), ',') . ' % rabatt.' : '';
 }
-$prisNote = $gratis ? 'for medlemmer' : 'per person';
+// Paint on Pots betales per gjenstand, ikke per person (eieren, 4. oktober
+// 2026: «det er pr gjenstand»). Bare teksten — prisen og bookingen er som foer.
+$prisNote = $gratis ? 'for medlemmer' : ($erPop ? 'per gjenstand' : 'per person');
 // Foerste dato staar valgt fra start, som i appen — med stor forbokstav.
 $naar = $valgt !== null ? (string) ($valgt['dato'] ?? '') : 'Flere datoer';
 if ($naar !== '') {

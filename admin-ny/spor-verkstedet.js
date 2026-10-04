@@ -37,6 +37,10 @@ export function askWorkshop(d){
  input.addEventListener('input',()=>{state.sporsmal=input.value;});
  input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();spor();}});
  tegn();
+ // Fra søkefeltet i toppen (#dokumenter?spor=…): spørsmålet sendes rett til AI-en.
+ // Adressen ryddes, så det ikke spørres på nytt når skjermen tegnes igjen.
+ const fraSok=new URLSearchParams(location.hash.split('?')[1]||'').get('spor');
+ if(fraSok&&fraSok.trim()){history.replaceState(null,'','#dokumenter');input.value=fraSok;state.sporsmal=fraSok;queueMicrotask(spor);}
  return el('section',{class:'card',id:'spor-verkstedet',style:'margin-bottom:22px'},el('h2',{text:'Spør verkstedet'}),
   el('div',{style:'display:flex;gap:12px;align-items:center;flex-wrap:wrap'},input,knapp),
   kost.textContent?el('p',{style:'margin:8px 0 0'},kost):null,

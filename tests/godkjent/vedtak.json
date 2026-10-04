@@ -4704,13 +4704,12 @@
         {
             "id": "topp-ovn-inne-idag-kurs",
             "dato": "2026-10-04",
-            "hva": "Ovnen (Ovn er tømt / Råbrann satt / Glasurbrann satt) og «Hvem er inne?» er alltid synlige i toppen ved siden av Stemple; I dag viser dagens kurs og notater",
+            "hva": "Ovnen (Ovn er tømt / Råbrann satt / Glasurbrann satt) og «Hvem er inne?» er alltid synlige i toppen ved siden av Stemple; I dag viser dagens kurs og notater ENDRET 2026-10-04 (eieren): «Hvem er inne?» er tatt ut av toppen — det står på I dag. Se adminny-toppen-diskret.",
             "hvor": "admin-ny › topp og I dag",
             "kode": [
                 {
                     "fil": "admin-ny/app.js",
                     "finnes": [
-                        "stempleKnapp(),ovnKnapp(),inneKnapp(),",
                         "fetch('/api/ovn.php'",
                         "card('Kurs og notater i dag'"
                     ]
@@ -4923,6 +4922,30 @@
                     "fil": "api/feil.php",
                     "finnes": [
                         "if ($apenTil() === '' && !Sesjon::erAdmin()) {"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "adminny-toppen-diskret",
+            "dato": "2026-10-04",
+            "hva": "Toppen i admin-ny: søkefeltet «Finn person eller arbeidsoppgave …» er diskret (ingen fylt boks, bare en tynn strek under; boksen kommer når du trykker i det). Stemple inn og Ovn står samlet til høyre ved Administrator/Logg ut, i samme pille som resten. «Hvem er inne?» står bare på I dag, ikke i toppen. Mobil: Stemple og Ovn først, søket under.",
+            "hvor": "admin-ny › toppen",
+            "kode": [
+                {
+                    "fil": "admin-ny/app.js",
+                    "finnes": [
+                        "el('div',{class:'topp-hoyre'},stempleKnapp(),ovnKnapp(),el('div',{class:'account'}"
+                    ],
+                    "ikkeFinnes": [
+                        "inneKnapp("
+                    ]
+                },
+                {
+                    "fil": "admin-ny/design.css",
+                    "finnes": [
+                        ".search-wrap input{border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent;",
+                        ".topp-hoyre{display:flex;align-items:center;gap:10px;margin-left:auto;flex:none}"
                     ]
                 }
             ]

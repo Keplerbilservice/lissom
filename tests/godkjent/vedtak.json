@@ -5336,6 +5336,89 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "ressurs-teller-deltakere",
+            "dato": "2026-10-04",
+            "hva": "Et kurs legger beslag paa deltakerne sine, ikke plasstallet sitt. Dreieskive 8 og Bordplass 12 regnes mot paameldte.",
+            "hvor": "Ledige plasser, nettsiden og kurssida",
+            "kode": [
+                {
+                    "fil": "app/lib/booking.php",
+                    "finnes": [
+                        "-- Et kurs holder DELTAKERNE sine, ikke plasstallet sitt."
+                    ],
+                    "ikkeFinnes": [
+                        "ELSE COALESCE(cs2.kapasitet, c2.kapasitet) END"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "en-dato-paa-skjermen",
+            "dato": "2026-10-04",
+            "hva": "Datoen kunden ser er den samme som blir booket. Overskrift og ordresammendrag leser bTidDato naar kurset foelger aapningstidene.",
+            "hvor": "Booking, kurs som foelger aapningstidene (Paint on Pots)",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "visningsDato() {",
+                        "bookOrdreDato: (this.visningsDato())"
+                    ],
+                    "ikkeFinnes": [
+                        "bookOrdreDato: (this.state.bDato) ||"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "forslagsdato-paa-norsk",
+            "dato": "2026-10-04",
+            "hva": "Foerste ledige skrives «mandag 13. oktober», ikke «2026-10-13». Aaret vises ikke.",
+            "hvor": "Velg tidspunkt, nettsiden",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "norskDag(iso) {",
+                        "(this.norskDag(f.dato) || f.dato)"
+                    ],
+                    "ikkeFinnes": [
+                        "Foerste ledige er ' + f.dato"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "admin-linjer-brekker-ikke",
+            "dato": "2026-10-04",
+            "hva": "Beloep, merkelapp og knapp i en .row brekker ikke; venstre kolonne gir etter i stedet.",
+            "hvor": "Admin: Kjoept i dag, Ta ut leire",
+            "kode": [
+                {
+                    "fil": "admin-ny/design.css",
+                    "finnes": [
+                        ".row>:last-child{flex:none}",
+                        ".button{white-space:nowrap}"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "venteliste-varsler-verkstedet",
+            "dato": "2026-10-04",
+            "hva": "Verkstedet faar beskjed naar noen setter seg paa venteliste, med navn, posisjon og kontaktopplysninger.",
+            "hvor": "Venteliste",
+            "kode": [
+                {
+                    "fil": "api/venteliste.php",
+                    "finnes": [
+                        "Varsel::tilAdmin(",
+                        "' står som nummer '"
+                    ]
+                }
+            ]
         }
     ]
 }

@@ -114,4 +114,23 @@ $naar = $paaDato
         'posisjon' => (string) $posisjon,
     ], 'waitlist', $id);
 
+// Og beskjed til verkstedet.
+//
+// Eieren, 4. oktober 2026: «Og er det fult og det vil komme fler saa send meg
+// beskjed.» Fram til naa gikk det bare e-post til den som ventet. Verkstedet
+// fikk ingenting, og visste derfor ikke at noen sto og banket paa en dato som
+// var meldt full — heller ikke de gangene datoen slett ikke var full.
+//
+// Kontaktopplysningene staar i beskjeden: er det plass likevel, er det en
+// telefon som loeser det, ikke et nytt skjermbilde i admin.
+Varsel::tilAdmin(
+    'Venteliste: ' . (string) $kurs['tittel'] . $naar,
+    $navn . ' står som nummer ' . $posisjon . ' på ventelisten for '
+        . (string) $kurs['tittel'] . $naar . '.'
+        . "\n\nE-post: " . $epost
+        . ($telefon !== '' ? "\nTelefon: " . $telefon : ''),
+    'waitlist',
+    $id
+);
+
 Svar::ok(['posisjon' => $posisjon, 'kurs' => $kurs['tittel']]);

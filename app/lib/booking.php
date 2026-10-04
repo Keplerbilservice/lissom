@@ -265,9 +265,10 @@ final class Booking
             return 0;
         }
         $kapasitet = (int) ($kurs['kapasitet'] ?? 0);
-        // Aapen plass (Paint on Pots): de andre kursene teller bare folk som
-        // er paameldt, som i ledigeRegnet(). Eieren, 24. september 2026.
-        $egenApen = (int) ($kurs['folger_apningstid'] ?? 0) === 1 ? 1 : 0;
+        // «$egenApen» sto her: et skille mellom aapne plasser og planlagte
+        // kurs, fordi de planlagte holdt hele plasstallet sitt. Naar bare
+        // deltakere teller (eieren, 4. oktober 2026), er de to like, og
+        // skillet hadde ingenting igjen aa gjore.
 
         $aktiv2 = self::aktivSql('b2');
         $slutt2 = 'COALESCE(cs2.slutt_tid, cs2.start_tid + INTERVAL 3 HOUR)';
@@ -310,15 +311,17 @@ final class Booking
         }
 
         $brukt = (int) DB::verdi(
+            // Samme regel som i ledigeRegnet(): bare deltakere teller.
+            // Eieren, 4. oktober 2026. Sto GREATEST(kapasiteten, de paameldte)
+            // ogsaa her, og det er denne som gir kvarterene i tidsvelgeren:
+            // et planlagt kurs spiste hele taket, ingen kvarter kom gjennom,
+            // og Paint on Pots sto «Fullt denne dagen» med stoler ledige.
             "SELECT COALESCE(SUM(
-                      GREATEST(
-                        CASE WHEN cs2.fra_apningstid = 1 OR {$egenApen} = 1 THEN 0
-                             ELSE COALESCE(cs2.kapasitet, c2.kapasitet) END,
                         COALESCE(cs2.manuelt_opptatt, 0)
                         + COALESCE((SELECT SUM(b2.antall) FROM bookings b2
                                      WHERE b2.course_session_id = cs2.id
                                        AND {$aktiv2}), 0)
-                      )), 0)
+                      ), 0)
                FROM course_sessions cs2
                JOIN courses c2 ON c2.id = cs2.course_id
               WHERE cs2.status = 'planlagt'
@@ -468,38 +471,37 @@ final class Booking
                     -- samtidig. Aatte skiver er aatte skiver enten de sitter
                     -- paa et dreiekurs eller en Date Night.
                     --
-                    -- Et planlagt kurs holder plasstallet sitt, ikke bare de
-                    -- solgte plassene. Eieren, 30. august: «det maa ikke vaere
-                    -- mulig aa booke en plass eller dreieskive paa forhaand for
-                    -- medlemmer naar det er planlagt kurs. Da er de ressursene
-                    -- booket og opptatt med kurs.» Et dreiekurs med aatte
-                    -- plasser tar alle aatte skivene i den tida det gaar, ogsaa
-                    -- for noen har meldt seg paa — skivene staar dekket til
-                    -- kurset.
+                    -- Et kurs holder DELTAKERNE sine, ikke plasstallet sitt.
+                    -- Eieren, 4. oktober 2026: «Jeg kan ha 8 paa dreieskive,
+                    -- og 12 paa verkstedet. Og det er saa klart regnes mot
+                    -- deltakere ikke hvor mange som kanskje kommer.»
                     --
-                    -- Med ett unntak, og det er avgjorende: de aapne plassene
-                    -- (fra_apningstid = 1 — Paint on Pots) holder
-                    -- bare det som faktisk er booket. De er et tilbud, ikke en
-                    -- plan. Holdt de plasstallet sitt ogsaa, ville en tom
-                    -- aapen plass paa aatte sperret dreiekurset ved siden av,
-                    -- og de to hadde tatt livet av hverandre.
+                    -- Slik det var: her sto GREATEST(kapasiteten, de
+                    -- paameldte), og kapasiteten vant nesten alltid. Et
+                    -- planlagt kurs med tolv plasser og tre paameldte spiste
+                    -- hele Bordplass-taket alene, og Paint on Pots ved siden
+                    -- av sto «Fullbooket» med ni stoler ledige. Det kostet en
+                    -- kunde 3. oktober 2026: hun fikk «fullt» paa torsdag 8.
+                    -- oktober mens admin viste 3 av 12.
                     --
-                    -- Og motsatt: er det OEKTA SELV som er aapen plass, teller
-                    -- de andre kursene bare folk som er paameldt. Eieren, 24.
-                    -- september 2026: Paint on Pots sto «utsolgt» uten en
-                    -- eneste booking fordi et tomt Store fat-kurs holdt hele
-                    -- verkstedet — «ressursene er verkstedplasser og ikke
-                    -- dreieskiver».
+                    -- Slik det er: bare folk teller — de som har meldt seg paa,
+                    -- og det verkstedet har satt av for haand. Regelen er den
+                    -- samme for alle oekter, saa unntaket for de aapne
+                    -- plassene (fra_apningstid) trengs ikke lenger: et tomt
+                    -- kurs holder ingenting, enten det er planlagt eller aapent.
+                    --
+                    -- Merk hva dette aapner: et dreiekurs med fem av aatte
+                    -- paameldte lar tre skiver staa ledige for medlemmer i den
+                    -- tida kurset gaar. Det er motsatt av regelen fra 30.
+                    -- august, og eieren ble vist konsekvensen for dette ble
+                    -- endret.
                     COALESCE((
                         SELECT SUM(
-                            GREATEST(
-                                CASE WHEN cs2.fra_apningstid = 1 OR cs.fra_apningstid = 1 THEN 0
-                                     ELSE COALESCE(cs2.kapasitet, c2.kapasitet) END,
-                                COALESCE(cs2.manuelt_opptatt, 0)
-                                + COALESCE((SELECT SUM(b2.antall) FROM bookings b2
-                                             WHERE b2.course_session_id = cs2.id
-                                               AND {$aktiv2}), 0)
-                            ))
+                            COALESCE(cs2.manuelt_opptatt, 0)
+                            + COALESCE((SELECT SUM(b2.antall) FROM bookings b2
+                                         WHERE b2.course_session_id = cs2.id
+                                           AND {$aktiv2}), 0)
+                            )
                           FROM course_sessions cs2
                           JOIN courses c2 ON c2.id = cs2.course_id
                          WHERE cs2.status = 'planlagt'

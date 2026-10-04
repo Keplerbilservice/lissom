@@ -4716,6 +4716,21 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "adminny-handlelister-verksted",
+            "dato": "2026-10-04",
+            "hva": "Handlelister har eget kort under Verksted ved siden av Skisser, så den er lett å finne",
+            "hvor": "admin-ny › Verksted",
+            "kode": [
+                {
+                    "fil": "admin-ny/arbeidsoppgaver.js",
+                    "finnes": [
+                        "['Handlelister','#handlelister','Åpnes her']",
+                        "['Skisser','/skisser.html'"
+                    ]
+                }
+            ]
         }
     ]
 }

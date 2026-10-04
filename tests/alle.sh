@@ -30,9 +30,11 @@ if [ "${1:-}" = "--grupper" ]; then printf '%s\n' "${GRUPPER[@]}"; exit 0; fi
 # feiler skriptet — ingen flyt kan falle ut. Malt lokalt 2. oktober 2026
 # (sek.): «holder seg» ~450 (alene), «alle knapper» + «I dag» + menyer/skisser/
 # frakt ~360, Regresjon + medlemsreisene + Prøv/timepakke ~290, resten ~190.
-FLYTDEL_1='Nytt admin holder seg'
-FLYTDEL_2='Nytt admin: alle knapper|Nytt admin: I dag|Menyer og ark|Skisser:|Frakt ('
-FLYTDEL_3='Regresjon:|Google-anmeldelser|Medlemsreise|Prøv Lissom|Etter byttet|Oversikt paa mobil|Timepakke:|Utstempling'
+# Eieren 4. oktober 2026: admin2 slettet, og de tre flytene for den med.
+# Resten fordelt paa nytt, saa ingen gruppe staar tom.
+FLYTDEL_1='Menyer og ark|Skisser:|Frakt ('
+FLYTDEL_2='Regresjon:|Google-anmeldelser|Medlemsreise|Prøv Lissom'
+FLYTDEL_3='Etter byttet|Oversikt paa mobil|Timepakke:|Utstempling'
 FLYTDEL_4='Flytt deltaker|Delt betaling|Vervepremie|Galleri:|Tekst maler|Synlighet:|Oversikt: dagens|Bestill mer|Designmaler|Bilder:|Gavekortsida|Butikk:'
 sjekk_flytdeler() {
   local navn n treff d p feil=0

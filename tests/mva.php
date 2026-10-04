@@ -89,13 +89,7 @@ sjekk('omsetningen uten mva oeker med beloepet uten mva',
     ($sE['eksOre'] - $sF['eksOre']) . ' mot ' . $forventet['eksOre']);
 DB::kjor('DELETE FROM payments WHERE id = :p', ['p' => $pay]);
 
-// ── 5. Det nye admin: hurtigvalg ──────────────────────────────────────
-$a2 = $les('api/admin/admin2.php');
-sjekk('admin2.php krever admin', str_contains($a2, '$admin = krev_admin();'));
-sjekk('hurtigvalgene lagres per admin-bruker', str_contains($a2, "'admin2_hurtigvalg_' . \$id"));
-sjekk('bare kjente hurtigvalg lagres', str_contains($a2, 'in_array($v, ADMIN2_HURTIGVALG, true)'));
-sjekk('standard er de fire faste', str_contains($a2, "const ADMIN2_STANDARD = ['startkurs', 'tabetalt', 'nykursdato', 'dagsoppgjor'];"));
-sjekk('pilla i det gamle admin er av fra start (bare «ja» er på)', str_contains($a2, "'prove'      => \$bryter('admin2') === 'ja'"));
+// (5. Hurtigvalgene i admin2 er borte: admin2 slettet, eieren 04.10.2026.)
 
 $ferdig = true;
 echo "\n  $ok ok, $feil feil\n";

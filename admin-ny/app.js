@@ -16,7 +16,7 @@ import {setupScreens,setupRoutes} from './meldinger-og-oppsett.js';
 import {commerceScreens,commerceRoutes} from './kasse-og-handel.js';
 import {marketScreens,marketRoutes} from './marked.js';
 import {chatScreens,chatPlaces} from './chat.js';
-import {STEDER} from '../nyadmin/steder.js';
+import {STEDER} from './steder.js';
 
 // A separate interface. No legacy administrator page is mounted or framed.
 const NAV=[['idag','I dag','◉'],['kalender','Kalender','▦'],['kurs','Kurs','◇'],['folk','Folk','♧'],['penger','Penger','○'],['verksted','Verksted','⌂'],['innhold','Innhold','✎'],['marked','Markedsføring','✦'],['alle','Alle funksjoner','☷']];

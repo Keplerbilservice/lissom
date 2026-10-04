@@ -4926,6 +4926,27 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "adminny-kjopt-i-dag-dato-ledige",
+            "dato": "2026-10-04",
+            "hva": "«Kjøpt i dag» på I dag viser kursdatoen (samme format som Kurs › Datoer) og antall ledige plasser på kurskjøp: klokkeslett · kurs · kursdato · N ledige",
+            "hvor": "admin-ny › I dag › Kjøpt i dag",
+            "kode": [
+                {
+                    "fil": "admin-ny/app.js",
+                    "finnes": [
+                        "[b.kl,b.hva,b.kursNaar,b.ledige!=null?b.ledige+' ledige':'']"
+                    ]
+                },
+                {
+                    "fil": "api/admin/oversikt.php",
+                    "finnes": [
+                        "'kursNaar' => $b['start_tid'] !== null ? Booking::norskPeriode((string) $b['start_tid'], $b['slutt_tid'] ?? null) : null,",
+                        "$ledige = Booking::ledigePlasserFlere($okter);"
+                    ]
+                }
+            ]
         }
     ]
 }

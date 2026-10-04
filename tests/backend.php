@@ -2599,7 +2599,9 @@ sjekk('brenningens slag er et valg, ikke fritekst',
 sjekk('brenningene staar i kalenderen, vaktene ikke',
     str_contains($kalFil, "'type'      => 'brenning',")
     && !str_contains($kalFil, "'type'   => 'vakt',")
-    && str_contains($kalFil, 'array_merge($hendelser, $verksted, $brenninger, $notater)'));
+    // «$apneDager» kom 4. oktober 2026: dagene et kurs staar aapent,
+    // tegnet av ukeplanen og ikke av en rad i course_sessions.
+    && str_contains($kalFil, 'array_merge($hendelser, $verksted, $apneDager, $brenninger, $notater)'));
 // Uten tabellen skal endepunktet svare, ikke doe.
 sjekk('kalenderen taaler at migrasjon 088 ikke er kjort',
     str_contains($kalFil, "DB::harTabell('brenninger')"));
@@ -17678,7 +17680,7 @@ sjekk('notatene har sin egen tabell, ikke en kolonne paa den gamle',
 
 sjekk('notatene kommer ut av kalenderen som hendelser, som alt annet',
     str_contains($knKal, "'type'    => 'notat',")
-    && str_contains($knKal, "array_merge(\$hendelser, \$verksted, \$brenninger, \$notater)"),
+    && str_contains($knKal, "array_merge(\$hendelser, \$verksted, \$apneDager, \$brenninger, \$notater)"),
     'da tegner maaned, uke og liste dem uten aa vite at de er nye');
 
 sjekk('… og kalenderen taaler at oppdateringen ikke er kjort ennaa',

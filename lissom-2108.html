@@ -35162,6 +35162,46 @@ class Component extends DCLogic {
    * i hver aapen dag framover, og det er akkurat den floden som druknet
    * kalenderen den gangen drop-in laa ute. Skjermen spor om én dag om gangen.
    */
+  /**
+   * «torsdag 8. oktober» av en ISO-dato.
+   *
+   * Eieren, 4. oktober 2026: «Tidsformatet, dag. måned og år er riktig, og du
+   * kan droppe å vise år.» Under tidsvelgeren sto datoen raa — «Første ledige
+   * er 2026-10-13» — mens resten av skjermen skriver dagen ut.
+   *
+   * Samme ordlyd som kalenderens egen beskjed lager. Staar her, som én
+   * utgave: to steder ville etter hvert skrevet hver sin dato.
+   */
+  norskDag(iso) {
+    const s = String(iso || '');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return '';
+    const d = new Date(s + 'T12:00:00');
+    const UKEDAG = ['søndag', 'mandag', 'tirsdag', 'onsdag', 'torsdag', 'fredag', 'lørdag'];
+    const MND = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember'];
+    return UKEDAG[d.getDay()] + ' ' + d.getDate() + '. ' + MND[d.getMonth()];
+  }
+
+  /**
+   * Datoen kunden skal SE — den samme som blir booket.
+   *
+   * Skjermen hadde to datoer i minnet. Overskrifta, datokortet og
+   * ordresammendraget leste «bDato»; selve bestillingen leste «bTidDato»
+   * (se bookOgBetal). «Ta den tiden» flyttet bare den siste. Da sto det
+   * torsdag 8. oktober paa skjermen mens bestillingen gikk til tirsdag 13.
+   *
+   * Det skjedde for en kunde 4. oktober 2026: hun betalte for to plasser den
+   * 13., og hadde 8. oktober foran seg hele veien.
+   *
+   * Foelger kurset aapningstidene, er «bTidDato» fasiten — det er den
+   * serveren faar. Ellers gjelder «bDato» som foer.
+   */
+  visningsDato() {
+    if (!this.folgerApningstid()) return this.state.bDato || '';
+    const dag = this.norskDag(this.state.bTidDato || '');
+    if (!dag) return '';
+    return this.state.bTid ? dag + ', ' + this.state.bTid : dag;
+  }
+
   hentTider(dato) {
     if (!dato || !this.folgerApningstid()) return;
     const kursId = this.kursIdNaa();
@@ -59797,7 +59837,7 @@ class Component extends DCLogic {
       visKontaktfelt: !(this.state.valgtKurs && (this.state.valgtKurs.price === 'Gratis' || this.state.valgtKurs.level === 'Kun for medlemmer')),
       erBookKvittert: !!this.state.bookKvittert,
       bookOrdreTittel: (this.state.valgtKurs && (this.state.valgtKurs.title || this.state.valgtKurs.tittel)) || 'Nybegynner dreiekurs',
-      bookOrdreDato: (this.state.bDato) || (this.state.valgtKurs && this.state.valgtKurs.datoer && this.state.valgtKurs.datoer[0] && this.state.valgtKurs.datoer[0].dato) || (this.state.valgtKurs && this.state.valgtKurs.date) || 'Onsdag 2. september, 17:30',
+      bookOrdreDato: (this.visningsDato()) || (this.state.valgtKurs && this.state.valgtKurs.datoer && this.state.valgtKurs.datoer[0] && this.state.valgtKurs.datoer[0].dato) || (this.state.valgtKurs && this.state.valgtKurs.date) || 'Onsdag 2. september, 17:30',
       bookOrdreSum: ((this.state.valgtKurs && this.state.valgtKurs.price) || 'Fra kr. 2 800,-').replace('Fra ', ''),
       // «bookTilKurv» sto her: den la kursnavnet med datoen i handlekurven.
       // Ingen knapp pekte paa den, og godt var det — kassa slaar hver linje
@@ -60907,7 +60947,15 @@ class Component extends DCLogic {
           // og fikk et tomrom. Med én tid er den valgt paa forhaand, og staar
           // der som en kvittering paa hva man har valgt.
           bHarTider: (dagRad.tider || []).length > 0,
-          bTiderTittel: 'Velg tidspunkt ' + (dagRad.dag ? '· ' + dagRad.dag : ''),
+          // Overskrifta navngir dagen som faktisk blir booket, ikke dagen i
+          // datokortet. Se visningsDato(): «Ta den tiden» flytter bTidDato,
+          // og da skal det staa her ogsaa.
+          bTiderTittel: 'Velg tidspunkt ' + (() => {
+            const d = this.folgerApningstid()
+              ? this.norskDag(this.state.bTidDato || '')
+              : dagRad.dag;
+            return d ? '· ' + d : '';
+          })(),
           // Vinduet doeren staar aapen i, paa den dagen som er valgt.
           //
           // Eieren, 23. september 2026, om Paint on Pots: «kan vi vise dagene
@@ -60997,7 +61045,7 @@ class Component extends DCLogic {
           bTidForslagTekst: (() => {
             const f = this.state.bTidForslag;
             if (!f) return 'Det er fullt de nærmeste dagene. Ta kontakt, så finner vi en tid.';
-            return 'Fullt denne dagen. Første ledige er ' + f.dato + ' kl. ' + f.tid + '.';
+            return 'Fullt denne dagen. Første ledige er ' + (this.norskDag(f.dato) || f.dato) + ' kl. ' + f.tid + '.';
           })(),
           bTidHarForslag: !!this.state.bTidForslag,
           bTidForslagKnapp: 'Ta den tiden',

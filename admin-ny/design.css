@@ -23,3 +23,14 @@
 /* Butikk (eieren 04.10.2026): filterpillene over lista, og «Hvor skal varen vises?» som overskrift i vareskjemaet. */
 .butikk-piller{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 18px}.butikk-piller+.card{margin-bottom:22px}
 .form-heading{margin:6px 0 -8px;font-weight:700}
+
+/* Beloepet og knappene brekker ikke (eieren 04.10.2026: «Beløpet deler seg
+   paa to linjer!!!!» og «Se knappen ta ut 1, alle er forskjellig»).
+
+   .row>div{min-width:0} gjaldt BEGGE kolonnene, saa hoeyre side — tallet og
+   merkelappen — ga etter sammen med teksten: «kr. 1 59 / 0,-» paa to linjer,
+   og «Ta ut 1» i tre ulike former nedover lista. Venstre kolonne er den som
+   skal gi etter; hoeyre side holder bredden sin. Samme grep som .stemple. */
+.row>:last-child{flex:none}
+.row>div:last-child strong{white-space:nowrap}
+.button{white-space:nowrap}

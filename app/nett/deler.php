@@ -281,7 +281,14 @@ final class Deler
             $h .= '</div>';
         }
         if ($tekst !== '') {
-            $h .= '<p style="margin: 0; font-size: var(--text-sm); line-height: 1.4; color: var(--text-muted); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; text-wrap: pretty;">' . $e($tekst) . '</p>';
+            // Tre linjer, alltid. Klippet til tre virket bare OPPAD: et kort
+            // med to linjer ble lavere enn naboen, og de fire paa forsida sto
+            // ujevnt. Eieren, 4. oktober 2026: «fortsatt forskjellige kort».
+            //
+            // Alt annet i kortet staar alt paa fast hoeyde — etiketten 18 px,
+            // tittelen 1.2em, prisraden 44 px. Teksten var det siste feltet
+            // som fikk vokse som den ville. 4.2em = tre linjer a 1,4.
+            $h .= '<p style="margin: 0; font-size: var(--text-sm); line-height: 1.4; height: 4.2em; color: var(--text-muted); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; text-wrap: pretty;">' . $e($tekst) . '</p>';
         }
         $h .= '</div>';
         $h .= '<div style="margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding-top: var(--space-2); flex-wrap: nowrap; height: 44px; box-sizing: border-box; overflow: hidden;">'

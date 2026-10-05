@@ -5577,6 +5577,57 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "agentteam-google-og-meta",
+            "dato": "2026-10-05",
+            "hva": "To agentteam ligger i repoet: tre for Google og soek, tre for Meta. De foreslaar, de endrer ingenting, og all kundetekst skal godkjennes foer bruk.",
+            "hvor": "Verktoey (.claude/agents)",
+            "kode": [
+                {
+                    "fil": ".claude/agents/sokeord.md",
+                    "finnes": [
+                        "name: sokeord",
+                        "**Du endrer ingenting.** Du foreslår."
+                    ]
+                },
+                {
+                    "fil": ".claude/agents/seo-teknisk.md",
+                    "finnes": [
+                        "name: seo-teknisk",
+                        "**Ikke rør kundesiden.**"
+                    ]
+                },
+                {
+                    "fil": ".claude/agents/google-bedrift.md",
+                    "finnes": [
+                        "name: google-bedrift",
+                        "**Du endrer ingenting i Google-profilen.**"
+                    ]
+                },
+                {
+                    "fil": ".claude/agents/meta-annonser.md",
+                    "finnes": [
+                        "name: meta-annonser",
+                        "**Du skrur ikke av eller på noe i Meta.**"
+                    ]
+                },
+                {
+                    "fil": ".claude/agents/meta-kreativ.md",
+                    "finnes": [
+                        "name: meta-kreativ",
+                        "**Du publiserer ingenting.**",
+                        "**All tekst en kunde kan lese vises ordrett i svaret før den brukes.**"
+                    ]
+                },
+                {
+                    "fil": ".claude/agents/meta-malgruppe.md",
+                    "finnes": [
+                        "name: meta-malgruppe",
+                        "**Du endrer ingenting i Meta.**"
+                    ]
+                }
+            ]
         }
     ]
 }

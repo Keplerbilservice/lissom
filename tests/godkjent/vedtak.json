@@ -5623,6 +5623,27 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "pameldte-kommende-tidligere",
+            "dato": "2026-10-07",
+            "hva": "Påmeldte: «Skal på kurs (N)» (kommende, nærmeste først, vises først) og «Har vært på kurs (N)» (nyeste først) hver for seg",
+            "hvor": "admin-ny › Påmeldte og deltakere",
+            "kode": [
+                {
+                    "fil": "admin-ny/innhold-og-kurs.js",
+                    "finnes": [
+                        "let pmVis='kommende';",
+                        "pmPille('tidligere','Har vært på kurs')"
+                    ]
+                },
+                {
+                    "fil": "api/admin/pameldte.php",
+                    "finnes": [
+                        "'start'   => $d['start_tid'] ?"
+                    ]
+                }
+            ]
         }
     ]
 }

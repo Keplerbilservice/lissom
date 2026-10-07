@@ -228,6 +228,8 @@ if ($oktId <= 0) {
             'tlf'     => $d['telefon'],
             'kurs'    => $d['tittel'],
             'dato'    => $d['start_tid'] ? Booking::norskDato((string) $d['start_tid']) : 'Uten dato',
+            // Når kurset starter (sekunder, UTC i basen). Admin deler lista i kommende og tidligere (eieren 07.10.2026).
+            'start'   => $d['start_tid'] ? (new DateTimeImmutable((string) $d['start_tid'], new DateTimeZone('UTC')))->getTimestamp() : null,
             'sum'     => Booking::kroner((int) $d['belop_ore']),
             // Hvordan den ble gjort opp. Manuelle paameldinger har det
             // skrevet i klartekst; nettbestillinger gikk gjennom Vipps.

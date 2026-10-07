@@ -102,7 +102,7 @@ try{
   await ark.getByRole('tab',{name:'Rediger'}).click();
   await ark.getByRole('button',{name:'Dupliser til neste uke'}).click();
   const sp=p.getByRole('dialog',{name:'Dupliser til neste uke?'});await sp.waitFor();
-  assert.match(await sp.innerText(),new RegExp(`${s.tag} Dreiekurs legges inn \\w+ \\d+\\. \\w+ kl\\. 18:00\\.`));
+  assert.match(await sp.innerText(),new RegExp(`${s.tag} Dreiekurs legges inn \\p{L}+ \\d+\\. \\p{L}+ kl\\. 18:00\\.`,'u'));
   await sp.getByRole('button',{name:'Dupliser',exact:true}).click();
   await p.locator('.toast',{hasText:'er lagt inn'}).waitFor();
   const ny=fixture('inspect',s).okter.find(o=>o.start===`${pluss(s.d,7)} 18:00`);

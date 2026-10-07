@@ -535,11 +535,67 @@
   // annet paa siden ingen hopping osv bare rulle datoer». Raden ruller av
   // seg selv (CSS). Et trykk paa en dag med kurs viser kursene den dagen i
   // panelet under — ingen ny side, ingen rulling av sida.
-  d.addEventListener('click', function (e) {
-    var knapp = e.target.closest && e.target.closest('[data-rull-dag]');
+  //
+  // Eieren, 7. oktober 2026: «den endrer seg ikke naar jeg blar/scroller
+  // sideveis, saa staar det fortsatt uke 44 paa toppen! Eller naar jeg
+  // trykker paa uke og blar i disse saa endrer ikke dagen under seg! Og man
+  // kan ikke se hvilken maaned vi er i». Uka og maaneden oeverst foelger
+  // naa dagen som staar forrest i raden (eller den man trykker paa), og
+  // pilene blar raden til forrige/neste uke med kurs og viser den foerste
+  // kursdagen der. Paa PC (raden er skjult) er pilene lenker som foer.
+  var rad = d.querySelector('.lx-rull');
+  var ukeEl = d.querySelector('[data-kal-uke]');
+  var mndEl = d.querySelector('[data-kal-mnd]');
+  var gjeldende = '';
+  var styrt = false;
+  function radSynlig() { return !!(rad && rad.getClientRects().length); }
+  function dagKnapper() { return rad ? rad.querySelectorAll('[data-rull-ukeid]') : []; }
+  function rekke() {
+    var ut = [], alle = dagKnapper();
+    for (var i = 0; i < alle.length; i++) {
+      var id = alle[i].getAttribute('data-rull-ukeid');
+      if (ut.indexOf(id) === -1) ut.push(id);
+    }
+    return ut;
+  }
+  function ukerMedKurs() {
+    var ut = [], alle = dagKnapper();
+    for (var i = 0; i < alle.length; i++) {
+      var id = alle[i].getAttribute('data-rull-ukeid');
+      if (alle[i].getAttribute('data-rull-dag') && ut.indexOf(id) === -1) ut.push(id);
+    }
+    return ut;
+  }
+  function naboUke(retning) {
+    var r = rekke(), her = r.indexOf(gjeldende), uker = ukerMedKurs(), funnet = null;
+    for (var i = 0; i < uker.length; i++) {
+      var p = r.indexOf(uker[i]);
+      if (retning > 0 && p > her) { funnet = uker[i]; break; }
+      if (retning < 0 && p < her) funnet = uker[i];
+    }
+    return funnet;
+  }
+  function piler() {
+    var p = d.querySelectorAll('[data-kal-pil]');
+    for (var i = 0; i < p.length; i++) {
+      var aktiv = naboUke(+p[i].getAttribute('data-kal-pil')) !== null;
+      p[i].style.cursor = aktiv ? 'pointer' : 'default';
+      p[i].style.borderColor = aktiv ? 'var(--lissom-brown)' : 'var(--border-subtle)';
+      p[i].style.color = aktiv ? 'var(--lissom-brown)' : 'var(--text-muted)';
+      p[i].style.opacity = aktiv ? '1' : '0.5';
+    }
+  }
+  function vis(knapp) {
     if (!knapp) return;
+    gjeldende = knapp.getAttribute('data-rull-ukeid') || '';
+    if (ukeEl) ukeEl.textContent = 'Uke ' + knapp.getAttribute('data-rull-uke');
+    if (mndEl) mndEl.textContent = knapp.getAttribute('data-rull-mnd') || mndEl.textContent;
+    piler();
+  }
+  function velgDag(knapp) {
     var dag = knapp.getAttribute('data-rull-dag');
     if (!dag) return;
+    vis(knapp);
     var alle = d.querySelectorAll('[data-rull-dag]');
     for (var k = 0; k < alle.length; k++) {
       var b = alle[k];
@@ -557,5 +613,67 @@
     for (var p = 0; p < paneler.length; p++) {
       paneler[p].style.display = paneler[p].getAttribute('data-rull-panel') === dag ? 'block' : 'none';
     }
+  }
+  // Rull raden slik at uka staar forrest, og vis den foerste kursdagen i den.
+  function gaaTilUke(id, velg) {
+    var alle = dagKnapper(), forste = null, kurs = null;
+    for (var i = 0; i < alle.length; i++) {
+      if (alle[i].getAttribute('data-rull-ukeid') !== id) continue;
+      if (!forste) forste = alle[i];
+      if (!kurs && alle[i].getAttribute('data-rull-dag')) kurs = alle[i];
+    }
+    if (!forste) return;
+    styrt = true;
+    rad.scrollLeft += forste.getBoundingClientRect().left - rad.getBoundingClientRect().left - 2;
+    if (velg && kurs) velgDag(kurs); else vis(forste);
+  }
+  d.addEventListener('click', function (e) {
+    var knapp = e.target.closest && e.target.closest('[data-rull-dag]');
+    if (knapp) velgDag(knapp);
   });
+  if (rad) {
+    // Pilene: paa telefon blar de i raden i stedet for aa laste sida paa nytt.
+    d.addEventListener('click', function (e) {
+      var pil = e.target.closest && e.target.closest('[data-kal-pil]');
+      if (!pil || !radSynlig()) return;
+      e.preventDefault();
+      e.stopPropagation();
+      var id = naboUke(+pil.getAttribute('data-kal-pil'));
+      if (id) gaaTilUke(id, true);
+    }, true);
+    // Kunden ruller selv: dagen som staar forrest bestemmer uka og maaneden.
+    var venter = false;
+    var forrest = function () {
+      var kant = rad.getBoundingClientRect().left + 25, alle = dagKnapper();
+      for (var i = 0; i < alle.length; i++) {
+        if (alle[i].getBoundingClientRect().right > kant) return alle[i];
+      }
+      return null;
+    };
+    var slipp = function () { styrt = false; };
+    rad.addEventListener('touchstart', slipp, { passive: true });
+    rad.addEventListener('pointerdown', slipp, { passive: true });
+    rad.addEventListener('wheel', slipp, { passive: true });
+    rad.addEventListener('scroll', function () {
+      if (styrt || venter) return;
+      venter = true;
+      requestAnimationFrame(function () { venter = false; if (!styrt) vis(forrest()); });
+    }, { passive: true });
+    // Ved lasting: uka i adressen (?uke=), ellers uka til dagen som er valgt.
+    if (radSynlig()) {
+      var m = /[?&]uke=(\d+)/.exec(location.search);
+      var alle = dagKnapper(), start = null, valgt = null;
+      for (var i = 0; i < alle.length; i++) {
+        var b = alle[i], nokkel = b.getAttribute('data-rull-dag');
+        if (m && !start && b.getAttribute('data-rull-uke') === String(+m[1]) && nokkel) start = b;
+        if (!valgt && nokkel) {
+          var panel = d.querySelector('[data-rull-panel="' + nokkel + '"]');
+          if (panel && panel.style.display !== 'none') valgt = b;
+        }
+      }
+      var maalDag = start || valgt;
+      if (maalDag) gaaTilUke(maalDag.getAttribute('data-rull-ukeid'), !!start);
+      else vis(forrest());
+    }
+  }
 })();

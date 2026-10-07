@@ -72,8 +72,10 @@ $mandag = (new DateTimeImmutable('now', $oslo))->setISODate($aar, $vist, 1)->set
 $sondag = $mandag->modify('+6 days');
 $MND = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember'];
 $a = $MND[(int) $mandag->format('n') - 1]; $b = $MND[(int) $sondag->format('n') - 1];
+// Aaret staar alltid med: «Oktober 2026». Eieren, 7. oktober 2026: «man kan
+// ikke se hvilken maaned vi er i».
 $maaned = mb_strtoupper(mb_substr($a === $b ? $a : $a . ' – ' . $b, 0, 1)) . mb_substr($a === $b ? $a : $a . ' – ' . $b, 1)
-    . (($mandag->format('Y') !== $naa->format('Y') || $sondag->format('Y') !== $naa->format('Y')) ? ' ' . $sondag->format('Y') : '');
+    . ' ' . $sondag->format('Y');
 
 // Dagene — ukeFraKatalog().
 $DAG = ['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn'];
@@ -271,6 +273,12 @@ if ($perDato !== []) {
             // hvor man er naar man ruller.
             'mnd' => ($rullDager === [] || $dag->format('j') === '1') ? $MNDK[(int) $dag->format('n') - 1] : '',
             'antall' => $n > 0 ? (string) $n : '',
+            // Uka og maaneden dagen hoerer til. nett.js setter dem oeverst
+            // naar raden rulles eller en dag velges, og pilene blar i raden.
+            // Eieren, 7. oktober 2026: «det staar fortsatt uke 44 paa toppen».
+            'uke' => (string) (int) $dag->format('W'),
+            'ukeId' => $dag->format('o-W'),
+            'mndAar' => mb_strtoupper(mb_substr($MND[(int) $dag->format('n') - 1], 0, 1)) . mb_substr($MND[(int) $dag->format('n') - 1], 1) . ' ' . $dag->format('Y'),
             'stil' => 'appearance: none; font-family: inherit; flex: none; width: 50px; scroll-snap-align: start; cursor: ' . ($n ? 'pointer' : 'default') . '; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 2px 7px; border-radius: var(--radius-md); border: '
                 . ($n ? '1px solid var(--lissom-brown)' : '1px solid var(--border-subtle)') . '; background: '
                 . ($valgt ? 'var(--lissom-brown)' : ($n ? 'var(--lissom-yellow)' : 'var(--surface-card)')) . '; color: '

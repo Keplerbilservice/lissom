@@ -4693,15 +4693,18 @@ window.__resources = {
         <div style="max-width: var(--width-content); margin: 0 auto;">
           <div style="display: flex; align-items: center; gap: var(--space-4); margin-bottom: var(--space-8);">
             <div>
-              <h2 style="margin: 0;">Uke {{ ukeNr }}</h2>
+              <!-- data-kal-*: paa telefon foelger uka og maaneden datoraden
+                   under (nett.js), og pilene blar i den. Eieren, 7. oktober
+                   2026: «det staar fortsatt uke 44 paa toppen». -->
+              <h2 style="margin: 0;" data-kal-uke="">Uke {{ ukeNr }}</h2>
               <!-- Uketallet alene sier ingenting om naar det er. Maaneden sto
                    med samme storrelse som smaateksten ellers og forsvant
                    under overskrifta; den er satt opp ett hakk. -->
-              <div style="font-size: var(--text-lg); color: var(--text-muted); margin-top: 2px;">{{ ukeMaaned }}</div>
+              <div style="font-size: var(--text-lg); color: var(--text-muted); margin-top: 2px;" data-kal-mnd="">{{ ukeMaaned }}</div>
             </div>
             <div style="display: flex; gap: var(--space-2);">
-              <button type="button" onClick="{{ ukeForrige }}" aria-label="Forrige uke" style="{{ ukePilStilV }}">‹</button>
-              <button type="button" onClick="{{ ukeNeste }}" aria-label="Neste uke" style="{{ ukePilStilH }}">›</button>
+              <button type="button" onClick="{{ ukeForrige }}" aria-label="Forrige uke" data-kal-pil="-1" style="{{ ukePilStilV }}">‹</button>
+              <button type="button" onClick="{{ ukeNeste }}" aria-label="Neste uke" data-kal-pil="1" style="{{ ukePilStilH }}">›</button>
             </div>
             <span style="font-size: var(--text-sm); color: var(--text-muted);">{{ ukeAntall }}</span>
           </div>
@@ -4751,7 +4754,7 @@ window.__resources = {
           <sc-if value="{{ rullHar }}" hint-placeholder-val="{{ false }}">
             <div class="lx-rull" style="{{ rullStil }}">
               <sc-for list="{{ rullDager }}" as="r" hint-placeholder-count="14">
-                <button type="button" data-rull-dag="{{ r.nokkel }}" style="{{ r.stil }}">
+                <button type="button" data-rull-dag="{{ r.nokkel }}" data-rull-uke="{{ r.uke }}" data-rull-ukeid="{{ r.ukeId }}" data-rull-mnd="{{ r.mndAar }}" style="{{ r.stil }}">
                   <span style="font-size: 10px; letter-spacing: var(--tracking-caps); text-transform: uppercase; opacity: .75;">{{ r.dagKort }}</span>
                   <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-lg); line-height: 1.1;">{{ r.dato }}</span>
                   <span style="font-size: 10px; line-height: 1; opacity: .75;">{{ r.mnd }}</span>
@@ -76775,10 +76778,10 @@ class Component extends DCLogic {
           const a = MND[mandag.getMonth()];
           const b = MND[sondag.getMonth()];
           const tekst = a === b ? a : a + ' – ' + b;
-          const visAar = mandag.getFullYear() !== naa.getFullYear()
-                      || sondag.getFullYear() !== naa.getFullYear();
+          // Aaret staar alltid med: «Oktober 2026» (eieren, 7. oktober 2026:
+          // «man kan ikke se hvilken maaned vi er i»).
           return tekst.charAt(0).toUpperCase() + tekst.slice(1)
-               + (visAar ? ' ' + sondag.getFullYear() : '');
+               + ' ' + sondag.getFullYear();
         };
 
         return {

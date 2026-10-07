@@ -5577,6 +5577,37 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "kundekalender-uke-folger-raden",
+            "dato": "2026-10-07",
+            "hva": "Kurskalenderen (/kalender) på telefon: uka og måneden øverst følger dagen forrest i datoraden når kunden ruller sideveis eller trykker på en dag; pilene blar raden til forrige/neste uke med kurs og viser den første kursdagen der (ingen ny side). Måneden står alltid med år, f.eks. «Oktober 2026». PC uendret (pilene er lenker).",
+            "hvor": "lissom.no/kalender",
+            "kode": [
+                {
+                    "fil": "nett.js",
+                    "finnes": [
+                        "function gaaTilUke(id, velg)",
+                        "closest('[data-kal-pil]')",
+                        "ukeEl.textContent = 'Uke ' + knapp.getAttribute('data-rull-uke')"
+                    ]
+                },
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "data-kal-uke=\"\">Uke {{ ukeNr }}</h2>",
+                        "data-rull-ukeid=\"{{ r.ukeId }}\" data-rull-mnd=\"{{ r.mndAar }}\"",
+                        "data-kal-pil=\"1\""
+                    ]
+                },
+                {
+                    "fil": "app/nett/sider/kalender.php",
+                    "finnes": [
+                        "'ukeId' => $dag->format('o-W'),",
+                        "    . ' ' . $sondag->format('Y');"
+                    ]
+                }
+            ]
         }
     ]
 }

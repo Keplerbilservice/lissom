@@ -32,6 +32,9 @@
    og «Ta ut 1» i tre ulike former nedover lista. Venstre kolonne er den som
    skal gi etter; hoeyre side holder bredden sin. Samme grep som .stemple. */
 .row>:last-child{flex:none}
+/* Knapperader til høyre får gi etter og brekke til ny linje, så siden ikke blir bredere enn skjermen (handlelister 1280 px, 07.10.2026). Beløp og enkeltknapper brekker fortsatt ikke. */
+.row>.actions:last-child,.row>div:last-child:has(>.actions){flex:0 1 auto;min-width:0}
+.row>.actions:last-child{justify-content:flex-end}
 .row>div:last-child strong{white-space:nowrap}
 .button{white-space:nowrap}
 /* Vipps-oppsettet (07.10.2026): verdiene der er adresser og lange tekster, ikke beloep. De faar brekke, ellers ruller siden sidelengs paa 390 px. */

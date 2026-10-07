@@ -5707,6 +5707,21 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "knapperader-brekker",
+            "dato": "2026-10-07",
+            "hva": "Knapperader til høyre i en rad brekker til ny linje i stedet for å gjøre siden bredere enn skjermen; beløp og enkeltknapper brekker fortsatt ikke",
+            "hvor": "admin-ny (alle lister)",
+            "kode": [
+                {
+                    "fil": "admin-ny/design.css",
+                    "finnes": [
+                        ".row>.actions:last-child,.row>div:last-child:has(>.actions){flex:0 1 auto;min-width:0}",
+                        ".button{white-space:nowrap}"
+                    ]
+                }
+            ]
         }
     ]
 }

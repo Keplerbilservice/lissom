@@ -5406,6 +5406,26 @@
             ]
         },
         {
+            "id": "vippsoppsett-brekker-paa-mobil",
+            "dato": "2026-10-07",
+            "hva": "Vipps-oppsettet: verdiene i Betalingsoppsett (adresser og lange tekster) får brekke, så siden ikke ruller sidelengs på 390 px. Unntak fra admin-linjer-brekker-ikke bare for disse radene (.row.vipps-felt).",
+            "hvor": "admin-ny › Vipps og betalingsvarsler (390 px)",
+            "kode": [
+                {
+                    "fil": "admin-ny/design.css",
+                    "finnes": [
+                        ".row.vipps-felt>:last-child{flex:0 1 auto;min-width:0;overflow-wrap:anywhere;text-align:right}"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kursstandard-og-vipps.js",
+                    "finnes": [
+                        "el('div',{class:'row vipps-felt'}"
+                    ]
+                }
+            ]
+        },
+        {
             "id": "venteliste-varsler-verkstedet",
             "dato": "2026-10-04",
             "hva": "Verkstedet faar beskjed naar noen setter seg paa venteliste, med navn, posisjon og kontaktopplysninger. Som en mal eieren kan endre, ikke tekst i koden.",

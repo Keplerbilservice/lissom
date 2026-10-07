@@ -34,3 +34,5 @@
 .row>:last-child{flex:none}
 .row>div:last-child strong{white-space:nowrap}
 .button{white-space:nowrap}
+/* Vipps-oppsettet (07.10.2026): verdiene der er adresser og lange tekster, ikke beloep. De faar brekke, ellers ruller siden sidelengs paa 390 px. */
+.row.vipps-felt>:last-child{flex:0 1 auto;min-width:0;overflow-wrap:anywhere;text-align:right}

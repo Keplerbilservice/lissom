@@ -5608,6 +5608,21 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "henvendelser-ubesvart-besvart",
+            "dato": "2026-10-07",
+            "hva": "Henvendelser: ubesvarte og besvarte hver for seg, valgt med pillene «Ubesvarte (N)» og «Besvarte (N)»; ubesvarte vises først",
+            "hvor": "admin-ny › Henvendelser",
+            "kode": [
+                {
+                    "fil": "admin-ny/app.js",
+                    "finnes": [
+                        "let enqVis='Ubesvart';",
+                        "pille('Besvart','Besvarte')"
+                    ]
+                }
+            ]
         }
     ]
 }

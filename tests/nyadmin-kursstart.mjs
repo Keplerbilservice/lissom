@@ -24,7 +24,8 @@ async function apne(c){
 }
 const ark=p=>p.locator('dialog.kal-ark[open]');
 const ks=p=>p.locator('dialog.ks[open]');
-const rad=(p,navn)=>ks(p).locator('.kal-delt',{hasText:navn});
+// .ks-del = kortet i steg 1 «Deltakerne», .kal-delt = raden i «Velkommen».
+const rad=(p,navn)=>ks(p).locator('.kal-delt, .ks-del',{hasText:navn});
 const se=()=>fixture('inspect',s);
 const qrVindu=p=>p.locator('dialog.sheet[open]',{has:p.locator('.ks-qr')});
 async function kontant(p,navn,trykk){
@@ -48,8 +49,65 @@ try{
   await gul.tap();await ks(p).waitFor();
   assert.equal(await ark(p).count(),0,'390: økt-arket lukkes');
   const steg=ks(p).locator('.ks-steg button');
-  assert.deepEqual((await steg.allInnerTexts()).map(t=>t.replace(/\s+/g,' ').trim()),['1 Velkommen','2 Praktisk','3 Etter kurset'],'390: tre steg');
+  assert.deepEqual((await steg.allInnerTexts()).map(t=>t.replace(/\s+/g,' ').trim()),['1 Deltakerne','2 Velkommen','3 Praktisk','4 Etter kurset'],'390: fire steg');
   assert.equal(await steg.first().getAttribute('aria-current'),'step','390: steg 1 er valgt');
+  // ── Steg 1 «Deltakerne» (eieren, 7. oktober 2026) ──
+  const sumTekst=async()=>(await ks(p).locator('.ks-sum').innerText()).replace(/\s+/g,' ');
+  assert.match(await sumTekst(),/5 påmeldte 5 møtt 1 mangler e-post/,'390: sammendraget');
+  assert.equal(await ks(p).getByRole('button',{name:'+ Legg til deltaker'}).count(),1,'390: «+ Legg til deltaker» i steg 1');
+  assert.match(await rad(p,'Nils Utennummer').getAttribute('class'),/mangel/,'390: Nils er markert');
+  assert.match(await rad(p,'Nils Utennummer').innerText(),/Trengs for kursbevis/,'390: «Trengs for kursbevis»');
+  assert.equal(await rad(p,'Ingrid Berg').getByText('Trengs for kursbevis').isVisible(),false,'390: Ingrid har e-post');
+  assert.match(await rad(p,'Ingrid Berg').innerText(),/1 plass[\s\S]*Betalt/,'390: plasser og Betalt');
+  assert.equal(await rad(p,'Ingrid Berg').getByRole('button').count(),0,'390: ingen betalingsknapper hos den som har betalt (steg 1)');
+  assert.match(await rad(p,'Marte Sol').innerText(),/Ikke betalt/,'390: Ikke betalt');
+  assert.equal(await rad(p,'Marte Sol').getByRole('button',{name:'Vis QR-kode'}).count(),1,'390: QR i steg 1');
+  assert.equal(await rad(p,'Marte Sol').getByRole('button',{name:'Kontant',exact:true}).count(),1,'390: Kontant i steg 1');
+  assert.ok(await rad(p,'Marte Sol').getByRole('checkbox',{name:'Møtt'}).isChecked(),'390: møtt er standard');
+  {const b=await p.evaluate(()=>({side:document.documentElement.scrollWidth}));assert.ok(b.side<=390,'390: steg 1 er innenfor skjermen');}
+  {const h=await ks(p).locator('.ks-del input:not([type=checkbox]), .ks-del button, .ks-mott, .ks-leggtil').evaluateAll(b=>b.map(x=>x.getBoundingClientRect().height));
+   assert.ok(h.every(x=>x>=44),'390: felt og knapper i steg 1 er minst 44 px '+JSON.stringify(h));}
+  // Etter kurset: hvem som får kursbevis, og hvem som mangler e-post; «Legg inn e-post» går til steg 1.
+  await steg.nth(3).tap();
+  assert.match(await ks(p).locator('.ks-bevis').innerText(),/Kursbevis sendes til 1 av 5/,'390: kursbevis 1 av 5');
+  assert.match(await ks(p).locator('.ks-mangler').innerText(),/Mangler e-post[\s\S]*Nils Utennummer/,'390: Nils mangler e-post');
+  await ks(p).getByRole('button',{name:'Legg inn e-post'}).tap();
+  assert.equal(await steg.first().getAttribute('aria-current'),'step','390: tilbake i steg 1');
+  const nilsEpost=rad(p,'Nils Utennummer').getByLabel('E-post');
+  assert.equal(await nilsEpost.evaluate(x=>x===document.activeElement),true,'390: e-postfeltet til Nils har fokus');
+  // Ugyldig e-post: feilmelding, ingenting lagret. Gyldig: «Lagret.», og kortet er ikke lenger markert.
+  await nilsEpost.fill('nils@');await nilsEpost.blur();
+  await rad(p,'Nils Utennummer').locator('.ks-lagret.feil').waitFor();
+  assert.match(await rad(p,'Nils Utennummer').locator('.ks-lagret').innerText(),/gyldig e-postadresse/,'390: feilmelding ved ugyldig e-post');
+  assert.equal(se().b.nils.epost,'','390: ugyldig e-post er ikke lagret');
+  await nilsEpost.fill(`nils.${s.tag}@e2e.lissom.test`);await nilsEpost.blur();
+  await rad(p,'Nils Utennummer').locator('.ks-lagret.ok').waitFor();
+  assert.equal(await rad(p,'Nils Utennummer').locator('.ks-lagret').innerText(),'Lagret.','390: «Lagret.»');
+  assert.equal(se().b.nils.epost,`nils.${s.tag}@e2e.lissom.test`,'390: e-posten er lagret på påmeldingen');
+  assert.doesNotMatch(await rad(p,'Nils Utennummer').getAttribute('class'),/mangel/,'390: Nils er ikke lenger markert');
+  assert.match(await sumTekst(),/Alle har e-post/,'390: alle har e-post');
+  const nilsTlf=rad(p,'Nils Utennummer').getByLabel('Mobil');
+  await nilsTlf.fill('91000003');await nilsTlf.blur();
+  {let t='';for(let n=0;n<30&&t!=='91000003';n++){await p.waitForTimeout(100);t=se().b.nils.tlf;}
+   assert.equal(t,'91000003','390: mobilen er lagret');}
+  // «Møtt» av og på: status ikke_mott og tilbake til det den var.
+  await rad(p,'Ingrid Berg').getByRole('checkbox',{name:'Møtt'}).tap();
+  await p.waitForFunction(()=>/4 møtt/.test(document.querySelector('dialog.ks .ks-sum')?.innerText||''));
+  assert.equal(se().b.ingrid.status,'ikke_mott','390: Ingrid er ikke møtt');
+  await steg.nth(3).tap();
+  assert.match(await ks(p).locator('.ks-bevis').innerText(),/Kursbevis sendes til 0 av 4/,'390: ikke møtt får ikke kursbevis');
+  await steg.first().tap();
+  await rad(p,'Ingrid Berg').getByRole('checkbox',{name:'Møtt'}).tap();
+  await p.waitForFunction(()=>/5 møtt/.test(document.querySelector('dialog.ks .ks-sum')?.innerText||''));
+  assert.equal(se().b.ingrid.status,'betalt','390: Ingrid er betalt igjen');
+  await rad(p,'Marte Sol').getByRole('checkbox',{name:'Møtt'}).tap();
+  await p.waitForFunction(()=>/4 møtt/.test(document.querySelector('dialog.ks .ks-sum')?.innerText||''));
+  await rad(p,'Marte Sol').getByRole('checkbox',{name:'Møtt'}).tap();
+  await p.waitForFunction(()=>/5 møtt/.test(document.querySelector('dialog.ks .ks-sum')?.innerText||''));
+  assert.equal(se().b.marte.status,'reservert','390: Marte er reservert igjen');
+  // Videre til «Velkommen», som før.
+  await steg.nth(1).tap();
+  assert.equal(await steg.nth(1).getAttribute('aria-current'),'step','390: Velkommen');
   assert.match(await ks(p).locator('.ks-si').first().innerText(),new RegExp(`Hei og velkommen til ${s.tag} Dreiekurs`),'390: hilsenen');
   assert.match(await ks(p).locator('.ks-topp').innerText(),/5 påmeldt[\s\S]*4 har ikke betalt/,'390: påmeldt og ubetalt');
   assert.match(await rad(p,'Ingrid Berg').innerText(),/Betalt/,'390: Ingrid er betalt');
@@ -121,8 +179,8 @@ try{
   assert.equal(await ks(p).count(),1,'390: veilederen står åpen etter Legg til');
   // Steg 2: punktene som avkrysning, bare i nettleseren.
   await ks(p).locator('.ks-fot').getByRole('button',{name:'Videre (3 ubetalt)'}).tap();
-  assert.equal(await steg.nth(1).getAttribute('aria-current'),'step','390: steg 2');
-  assert.match(await steg.first().getAttribute('class'),/ferdig/,'390: steg 1 er merket ferdig');
+  assert.equal(await steg.nth(2).getAttribute('aria-current'),'step','390: Praktisk');
+  assert.match(await steg.nth(1).getAttribute('class'),/ferdig/,'390: Velkommen er merket ferdig');
   const k=await p.evaluate(async()=>(await (await fetch('/api/admin/kursstart.php',{credentials:'same-origin'})).json()).kort);
   const k1=k.find(x=>x.nr===1);const linjer=k1.paa?k1.tekst.split(/\n+/).map(x=>x.trim()).filter(Boolean):[];
   const punkter=ks(p).locator('.ks-punkt');
@@ -135,7 +193,11 @@ try{
   const ep=ks(p).locator('.ks-epost');
   assert.deepEqual(await ep.locator('b').allInnerTexts(),['Påminnelse','Google-anmeldelse','Medlemstilbud','Keramikken er klar'],'390: e-postene etter kurset');
   assert.match(await ep.nth(1).innerText(),/Sendes neste dag kl\. 10/,'390: anmeldelsen neste dag kl. 10');
-  assert.equal(await ks(p).locator('.ks-innhold').getByRole('button').count(),0,'390: ingen send-knapper i steg 3');
+  // Kursbevis: møtt = alle 6 (med Ulla), betalt med e-post = Ingrid, Olga og Marte. Ulla mangler e-post.
+  assert.match(await ks(p).locator('.ks-bevis').innerText(),/Kursbevis sendes til 3 av 6/,'390: kursbevis 3 av 6');
+  assert.match(await ks(p).locator('.ks-bevis').innerText(),/Sendes neste dag kl\. 10 sammen med spørsmålet om anmeldelse\.|Sendes ikke nå: «Google-anmeldelse» står som/,'390: når kursbeviset sendes');
+  assert.match(await ks(p).locator('.ks-mangler').innerText(),/Ulla Uten/,'390: Ulla mangler e-post');
+  assert.deepEqual(await ks(p).locator('.ks-innhold').getByRole('button').allInnerTexts(),['Legg inn e-post'],'390: ingen send-knapper i steg 3 (Etter kurset), bare «Legg inn e-post»');
   await ks(p).getByRole('button',{name:'Kurset er ferdig'}).tap();
   await ks(p).waitFor({state:'detached'});
   assert.deepEqual(feil,[],'390: ingen feil i siden');

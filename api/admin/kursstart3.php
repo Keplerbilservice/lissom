@@ -1,6 +1,7 @@
 <?php
 /**
- * «Start kurset» i tre steg (kalenderplanen, bølge 2) — det veilederen trenger
+ * «Start kurset» i fire steg (kalenderplanen, bølge 2; «Deltakerne» først,
+ * eieren 7. oktober 2026) — det veilederen trenger
  * for én økt, og Vipps-kravet.
  *
  *   GET  ?okt=7                deltakerne med det som står igjen og Vipps-kravet,
@@ -74,9 +75,16 @@ if ($okt === null) {
 }
 
 $allergi = DB::harKolonne('bookings', 'allergier') ? 'b.allergier' : "''";
+// Steg 1 «Deltakerne» (eieren, 7. oktober 2026): e-post og mobil rett i lista,
+// og om kursbeviset er trukket tilbake. E-posten leses slik kursbeviset sendes
+// (bin/cron.php anmeldelser): medlemmets, ellers den på påmeldingen.
+$sperret = DB::harKolonne('bookings', 'bevis_sperret') ? 'b.bevis_sperret' : '0';
+$maate = DB::harKolonne('bookings', 'betalt_maate') ? 'b.betalt_maate' : "''";
 $rader = DB::alle(
     "SELECT b.id, b.status, b.belop_ore, b.antall, b.created_at, {$allergi} AS merknad,
+            {$sperret} AS bevis_sperret, {$maate} AS betalt_maate,
             COALESCE(m.navn, b.gjest_navn) AS navn,
+            COALESCE(m.epost, b.gjest_epost) AS epost,
             COALESCE(NULLIF(m.telefon, ''), b.gjest_telefon) AS telefon
        FROM bookings b
   LEFT JOIN members m ON m.id = b.member_id
@@ -106,6 +114,20 @@ $deltakere = [];
 foreach ($rader as $r) {
     $id = (int) $r['id'];
     $skyldig = KursstartKrav::skyldig($id, (int) $r['belop_ore'], (string) $r['status']);
+    // «Møtt» (steg 1): status «ikke_mott» = ikke møtt, alt annet = møtt. Ingen
+    // ny kolonne. Krysses «Møtt» på igjen, settes statusen tilbake: betalt når
+    // plassen er gjort opp (betalt fullt, uten beløp, eller ført med en måte),
+    // ellers reservert. Kursbeviset går bare til betalte (Booking::bevisLenke,
+    // cron «anmeldelser»), aldri til ikke møtt.
+    $forStatus = null;
+    if ((string) $r['status'] === 'ikke_mott') {
+        $bet = Booking::betalingerFor($id);
+        $m = (string) ($r['betalt_maate'] ?? '');
+        $gjortOpp = (int) $r['belop_ore'] <= 0
+            || ($bet['rader'] !== [] && $bet['sum'] >= (int) $r['belop_ore'])
+            || Booking::maateGirPenger($m) || in_array($m, ['Gratis', 'Gavekort'], true);
+        $forStatus = $gjortOpp ? 'betalt' : 'reservert';
+    }
     $deltakere[] = [
         'bookingId'  => $id,
         'navn'       => (string) $r['navn'],
@@ -116,6 +138,12 @@ foreach ($rader as $r) {
             'refundert' => 'Refundert',
             'ikke_mott' => 'Møtte ikke opp',
         ][(string) $r['status']] ?? 'Ikke betalt',
+        'statusKode' => (string) $r['status'],
+        'mott'       => (string) $r['status'] !== 'ikke_mott',
+        'forStatus'  => $forStatus,
+        'epost'      => trim((string) ($r['epost'] ?? '')),
+        'telefon'    => trim((string) ($r['telefon'] ?? '')),
+        'bevisSperret' => !empty($r['bevis_sperret']),
         'antall'     => (int) $r['antall'],
         'merknad'    => trim((string) ($r['merknad'] ?? '')),
     // «ny»: meldt på siste døgn, samme grense som kalenderen (kalender.php).

@@ -56,7 +56,8 @@ if ($mode === 'seed') {
               'nils' => ['Nils Utennummer', 'reservert', null], 'olga' => ['Olga Feil', 'reservert', '91000004'],
               'per' => ['Per Vipps', 'reservert', '91000005']] as $n => [$navn, $st, $tlf]) {
         $b[$n] = DB::settInn('bookings', ['course_id' => $kurs, 'course_session_id' => $okt, 'gjest_navn' => $navn,
-            'gjest_epost' => $tag . '.' . $n . '@e2e.lissom.test', 'gjest_telefon' => $tlf, 'antall' => 1,
+            // Nils mangler e-post (steg 1 «Deltakerne», 7. oktober 2026: «Trengs for kursbevis»).
+            'gjest_epost' => $n === 'nils' ? null : $tag . '.' . $n . '@e2e.lissom.test', 'gjest_telefon' => $tlf, 'antall' => 1,
             'belop_ore' => 50000, 'status' => $st]);
     }
     // Ingrid er betalt med en ført betaling, så hun ikke står som «betalt før føringen».
@@ -99,6 +100,8 @@ if ($mode === 'inspect') {
     foreach ($s['b'] as $n => $id) {
         $ut[$n] = [
             'status' => (string) DB::verdi('SELECT status FROM bookings WHERE id = :i', ['i' => $id]),
+            'epost'  => (string) DB::verdi('SELECT COALESCE(gjest_epost, \'\') FROM bookings WHERE id = :i', ['i' => $id]),
+            'tlf'    => (string) DB::verdi('SELECT COALESCE(gjest_telefon, \'\') FROM bookings WHERE id = :i', ['i' => $id]),
             'sum'    => Booking::betalingerFor((int) $id)['sum'],
             'krav'   => array_map(static fn($r) => ['status' => $r['status'], 'belop' => (int) $r['belop_ore']], DB::alle(
                 "SELECT status, belop_ore FROM payments WHERE booking_id = :b AND vipps_reference LIKE 'KS-%' ORDER BY id", ['b' => $id])),

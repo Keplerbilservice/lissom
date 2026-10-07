@@ -3898,7 +3898,7 @@
                 {
                     "fil": "admin-ny/kursstart3.js",
                     "finnes": [
-                        "const STEG=['Velkommen','Praktisk','Etter kurset'];",
+                        "const STEG=['Deltakerne','Velkommen','Praktisk','Etter kurset'];",
                         "text:'Kontant'",
                         "text:'Kurset er ferdig'",
                         "text:'+ Noen kom uten påmelding'",
@@ -5641,6 +5641,49 @@
                     "fil": "api/admin/pameldte.php",
                     "finnes": [
                         "'start'   => $d['start_tid'] ?"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "kursstart-deltakerne",
+            "dato": "2026-10-07",
+            "hva": "«Start kurset» får nytt første steg «Deltakerne» (1 Deltakerne · 2 Velkommen · 3 Praktisk · 4 Etter kurset), etter skissen MWs11co3deq83HvJgzJLH1 (eieren: «Ok, bygg det»). Øverst «N påmeldte», «N møtt» og «N mangler e-post»/«Alle har e-post», «+ Legg til deltaker» (leggTilDeltaker, lista hentes på nytt), og ett kort per deltaker med navn, plasser, Betalt/Ikke betalt, «Møtt», feltene «E-post» og «Mobil» (lagres når feltet forlates via pamelding.php handling=kontakt; «Lagret.» eller feilmeldingen), «Trengs for kursbevis» når e-post mangler, og «Vis QR-kode»/«Kontant» for den som ikke har betalt (samme funksjon som Velkommen). «Møtt» lagres som status: av = ikke_mott, på = statusen den hadde (pamelding.php handling=status), ingen migrasjon. Kursbeviset går fortsatt bare til betalte (Booking::bevisLenke, cron anmeldelser), aldri til ikke møtt. Etter kurset: «Kursbevis sendes til X av Y» (Y = møtt, X = betalt, ikke trukket tilbake, med e-post) og når: «Sendes neste dag kl. 10 sammen med spørsmålet om anmeldelse.» (eller «Sendt …»/«Sendes ikke nå …» etter statusen til Google-anmeldelse), og kortet «Mangler e-post» med navnene og «Legg inn e-post» (til steg 1). Bak bryteren «Vis/kursstart3».",
+            "hvor": "admin-ny › Kalender › økt-arket › ▶ Start kurset (390 og 1280 px)",
+            "kode": [
+                {
+                    "fil": "admin-ny/kursstart3.js",
+                    "finnes": [
+                        "const STEG=['Deltakerne','Velkommen','Praktisk','Etter kurset'];",
+                        "text:'+ Legg til deltaker'",
+                        "text:'Trengs for kursbevis'",
+                        "api('pamelding.php',{handling:'kontakt',id:p.bookingId,[felt]:v})",
+                        "api('pamelding.php',{handling:'status',id:p.bookingId,status})",
+                        "`Kursbevis sendes til ${faar.length} av ${mott.length}`",
+                        "'Sendes neste dag kl. 10 sammen med spørsmålet om anmeldelse.'",
+                        "text:'Legg inn e-post'"
+                    ],
+                    "ikkeFinnes": [
+                        "localStorage"
+                    ]
+                },
+                {
+                    "fil": "api/admin/kursstart3.php",
+                    "finnes": [
+                        "'mott'       => (string) $r['status'] !== 'ikke_mott',",
+                        "COALESCE(m.epost, b.gjest_epost) AS epost,"
+                    ]
+                },
+                {
+                    "fil": "app/lib/booking.php",
+                    "finnes": [
+                        "if ($b === null || $b['status'] !== 'betalt' || !empty($b['bevis_sperret'])) {"
+                    ]
+                },
+                {
+                    "fil": "bin/cron.php",
+                    "finnes": [
+                        "WHERE b.course_session_id = :s AND b.status = 'betalt'"
                     ]
                 }
             ]

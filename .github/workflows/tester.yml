@@ -104,7 +104,9 @@ jobs:
           # Sjekkene av nettsida bruker terser, som ellers bare ligger lokalt.
           npm install --no-save --no-package-lock terser playwright
           # Nettlesertestene (tests/nettleser) klikker seg gjennom i Chromium.
-          npx playwright install --with-deps chromium
+          # Uten --with-deps: den hentet skrifter fra et tregt apt-speil og
+          # brukte 13 av 18 min (07.10.2026). GitHub-maskinen har bibliotekene.
+          npx playwright install chromium
 
       # Eieren, 27. september 2026: «jeg får eposter fra github hele tiden». Hver
       # rød kjøring på en arbeidsgren ga en e-post til kontoen hans. Paa

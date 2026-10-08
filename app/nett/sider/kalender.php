@@ -140,31 +140,32 @@ foreach ($katalog as $k) {
         ];
     }
 }
-// ── Paint on Pots i dag, som egen flis ─────────────────────────────────
+// ── Paint on Pots som egen flis ────────────────────────────────────────
 //
 // Eieren, 8. oktober 2026: «vi bør også få vise at det er paint on pots i
-// dag, men en flis». Bare dagens dato — de andre dagene står fortsatt utenfor
-// rutenettet (eieren 23. september 2026). Hvit med brun kant, så den skiller
-// seg fra kursene.
-$popIDag = null;
+// dag, men en flis», og samme dag: «det er endret til hver torsdag» — flisa
+// står på hver dag Paint on Pots er åpent (dagene følger ukeplanen i admin),
+// én flis per dag. Hvit med brun kant, så den skiller seg fra kursene.
+$popDager = [];
 if ($popKurs !== null) {
+    $popKort = $kurs[$POP] ?? null;
     foreach ($popKurs['datoer'] ?? [] as $o) {
-        if (($o['dagIso'] ?? '') === $naa->format('Y-m-d')) {
-            $popKort = $kurs[$POP] ?? null;
-            $popIDag = [
-                't'     => (string) ($o['klokkeStart'] ?? ''),
-                'tekst' => 'Paint on Pots i dag · ' . (string) ($o['klokke'] ?? ''),
-                'href'  => $popKort !== null ? $popKort['href'] : '/kurs/paint-on-pots',
-            ];
-            break;
-        }
+        $iso = (string) ($o['dagIso'] ?? '');
+        if ($iso === '' || isset($popDager[$iso])) { continue; }
+        $popDager[$iso] = [
+            'tekst' => 'Paint on Pots' . ($iso === $naa->format('Y-m-d') ? ' i dag' : '') . ' · ' . (string) ($o['klokke'] ?? ''),
+            'href'  => $popKort !== null ? $popKort['href'] : '/kurs/paint-on-pots',
+        ];
     }
 }
+$popIDag = $popDager[$naa->format('Y-m-d')] ?? null;
 $popStil = static fn(string $str, string $pad): string => 'appearance: none; width: 100%; text-align: left; cursor: pointer; font-family: inherit; font-size: ' . $str . '; line-height: 1.35; padding: ' . $pad . '; border-radius: var(--radius-sm); background: var(--surface-card); border: 2px solid var(--lissom-brown); color: var(--lissom-brown); font-weight: 700;';
-if ($popIDag !== null && (int) $naa->format('W') === $vist) {
-    array_unshift($dager[(int) $naa->format('N') - 1]['poster'], [
-        'tekst' => '🎨 ' . $popIDag['tekst'],
-        'href'  => $popIDag['href'],
+foreach ($popDager as $iso => $p) {
+    $dagP = new DateTimeImmutable($iso, $oslo);
+    if ((int) $dagP->format('W') !== $vist || (int) $dagP->format('o') !== (int) $mandag->format('o')) { continue; }
+    array_unshift($dager[(int) $dagP->format('N') - 1]['poster'], [
+        'tekst' => '🎨 ' . $p['tekst'],
+        'href'  => $p['href'],
         'stil'  => $popStil('12px', '7px 9px'),
     ]);
 }
@@ -255,11 +256,12 @@ foreach ($katalog as $k) {
         ];
     }
 }
-if ($popIDag !== null) {
-    $perDato[$naa->format('Y-m-d')][] = [
+foreach ($popDager as $iso => $p) {
+    if ($iso < $naa->format('Y-m-d')) { continue; }
+    $perDato[$iso][] = [
         't'     => '00:00',
-        'tekst' => '🎨 ' . $popIDag['tekst'],
-        'href'  => $popIDag['href'],
+        'tekst' => '🎨 ' . $p['tekst'],
+        'href'  => $p['href'],
         'stil'  => $popStil('14px', '10px 12px'),
     ];
 }

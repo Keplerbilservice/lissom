@@ -5884,7 +5884,7 @@
         {
             "id": "kundekalender-denne-uka-og-pop-flis",
             "dato": "2026-10-08",
-            "hva": "Eieren, 8. oktober 2026: kundekalenderen (/kalender) åpner alltid på denne uka, også når ingen kurs starter i den. Kurs som pågår (dag 2 av et kurs som startet før, eller startet tidligere i dag) vises som fulle på dagene de går. «Paint on Pots i dag» vises som egen flis på dagens dato (hvit med brun kant), bare i dag.",
+            "hva": "Eieren, 8. oktober 2026: kundekalenderen (/kalender) åpner alltid på denne uka, også når ingen kurs starter i den. Kurs som pågår (dag 2 av et kurs som startet før, eller startet tidligere i dag) vises som fulle på dagene de går. Paint on Pots vises som egen flis (hvit med brun kant) på hver dag det er åpent — eieren samme dag: «det er endret til hver torsdag» — med «i dag» på dagens dato.",
             "hvor": "lissom.no/kalender",
             "kode": [
                 {
@@ -5892,7 +5892,7 @@
                     "finnes": [
                         "(int) $sp <= 53 ? (int) $sp : $ukeNaa;",
                         "if (!in_array($ukeNaa, $uker, true)) { $uker[] = $ukeNaa; }",
-                        "'tekst' => 'Paint on Pots i dag · ' . (string) ($o['klokke'] ?? ''),"
+                        "foreach ($popDager as $iso => $p) {"
                     ]
                 }
             ]

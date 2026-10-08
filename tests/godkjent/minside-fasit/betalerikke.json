@@ -259,6 +259,12 @@
     "svar": {
       "frakt": null,
       "gebyr": 5,
+      "leire": [],
+      "leireFrist": {
+        "dato": "",
+        "tekst": ""
+      },
+      "leireStatus": [],
       "leverandorer": "<liste>",
       "mine": [],
       "paa": true,

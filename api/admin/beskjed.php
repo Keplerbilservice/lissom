@@ -64,14 +64,18 @@ if (mb_strlen($tekst) > 4000) {
 // legges bare paa oppslagstavla paa Min side, uten e-post og uten SMS. Samme
 // tabell som utsendingen under skriver til. «Legg ut og send SMS» gaar den
 // vanlige veien (til=medlemmer, ogsaaSms=ja).
+// Ett sted som skriver til tavla, brukt av begge veiene.
+$tilTavla = static function (string $type) use ($emne, $tekst, $jeg): void {
+    DB::settInn('medlemsbeskjeder', [
+        'tittel' => $emne,
+        'tekst'  => $tekst,
+        'type'   => mb_substr($type, 0, 64),
+        'av'     => mb_substr((string) ($jeg['navn'] ?? ''), 0, 191),
+    ]);
+};
 if (Foresporsel::tekst('handling') === 'tavle') {
     try {
-        DB::settInn('medlemsbeskjeder', [
-            'tittel' => $emne,
-            'tekst'  => $tekst,
-            'type'   => '',
-            'av'     => mb_substr((string) ($jeg['navn'] ?? ''), 0, 191),
-        ]);
+        $tilTavla('');
     } catch (Throwable $e) {
         logg('Beskjed: fikk ikke lagt ut paa Min side', ['feil' => $e->getMessage()]);
         Svar::feil('Fikk ikke lagt ut beskjeden. Prøv igjen.', 500);
@@ -261,12 +265,7 @@ if ($epost === 0 && $antallSms === 0) {
 // side, og én enkelt mottaker er ikke en oppslagstavle.
 if ($til === 'medlemmer') {
     try {
-        DB::settInn('medlemsbeskjeder', [
-            'tittel' => $emne,
-            'tekst'  => $tekst,
-            'type'   => mb_substr(Foresporsel::tekst('type'), 0, 64),
-            'av'     => mb_substr((string) ($jeg['navn'] ?? ''), 0, 191),
-        ]);
+        $tilTavla(Foresporsel::tekst('type'));
     } catch (Throwable $e) {
         // Tavla er ikke verdt en feilmelding til den som nettopp sendte:
         // e-postene er alt i koen. Den havner i loggen i stedet.

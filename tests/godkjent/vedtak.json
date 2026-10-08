@@ -6294,7 +6294,7 @@
                         "kunMedlemmer:'ja',iNettbutikk:'nei'",
                         "campaignEditor({publikum:'medlemmer'}",
                         "history.replaceState(null,'','#medlemmene')",
-                        "frame.contentWindow.location.reload()"
+                        "const oppdater=()=>{frame.src=frame.getAttribute('src');};"
                     ]
                 },
                 {

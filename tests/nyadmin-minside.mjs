@@ -30,8 +30,9 @@ try{
   const sw=navn=>p.getByRole('switch',{name:new RegExp('^'+navn+': (på|av)$')});
   const sett=async(navn,paa)=>{const b=sw(navn);if((await b.getAttribute('aria-checked'))!==String(paa)){await b.click();await p.getByRole('switch',{name:`${navn}: ${paa?'på':'av'}`,exact:true}).waitFor();}};
   await sett('Stemple inn og timene dine',true);await sett('Stemple inn og timene dine',false);
-  // «Dette ser medlemmene»: den eksisterende forhåndsvisningen i en ramme.
-  await p.frameLocator('iframe[title="Min side slik et medlem ser den"]').getByText(/Slik ser Min side ut for et medlem/).first().waitFor({timeout:20000});
+  // «Dette ser medlemmene»: forhåndsvisningen i en ramme med fast tittel, og noe innhold lastes (uavhengig av hvilken adresse rammen bruker).
+  await p.locator('iframe[title="Min side slik et medlem ser den"]').waitFor();
+  await p.frameLocator('iframe[title="Min side slik et medlem ser den"]').locator('body').filter({hasText:/\S/}).waitFor({timeout:30000});
   // Medlemmet ser ikke modulen.
   const m=await browser.newContext({viewport:{width,height:950}});await m.addCookies([{name:'lissom_sesjon',value:medlem.token,domain:'lokal.lissom.no',path:'/'}]);await m.addInitScript(()=>localStorage.setItem('lissom-samtykke','nei'));
   const mp=await m.newPage();mp.on('pageerror',e=>errors.push('medlem: '+e.message));await mp.goto(`${ADR}/min-side`);await mp.getByRole('switch',{name:'Ovnen: vis/skjul',exact:true}).waitFor();

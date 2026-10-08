@@ -6757,6 +6757,21 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "synlighet-i-mer-20261008",
+            "dato": "2026-10-08",
+            "hva": "Eieren, 8. oktober 2026: Synlighet som egen flis i Mer (fant den ikke der). Tilbake fra Synlighet går til Mer.",
+            "hvor": "admin-ny › Mer",
+            "kode": [
+                {
+                    "fil": "admin-ny/ramme.js",
+                    "finnes": [
+                        "tittel:'Synlighet',tekst:'Slå av og på, også kassa',href:'#synlighet'",
+                        "'innhold','synlighet','oppsett','verktoy'"
+                    ]
+                }
+            ]
         }
     ]
 }

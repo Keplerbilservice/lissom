@@ -8,7 +8,7 @@ import {hentMer,merHandlinger,mandagFlis} from './ma-gjores-mer.js';
 
 export const NAV=[['idag','I dag','◉'],['kalender','Kalender','▦'],['folk','Folk','♧'],['penger','Penger','○'],['mer','Mer','☷']];
 /* Sidene som nås fra Mer (Tilbake går til Mer). */
-export const MER_SIDER=['medlemmene','kurs','butikk','verksted','marked','innhold','oppsett','verktoy'];
+export const MER_SIDER=['medlemmene','kurs','butikk','verksted','marked','innhold','synlighet','oppsett','verktoy'];
 
 /* Felles flis: hele flisen er trykkbar, rødt merke bare når noe venter. */
 export function flis({ikon='',tittel,tekst='',merke=0,rolig=false,fremhevet=false,href,onclick,data={}}){
@@ -96,6 +96,7 @@ export function merSide(ctx){
   flis({ikon:'⌂',tittel:'Verksted',tekst:'Ovn, dugnad, henting',href:'#verksted'}),
   flis({ikon:'✦',tittel:'Markedsføring',tekst:'Kampanjer, SEO, innlegg',href:'#marked'}),
   flis({ikon:'✎',tittel:'Innhold',tekst:'Tekster og bilder',href:'#innhold'}),
+  flis({ikon:'◐',tittel:'Synlighet',tekst:'Slå av og på, også kassa',href:'#synlighet'}),
   flis({ikon:'⚙',tittel:'Oppsett',tekst:'Vipps, frakt, maler, brukere …',href:'#oppsett',rolig:true}),
   flis({ikon:'⚙',tittel:'Verktøy',tekst:'Oppdateringer',href:'#verktoy',rolig:true})));
 }

@@ -59,3 +59,10 @@
 .pop-status{margin:10px 0 14px}
 .pop-res{width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);background:none;font:inherit;color:inherit;cursor:pointer;display:flex}
 .pop-malebord h3{margin:18px 0 6px}
+
+/* Butikk (eieren 08.10.2026): varebilde 44 px til venstre på hver rad; mangler bildet, en stiplet rute «Legg til bilde». Hele kortet åpner varen. */
+.vare-rad{cursor:pointer}.vare-rad:hover{border-color:#c6b1a0}.vare-venstre{display:flex;align-items:center;gap:14px;min-width:0}.vare-venstre>div{min-width:0}
+.vare-bilde{flex:none;width:44px;height:44px;border-radius:10px;object-fit:cover;background:var(--ground);display:block}
+.vare-bilde.tom{border:1.5px dashed #c6b1a0;background:transparent;color:var(--muted);font-size:10px;font-weight:700;line-height:1.05;padding:2px;text-align:center;cursor:pointer}
+/* Neste leirebestilling (eieren 08.10.2026): én skjerm øverst i Handlelister. */
+.leirebestilling{margin-bottom:8px}.leirebestilling>.card+.card{margin-top:22px}.leire-lev{padding-top:16px;margin-top:4px}.leire-lev+.leire-lev{border-top:1px solid var(--line)}.leire-lev h3{margin:0 0 8px}.leire-hvem{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}.leire-frakt{margin:8px 0 12px}.leire-bestilling .row+.row{border-top:1px solid var(--line);padding-top:10px;margin-top:10px}

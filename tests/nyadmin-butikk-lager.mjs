@@ -14,14 +14,14 @@ try{
  await p.goto(URL+'#idag');await p.getByRole('heading',{name:'Kjøpt i dag',exact:true}).waitFor();
  await p.locator('#meny').getByRole('link',{name:/Butikk/}).click();await p.getByRole('heading',{name:'Butikk',exact:true}).waitFor();
  assert.equal(await p.locator('#meny a[aria-current="page"]').innerText().then(t=>t.includes('Butikk')),true,'Butikk lyser i menyen');
- // 08.10.2026: Nettbutikk og Internt som faner (pluss Alle), «Lite på lager» filtrerer fanen med antall, og «Terskel» for varer uten egen grense.
- assert.deepEqual((await p.locator('.butikk-piller button').allTextContents()).map(t=>t.replace(/ \d+$/,'')),['Nettbutikk','Internt','Alle','Lite på lager','Terskel']);
+ // 08.10.2026 (andre runde): Nettbutikk / Internt / Alle / Lite på lager uten tall, Alle valgt først; «Terskel» er fjernet.
+ assert.deepEqual(await p.locator('.butikk-piller button').allTextContents(),['Nettbutikk','Internt','Alle','Lite på lager']);assert.equal(await p.locator('.butikk-piller [data-vis="alle"]').getAttribute('aria-pressed'),'true');
  // Ny vare: begge bryterne, 2 på lager, min 5, maks 20.
  await p.getByRole('button',{name:'Ny vare',exact:true}).click();await p.getByText('Hvor skal varen vises?',{exact:true}).waitFor();
  assert.equal(await p.getByLabel('Nettbutikken',{exact:true}).isChecked(),true,'ny vare: Nettbutikken er krysset av');
  await p.getByLabel('Varenavn',{exact:true}).fill(navn);await p.getByLabel('Pris i kroner',{exact:true}).fill('149');await p.getByLabel('Antall på lager',{exact:true}).fill('2');
  await p.getByLabel('Synlighet',{exact:true}).selectOption('publisert');await p.getByLabel('Internt',{exact:true}).check();
- await p.getByLabel('Bestill når lageret er under',{exact:true}).fill('5');await p.getByLabel('Fyll opp lageret til',{exact:true}).fill('20');
+ await p.getByLabel('Varsle når under',{exact:true}).fill('5');await p.getByLabel('Fyll opp lageret til',{exact:true}).fill('20');
  // Leire fra Scan-Form: kan tas ut, og legges i handlelista når den når min.
  await p.getByLabel('Leire',{exact:true}).check();await p.getByLabel('Leverandør',{exact:true}).selectOption({label:'Scan-Form'});
  await p.getByRole('button',{name:'Lagre',exact:true}).click();await p.getByRole('dialog',{name:'Publiser varen?',exact:true}).getByRole('button',{name:'Publiser',exact:true}).click();
@@ -31,12 +31,13 @@ try{
  assert.ok(d.litePaaLager.some(r=>r.id===v.id&&r.min===5&&r.maks===20),'står under Lite på lager');
  assert.ok(fixture('lagervarsel',{...s,vare:v.id}).antall>=1,'e-postvarsel sendt når varen ble lagt inn under min');
  console.log('Ny vare i Nettbutikken og Internt, 2 på lager (min 5 / maks 20); e-postvarselet er sendt.');
- // Butikk: Lite på lager-kortet og varelinja.
- await p.goto(URL+'#butikk');const kort=p.locator('section.card').filter({has:p.getByRole('heading',{name:'Lite på lager',exact:true})});
- await kort.getByText('2 igjen · min 5 · fyll til 20',{exact:true}).waitFor();
+ // Butikk: varelinja (Lite på lager er pillen over lista, kortet står på I dag).
+ await p.goto(URL+'#butikk');
  await p.getByRole('searchbox',{name:'Søk vare eller kategori'}).fill(navn);const rad=p.locator('main').getByText(/149.*2 på lager \(min 5 \/ maks 20\)/).first();await rad.waitFor();
  for(const [k,med] of [['nett',true],['intern',true],['lite',true]]){await p.locator(`.butikk-piller [data-vis="${k}"]`).click();await p.getByRole('searchbox',{name:'Søk vare eller kategori'}).fill(navn);assert.equal(await p.locator('main').getByText(navn,{exact:true}).count()>0,med,'filter '+k);}
- assert.ok(Number((await p.locator('.butikk-piller [data-vis="lite"]').innerText()).replace(/\D+/g,''))>=1,'Lite på lager viser antallet');assert.equal(await p.locator('.butikk-piller [data-vis="lite"]').getAttribute('aria-pressed'),'true');
+ assert.equal(await p.locator('.butikk-piller [data-vis="lite"]').getAttribute('aria-pressed'),'true');assert.equal(await p.locator('.butikk-piller [data-vis="nett"]').getAttribute('aria-pressed'),'false');
+ // Lite på lager: «Bestill mer» rett på raden, og tom bilderute når varen ikke har bilde.
+ const lrad=p.locator('.vare-rad',{hasText:navn});await lrad.getByRole('button',{name:'Bestill mer',exact:true}).waitFor();assert.equal(await lrad.locator('.vare-bilde.tom').count(),1,'tom bilderute');
  // I dag: Lite på lager med Åpne butikken.
  await p.goto(URL+'#idag');const idag=p.locator('section.card').filter({has:p.getByRole('heading',{name:'Lite på lager',exact:true})});await idag.getByText(navn,{exact:true}).waitFor();
  await idag.getByRole('link',{name:'Åpne butikken',exact:true}).waitFor();

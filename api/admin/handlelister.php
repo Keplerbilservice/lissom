@@ -19,6 +19,9 @@
  *   POST handling=sonestandard   { id, sone }              standard sone
  *   POST handling=fraktvekt      { leverandorId, kg }      rettet totalvekt
  *   POST handling=linjevekt      { produktId (<0), kg }    vekt paa et oenske
+ *   POST handling=frist          { dato }                  frist for neste leirebestilling
+ *   POST handling=kommet         { ider }                  linjene er kommet (migrasjon 260)
+ *   POST handling=hentet         { ider }                  linjene er hentet (migrasjon 260)
  *
  * Fraktsatsene og bestillingsrutinen (migrasjon 210): eieren, 24. september
  * 2026, «fraktpriser og bestillingsrutiner som styres fra admin». Satsene er
@@ -342,12 +345,7 @@ function handleliste_bilde(): array
         }
     }
 
-    return [
-        'klar'         => true,
-        'antallMedlemmer' => count($harSendt),
-        'varer'        => array_values($varer),
-        'medlemmer'    => array_values($medlemmer),
-        'leverandorer' => array_map(static fn($l) => [
+    $levBilde = array_map(static fn($l) => [
             'id'     => (int) $l['id'],
             'navn'   => (string) $l['navn'],
             'epost'  => (string) $l['epost'],
@@ -360,12 +358,140 @@ function handleliste_bilde(): array
             'antallMedlemmer' => count($hvemHosLev[(int) $l['id']] ?? []),
             'soneStandard' => (string) ($l['frakt_sone_standard'] ?? ''),
             'fraktAuto' => isset($auto[(int) $l['id']]) ? handleliste_autobilde($auto[(int) $l['id']]) : null,
-        ], $lev),
+        ], $lev);
+
+    return [
+        'klar'         => true,
+        'antallMedlemmer' => count($harSendt),
+        'varer'        => array_values($varer),
+        'medlemmer'    => array_values($medlemmer),
+        'leverandorer' => $levBilde,
+        // «Neste leirebestilling» og tidligere bestillinger (eieren 08.10.2026).
+        'leire'        => handleliste_leire($levBilde),
         'fraktKlar'    => Frakt::klar(),
         'fraktOppsett' => $fraktOppsett,
         'har208'       => handleliste_har208(),
         'har210'       => handleliste_har210(),
         'gebyr'        => $gebyr,
+    ];
+}
+
+/**
+ * «Neste leirebestilling» (eieren 08.10.2026): fristen, linjene som ligger
+ * klare per leverandoer (med bilde og hvem som har bestilt hvor mye), frakten
+ * og hvor mange den deles paa — og under, tidligere bestillinger med status
+ * Bestilt / Kommet / Hentet. «Send bestilling» og «Krev inn med Vipps» er de
+ * samme handlingene som foer (bestill og krav).
+ *
+ * @param list<array<string,mixed>> $levBilde leverandoerene slik skjermen faar dem
+ */
+function handleliste_leire(array $levBilde): array
+{
+    $levSql = handleliste_har208() ? 'COALESCE(p.leverandor_id, h.leverandor_id)' : 'p.leverandor_id';
+    $rader = DB::alle(
+        "SELECT h.id, h.member_id, h.product_id, h.antall, h.pris_ore,
+                COALESCE(p.tittel, h.tekst) AS tittel, p.bilde,
+                {$levSql} AS lev_id,
+                COALESCE(m.navn, 'Verkstedets lager') AS medlemsnavn
+           FROM handleliste_linjer h
+      LEFT JOIN products p ON p.id = h.product_id
+      LEFT JOIN members m ON m.id = h.member_id
+          WHERE h.status = 'sendt' AND h.bestilt_at IS NULL AND {$levSql} IS NOT NULL
+          ORDER BY tittel, m.navn"
+    );
+    $perLev = [];
+    foreach ($rader as $r) {
+        $lid = (int) $r['lev_id'];
+        $n = $r['product_id'] === null ? -(int) $r['id'] : (int) $r['product_id'];
+        $v = &$perLev[$lid][$n];
+        $v ??= [
+            'produktId' => $n,
+            'navn'      => (string) $r['tittel'],
+            'bilde'     => Lager::bildeUrl($r['bilde'] ?? null),
+            'antall'    => 0,
+            'pris'      => $r['pris_ore'] === null ? '' : handleliste_kroner((int) $r['pris_ore']),
+            'hvem'      => [],
+        ];
+        $v['antall'] += (int) $r['antall'];
+        $v['hvem'][] = ['navn' => handleliste_fornavn((string) $r['medlemsnavn']), 'antall' => (int) $r['antall']];
+        unset($v);
+    }
+    $neste = [];
+    foreach ($levBilde as $l) {
+        if (empty($perLev[$l['id']])) {
+            continue;
+        }
+        $auto = $l['fraktAuto'] ?? null;
+        $frakt = $auto && ($auto['sumOre'] ?? 0) > 0 ? (string) $auto['sum']
+            : ($l['frakt'] !== '' ? handleliste_kroner((int) round((float) str_replace(',', '.', $l['frakt']) * 100)) : '');
+        $neste[] = [
+            'id'      => (int) $l['id'],
+            'navn'    => (string) $l['navn'],
+            'epost'   => (string) $l['epost'],
+            'varer'   => array_values($perLev[$l['id']]),
+            'frakt'   => $frakt,
+            'deltPaa' => (int) $l['antallMedlemmer'],
+        ];
+    }
+
+    // Tidligere bestillinger, de siste 120 dagene. Samlet paa nummeret i
+    // e-posten (migrasjon 260); eldre linjer uten nummer paa leverandoer og tid.
+    $harStatus = Lager::harLeireStatus();
+    $kol = $harStatus ? 'h.bestilling_nr, h.kommet_at, h.hentet_at' : 'NULL AS bestilling_nr, NULL AS kommet_at, NULL AS hentet_at';
+    $ferdig = DB::alle(
+        "SELECT h.id, h.member_id, h.antall, h.bestilt_at, {$kol},
+                COALESCE(p.tittel, h.tekst) AS tittel, l.navn AS leverandor, {$levSql} AS lev_id,
+                COALESCE(m.navn, 'Verkstedets lager') AS medlemsnavn
+           FROM handleliste_linjer h
+      LEFT JOIN products p ON p.id = h.product_id
+      LEFT JOIN members m ON m.id = h.member_id
+      LEFT JOIN leverandorer l ON l.id = {$levSql}
+          WHERE h.status = 'ferdig' AND h.bestilt_at IS NOT NULL
+            AND h.bestilt_at >= NOW() - INTERVAL 120 DAY
+          ORDER BY h.bestilt_at DESC, h.id"
+    );
+    $tidligere = [];
+    foreach ($ferdig as $r) {
+        $nokkel = (string) ($r['bestilling_nr'] ?: ((int) $r['lev_id'] . '|' . $r['bestilt_at']));
+        $b = &$tidligere[$nokkel];
+        $b ??= [
+            'nr'         => (string) ($r['bestilling_nr'] ?? ''),
+            'leverandor' => (string) ($r['leverandor'] ?? ''),
+            'dato'       => date('d.m.Y', strtotime((string) $r['bestilt_at']) ?: time()),
+            'ider'       => [],
+            'medlemmer'  => [],
+            'kommet'     => true,
+            'hentet'     => true,
+            'harMedlem'  => false,
+        ];
+        $b['ider'][] = (int) $r['id'];
+        $b['kommet'] = $b['kommet'] && $r['kommet_at'] !== null;
+        // Verkstedets eget lager (member_id NULL) hentes ikke av noen.
+        if ($r['member_id'] !== null) {
+            $b['harMedlem'] = true;
+            $b['hentet'] = $b['hentet'] && $r['hentet_at'] !== null;
+        }
+        $mid = (int) $r['member_id'];
+        $m = &$b['medlemmer'][$mid];
+        $m ??= ['navn' => (string) $r['medlemsnavn'], 'intern' => $r['member_id'] === null, 'varer' => [], 'ider' => [], 'hentet' => true];
+        $m['varer'][] = (int) $r['antall'] . ' × ' . $r['tittel'];
+        $m['ider'][] = (int) $r['id'];
+        $m['hentet'] = $m['hentet'] && $r['hentet_at'] !== null;
+        unset($m, $b);
+    }
+    $tidligere = array_slice(array_values($tidligere), 0, 30);
+    foreach ($tidligere as &$b) {
+        $b['hentet'] = $b['hentet'] && $b['harMedlem'];
+        $b['status'] = $b['hentet'] ? 'Hentet' : ($b['kommet'] ? 'Kommet' : 'Bestilt');
+        $b['medlemmer'] = array_map(static fn($m) => $m + ['varerTekst' => implode(', ', $m['varer'])], array_values($b['medlemmer']));
+    }
+    unset($b);
+
+    return [
+        'frist'      => Lager::leireFrist(),
+        'neste'      => $neste,
+        'tidligere'  => $tidligere,
+        'harStatus'  => $harStatus,
     ];
 }
 
@@ -426,6 +552,45 @@ if ($handling === 'gebyr') {
         ['n' => 'handleliste_gebyr_prosent', 'v' => (string) $prosent, 'a' => (int) $admin['id']]
     );
     Svar::ok(handleliste_bilde());
+}
+
+// Fristen for neste leirebestilling (eieren 08.10.2026). Tom = ingen frist.
+if ($handling === 'frist') {
+    $dato = trim(Foresporsel::tekst('dato'));
+    if ($dato !== '' && (!preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $dato, $t) || !checkdate((int) $t[2], (int) $t[3], (int) $t[1]))) {
+        Svar::feil('Velg en dato.');
+    }
+    DB::kjor(
+        'INSERT INTO innstillinger (nokkel, verdi, endret_av) VALUES (:n, :v, :a)
+             ON DUPLICATE KEY UPDATE verdi = VALUES(verdi), endret_av = VALUES(endret_av)',
+        ['n' => 'leirebestilling_frist', 'v' => $dato, 'a' => (int) $admin['id']]
+    );
+    Config::glemBasen();
+    revider('leirebestilling_frist', 'innstilling', null, ['dato' => $dato]);
+    Svar::ok(handleliste_bilde() + ['beskjed' => $dato === '' ? 'Fristen er fjernet.' : 'Fristen er lagret.']);
+}
+
+// Kommet og Hentet med ett trykk (eieren 08.10.2026, migrasjon 260).
+// «ider» er linjene: hele bestillingen for Kommet, ett medlem for Hentet.
+if ($handling === 'kommet' || $handling === 'hentet') {
+    if (!Lager::harLeireStatus()) {
+        Svar::feil('Dette krever oppdatering 260. Kjør oppdateringene først.');
+    }
+    $ider = array_values(array_unique(array_filter(
+        array_map('intval', (array) (Foresporsel::kropp()['ider'] ?? [])),
+        static fn($i) => $i > 0
+    )));
+    if ($ider === [] || count($ider) > 2000) {
+        Svar::feil('Fant ikke linjene.');
+    }
+    $in = implode(',', $ider);
+    $antall = DB::kjor($handling === 'kommet'
+        ? "UPDATE handleliste_linjer SET kommet_at = NOW()
+            WHERE id IN ({$in}) AND status = 'ferdig' AND kommet_at IS NULL"
+        : "UPDATE handleliste_linjer SET hentet_at = NOW(), kommet_at = COALESCE(kommet_at, NOW())
+            WHERE id IN ({$in}) AND status = 'ferdig' AND hentet_at IS NULL")->rowCount();
+    revider('leirebestilling_' . $handling, 'handleliste', null, ['linjer' => $ider, 'endret' => $antall]);
+    Svar::ok(handleliste_bilde() + ['beskjed' => $handling === 'kommet' ? 'Satt til Kommet.' : 'Satt til Hentet.']);
 }
 
 if ($handling === 'frakt') {
@@ -845,9 +1010,14 @@ if ($handling === 'bestill') {
         $leverandorId
     );
 
+    // Nummeret lagres paa linjene (migrasjon 260), saa «Tidligere bestillinger»
+    // kan vise dem samlet med status Bestilt / Kommet / Hentet.
+    $medNr = Lager::harLeireStatus();
     DB::kjor(
-        'UPDATE handleliste_linjer SET bestilt_at = NOW(), status = \'ferdig\' WHERE id IN ('
-        . implode(',', array_map(static fn($l) => (int) $l['id'], $linjer)) . ')'
+        'UPDATE handleliste_linjer SET bestilt_at = NOW(), status = \'ferdig\''
+        . ($medNr ? ', bestilling_nr = :nr' : '') . ' WHERE id IN ('
+        . implode(',', array_map(static fn($l) => (int) $l['id'], $linjer)) . ')',
+        $medNr ? ['nr' => $nummer] : []
     );
     // Frakten gjaldt denne bestillingen. Neste gang skrives den inn paa nytt.
     if (handleliste_har208()) {

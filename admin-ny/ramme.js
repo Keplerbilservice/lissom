@@ -4,6 +4,7 @@
 import {el,api,button,link,sheet,confirm,toast,today} from './ui.js';
 import {popIdagArk} from './malebord.js';
 import {leggTilVelg} from './kalender-meny.js';
+import {hentMer,merHandlinger,mandagFlis} from './ma-gjores-mer.js';
 
 export const NAV=[['idag','I dag','◉'],['kalender','Kalender','▦'],['folk','Folk','♧'],['penger','Penger','○'],['mer','Mer','☷']];
 /* Sidene som nås fra Mer (Tilbake går til Mer). */
@@ -27,9 +28,11 @@ const settLes=()=>{try{return new Set(JSON.parse(localStorage.getItem(SETT)||'[]
 const settLegg=id=>{const s=settLes();s.add(id);try{localStorage.setItem(SETT,JSON.stringify([...s].slice(-300)));}catch{}};
 const gaa=h=>{if(location.hash===h)window.dispatchEvent(new HashChangeEvent('hashchange'));else location.hash=h;};
 
-function maGjores(d,ctx){
+function maGjores(d,ctx,mer){
  const sett=d.settPaaServer?new Set():settLes();
- const saker=(d.maGjores||[]).filter(s=>!(s.type==='pamelding'&&sett.has(s.id)));
+ /* Idé 3, 4, 5 (08.10): saker fra ma-gjores-mer.php; henting som «Ovnen er ferdig» dekker, tas ut. */
+ const dekker=new Set(mer?.dekker||[]);
+ const saker=[...(d.maGjores||[]).filter(s=>!(s.type==='pamelding'&&sett.has(s.id))&&!(s.type==='henting'&&dekker.has(s.id))),...(mer?.saker||[])];
  const gjort=new Set();const nokkel=s=>s.type+':'+s.id;
  const igjen=g=>saker.filter(s=>s.gruppe===g&&!gjort.has(nokkel(s)));
  const boks=el('div',{class:'fliser ma-gjores'});
@@ -56,10 +59,12 @@ function maGjores(d,ctx){
    leire:()=>[link('Åpne bestillingen','#handlelister','primary')],
    dugnad:()=>[link('Åpne dugnad','#dugnad','primary')],
    lager:()=>[trykk('Bestill mer',async()=>{const r=await api('produkter.php',{handling:'bestillMer',id:s.id});ferdig(r.beskjed);},'primary'),button('Fyll på',()=>{ark.close();setTimeout(()=>ctx.fyllPaa(s.id,s.vare),0);})],
-   taut:()=>[]
+   taut:()=>[],
+   ...merHandlinger(s,{trykk,ferdig,lukk:()=>ark?.close(),grenser:mer?.grenser})
   })[s.type]||(()=>[link('Åpne','#'+s.rute,'primary')]);
-  ark=sheet(s.tittel,el('div',{class:'sak-ark'},s.under?el('p',{class:'sak-melding',text:s.under}):null,s.type==='taut'?ctx.taUt(d.taUtLeire):null,el('div',{class:'actions'},handlinger())));
+  ark=sheet(s.tittel,el('div',{class:'sak-ark'},s.melding||s.under?el('p',{class:'sak-melding',text:s.melding||s.under}):null,s.type==='taut'?ctx.taUt(d.taUtLeire):null,el('div',{class:'actions'},handlinger())));
  }
+ boks.apneSak=type=>{const s=saker.find(x=>x.type===type&&!gjort.has(nokkel(x)));if(s)visSak(s);};
  tegn();return boks;
 }
 
@@ -75,8 +80,11 @@ function verkstedetIdag(kal,pop,inne){
 }
 
 export async function idagSide(ctx){
- const [d,kal,pop]=await Promise.all([api('oversikt.php'),api(`kalender.php?fra=${today()}&til=${today()}`).catch(()=>({hendelser:[]})),api('malebord.php').catch(()=>null)]);
- return el('div',{class:'idag'},ctx.title('I dag'),etikett('Må gjøres'),maGjores(d,ctx),etikett('I dag på verkstedet'),verkstedetIdag(kal,pop,d.verkstedet));
+ const [d,kal,pop,mer]=await Promise.all([api('oversikt.php'),api(`kalender.php?fra=${today()}&til=${today()}`).catch(()=>({hendelser:[]})),api('malebord.php').catch(()=>null),hentMer()]);
+ const ma=maGjores(d,ctx,mer);
+ /* Idé 7: «Ukens oppsummering» øverst på mandager. */
+ const mandag=mandagFlis(mer?.mandag,flis,fliser,type=>ma.apneSak(type));
+ return el('div',{class:'idag'},ctx.title('I dag'),mandag?etikett('Mandag'):null,mandag,etikett('Må gjøres'),ma,etikett('I dag på verkstedet'),verkstedetIdag(kal,pop,d.verkstedet));
 }
 
 /* ── Mer: bare fliser ─────────────────────────────────────────────────── */

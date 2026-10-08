@@ -6705,6 +6705,58 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "ma-gjores-ovn-tregt-innom-mandag-20261008",
+            "dato": "2026-10-08",
+            "hva": "Eieren, 8. oktober 2026 (visningen ideer-visning, idé 3, 4, 5 og 7): «Ovnen er ferdig: N klar til henting» i Verksted når en brenning merkes ferdig med kursdatoene som lå i ovnen (Send «Klar til henting» / Marker hentet); «<kurs> fylles tregt» i Kurs (under 50 % fylt og under 21 dager igjen, innstillinger; Lag markedsføring / Send til medlemmene / Vent en uke); «N medlemmer ikke innom på 3 uker» i Medlemmer (21 dager, frosne utelatt; Send hilsen etter «Er du sikker?» / Ikke nå); «Ukens oppsummering» øverst på I dag på mandager. Skjult i 7 dager lagres på serveren (migrasjon 266). Bryter Vis/magjoresmer.",
+            "hvor": "admin-ny › I dag, admin-ny › Brenninger",
+            "kode": [
+                {
+                    "fil": "admin-ny/ma-gjores-mer.js",
+                    "finnes": [
+                        "Hei! Vi savner deg på verkstedet. Ovnen er varm og det er god plass på torsdager.",
+                        "trykk('Send «Klar til henting»'",
+                        "trykk('Marker hentet'",
+                        "trykk('Lag markedsføring'",
+                        "button('Send til medlemmene'",
+                        "trykk('Vent en uke'",
+                        "button('Send hilsen'",
+                        "trykk('Ikke nå'",
+                        "confirm('Er du sikker?'",
+                        "tittel:'Ukens oppsummering'"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/ramme.js",
+                    "finnes": [
+                        "hentMer()",
+                        "mandag?etikett('Mandag'):null,mandag,etikett('Må gjøres')",
+                        "...merHandlinger(s,"
+                    ]
+                },
+                {
+                    "fil": "api/admin/ma-gjores-mer.php",
+                    "finnes": [
+                        "'Ovnen er ferdig: ' . $n . ' klar til henting'",
+                        "' fylles tregt'",
+                        "' ikke innom på '",
+                        "STD_ANDEL = 50",
+                        "STD_DAGER = 21",
+                        "STD_INNOM = 21",
+                        "SKJUL_DAGER = 7",
+                        "nokkel = 'Vis/magjoresmer'"
+                    ]
+                },
+                {
+                    "fil": "db/migrations/266_ma_gjores_skjul.sql",
+                    "finnes": [
+                        "CREATE TABLE IF NOT EXISTS ma_gjores_skjul",
+                        "ADD COLUMN IF NOT EXISTS ferdig_at",
+                        "CREATE TABLE IF NOT EXISTS brenning_okter"
+                    ]
+                }
+            ]
         }
     ]
 }

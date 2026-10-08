@@ -5760,6 +5760,22 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "kurspaaminnelse-dagen-for-kl-12",
+            "dato": "2026-10-08",
+            "hva": "Eieren, 8. oktober 2026: påminnelsen før kurset går dagen før fra kl. 12 (cron paaminnelser kl. 12), med fornavn, kursnavn, ukedag og dato, klokkeslett og sted. SMS er av som standard og slås på per kurs. Teksten: «Hei {fornavn}! Vi gleder oss til å se deg på {kurs} hos Lissom {dato} kl. {tid}. Sted: {sted}. Hilsen oss i Lissom»",
+            "hvor": "bin/cron.php › paaminnelser",
+            "kode": [
+                {
+                    "fil": "bin/cron.php",
+                    "finnes": [
+                        "$tilOslo = (int) $naaOslo->format('G') >= 12 ? $iDag->modify('+2 days') : $iDag->modify('+1 day');",
+                        "'dato'    => norsk_ukedag_dato((string) $okt['start_tid']),",
+                        "'sted'    => $sted,"
+                    ]
+                }
+            ]
         }
     ]
 }

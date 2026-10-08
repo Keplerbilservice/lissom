@@ -162,15 +162,17 @@ final class Maler
         ],
         'kurspaaminnelse' => [
             'tittel' => 'Påminnelse før kurset',
-            // Sto «dagen før». Den gaar inntil 30 timer for kursstart, saa
-            // den kan lande samme morgen — se bin/cron.php («paaminnelser»).
-            'hvor'   => 'Sendes automatisk før kurset, senest morgenen samme dag.',
+            // Eieren, 8. oktober 2026: «dagen før kl 12» — se bin/cron.php
+            // («paaminnelser»), som maa kjores kl. 12 eller oftere.
+            'hvor'   => 'Sendes automatisk dagen før kurset, fra kl. 12.',
             'felter' => [
                 'fornavn' => 'Fornavnet til deltakeren',
                 'navn'    => 'Fornavnet også (fra før)',
                 'kurs'    => 'Kursets navn',
                 'tid'     => 'Klokkeslettet kurset starter',
                 'naar'    => 'Dagen og klokkeslettet. Går kurset over flere dager, står hver dag på sin egen linje',
+                'dato'    => 'Ukedag og dato, f.eks. «onsdag 7. oktober»',
+                'sted'    => 'Adressen til verkstedet',
             ],
         ],
         'ferdig_brent' => [

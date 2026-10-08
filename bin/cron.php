@@ -7,7 +7,7 @@
 //   0 1 * * *     php ~/lissom-app/bin/cron.php vedlikehold >/dev/null
 //   30 2 * * *    php ~/lissom-app/bin/cron.php sikkerhetskopi >/dev/null
 //   0 * * * *     php ~/lissom-app/bin/cron.php medlemstrekk >/dev/null
-//   0 7 * * *     php ~/lissom-app/bin/cron.php paaminnelser >/dev/null
+//   0 12 * * *    php ~/lissom-app/bin/cron.php paaminnelser >/dev/null   (eieren 08.10.2026: dagen før kl 12)
 //   0 8 * * *     php ~/lissom-app/bin/cron.php fortsett >/dev/null
 //
 // «>/dev/null» bakerst, og bare stdout: CGI-utgaven av PHP skriver alltid den
@@ -351,14 +351,24 @@ switch ($jobb) {
     // -----------------------------------------------------------------------
     // Kurspåminnelse dagen før, og varsling til venteliste.
     case 'paaminnelser':
+        // Eieren, 8. oktober 2026: «dagen før kl 12». Fra kl. 12 norsk tid
+        // gaar paaminnelsen for alt som starter i morgen. Det som starter i
+        // dag og ikke har faatt sin (kjoringen falt ut), tas med ogsaa.
+        $oslo = new DateTimeZone('Europe/Oslo');
+        $naaOslo = new DateTimeImmutable('now', $oslo);
+        $iDag = $naaOslo->setTime(0, 0);
+        $tilOslo = (int) $naaOslo->format('G') >= 12 ? $iDag->modify('+2 days') : $iDag->modify('+1 day');
         $okter = DB::alle(
             "SELECT cs.id, cs.start_tid, cs.slutt_tid, c.tittel, c.sms_paaminnelse
                FROM course_sessions cs
                JOIN courses c ON c.id = cs.course_id
               WHERE cs.status = 'planlagt'
                 AND cs.paaminnelse_sendt_at IS NULL
-                AND cs.start_tid BETWEEN UTC_TIMESTAMP() AND DATE_ADD(UTC_TIMESTAMP(), INTERVAL 30 HOUR)"
+                AND cs.start_tid >= UTC_TIMESTAMP()
+                AND cs.start_tid < :til",
+            ['til' => $tilOslo->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s')]
         );
+        $sted = trim((string) Config::hent('verksted_adresse', 'Lissom Keramikk & Håndverk, Teie'));
 
         $antall = 0;
         foreach ($okter as $okt) {
@@ -401,6 +411,8 @@ switch ($jobb) {
                     'kurs'    => (string) $okt['tittel'],
                     'tid'     => norsk_klokkeslett((string) $okt['start_tid']),
                     'naar'    => $naar,
+                    'dato'    => norsk_ukedag_dato((string) $okt['start_tid']),
+                    'sted'    => $sted,
                 ], 'course_session', (int) $okt['id']);
                 $antall++;
             }
@@ -705,6 +717,16 @@ function norsk_klokkeslett(string $utc): string
 {
     $d = new DateTimeImmutable($utc, new DateTimeZone('UTC'));
     return $d->setTimezone(new DateTimeZone('Europe/Oslo'))->format('H:i');
+}
+
+/** «onsdag 9. september», norsk tid. Klokkeslettet staar i {tid}. */
+function norsk_ukedag_dato(string $utc): string
+{
+    $d = (new DateTimeImmutable($utc, new DateTimeZone('UTC')))->setTimezone(new DateTimeZone('Europe/Oslo'));
+    $dager = ['mandag', 'tirsdag', 'onsdag', 'torsdag', 'fredag', 'lørdag', 'søndag'];
+    $mnd = ['januar', 'februar', 'mars', 'april', 'mai', 'juni',
+            'juli', 'august', 'september', 'oktober', 'november', 'desember'];
+    return $dager[(int) $d->format('N') - 1] . ' ' . (int) $d->format('j') . '. ' . $mnd[(int) $d->format('n') - 1];
 }
 
 /**

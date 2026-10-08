@@ -196,7 +196,7 @@ jobbene har ikke en ferdig oppføring, og der skriver du inn to tall selv.
 | Betalinger som henger | Every Five Minutes | `*/5 * * * *` | `php ~/lissom-app/bin/cron.php betalinger >/dev/null` |
 | «Takk for sist» | Once Per Hour | `0 * * * *` | `php ~/lissom-app/bin/cron.php anmeldelser >/dev/null` |
 | **Medlemstrekket** | Once Per Hour | `0 * * * *` | `php ~/lissom-app/bin/cron.php medlemstrekk >/dev/null` |
-| Kurspåminnelser | *(ingen — sett Minute `0`, Hour `7`)* | `0 7 * * *` | `php ~/lissom-app/bin/cron.php paaminnelser >/dev/null` |
+| Kurspåminnelser | *(ingen — sett Minute `0`, Hour `12`)* | `0 12 * * *` | `php ~/lissom-app/bin/cron.php paaminnelser >/dev/null` |
 | Medlemsinvitasjon etter kurs | *(ingen — sett Minute `0`, Hour `8`)* | `0 8 * * *` | `php ~/lissom-app/bin/cron.php fortsett >/dev/null` |
 | Opprydding | *(ingen — sett Minute `0`, Hour `1`)* | `0 1 * * *` | `php ~/lissom-app/bin/cron.php vedlikehold >/dev/null` |
 | **Sikkerhetskopi av databasen** | *(ingen — sett Minute `30`, Hour `2`)* | `30 2 * * *` | `php ~/lissom-app/bin/cron.php sikkerhetskopi >/dev/null` |

@@ -2855,6 +2855,8 @@ Svar::json(['lavAktivitetDager' => Aktivitet::dager(), 'medlemmer' => array_map(
     'navn'       => $m['navn'],
     'epost'      => $m['epost'],
     'telefon'    => $m['telefon'],
+    // Rollen alene (ikke noedluka): de skjules i medlemslista (eieren 08.10.2026).
+    'rolleAdmin' => $m['rolle'] === 'admin',
     'erAdmin'    => $m['rolle'] === 'admin'
                     || ($m['telefon'] !== null && in_array(normaliser_telefon((string) $m['telefon']), $nodluker, true)),
     'medlemskap' => $m['medlemskap_type'],

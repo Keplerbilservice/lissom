@@ -6649,7 +6649,7 @@
                 {
                     "fil": "admin-ny/app.js",
                     "finnes": [
-                        "utvalg=p=>!p.erAdmin&&finn(p)",
+                        "utvalg=p=>!p.rolleAdmin&&finn(p)",
                         "link('Brukere',href('brukere'))])"
                     ]
                 }

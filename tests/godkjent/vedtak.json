@@ -5746,7 +5746,7 @@
                     "fil": "admin-ny/app.js",
                     "finnes": [
                         "const tilbakeKnapp=()=>button('Tilbake',",
-                        "main.replaceChildren(...(!accountant&&RENDERERS[current]&&!NAV.some(n=>n[0]===current)?[tilbakeKnapp()]:[]),node);",
+                        "main.replaceChildren(...(!accountant&&RENDERERS[current]&&current!=='idag'?[tilbakeKnapp()]:[]),node);",
                         "pille('Medlemmer '+GRUPPER.medlemmer.aktive.length",
                         "pille('Deltakere '+delt.aktive.length",
                         "pille('Aktive '+g.aktive.length",
@@ -5975,6 +5975,20 @@
                     "fil": "admin-ny/app.js",
                     "finnes": [
                         "el('a',{href:href('idag'),class:'brand-lenke','aria-label':'Lissom, til I dag'}"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "adminny-tilbake-overalt",
+            "dato": "2026-10-08",
+            "hva": "Eieren, 8. oktober 2026: «Lukke eller tilbakeknapp overalt». I tillegg til × på alle ark og Tilbake på undersidene (3f50869) har nå også hovedmenyens sider (Kalender, Kurs, Folk, Penger, Butikk, Verksted, Innhold, Markedsføring, Alle funksjoner) «Tilbake» øverst. Bare I dag (startsiden) har ingen. Tilbake går til forrige side, eller til I dag når man kom rett inn.",
+            "hvor": "admin-ny › alle sider",
+            "kode": [
+                {
+                    "fil": "admin-ny/app.js",
+                    "finnes": [
+                        "const forelder=r=>NAV.some(n=>n[0]===r)?'idag':"
                     ]
                 }
             ]

@@ -6947,6 +6947,22 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "medlemskap-verkstedbilder-20261008",
+            "dato": "2026-10-08",
+            "hva": "Eieren, 8. oktober 2026: «du har jo bilder av verkstedet på mine bilder». Boksen «Alt du trenger, og litt til» på medlemssiden viser tre bilder fra verkstedet: lokalet, dreieskiva og verktøyet.",
+            "hvor": "lissom.no/medlemskap",
+            "kode": [
+                {
+                    "fil": "app/nett/sider/medlemskap.php",
+                    "finnes": [
+                        "uploads_verksted-1.jpg",
+                        "uploads_verksted-2.jpg",
+                        "uploads_verksted-3.jpg"
+                    ]
+                }
+            ]
         }
     ]
 }

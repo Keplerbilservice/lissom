@@ -98,6 +98,12 @@ foreach ([$innh('Medlemskap/6/Punkt 1'), $innh('Medlemskap/6/Punkt 2')] as $pk) 
         $h .= '<div style="display: flex; gap: 10px; align-items: flex-start; font-size: var(--text-base); color: var(--text-body);"><span style="color: var(--sage-600); font-weight: 700; flex: 0 0 auto;">✓</span><span>' . $e($pk) . '</span></div>';
     }
 }
+// Tre bilder fra verkstedet (eieren, 8. oktober 2026: «du har jo bilder av
+// verkstedet på mine bilder»).
+$h .= '</div><div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: var(--space-5);">';
+foreach ([['uploads_verksted-1.jpg', 'Langbordet og hyllene i verkstedet på Lissom'], ['uploads_verksted-2.jpg', 'Dreiing på dreieskiva'], ['uploads_verksted-3.jpg', 'Verktøy til leire i verkstedet']] as [$src, $alt]) {
+    $h .= '<img src="' . $src . '" alt="' . $e($alt) . '" width="800" height="600" loading="lazy" decoding="async" style="width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; border-radius: var(--radius-md); display: block;">';
+}
 $h .= '</div></div></div></section>' . "
 ";
 

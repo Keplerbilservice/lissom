@@ -11957,7 +11957,8 @@ sjekk('paameldingen kan rettes',
     && str_contains($pam, " *   POST handling=endre      { id, antall?, belop?, rabatt? }"));
 // Samme grenser som naar plassen legges inn.
 sjekk('… med samme grenser som naar plassen legges inn',
-    str_contains($pam, "Antallet må være mellom 1 og 20. Skal plassen bort, fjern den i stedet.")
+    // Grensen er $maksEndre fra Paint on Pots (9617147): 20, eller malestolene.
+    str_contains($pam, "'Antallet må være mellom 1 og ' . \$maksEndre . '. Skal plassen bort, fjern den i stedet.'")
     && str_contains($pam, 'Beløpet må være mellom 0 og 100 000 kroner.'));
 // Tomt beloepsfelt: regn det av antallet, med prisen paa datoen foran
 // prisen paa kurset — samme uttrykk som naar plassen legges inn.

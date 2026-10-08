@@ -7202,6 +7202,60 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "ny-admin-del-c",
+            "dato": "2026-10-08",
+            "hva": "Ny admin (/ny-admin), del C (eierens GO 08.10.2026): Medlemmer (liste med status, Gi gave øverst og per medlem via api/admin/gaver.php, Gaver som gjelder nå med Trekk, Send beskjed via beskjed.php), Medlemssiden (brytere per del av Min side via innhold.php, medlemskampanjer av/på via kampanjer.php, Legg ut internt via beskjed.php handling=tavle, forhåndsvisning /min-side?forhandsvis=medlem|deltaker), Varer (liste, søk, pris, lager +/−, vis i butikken via produkter.php; lagringen sender hele varen tilbake), Innstillinger (Meldinger/Varsler fra notification_templates: av/på og tekst via maler.php, SMS/e-post per mal via meldinger.php som bare endrer kanal-kolonnen; Brytere = samme Vis/-nøkler som Synlighet) og Mer (lenker til de eksisterende skjermene). Ingen nye kundetekster, ingen hardkodede priser.",
+            "hvor": "/ny-admin › Medlemmer, Medlemssiden, Varer, Innstillinger, Mer",
+            "kode": [
+                {
+                    "fil": "ny-admin/medlemmer.js",
+                    "finnes": [
+                        "kall('gaver.php', {",
+                        "handling: 'trekk', id",
+                        "til: 'medlemmer', tekst",
+                        "registrer('medlemmer'"
+                    ]
+                },
+                {
+                    "fil": "ny-admin/medlemssiden.js",
+                    "finnes": [
+                        "handling: 'bryter', id, paa: !k.paa",
+                        "handling: 'tavle', tekst",
+                        "/min-side?forhandsvis=${S.rolle}"
+                    ]
+                },
+                {
+                    "fil": "ny-admin/varer.js",
+                    "finnes": [
+                        "handling: 'lagre', id: v.id || 0",
+                        "beskrivelse: v.beskrivelse || '', bilde: v.bilde || ''",
+                        "lager = Math.max(0, fersk.lager + (lager - A.lagerFoer))"
+                    ]
+                },
+                {
+                    "fil": "ny-admin/innstillinger.js",
+                    "finnes": [
+                        "kall('meldinger.php', { handling: 'kanal', navn, sms, epost })",
+                        "kall('maler.php', { handling: 'lagre', navn: m.navn"
+                    ]
+                },
+                {
+                    "fil": "ny-admin/mer.js",
+                    "finnes": [
+                        "'/admin-ny#regnskap'"
+                    ]
+                },
+                {
+                    "fil": "api/admin/meldinger.php",
+                    "finnes": [
+                        "krev_admin();",
+                        "Foresporsel::krevSammeOpphav();",
+                        "DB::oppdater('notification_templates', ['kanal' => $kanal]"
+                    ]
+                }
+            ]
         }
     ]
 }

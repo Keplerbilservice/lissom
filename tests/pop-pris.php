@@ -51,6 +51,7 @@ $rydd = static function (): void {
     if ($bookinger !== []) {
         $b = implode(',', $bookinger);
         DB::kjor("DELETE FROM pop_kasselinjer WHERE booking_id IN ($b)");
+        DB::kjor("UPDATE bookings SET payment_id = NULL WHERE id IN ($b)");
         DB::kjor("DELETE FROM payments WHERE booking_id IN ($b)");
     }
     DB::kjor("DELETE FROM notifications WHERE mottaker LIKE 'poppris%@example.com'");

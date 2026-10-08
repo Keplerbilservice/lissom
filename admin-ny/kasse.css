@@ -51,9 +51,9 @@ body.kasse{background:var(--ground);min-height:100vh;min-height:100dvh;overscrol
 .k-prisknapp{font:inherit;font-weight:800;color:inherit;background:transparent;border:1px dashed var(--line);border-radius:12px;min-height:56px;padding:0 10px;white-space:nowrap;flex-shrink:0}
 .k-rabattknapp{min-height:64px;width:100%}
 .k-sum{display:flex;justify-content:space-between;font-size:26px;font-weight:800}
-.k-betal3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-.k-betal3 .k-k{height:84px;align-items:center;text-align:center;background:#fff}
-.k-betal3 .k-k b{font-size:22px}
+.k-betal2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.k-betal2 .k-k{height:84px;align-items:center;text-align:center;background:#fff}
+.k-betal2 .k-k b{font-size:22px}
 .k-flere{min-height:64px;width:100%}
 .k-kurvsone .k-pille,.k-sone-topp .k-pille{min-height:64px}
 .k-qrsone{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;min-height:0}

@@ -617,7 +617,7 @@ if ($erPop) {
     if ($tid !== '') {
         $faq[] = ['q' => 'Hvor lang tid tar det?', 'a' => 'Du maler i ' . mb_strtolower($tid) . '. Du velger selv når du kommer.'];
     }
-    foreach ([3, 2, 1, 4, 5] as $i) {
+    foreach ([3, 2, 1, 4] as $i) {
         $q = trim($innh('Paint on Pots/8/Spørsmål ' . $i));
         $a = trim($innh('Paint on Pots/8/Svar ' . $i));
         if ($q !== '' && $a !== '') {

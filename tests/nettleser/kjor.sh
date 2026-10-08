@@ -70,9 +70,11 @@ done
 SEED=$(php tests/nettleser/seed.php) || { echo "Fikk ikke laget testdata."; exit 1; }
 if [ "${1:-}" = "admin-ny" ]; then
   for fil in admin-ny admin-ny-penger regnskapsforer-nyadmin nyadmin-regnskap-innlogging nyadmin-medlemsbetaling nyadmin-kursbetaling nyadmin-refusjon-ui nyadmin-avsluttende nyadmin-butikk nyadmin-utkast nyadmin-samling nyadmin-kalender-mobil nyadmin-kalender-pc nyadmin-kalender-ark nyadmin-kursstart kursstart-krav nyadmin-kalender-gjenta kalender-gjenta nyadmin-kalender-meny ubetalt-medlem minside-moduler-ut nyadmin-minside nyadmin-gammel-inn minside-ny nyadmin-stemple-meny nyadmin-kursholder-bruker nyadmin-kjopt-i-dag nyadmin-toppen nyadmin-butikk-lager trekkplan trekk-l5-l6-l10 frys-trekk; do
-    node "tests/$fil.mjs"
+    # Eieren 8. oktober 2026: vis alle feil i én runde, ikke stopp på den første.
+    if ! node "tests/$fil.mjs"; then FEILET_FILER="${FEILET_FILER:-} $fil"; fi
   done
-  HENTING_TEST_URL="http://127.0.0.1:$PORT" HENTING_TEST_ORIGIN="$E2E_ADRESSE" node tests/henting.mjs
+  HENTING_TEST_URL="http://127.0.0.1:$PORT" HENTING_TEST_ORIGIN="$E2E_ADRESSE" node tests/henting.mjs || FEILET_FILER="${FEILET_FILER:-} henting"
+  if [ -n "${FEILET_FILER:-}" ]; then echo "Feilet i admin-testene:$FEILET_FILER"; exit 1; fi
 else
   E2E_SEED="$SEED" E2E_PORT="$PORT" node "tests/nettleser/${1:-flyter.mjs}"
 fi

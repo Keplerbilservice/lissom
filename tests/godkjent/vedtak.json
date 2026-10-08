@@ -6978,6 +6978,22 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "pop-tid-i-appen-20261008",
+            "dato": "2026-10-08",
+            "hva": "Eieren, 8. oktober 2026 («Ja, rett det»): appen viser samme tid som kurssiden på Paint on Pots — «Inntil 2 timer» og «Kom mellom 17:00 og 18:00» på datoene og i oppsummeringen — og «Med Monica» i merkelappene.",
+            "hvor": "lissom.no/kurs/paint-on-pots?book=1 (appen)",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "popTid(tekst) {",
+                        "this.popVarighet(k.duration || '')",
+                        "'Med Monica']"
+                    ]
+                }
+            ]
         }
     ]
 }

@@ -35310,6 +35310,29 @@ class Component extends DCLogic {
     return (this.state.katalog || []).find(x => x.tittel === (k.title || k.tittel)) || {};
   }
 
+  /**
+   * Paint on Pots (eieren, 8. oktober 2026): «det er maks to timer», og
+   * kunden velger ankomst inne i tidsrommet. Som kurssida (kursside.php):
+   * «17:00–20:00» vises som «kom mellom 17:00 og 18:00», og varigheten som
+   * «Inntil 2 timer». Bare visningen — datoene og tidene i bookingen er de
+   * samme som foer.
+   */
+  popTid(tekst) {
+    const kat = this.katalogKurs();
+    const min = parseInt(kat.plassMinutter, 10) || 0;
+    if (!(kat.depositum && (kat.popNivaer || []).length && min > 0)) return tekst;
+    return String(tekst || '').replace(/(\d{2}):(\d{2})\s*–\s*(\d{2}):(\d{2})/, (_, t1, m1, t2, m2) => {
+      const siste = Math.max(0, Number(t2) * 60 + Number(m2) - min);
+      return 'kom mellom ' + t1 + ':' + m1 + ' og ' + String(Math.floor(siste / 60)).padStart(2, '0') + ':' + String(siste % 60).padStart(2, '0');
+    });
+  }
+
+  popVarighet(tekst) {
+    const kat = this.katalogKurs();
+    const t = String(tekst || '').trim();
+    return (kat.depositum && (kat.popNivaer || []).length && t && !/^Inntil /.test(t)) ? 'Inntil ' + t : t;
+  }
+
   /** Kurs-id-en for kurset som er valgt, slik katalogen kjenner den. */
   kursIdNaa() {
     const k = this.state.valgtKurs || {};
@@ -61175,7 +61198,7 @@ class Component extends DCLogic {
               // Under dagen: klokkeslettet naar det bare er ett, ellers hvor
               // mange tider man kan velge mellom.
               under: rad.tider.length === 1
-                ? String(rad.tider[0].klokke || rad.tider[0].tid || '')
+                ? (s => s.charAt(0).toUpperCase() + s.slice(1))(this.popTid(String(rad.tider[0].klokke || rad.tider[0].tid || '')))
                 : rad.tider.length + ' tider å velge mellom',
               plasserTekst: full ? 'Fullbooket' : (best.plasser || 'Ledig'),
               prikk: full ? 'var(--clay-400)'
@@ -73598,7 +73621,7 @@ class Component extends DCLogic {
           || (this.state.bDag && datoer.find(d => d && String(d.dag || d.dato || '') === this.state.bDag))
           || null;
         const naar = (valgt && valgt.dato) || k.date || 'Flere datoer';
-        return [naar, (k.duration || ''), (k.nivaaTekst || '')].filter(Boolean).join(' · ');
+        return [this.popTid(naar), this.popVarighet(k.duration || ''), (k.nivaaTekst || '')].filter(Boolean).join(' · ');
       })(),
       // «Kari · kursdeltaker i juni» og «Marte · utdrikningslag i mai» fantes
       // ikke. Jeg skrev dem inn da sida ble bygget, og de sto som ekte
@@ -73661,7 +73684,8 @@ class Component extends DCLogic {
         if (this.state.fra === 'medlemskap') return [];
         const k = this.state.valgtKurs || {};
         const p = parseInt(k.plasser, 10) || 0;
-        return [k.nivaaTekst || k.level || '', k.duration || '', p > 0 ? 'Maks ' + p : '']
+        // «Med Monica» som paa kurssida (eieren, 8. oktober 2026).
+        return [k.nivaaTekst || k.level || '', this.popVarighet(k.duration || ''), p > 0 ? 'Maks ' + p : '', 'Med Monica']
           .map(x => String(x).trim()).filter(Boolean);
       })(),
       bVisFliser: this.state.fra !== 'medlemskap' && (() => {

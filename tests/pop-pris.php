@@ -136,6 +136,23 @@ sjekk('gjort om til færre: beløpet går aldri under det som er betalt',
 sjekk('linjene er byttet ut, ikke lagt til',
     (int) DB::verdi('SELECT COUNT(*) FROM pop_kasselinjer WHERE booking_id = :b', ['b' => $b1]) === 1);
 
+echo "\n── Endre gjenstander beholder prisen de ble slått inn med ───\n";
+// Kontrollen 08.10: lagrede linjer beholder sin pris, bare nye får dagens.
+[$ls, $s] = PopPris::regnLinjer([7 => 3], [7 => ['navn' => 'Liten', 'prisOre' => 60000]],
+    [7 => [['navn' => 'Liten', 'prisOre' => 50000, 'antall' => 2]]]);
+sjekk('2 lagret à 500 + 1 ny à 600 = 1 600 kr', $s === 160000 && count($ls) === 2, json_encode($ls));
+[, $s] = PopPris::regnLinjer([9 => 1], [], [9 => [['navn' => 'Borte', 'prisOre' => 85000, 'antall' => 2]]]);
+sjekk('nivå tatt bort i admin: eksisterende linje kan beholdes/reduseres', $s === 85000);
+try {
+    PopPris::regnLinjer([9 => 3], [], [9 => [['navn' => 'Borte', 'prisOre' => 85000, 'antall' => 2]]]);
+    sjekk('… men ikke økes', false, 'slapp gjennom');
+} catch (RuntimeException $e) {
+    sjekk('… men ikke økes', true);
+}
+$felt = PopPris::bookingFelt($kurs, 20000);
+sjekk('admin/venteliste får beløp ved booking og frist', ($felt['depositum_ore'] ?? null) === 20000 && ($felt['avbestilling_timer'] ?? null) === 24, json_encode($felt));
+sjekk('… og beløpet per person er kursets', PopPris::depositumPerPerson($kurs) === 10000);
+
 echo "\n── Kassa venter og rører ikke eldre bookinger ───────────────\n";
 [$b2] = $lagBooking(1, 10000, 'venter');
 try {

@@ -7104,6 +7104,70 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "ny-admin-del-b-kalender-kurs-20261008",
+            "dato": "2026-10-08",
+            "hva": "Ny admin /ny-admin, del B: Kalender og Kurs etter prototypen lissom-enklere-admin-2.html (eierens GO 08.10.2026). Kalender: Uke · Måned · År, minikalender (velg dato), ‹ Forrige · I dag · Neste ›, fyllgrad per økt, trykk på økt åpner kurssiden, boks for avhuking, synlig «Valg» + høyreklikk/langt trykk (Åpne, Legg til deltaker, Send påminnelse, Send beskjed, Endre dato og tid, Kopier økta, Kopier til hele uka, Steng for påmelding, Avlys dato; på dag: Nytt kurs her, Ny serie, Lim inn, Steng dagen). Flytt/avlys mange samtidig; flytting sender den eksisterende malen «Ny dato på kurset» (pamelding_flyttet) med forhåndsvisning, avlysning har ingen mal og sender bare det admin skriver selv (beskjed.php). Ny serie: kursmal, kursholder, tid, plasser, pris, 4/8/12 uker, til jul, til sommeren, egen sluttdato, hopp over Vestfold-skoleferier (skoleruta 2026/27, datafil + den hentede skoleruta), datoliste med overhoppede strøket. År = årsplanleggeren (arskalender.php): 12 måneder, + Legg til, trykk = endre/flytt/slett, ‹ › år. Mobil (≤760 px) bygger på mobilkalenderen i admin-ny: Går nå/Neste, Dag · Uke · Måned · År, ukestripe som sveipes, timekort. Kurs: liste denne og neste uke; kurssiden med kursholder-velger, Åpen/stengt, Deltakere (Legg til, Venteliste/Gi plass, Skriv ut), Send (Påminnelse med malen «Påminnelse før kurset», Kursbevis til betalte, Bekreftelse på nytt), Datoen (Endre dato og tid, Avlys, Kopier, Steng for påmelding), Kurset (Rediger, Notat, Legg til bilde, Slett – ikke på mobil); ikke betalt øverst; «Ta betalt» åpner /kasse; deltaker-ark med «← Tilbake til <navn>». «✉ Send beskjed til N» med SMS/E-post/Begge (beskjed.php fikk bareSms). Paint on Pots: nivåene og prisene fra Poppris::nivaer() (samme kilde som nettsiden og kassa), ingen egne beløp. Henter nytt hvert 15. sekund.",
+            "hvor": "ny-admin/kalender.js, ny-admin/kurs.js, ny-admin/kalender.css, ny-admin/skoleferier-vestfold.json, api/admin/okt-varsel.php, api/admin/skoleferier.php, api/admin/pop-priser.php, api/admin/beskjed.php (bareSms)",
+            "kode": [
+                {
+                    "fil": "ny-admin/kalender.js",
+                    "finnes": [
+                        "registrer('kalender'",
+                        "data-kal=\"vis-aar\"",
+                        "['maaned', 'Måned'], ['aar', 'År']",
+                        "handling: 'endredato'",
+                        "handling: 'flyttet'",
+                        "mal: 'pamelding_flyttet'",
+                        "api('skoleferier.php')",
+                        "api('pop-priser.php')",
+                        "arskalender.php",
+                        "Hopp over skoleferier (Vestfold)",
+                        "poll('kalender'"
+                    ]
+                },
+                {
+                    "fil": "ny-admin/kurs.js",
+                    "finnes": [
+                        "registrer('kurs'",
+                        "'/kasse?booking='",
+                        "handling: 'legg-til'",
+                        "handling: 'gi-plass'",
+                        "Ikke betalt",
+                        "← Tilbake til ${esc(KS.delt.navn)}",
+                        "erPop(h.kursId) ? popPrisliste() : ''"
+                    ]
+                },
+                {
+                    "fil": "api/admin/okt-varsel.php",
+                    "finnes": [
+                        "Varsel::mal('pamelding_flyttet'",
+                        "Varsel::mal('kurspaaminnelse'",
+                        "paaminnelse_sendt_at"
+                    ]
+                },
+                {
+                    "fil": "api/admin/pop-priser.php",
+                    "finnes": [
+                        "Poppris::nivaer()"
+                    ]
+                },
+                {
+                    "fil": "api/admin/beskjed.php",
+                    "finnes": [
+                        "$bareSms = Foresporsel::tekst('bareSms') === 'ja';"
+                    ]
+                },
+                {
+                    "fil": "ny-admin/skoleferier-vestfold.json",
+                    "finnes": [
+                        "\"fra\": \"2026-12-19\", \"til\": \"2027-01-04\"",
+                        "\"fra\": \"2027-02-22\", \"til\": \"2027-02-26\"",
+                        "\"fra\": \"2027-03-22\", \"til\": \"2027-03-29\""
+                    ]
+                }
+            ]
         }
     ]
 }

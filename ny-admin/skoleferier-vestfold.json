@@ -1,0 +1,14 @@
+{
+    "kilde": "https://www.vestfoldfylke.no/no/skoler/kompetansebyggeren/meny/elev-ved-kompetansebyggeren/skolestart-og-skoleruta/skoleruta/",
+    "lest": "2026-10-08",
+    "merknad": "Skoleruta 2026/2027 for Vestfold fylkeskommune, lest av fylkets side 8. oktober 2026. Fridager regnet fra siste skoledag til første skoledag. Sommerferiens slutt i 2027 er ikke publisert ennå (skoleruta 2027/2028 mangler) – satt til 15. august 2027 til den er kjent.",
+    "perioder": [
+        {"navn": "Høstferie", "fra": "2026-10-05", "til": "2026-10-09", "skoleaar": "2026/2027"},
+        {"navn": "Juleferie", "fra": "2026-12-19", "til": "2027-01-04", "skoleaar": "2026/2027"},
+        {"navn": "Vinterferie", "fra": "2027-02-22", "til": "2027-02-26", "skoleaar": "2026/2027"},
+        {"navn": "Påskeferie", "fra": "2027-03-22", "til": "2027-03-29", "skoleaar": "2026/2027"},
+        {"navn": "Kristi himmelfart", "fra": "2027-05-06", "til": "2027-05-07", "skoleaar": "2026/2027"},
+        {"navn": "17. mai", "fra": "2027-05-17", "til": "2027-05-17", "skoleaar": "2026/2027"},
+        {"navn": "Sommerferie", "fra": "2027-06-19", "til": "2027-08-15", "skoleaar": "2026/2027", "anslaattSlutt": true}
+    ]
+}

@@ -27,6 +27,12 @@ $jeg = krev_admin();
 $til   = Foresporsel::tekst('til', 'okt');
 $tekst = trim(Foresporsel::tekst('tekst'));
 $sms   = Foresporsel::tekst('ogsaaSms') === 'ja';
+// «Bare SMS» fra den nye adminen (/ny-admin, «Send beskjed» med valget SMS):
+// e-posten hoppes over. Uten feltet er alt som foer.
+$bareSms = Foresporsel::tekst('bareSms') === 'ja';
+if ($bareSms) {
+    $sms = true;
+}
 $medBevis = Foresporsel::tekst('kursbevis') === 'ja';
 $emne  = mb_substr(Foresporsel::tekst('emne', 'Beskjed fra Lissom'), 0, 191);
 // Bildet og bildeteksten til et nyhetsbrev. En vanlig beskjed sender ingen
@@ -213,7 +219,7 @@ foreach ($mottakere as $m) {
         }
     }
 
-    if (!empty($m['epost'])) {
+    if (!$bareSms && !empty($m['epost'])) {
         // Oppsettet: bildet oeverst, overskriften, avsnittene og en
         // eventuell knapp. Uten bilde og knapp blir det den samme teksten
         // som for, bare i en ramme som taaler aa bli aapnet i Outlook.
@@ -226,7 +232,7 @@ foreach ($mottakere as $m) {
     if ($sms && !empty($m['telefon'])) {
         if (Varsel::sms((string) $m['telefon'], $personlig, $refType, $refId) > 0) {
             $antallSms++;
-        } elseif (empty($m['epost'])) {
+        } elseif ($bareSms || empty($m['epost'])) {
             // Verken e-post eller SMS naadde fram. Da maa hun faa vite hvem
             // det gjelder — ellers tror hun beskjeden gikk ut til alle.
             $utenVei[] = trim(((string) $m['navn']) . ' (' . (string) $m['telefon'] . ')');

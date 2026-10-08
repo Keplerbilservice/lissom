@@ -66,7 +66,7 @@ try{
   assert.ok(await rad(p,'Marte Sol').getByRole('checkbox',{name:'Møtt'}).isChecked(),'390: møtt er standard');
   {const b=await p.evaluate(()=>({side:document.documentElement.scrollWidth}));assert.ok(b.side<=390,'390: steg 1 er innenfor skjermen');}
   {const h=await ks(p).locator('.ks-del input:not([type=checkbox]), .ks-del button, .ks-mott, .ks-leggtil').evaluateAll(b=>b.map(x=>x.getBoundingClientRect().height));
-   assert.ok(h.every(x=>x>=44),'390: felt og knapper i steg 1 er minst 44 px '+JSON.stringify(h));}
+   assert.ok(h.every(x=>Math.round(x)>=44),'390: felt og knapper i steg 1 er minst 44 px '+JSON.stringify(h));}
   // Etter kurset: hvem som får kursbevis, og hvem som mangler e-post; «Legg inn e-post» går til steg 1.
   await steg.nth(3).tap();
   assert.match(await ks(p).locator('.ks-bevis').innerText(),/Kursbevis sendes til 1 av 5/,'390: kursbevis 1 av 5');

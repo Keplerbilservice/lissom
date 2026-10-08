@@ -3847,7 +3847,8 @@
                         "$trukket = (int) ($status['aggregate']['capturedAmount']['value'] ?? 0);",
                         "if (!self::slippHosVipps($referanse)) {",
                         "if ($kode >= 400 && $kode < 500 && $gjenbruk !== null) {",
-                        "((int) $p['belop_ore'] > $skyldig ? 'større enn resten' : '')",
+                        "((int) $p['belop_ore'] > $grense ? 'større enn resten' : '')",
+                        "$grense = $skyldig - KasseJustering::trekkForBetaling((int) $p['id'], $bookingId);",
                         "public const VIPPS_NEI = 299;",
                         "DB::kobling()->inTransaction() ? $bokfor() : DB::iTransaksjon($bokfor);"
                     ]
@@ -6963,7 +6964,7 @@
         {
             "id": "enkel-kasse-oppsett-a-20261008",
             "dato": "2026-10-08",
-            "hva": "Den enklere kassa på iPad (eieren «ja» 8. oktober 2026, oppsett A fra fremvisningen enkel-kasse.html): valgene til venstre (61 %), kurven fast til høyre (34 %). Venstre: Kontantkunde og + Ny kunde; «Dagens kurs» fire i bredden med klokkeslett, navn og rødt «N skal betale», sortert etter tid, bare kurs der noen skal betale, kort med fast høyde, bare venstre flate ruller; «Paint on Pots · prislisten» (de fire nivåene fra pop_prisnivaer); «Annet salg»: Varer, Gavekort, Skriv beløp (Timepakke som fast valg der). Trykk på et kurs: bare de som ikke har betalt (samme påmeldinger som Kalender), med «Tilbake»; lista hentes på nytt hvert 15. sekund. + Ny kunde: navn og telefon, «Knytt til dagens kurs» (påmelding på en ledig plass, med lås) eller «Bare kjøp». Kurven: − antall +, trykk på prisen for å endre den, «Rabatt på kjøpet» i prosent (10/20/50) eller kroner med valgfritt hvorfor; serveren regner og validerer (pris ≥ 0, rabatt ≤ summen) og lagrer opprinnelig pris, ny pris, rabatt, hvem og hvorfor (kasse_justeringer, migrasjon 269); eierens regler: prosent bare når ingenting er betalt («Prosent kan bare gis når hele beløpet betales nå.»), og endret pris og rabatt ikke på samme kjøp («Prisen er endret – rabatt kan ikke gis i tillegg.» / «Rabatt er gitt – fjern den for å endre pris.»), sjekket på serveren; kontrolløren (STOPP 96ba278): rabattandelen låses per del første gang det tas betalt, og endringen skrives til påmeldingen først i samme transaksjon som betalingen (Vipps-QR: når den er betalt), som vises på kvitteringen og i Dagens oppgjør. Betal: to like kort, Vipps (QR-kode) og Kontant (eieren: «Kort» tas helt bort), og «Flere valg» (Del betalingen, Faktura, Vipps-nummer). Dagens oppgjør og Lås i menyen ⋯. Låsen etter 5 minutter og PIN som før.",
+            "hva": "Den enklere kassa på iPad (eieren «ja» 8. oktober 2026, oppsett A fra fremvisningen enkel-kasse.html): valgene til venstre (61 %), kurven fast til høyre (34 %). Venstre: Kontantkunde og + Ny kunde; «Dagens kurs» fire i bredden med klokkeslett, navn og rødt «N skal betale», sortert etter tid, bare kurs der noen skal betale, kort med fast høyde, bare venstre flate ruller; «Paint on Pots · prislisten» (de fire nivåene fra pop_prisnivaer); «Annet salg»: Varer, Gavekort, Skriv beløp (Timepakke som fast valg der). Trykk på et kurs: bare de som ikke har betalt (samme påmeldinger som Kalender), med «Tilbake»; lista hentes på nytt hvert 15. sekund. + Ny kunde: navn og telefon, «Knytt til dagens kurs» (påmelding på en ledig plass, med lås) eller «Bare kjøp». Kurven: − antall +, trykk på prisen for å endre den, «Rabatt på kjøpet» i prosent (10/20/50) eller kroner med valgfritt hvorfor; serveren regner og validerer (pris ≥ 0, rabatt ≤ summen) og lagrer opprinnelig pris, ny pris, rabatt, hvem og hvorfor (kasse_justeringer, migrasjon 269); eierens regler: prosent bare når ingenting er betalt («Prosent kan bare gis når hele beløpet betales nå.»), og endret pris og rabatt ikke på samme kjøp («Prisen er endret – rabatt kan ikke gis i tillegg.» / «Rabatt er gitt – fjern den for å endre pris.»), sjekket på serveren; prisen kan settes både opp og ned (også på påmeldinger; Vipps-QR tar det høyere beløpet); kontrolløren (STOPP 98a3fb9): en påmelding som er gjort opp (betalt med QR som første del) er ute av kurven, låste andeler gjelder bare samme kurv (signatur); kontrolløren (STOPP 96ba278): rabattandelen låses per del første gang det tas betalt, og endringen skrives til påmeldingen først i samme transaksjon som betalingen (Vipps-QR: når den er betalt), som vises på kvitteringen og i Dagens oppgjør. Betal: to like kort, Vipps (QR-kode) og Kontant (eieren: «Kort» tas helt bort), og «Flere valg» (Del betalingen, Faktura, Vipps-nummer). Dagens oppgjør og Lås i menyen ⋯. Låsen etter 5 minutter og PIN som før.",
             "hvor": "/kasse (admin-ny/kasse.js, admin-ny/kasse.css), api/kasse/kasse.php, app/lib/kassekurv.php, app/lib/kassejustering.php, app/lib/kasse.php, app/lib/poppris.php, db/migrations/269_kasse_pris_og_rabatt.sql, tests/kasse-enkel.php",
             "kode": [
                 {
@@ -7017,7 +7018,10 @@
                         "throw new RuntimeException(self::PROSENT_BETALT);",
                         "AND created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 2 MINUTE)",
                         "'reservert_til'     => $holdTil,",
-                        "KasseJustering::laaste($nokler)",
+                        "KasseJustering::laaste($nokler, $sig)",
+                        "public static function kurvSig(array $kurv): string",
+                        "$avgjort = $skyldig === 0 && $b['gjenstander_ore'] !== null && (int) $b['gjenstander_ore'] === (int) $f['sumOre'];",
+                        "if (!$avgjort && ($skyldig > 0 || $pop !== [])) {",
                         "throw new RuntimeException('Prisen må være 0 kroner eller mer.');"
                     ]
                 },
@@ -7025,6 +7029,8 @@
                     "fil": "app/lib/kassejustering.php",
                     "finnes": [
                         "public static function laas(array $deler, array $person): void",
+                        "if ($sig !== null && $sig !== false && (string) $sig !== (string) ($d['kurvSig'] ?? '')) {",
+                        "public static function trekkForBetaling(int $betalingId, int $bookingId): int",
                         "public static function brukBooking(int $bookingId, string $nokkel, ?int $betalingId): int",
                         "public static function kobleQr(string $nokkel, int $bookingId, int $betalingId): void",
                         "public static function vedBetaling(int $betalingId, ?int $bookingId): void",
@@ -7059,6 +7065,8 @@
                     "fil": "db/migrations/269_kasse_pris_og_rabatt.sql",
                     "finnes": [
                         "gjort_at          DATETIME NULL",
+                        "ADD COLUMN IF NOT EXISTS kurv_sig CHAR(64) NULL",
+                        "ADD COLUMN IF NOT EXISTS gjort_at DATETIME NULL",
                         "CREATE TABLE IF NOT EXISTS kasse_justeringer (",
                         "ADD COLUMN IF NOT EXISTS kasse_rabatt_ore INT NOT NULL DEFAULT 0"
                     ]

@@ -228,8 +228,9 @@ final class KursstartKrav
 
     /** @return array{beskjed:string, status:string, ny:bool, qr?:string, belop?:string} */
     /**
-     * $belopOre: iPad-kassa med endret pris eller rabatt ber om et lavere
-     * beløp enn det som står igjen (aldri høyere). $koble får betalingsraden
+     * $belopOre: iPad-kassa med endret pris eller rabatt ber om beløpet etter
+     * endringen (lavere med rabatt, høyere når prisen er satt opp). Kassa har
+     * regnet det på serveren (KasseKurv::deler) og sjekket det mot kurven. $koble får betalingsraden
      * før Vipps spørres, så endringen kan settes på når QR-en er betalt
      * (KasseJustering). Ellers: det som står igjen, som før.
      */
@@ -323,7 +324,7 @@ final class KursstartKrav
                 throw new RuntimeException('Denne er alt gjort opp.', 409);
             }
             if ($belopOre !== null) {
-                if ($belopOre > $skyldig || $belopOre < 0) {
+                if ($belopOre < 0 || $belopOre > KasseKurv::MAKS_ORE) {
                     throw new RuntimeException('Beløpet er endret. Se over kurven og prøv igjen.', 409);
                 }
                 $skyldig = $belopOre;
@@ -589,12 +590,16 @@ final class KursstartKrav
             }
             $b = DB::en('SELECT belop_ore, status FROM bookings WHERE id = :i', ['i' => $bookingId]);
             $skyldig = $b === null ? 0 : self::skyldig($bookingId, (int) $b['belop_ore'], (string) $b['status']);
+            // Grensen er det som står igjen etter endret pris og rabatt fra
+            // iPad-kassa (KasseJustering) som venter på nettopp denne
+            // betalingen: høyere når prisen er satt opp, lavere med rabatt.
+            $grense = $skyldig - KasseJustering::trekkForBetaling((int) $p['id'], $bookingId);
             // Avbestilt eller «møtte ikke» mens kravet ventet: ingen plass å betale for.
             $utenPlass = $b === null || !in_array((string) $b['status'], ['reservert', 'betalt'], true);
             $hvorfor = (string) $p['status'] === 'avbrutt' ? 'stoppet'
                 : ($utenPlass ? 'uten plass'
                 : ($skyldig === 0 ? 'gjort opp'
-                : ((int) $p['belop_ore'] > $skyldig ? 'større enn resten' : '')));
+                : ((int) $p['belop_ore'] > $grense ? 'større enn resten' : '')));
             if ($hvorfor === '') {
                 return false;
             }

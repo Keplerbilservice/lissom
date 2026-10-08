@@ -17,8 +17,14 @@
  *      QR, så varene med QR / kontant), påmeldingen settes ned først når
  *      betalingen er registrert / QR-en betalt (ubetalt QR og Vipps-nei
  *      etterlater ingen rabatt), ulik stykkpris gir pris på linjesummen,
- *      dobbelttrykk = samme navn og telefon innen 2 minutter. Tåler at
- *      migrasjon 269 ikke er kjørt.
+ *      dobbelttrykk = samme navn og telefon innen 2 minutter. Pris satt opp
+ *      (kurs og Paint on Pots, QR og kontant). Låste andeler bare for samme
+ *      kurv (gammel nøkkel omgår ikke reglene). Tåler at migrasjon 269 ikke
+ *      er kjørt.
+ *   D  Alle kombinasjoner (kontrolløren, STOPP 98a3fb9): påmelding (kurs eller
+ *      Paint on Pots med depositum), vare og gavekort × ingen endring,
+ *      kronerabatt, pris ned, pris opp × kontant, QR i deler, QR så kontant:
+ *      ingen 409 eller negativt beløp, betalt = totalen, påmeldingen betalt.
  *
  * Ekte endepunkter (to PHP-servere) mot en isolert testbase, og
  * tests/falsk-vipps.mjs som Vipps. Ingen ekte betaling, e-post eller SMS.
@@ -100,6 +106,7 @@ register_shutdown_function(static function () use (&$ferdig, &$medlemmer, &$kurs
         "UPDATE bookings SET payment_id = NULL WHERE id IN ($b)",
         "UPDATE orders SET payment_id = NULL WHERE id IN ($o)",
         "DELETE FROM order_lines WHERE order_id IN ($o)",
+        "DELETE FROM gift_cards WHERE payment_id > " . $betalingFor,
         "DELETE FROM payments WHERE booking_id IN ($b) OR order_id IN ($o) OR registrert_av IN ($m) OR member_id IN ($m)",
         "DELETE FROM orders WHERE id IN ($o)",
         "DELETE FROM bookings WHERE id IN ($b)",
@@ -583,6 +590,194 @@ try {
             && ($l['fraOre'] ?? 0) === 105000 && ($s[1]['sumOre'] ?? 0) === 80000, $tekst($s));
     } finally {
         DB::oppdater('pop_prisnivaer', ['pris_ore' => 50000], ['id' => $niv['Liten']['id']]);
+    }
+
+    // Prisen kan settes opp også (eieren 8. oktober 2026): kurs og Paint on
+    // Pots, betalt med QR (Vipps får det høyere beløpet) og kontant.
+    $liten = (int) $niv['Liten']['id'];
+    $opp = static function (string $slag, string $maate) use ($nyBooking, $qrKurs, $qrOkt, $popKurs, $popOkt, $liten, $kjop, $send, $K, &$kasseToken, $sett, $tekst, $vippsBelop, $vlogg): void {
+        if ($slag === 'kurs') {
+            $bid = $nyBooking($qrKurs, $qrOkt, 'Opp-' . $maate, 100000);
+            $kurv = ['bookingId' => $bid, 'priser' => ['booking:' . $bid => '1200']];
+            $skal = 120000;
+            $belop = 120000;
+        } else {
+            $bid = $nyBooking($popKurs, $popOkt, 'Opp-pop-' . $maate, 10000, 'betalt', ['antall' => 1, 'depositum_ore' => 10000]);
+            DB::oppdater('bookings', ['payment_id' => Booking::manuellBetaling($bid, 10000, 'Kontant', null, null, 'Beløp ved booking')], ['id' => $bid]);
+            $kurv = ['bookingId' => $bid, 'pop' => [['nivaaId' => $liten, 'gjenstand' => '', 'antall' => 1]],
+                     'priser' => ['booking:' . $bid . ':' . $liten . '|' => '600']];
+            $skal = 50000;    // 600 − 100 depositum
+            $belop = 60000;   // påmeldingen etterpå
+        }
+        $k = $kjop($kurv, ['bookingId' => $bid]);
+        $ok = $k['regn'][0] === 200 && ($k['forventet']['booking:' . $bid] ?? 0) === $skal;
+        if ($maate === 'kontant') {
+            $s = kall($K, ['handling' => 'betal', 'maate' => 'Kontant'] + $send($k), $kasseToken);
+            $ok = $ok && $s[0] === 200;
+        } else {
+            $sett('.betaling-status', 'CREATED');
+            $fra = is_file($vlogg) ? count(file($vlogg)) : 0;
+            $s = kall($K, ['handling' => 'qr', 'del' => 'booking:' . $bid] + $send($k), $kasseToken);
+            $ok = $ok && $s[0] === 200 && ($s[1]['ok'] ?? true) !== false && $vippsBelop($fra) === [$skal];
+            $sett('.betaling-status', 'AUTHORIZED');
+            DB::kjor("UPDATE payments SET updated_at = DATE_SUB(UTC_TIMESTAMP(), INTERVAL 1 MINUTE) WHERE booking_id = :b AND type = 'epayment'", ['b' => $bid]);
+            $s = kall($K, ['handling' => 'status', 'poll' => ['bookingId' => $bid]], $kasseToken);
+            $ok = $ok && ($s[1]['betalt'] ?? false) === true;
+            $sett('.betaling-status', 'CREATED');
+        }
+        $b = DB::en('SELECT status, belop_ore FROM bookings WHERE id = :i', ['i' => $bid]);
+        sjekk("pris satt opp ($slag, $maate): " . KasseKurv::kr($skal) . ' betalt, påmeldingen ' . KasseKurv::kr($belop) . ' og betalt',
+            $ok && $b['status'] === 'betalt' && (int) $b['belop_ore'] === $belop && Booking::betalingerFor($bid)['sum'] === $belop,
+            $tekst($k['regn']) . ' ' . $tekst($s) . ' ' . json_encode($b));
+    };
+    foreach (['kurs', 'pop'] as $slag) {
+        foreach (['qr', 'kontant'] as $maate) {
+            $opp($slag, $maate);
+        }
+    }
+    $s = $regn(['varer' => [['id' => $glass, 'antall' => 1]], 'priser' => ['vare:' . $glass => '120']]);
+    sjekk('… en vare kan også settes opp (100 → 120 kr)', $s[0] === 200 && ($s[1]['sumOre'] ?? 0) === 12000, $tekst($s));
+
+    // Låste andeler hører til samme kurv: en gammel nøkkel omgår ikke reglene.
+    $sett('.betaling-status', 'CREATED');
+    $bSig = $nyBooking($qrKurs, $qrOkt, 'Signatur', 100000);
+    $k1 = $kjop(['bookingId' => $bSig, 'rabatt' => ['prosent' => 10]], ['bookingId' => $bSig]);
+    $s = kall($K, ['handling' => 'qr', 'del' => 'booking:' . $bSig] + $send($k1), $kasseToken);
+    sjekk('signatur: 10 % på kurs 1 000 kr, QR vist (andelen låst)', $s[0] === 200 && ($k1['forventet']['booking:' . $bSig] ?? 0) === 90000, $tekst($s));
+    $gammel = ['kurv' => ['bookingId' => $bSig, 'priser' => ['booking:' . $bSig => '900'], 'rabatt' => ['prosent' => 10]], 'betaler' => ['bookingId' => $bSig],
+               'nokler' => $k1['nokler'], 'forventet' => ['booking:' . $bSig => 81000]];
+    $s = kall($K, ['handling' => 'betal', 'maate' => 'Kontant'] + $gammel, $kasseToken);
+    sjekk('… gammel nøkkel med endret pris + rabatt (regel B): avvises, ingenting betalt', $s[0] === 400 && ($s[1]['feil'] ?? '') === KasseKurv::PRIS_OG_RABATT
+        && Booking::betalingerFor($bSig)['sum'] === 0, $tekst($s));
+    $gammel['kurv'] = ['bookingId' => $bSig, 'rabatt' => ['kr' => '200']];
+    $gammel['forventet'] = ['booking:' . $bSig => 80000];
+    $s = kall($K, ['handling' => 'betal', 'maate' => 'Kontant'] + $gammel, $kasseToken);
+    sjekk('… gammel nøkkel med en annen kurv (200 kr): 409, den gamle andelen brukes ikke', $s[0] === 409 && Booking::betalingerFor($bSig)['sum'] === 0, $tekst($s));
+
+    // ══ D: alle kombinasjoner ═══════════════════════════════════════════
+    // Påmelding (kurs eller Paint on Pots med depositum), vare og gavekort, med
+    // ingen endring, kronerabatt, pris satt ned eller opp, betalt kontant, med QR i
+    // deler, eller første del med QR og resten kontant. Ingen 409 eller
+    // negativt beløp, og det som er betalt er akkurat totalen etter endringen.
+    echo "\n── D: alle kombinasjoner ──\n";
+    DB::oppdater('products', ['lager' => 1000], ['id' => $glass]);
+    $kombiKurs = $nyttKurs('Kombi-kurs', 100000, 500);
+    $kombiOkt = $nyOkt($kombiKurs, '13:30');
+    $liten = (int) $niv['Liten']['id'];
+    $nr = 0;
+    $kombi = static function (string $bt, bool $vare, bool $gave, string $just, string $maate) use (&$nr, $nyBooking, $kombiKurs, $kombiOkt, $popKurs, $popOkt,
+        $liten, $glass, $kjop, $send, $K, &$kasseToken, $sett, $tekst): void {
+        $nr++;
+        $bid = 0;
+        $kurv = [];
+        $betaler = [];
+        if ($bt === 'kurs') {
+            $bid = $nyBooking($kombiKurs, $kombiOkt, 'Kombi' . $nr, 100000);
+        } elseif ($bt === 'pop') {
+            $bid = $nyBooking($popKurs, $popOkt, 'Kombi' . $nr, 10000, 'betalt', ['antall' => 1, 'depositum_ore' => 10000]);
+            DB::oppdater('bookings', ['payment_id' => Booking::manuellBetaling($bid, 10000, 'Kontant', null, null, 'Beløp ved booking')], ['id' => $bid]);
+        }
+        if ($bid > 0) {
+            $kurv['bookingId'] = $bid;
+            $betaler = ['bookingId' => $bid];
+            if ($bt === 'pop') {
+                $kurv['pop'] = [['nivaaId' => $liten, 'gjenstand' => '', 'antall' => 1]];
+            }
+        }
+        if ($vare) {
+            $kurv['varer'] = [['id' => $glass, 'antall' => 1]];
+        }
+        if ($gave) {
+            $kurv['gavekort'] = ['200'];
+        }
+        if ($just === 'kr') {
+            $kurv['rabatt'] = ['kr' => '30', 'hvorfor' => 'Kombinasjon'];
+        } elseif ($just === 'pris' || $just === 'opp') {
+            $ned = $just === 'pris';
+            $kurv['priser'] = $bt === 'kurs' ? ['booking:' . $bid => $ned ? '900' : '1100']
+                : ($bt === 'pop' ? ['booking:' . $bid . ':' . $liten . '|' => $ned ? '450' : '550'] : ['vare:' . $glass => $ned ? '80' : '120']);
+        }
+        $navn = implode(' + ', array_filter([$bt === 'pop' ? 'PoP m/depositum' : $bt, $vare ? 'vare' : '', $gave ? 'gavekort' : '']))
+            . ' · ' . $just . ' · ' . $maate;
+        $k = $kjop($kurv, $betaler);
+        $forventet = $k['forventet'];
+        $total = (int) ($k['regn'][1]['sumOre'] ?? -1);
+        $feil = [];
+        if ($k['regn'][0] !== 200) {
+            $feil[] = 'regn ' . $tekst($k['regn']);
+        }
+        foreach ($forventet as $id => $ore) {
+            if ($ore < 0) {
+                $feil[] = "negativt beløp på $id";
+            }
+        }
+        $for = (int) DB::verdi('SELECT COALESCE(MAX(id), 0) FROM payments');
+        $deler = array_keys($forventet);
+        if ($feil === [] && $maate === 'kontant') {
+            $s = kall($K, ['handling' => 'betal', 'maate' => 'Kontant'] + $send($k), $kasseToken);
+            if ($s[0] !== 200) {
+                $feil[] = 'kontant ' . $tekst($s);
+            }
+        } elseif ($feil === []) {
+            foreach ($deler as $i => $del) {
+                if ($maate === 'qr+kontant' && $i > 0) {
+                    $s = kall($K, ['handling' => 'betal', 'maate' => 'Kontant'] + $send($k), $kasseToken);
+                    if ($s[0] !== 200) {
+                        $feil[] = 'kontant etter QR ' . $tekst($s);
+                    }
+                    break;
+                }
+                $sett('.betaling-status', 'CREATED');
+                $s = kall($K, ['handling' => 'qr', 'del' => $del] + $send($k), $kasseToken);
+                if ($s[0] !== 200 || ($s[1]['ok'] ?? true) === false) {
+                    $feil[] = "QR $del " . $tekst($s);
+                    break;
+                }
+                if (($s[1]['betalt'] ?? false) !== true) {
+                    $sett('.betaling-status', 'AUTHORIZED');
+                    DB::kjor("UPDATE payments SET updated_at = DATE_SUB(UTC_TIMESTAMP(), INTERVAL 1 MINUTE) WHERE id > :f AND type = 'epayment'", ['f' => $for]);
+                    $st = kall($K, ['handling' => 'status', 'poll' => $s[1]['poll'] ?? []], $kasseToken);
+                    if (($st[1]['betalt'] ?? false) !== true) {
+                        $feil[] = "QR $del ikke betalt " . $tekst($st);
+                        break;
+                    }
+                }
+            }
+            $sett('.betaling-status', 'CREATED');
+        }
+        $betalt = (int) DB::verdi("SELECT COALESCE(SUM(belop_ore + COALESCE(gavekort_ore, 0)), 0) FROM payments
+                                   WHERE id > :f AND status IN ('betalt', 'delvis_refundert') AND annullert_at IS NULL", ['f' => $for]);
+        if ($feil === [] && $betalt !== $total) {
+            $feil[] = 'betalt ' . $betalt . ' ≠ totalen ' . $total;
+        }
+        if ($feil === [] && $bid > 0) {
+            $b = DB::en('SELECT belop_ore, status FROM bookings WHERE id = :i', ['i' => $bid]);
+            if (KursstartKrav::skyldig($bid, (int) $b['belop_ore'], (string) $b['status']) !== 0 || $b['status'] !== 'betalt') {
+                $feil[] = 'påmeldingen står ikke som betalt: ' . json_encode($b);
+            }
+        }
+        sjekk($navn . ': betalt ' . KasseKurv::kr(max(0, $betalt)) . ' = totalen', $feil === [], implode(' | ', $feil));
+    };
+    foreach (['', 'kurs', 'pop'] as $bt) {
+        foreach ([false, true] as $vare) {
+            foreach ([false, true] as $gave) {
+                if ($bt === '' && !$vare && !$gave) {
+                    continue;
+                }
+                $antallDeler = ($bt !== '' ? 1 : 0) + ($vare ? 1 : 0) + ($gave ? 1 : 0);
+                foreach (['ingen', 'kr', 'pris', 'opp'] as $just) {
+                    if ($just !== 'ingen' && $bt === '' && !$vare) {
+                        continue;   // bare gavekort: ingenting å endre eller gi rabatt på
+                    }
+                    foreach (['kontant', 'qr', 'qr+kontant'] as $maate) {
+                        if ($maate === 'qr+kontant' && $antallDeler < 2) {
+                            continue;
+                        }
+                        $kombi($bt, $vare, $gave, $just, $maate);
+                    }
+                }
+            }
+        }
     }
 
     // Uten migrasjon 269: kassa virker, bare pris og rabatt sier fra.

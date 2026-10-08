@@ -522,8 +522,29 @@ final class KasseKurv
             $pop = is_array($kurv['pop'] ?? null) ? array_values(array_filter($kurv['pop'], 'is_array')) : [];
             $pop = array_values(array_filter($pop, static fn(array $v): bool => (int) ($v['antall'] ?? 0) !== 0));
             $linjer = [];
+            // Ute av kurven er en påmelding som er gjort opp: ingenting står
+            // igjen, og (Paint on Pots) gjenstandene er slått inn slik kurven
+            // sier. Det er tilfellet når den ble betalt med QR som første del
+            // av kurven — da står endret pris og rabatt alt på påmeldingen, og
+            // skal ikke regnes én gang til (kontrolløren 8. oktober 2026).
+            // Prisene på linjene dens hører til den, og tas ut.
+            $avgjort = false;
             if (self::erPop($b) && $pop !== []) {
                 $f = PopPris::forhandsvis($bid, $pop);
+                $tidligere = (int) ($b['kasse_rabatt_ore'] ?? 0);
+                $skyldig = max(0, $f['sumOre'] - $tidligere - $f['betaltOre']);
+                $avgjort = $skyldig === 0 && $b['gjenstander_ore'] !== null && (int) $b['gjenstander_ore'] === (int) $f['sumOre'];
+            } else {
+                $skyldig = KursstartKrav::skyldig($bid, (int) $b['belop_ore'], (string) $b['status']);
+                $avgjort = $skyldig === 0;
+            }
+            if ($avgjort) {
+                foreach (array_keys($priser) as $k) {
+                    if ($k === $delId || str_starts_with($k, $delId . ':')) {
+                        unset($priser[$k]);
+                    }
+                }
+            } elseif (self::erPop($b) && $pop !== []) {
                 // Én linje per gjenstand (nivå og gjenstand), med nøkkelen
                 // prisendringen peker på. Har enhetene ulik pris (noen slått
                 // inn før med en annen nivåpris), gjelder prisendringen
@@ -545,7 +566,6 @@ final class KasseKurv
                     $linjer[] = $l;
                 }
                 // Rabatt gitt i kassa tidligere (betalt) står.
-                $tidligere = (int) ($b['kasse_rabatt_ore'] ?? 0);
                 if ($tidligere !== 0) {
                     $linjer[] = ['tekst' => 'Rabatt', 'ore' => -$tidligere];
                 }
@@ -558,13 +578,11 @@ final class KasseKurv
                 if ($f['betaltOre'] > $vedBooking) {
                     $linjer[] = ['tekst' => 'Betalt', 'ore' => -($f['betaltOre'] - $vedBooking)];
                 }
-                $skyldig = max(0, $f['sumOre'] - $tidligere - $f['betaltOre']);
                 $betalt = (int) $f['betaltOre'];
             } else {
                 $pop = [];
                 $betalt = (int) Booking::betalingerFor($bid)['sum'];
                 $belop = (int) $b['belop_ore'];
-                $skyldig = KursstartKrav::skyldig($bid, $belop, (string) $b['status']);
                 $antall = (int) $b['antall'];
                 $tekst = (string) $b['tittel'] . ' · ' . $antall . ' '
                     . (self::erPop($b) ? ($antall === 1 ? 'person' : 'personer') : ($antall === 1 ? 'plass' : 'plasser'));
@@ -579,7 +597,7 @@ final class KasseKurv
                 }
                 $full = $l['ore'];
             }
-            if ($skyldig > 0 || $pop !== []) {
+            if (!$avgjort && ($skyldig > 0 || $pop !== [])) {
                 $etter = $skyldig - $prisTrekk[$delId];
                 if ($etter < 0) {
                     throw new RuntimeException('Prisen kan ikke bli lavere enn det som alt er betalt. Penger tilbake er en refusjon.');
@@ -719,7 +737,14 @@ final class KasseKurv
             $d['fullOre'] ??= $d['sumOre'];
         }
         unset($d);
-        $deler = self::medRabatt($deler, $kurv['rabatt'] ?? null, KasseJustering::laaste($nokler));
+        // Låste rabattandeler gjelder bare den samme kurven (signaturen): en
+        // gammel nøkkel kan ikke brukes til å omgå reglene (kontrolløren).
+        $sig = self::kurvSig($kurv);
+        $deler = self::medRabatt($deler, $kurv['rabatt'] ?? null, KasseJustering::laaste($nokler, $sig));
+        foreach ($deler as &$d) {
+            $d['kurvSig'] = $sig;
+        }
+        unset($d);
         if (!KasseJustering::klar()) {
             foreach ($deler as $d) {
                 if (isset($d['justering'])) {
@@ -733,6 +758,29 @@ final class KasseKurv
             throw new RuntimeException('Beløpet må være under 100 000 kroner.');
         }
         return $deler;
+    }
+
+    /**
+     * Signaturen til kurven: det som er valgt, endret pris og rabatt, i fast
+     * form. Samme kurv gir samme signatur, også etter at en del er betalt.
+     */
+    public static function kurvSig(array $kurv): string
+    {
+        $liste = static fn(mixed $v): array => is_array($v) ? array_values(array_filter($v, 'is_array')) : [];
+        $pop = array_map(static fn(array $v): array => [(int) ($v['nivaaId'] ?? 0), trim((string) ($v['gjenstand'] ?? '')), (int) ($v['antall'] ?? 0)], $liste($kurv['pop'] ?? null));
+        $varer = array_map(static fn(array $v): array => [(int) ($v['id'] ?? 0), (int) ($v['antall'] ?? 0)], $liste($kurv['varer'] ?? null));
+        $popUten = array_map(static fn(array $v): array => [(int) ($v['nivaaId'] ?? 0), (int) ($v['antall'] ?? 0)], $liste($kurv['popUten'] ?? null));
+        sort($pop);
+        sort($varer);
+        sort($popUten);
+        $belop = static fn(mixed $v): array => is_array($v) ? array_map(static fn($x): ?int => self::ore($x), array_values($v)) : [];
+        $priser = self::lesPriser($kurv['priser'] ?? null);
+        ksort($priser);
+        return hash('sha256', (string) json_encode([
+            'b' => (int) ($kurv['bookingId'] ?? 0), 'pop' => $pop, 'v' => $varer, 'pu' => $popUten, 'pg' => (int) ($kurv['popGjester'] ?? 0),
+            'f' => $belop($kurv['fritt'] ?? null), 'g' => $belop($kurv['gavekort'] ?? null), 't' => !empty($kurv['timepakke']),
+            'p' => $priser, 'r' => self::lesRabatt($kurv['rabatt'] ?? null),
+        ]));
     }
 
     /**

@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS kasse_justeringer (
   linjer            TEXT NULL COMMENT 'JSON: linjene med endret pris (tekst, antall, fraOre, tilOre)',
   registrert_av     BIGINT UNSIGNED NULL COMMENT 'Personen som sto i kassa',
   gjort_at          DATETIME NULL COMMENT 'Betalingen er registrert / bekreftet: endringen gjelder',
+  kurv_sig          CHAR(64) NULL COMMENT 'Signaturen til kurven raden ble låst for',
   created_at        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   UNIQUE KEY uq_kasse_justeringer_nokkel (nokkel),
@@ -38,6 +39,18 @@ CREATE TABLE IF NOT EXISTS kasse_justeringer (
   KEY ix_kasse_justeringer_betaling (payment_id),
   KEY ix_kasse_justeringer_gjort (gjort_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- En base som kjørte en tidligere utgave av denne migrasjonen (på test),
+-- får kolonnene som kom til etterpå.
+ALTER TABLE kasse_justeringer
+  ADD COLUMN IF NOT EXISTS payment_id BIGINT UNSIGNED NULL
+      COMMENT 'Betalingen endringen gjelder (Vipps-QR: gjort når den er betalt)',
+  ADD COLUMN IF NOT EXISTS gjort_at DATETIME NULL
+      COMMENT 'Betalingen er registrert / bekreftet: endringen gjelder',
+  ADD COLUMN IF NOT EXISTS kurv_sig CHAR(64) NULL
+      COMMENT 'Signaturen til kurven raden ble låst for',
+  ADD INDEX IF NOT EXISTS ix_kasse_justeringer_betaling (payment_id),
+  ADD INDEX IF NOT EXISTS ix_kasse_justeringer_gjort (gjort_at);
 
 ALTER TABLE bookings
   ADD COLUMN IF NOT EXISTS kasse_rabatt_ore INT NOT NULL DEFAULT 0

@@ -49,20 +49,61 @@ foreach ($katalog as $k) {
     }
 }
 $katalog = array_values(array_filter($katalog, static fn(array $k): bool => ($k['slug'] ?? '') !== $POP));
+
+// ── Kurs som pågår ─────────────────────────────────────────────────────
+//
+// Eieren, 8. oktober 2026: «nå er vi i uke 41, men kalenderen viser kun fra
+// uke 42, ergo de kan ikke se at vi har kurs i dag». Katalogen har bare
+// datoer som ikke har startet — dag 2 av dreiekurset som startet i går, og
+// et kurs som startet tidligere i dag, fantes ikke her. De legges inn som
+// fulle (kan ikke bookes), på dagene de faktisk går.
+$iDagOslo = $naa->setTime(0, 0);
+$katalogIndeks = [];
+foreach ($katalog as $i => $k) { $katalogIndeks[(int) ($k['id'] ?? 0)] = $i; }
+$paagaar = DB::alle(
+    "SELECT id, course_id, start_tid FROM course_sessions
+      WHERE status = 'planlagt' AND start_tid <= UTC_TIMESTAMP()
+        AND start_tid >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 14 DAY)"
+);
+$paagaarSamlinger = DB::harTabell('okt_samlinger')
+    ? Samlinger::forOkter(array_map(static fn(array $o): int => (int) $o['id'], $paagaar)) : [];
+foreach ($paagaar as $o) {
+    $ki = $katalogIndeks[(int) $o['course_id']] ?? null;
+    if ($ki === null) { continue; }
+    $starter = [];
+    foreach ($paagaarSamlinger[(int) $o['id']] ?? [] as $sm) {
+        if ((string) ($sm['dato'] ?? '') < $iDagOslo->format('Y-m-d')) { continue; }
+        $starter[] = new DateTimeImmutable($sm['dato'] . ' ' . ($sm['fra'] ?: '00:00'), $oslo);
+    }
+    if (($paagaarSamlinger[(int) $o['id']] ?? []) === []) {
+        $start = (new DateTimeImmutable((string) $o['start_tid'], new DateTimeZone('UTC')))->setTimezone($oslo);
+        if ($start >= $iDagOslo) { $starter[] = $start; }
+    }
+    foreach ($starter as $st) {
+        $katalog[$ki]['datoer'][] = [
+            'startUtc' => $st->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s'),
+            'ledige'   => 0,
+            'dag'      => '',
+        ];
+    }
+}
+
 $uker = [];
 $naaUtc = new DateTimeImmutable('now', new DateTimeZone('UTC'));
 foreach ($katalog as $k) {
     foreach ($k['datoer'] ?? [] as $o) {
         if (empty($o['startUtc'])) { continue; }
         $d = new DateTimeImmutable((string) $o['startUtc'], new DateTimeZone('UTC'));
-        if ($d < $naaUtc) { continue; }
+        if ($d < $iDagOslo) { continue; }
         $u = (int) $d->setTimezone($oslo)->format('W');
         if ($u >= $ukeNaa && !in_array($u, $uker, true)) { $uker[] = $u; }
     }
 }
+// Denne uka står alltid med, og kalenderen åpner på den (eieren 8. oktober 2026).
+if (!in_array($ukeNaa, $uker, true)) { $uker[] = $ukeNaa; }
 sort($uker);
 $sp = $_GET['uke'] ?? '';
-$vist = is_string($sp) && ctype_digit($sp) && (int) $sp >= 1 && (int) $sp <= 53 ? (int) $sp : ($uker[0] ?? $ukeNaa);
+$vist = is_string($sp) && ctype_digit($sp) && (int) $sp >= 1 && (int) $sp <= 53 ? (int) $sp : $ukeNaa;
 $neste = null; $forrige = null;
 foreach ($uker as $u) { if ($u > $vist && $neste === null) { $neste = $u; } if ($u < $vist) { $forrige = $u; } }
 
@@ -99,6 +140,35 @@ foreach ($katalog as $k) {
         ];
     }
 }
+// ── Paint on Pots i dag, som egen flis ─────────────────────────────────
+//
+// Eieren, 8. oktober 2026: «vi bør også få vise at det er paint on pots i
+// dag, men en flis». Bare dagens dato — de andre dagene står fortsatt utenfor
+// rutenettet (eieren 23. september 2026). Hvit med brun kant, så den skiller
+// seg fra kursene.
+$popIDag = null;
+if ($popKurs !== null) {
+    foreach ($popKurs['datoer'] ?? [] as $o) {
+        if (($o['dagIso'] ?? '') === $naa->format('Y-m-d')) {
+            $popKort = $kurs[$POP] ?? null;
+            $popIDag = [
+                't'     => (string) ($o['klokkeStart'] ?? ''),
+                'tekst' => 'Paint on Pots i dag · ' . (string) ($o['klokke'] ?? ''),
+                'href'  => $popKort !== null ? $popKort['href'] : '/kurs/paint-on-pots',
+            ];
+            break;
+        }
+    }
+}
+$popStil = static fn(string $str, string $pad): string => 'appearance: none; width: 100%; text-align: left; cursor: pointer; font-family: inherit; font-size: ' . $str . '; line-height: 1.35; padding: ' . $pad . '; border-radius: var(--radius-sm); background: var(--surface-card); border: 2px solid var(--lissom-brown); color: var(--lissom-brown); font-weight: 700;';
+if ($popIDag !== null && (int) $naa->format('W') === $vist) {
+    array_unshift($dager[(int) $naa->format('N') - 1]['poster'], [
+        'tekst' => '🎨 ' . $popIDag['tekst'],
+        'href'  => $popIDag['href'],
+        'stil'  => $popStil('12px', '7px 9px'),
+    ]);
+}
+
 foreach ($dager as $i => &$d) {
     $n = count($d['poster']);
     $d['erTom'] = $n === 0;
@@ -184,6 +254,14 @@ foreach ($katalog as $k) {
                 . ($full ? 'var(--lissom-brown)' : 'var(--lissom-yellow)') . '; color: ' . ($full ? 'var(--clay-50)' : 'var(--lissom-brown)') . '; font-weight: 600;',
         ];
     }
+}
+if ($popIDag !== null) {
+    $perDato[$naa->format('Y-m-d')][] = [
+        't'     => '00:00',
+        'tekst' => '🎨 ' . $popIDag['tekst'],
+        'href'  => $popIDag['href'],
+        'stil'  => $popStil('14px', '10px 12px'),
+    ];
 }
 $rullDager = [];
 $rullPanel = [];

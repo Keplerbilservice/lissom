@@ -6840,6 +6840,22 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "pop-ankomst-inntil-2-timer-20261008",
+            "dato": "2026-10-08",
+            "hva": "Eieren, 8. oktober 2026: Paint on Pots er maks to timer, og kunden velger ankomst inne i tidsrommet. Merkelappen viser «Inntil 2 timer», datolinja «Kom mellom 17:00 og 18:00» (første og siste ankomst, ikke tidsrommet 17:00–20:00), og «Hvor lang tid tar det?» svarer «Du maler i inntil 2 timer. Du velger selv når du kommer.»",
+            "hvor": "lissom.no/kurs/paint-on-pots",
+            "kode": [
+                {
+                    "fil": "app/nett/sider/kursside.php",
+                    "finnes": [
+                        "$kort['duration'] = 'Inntil ' . trim((string) $kort['duration']);",
+                        "return 'Kom mellom ' . $del[0] . ' og '",
+                        "'a' => 'Du maler i ' . mb_strtolower($tid) . '. Du velger selv når du kommer.'"
+                    ]
+                }
+            ]
         }
     ]
 }

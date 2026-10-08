@@ -56,6 +56,32 @@ if (DB::harKolonne('courses', 'seo_h1')) {
 // innholdet derfra staar under bookingen — se nederst.
 $erPop = $slug === 'paint-on-pots';
 $datoer = $kat['datoer'] ?? [];
+// Paint on Pots (eieren, 8. oktober 2026): «det er maks to timer», og
+// kunden velger ankomst inne i tidsrommet. Datolinja viste tidsrommet
+// (17:00–20:00) ved siden av «2 timer»; naa staar foerste og siste
+// ankomst, og varigheten er «Inntil 2 timer».
+$popLengde = $erPop ? (int) (Malebord::kurs()['lengde'] ?? Apent::PLASS_MINUTTER) : 0;
+$popKlokke = static function (string $klokke) use ($popLengde): string {
+    $del = preg_split('/\s*\x{2013}\s*/u', $klokke);
+    if ($popLengde <= 0 || count($del) !== 2 || preg_match('/^\d{2}:\d{2}$/', $del[0]) !== 1 || preg_match('/^\d{2}:\d{2}$/', $del[1]) !== 1) {
+        return $klokke;
+    }
+    [$t, $m] = array_map('intval', explode(':', $del[1]));
+    $siste = max(0, $t * 60 + $m - $popLengde);
+    return 'Kom mellom ' . $del[0] . ' og ' . sprintf('%02d:%02d', intdiv($siste, 60), $siste % 60);
+};
+if ($erPop) {
+    foreach ($datoer as $i => $d) {
+        $k = (string) ($d['klokke'] ?? '');
+        if ($k !== '') {
+            $datoer[$i]['klokke'] = $popKlokke($k);
+            $datoer[$i]['dato'] = str_replace(', ' . $k, ', ' . mb_strtolower(mb_substr($popKlokke($k), 0, 1)) . mb_substr($popKlokke($k), 1), (string) ($d['dato'] ?? ''));
+        }
+    }
+    if (trim((string) ($kort['duration'] ?? '')) !== '') {
+        $kort['duration'] = 'Inntil ' . trim((string) $kort['duration']);
+    }
+}
 $kunKontakt = !empty($kort['kunKontakt']);
 $fullbooket = ($kort['status'] ?? '') === 'Fullbooket';
 $gratis = ($kort['price'] ?? '') === 'Gratis';
@@ -552,7 +578,7 @@ if ($erPop) {
     }
     $tid = trim((string) ($kort['duration'] ?? ''));
     if ($tid !== '') {
-        $faq[] = ['q' => 'Hvor lang tid tar det?', 'a' => 'Tiden du booker, varer ' . $tid . '.'];
+        $faq[] = ['q' => 'Hvor lang tid tar det?', 'a' => 'Du maler i ' . mb_strtolower($tid) . '. Du velger selv når du kommer.'];
     }
     foreach ([3, 2, 1, 4] as $i) {
         $q = trim($innh('Paint on Pots/8/Spørsmål ' . $i));

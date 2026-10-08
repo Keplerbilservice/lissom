@@ -114,7 +114,8 @@ const SORTER=[['aktiv','Sorter: Sist aktiv',(x,y)=>(y.erInne-x.erInne)||((x.dage
 const UKEDAG_KORT=['søn.','man.','tir.','ons.','tor.','fre.','lør.'];
 const dagKort=iso=>{if(iso===today())return 'i dag';if(iso===shift(today(),1))return 'i morgen';const x=date(iso);return `${UKEDAG_KORT[x.getDay()]} ${x.getDate()}.${String(x.getMonth()+1).padStart(2,'0')}`;};
 const kursNaar=k=>k.fase==='kommende'?`Starter ${dagKort(k.dato)} kl. ${k.fra}`+(k.samlinger>1?` · ${k.samlinger} samlinger`:''):k.fase==='pagar'?(k.samlinger>1?`Pågår · samling ${Math.max(1,Math.min(k.samlingNaa,k.samlinger))} av ${k.samlinger}`:'Pågår nå'):`Avsluttet ${dagKort(k.sluttDato)}`+(k.samlinger>1?` · ${k.samlinger} samlinger`:'');
-async function members(){const d=await api('medlemmer.php');people=d.medlemmer||[];if(params().get('person'))queueMicrotask(()=>memberDetails(Number(params().get('person'))));
+/* To renderinger rett etter hverandre åpnet personen to ganger. Bare den siste åpner den. */let folkApner=0;
+async function members(){const mitt=++folkApner;const d=await api('medlemmer.php');people=d.medlemmer||[];if(params().get('person'))queueMicrotask(()=>{if(mitt===folkApner)memberDetails(Number(params().get('person')));});
   let gruppe=params().get('vis')==='deltakere'?'deltakere':'medlemmer',status=params().get('status')==='tidligere'?'tidligere':'aktive',kursSvar=null,sok='',sortBy='aktiv',bareLav=false,bareInne=params().get('inne')==='1';
   const kunMangler=params().get('betaling')==='mangler';
   const piller=el('div',{class:'actions folk-piller'}),under=el('div',{class:'actions folk-piller'}),omraade=el('div',{}),liste=el('div',{});

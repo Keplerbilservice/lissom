@@ -36,7 +36,7 @@ final class KasseJustering
     public static function klar(): bool
     {
         return DB::harTabell('kasse_justeringer') && DB::harKolonne('kasse_justeringer', 'gjort_at')
-            && DB::harKolonne('bookings', 'kasse_rabatt_ore');
+            && DB::harKolonne('kasse_justeringer', 'kurv_sig') && DB::harKolonne('bookings', 'kasse_rabatt_ore');
     }
 
     /**
@@ -46,7 +46,7 @@ final class KasseJustering
      * @param array<string,mixed> $nokler del-id => nøkkel
      * @return array<string,int>
      */
-    public static function laaste(array $nokler): array
+    public static function laaste(array $nokler, string $sig): array
     {
         $ut = [];
         if ($nokler === [] || !self::klar()) {
@@ -65,7 +65,9 @@ final class KasseJustering
         foreach (array_keys($perNokkel) as $i => $n) {
             $param['n' . $i] = $n;
         }
-        foreach (DB::alle('SELECT nokkel, rabatt_ore FROM kasse_justeringer WHERE nokkel IN (:' . implode(', :', array_keys($param)) . ')', $param) as $r) {
+        $param['sig'] = $sig;
+        foreach (DB::alle('SELECT nokkel, rabatt_ore FROM kasse_justeringer WHERE kurv_sig = :sig AND nokkel IN (:'
+            . implode(', :', array_keys(array_diff_key($param, ['sig' => 1]))) . ')', $param) as $r) {
             $ut[$perNokkel[(string) $r['nokkel']]] = (int) $r['rabatt_ore'];
         }
         return $ut;
@@ -80,14 +82,26 @@ final class KasseJustering
      */
     public static function laas(array $deler, array $person): void
     {
-        $med = array_values(array_filter($deler, static fn(array $d): bool => isset($d['justering'])));
-        if ($med === []) {
+        if (!self::klar()) {
+            foreach ($deler as $d) {
+                if (isset($d['justering'])) {
+                    throw new RuntimeException(self::MANGLER, 503);
+                }
+            }
             return;
         }
-        if (!self::klar()) {
-            throw new RuntimeException(self::MANGLER, 503);
+        // En nøkkel som alt har en rad fra en annen kurv, er en kurv som er
+        // endret: da brukes verken den gamle raden eller nøkkelen.
+        foreach ($deler as $d) {
+            $sig = DB::verdi('SELECT kurv_sig FROM kasse_justeringer WHERE nokkel = :k', ['k' => strtolower((string) $d['nokkel'])]);
+            if ($sig !== null && $sig !== false && (string) $sig !== (string) ($d['kurvSig'] ?? '')) {
+                throw new RuntimeException('Kurven er endret. Se over den og prøv igjen.', 409);
+            }
         }
-        foreach ($med as $d) {
+        foreach ($deler as $d) {
+            if (!isset($d['justering'])) {
+                continue;
+            }
             $felt = self::rad($d['justering'], $d, (string) $d['nokkel'], $person)
                 + ['booking_id' => $d['type'] === 'booking' ? (int) $d['bookingId'] : null];
             $kol = array_keys($felt);
@@ -157,6 +171,21 @@ final class KasseJustering
             ['b' => $bookingId, 'k' => strtolower($nokkel)]);
         DB::kjor('UPDATE kasse_justeringer SET payment_id = :p WHERE nokkel = :k AND booking_id = :b AND gjort_at IS NULL',
             ['p' => $betalingId, 'k' => strtolower($nokkel), 'b' => $bookingId]);
+    }
+
+    /**
+     * Det som trekkes fra (pris + rabatt; negativt når prisen er satt opp) av
+     * endringer som venter på betalingen. KursstartKrav::ikkeTrekk() regner
+     * grensen for QR-beløpet av dette.
+     */
+    public static function trekkForBetaling(int $betalingId, int $bookingId): int
+    {
+        if (!self::klar()) {
+            return 0;
+        }
+        return (int) DB::verdi('SELECT COALESCE(SUM(pris_ore + rabatt_ore), 0) FROM kasse_justeringer
+                                 WHERE payment_id = :p AND booking_id = :b AND gjort_at IS NULL',
+            ['p' => $betalingId, 'b' => $bookingId]);
     }
 
     /**
@@ -231,6 +260,7 @@ final class KasseJustering
             'hvorfor'         => $j['hvorfor'] !== '' ? $j['hvorfor'] : null,
             'linjer'          => $j['linjer'] !== [] ? json_encode($j['linjer'], JSON_UNESCAPED_UNICODE) : null,
             'registrert_av'   => (int) $person['id'] ?: null,
+            'kurv_sig'        => (string) ($d['kurvSig'] ?? ''),
         ];
     }
 

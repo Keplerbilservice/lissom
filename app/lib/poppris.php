@@ -126,6 +126,37 @@ final class PopPris
         return (int) DB::verdi('SELECT depositum FROM courses WHERE id = :i', ['i' => $kursId]) === 1;
     }
 
+    /**
+     * Beløpet per person ved booking når kurset har det (kursets pris, ikke en
+     * egen pris på økta). null = vanlig kurs.
+     */
+    public static function depositumPerPerson(int $kursId): ?int
+    {
+        if (!self::erDepositum($kursId)) {
+            return null;
+        }
+        return (int) DB::verdi('SELECT pris_ore FROM courses WHERE id = :i', ['i' => $kursId]);
+    }
+
+    /**
+     * Feltene en ny booking på et kurs med beløp ved booking skal ha, uansett
+     * hvor den lages (nettsida, admin, ventelista): beløpet ved booking og
+     * fristen som gjelder for den. Da håndteres den likt i kassa og ved
+     * avbestilling. Tom for vanlige kurs, og før migrasjon 260.
+     *
+     * @return array<string,int|null>
+     */
+    public static function bookingFelt(int $kursId, int $depositumOre): array
+    {
+        if (!self::erDepositum($kursId) || !DB::harKolonne('bookings', 'avbestilling_timer')) {
+            return [];
+        }
+        return [
+            'depositum_ore'      => max(0, $depositumOre),
+            'avbestilling_timer' => self::avbestillingTimer($kursId),
+        ];
+    }
+
     /** Fristen for avbestilling med refusjon, i timer. null = vilkårenes 2 dager. */
     public static function avbestillingTimer(int $kursId): ?int
     {
@@ -241,13 +272,28 @@ final class PopPris
         );
         $oslo = new DateTimeZone('Europe/Oslo');
         $start = (new DateTimeImmutable((string) $b['start_tid'], new DateTimeZone('UTC')))->setTimezone($oslo);
+        // Nivåene kassa viser: de aktive, pluss et nivå som er tatt bort i
+        // admin men har gjenstander slått inn på denne bookingen (med navnet
+        // og prisen de ble slått inn med). «lagret» er linjene per nivå, så
+        // skjermen regner summen likt med serveren (regnLinjer()).
+        $lagret = self::lagredeLinjer($bookingId);
+        $vis = self::nivaer();
+        $aktive = array_column($vis, 'id');
+        foreach ($lagret as $id => $ls) {
+            if (!in_array($id, $aktive, true)) {
+                $vis[] = ['id' => $id, 'navn' => $ls[0]['navn'], 'prisOre' => $ls[0]['prisOre'],
+                          'pris' => self::kr($ls[0]['prisOre']), 'gjenstander' => '', 'aktiv' => false];
+            }
+        }
         return [
             'bookingId'      => $bookingId,
             'navn'           => (string) $b['navn'],
             'antall'         => (int) $b['antall'],
             'naar'           => Booking::norskDato((string) $b['start_tid']),
             'dato'           => $start->format('Y-m-d'),
-            'nivaer'         => self::nivaer(),
+            'nivaer'         => $vis,
+            'lagret'         => (object) array_map(static fn(array $ls): array => array_map(
+                static fn(array $l): array => ['prisOre' => $l['prisOre'], 'antall' => $l['antall']], $ls), $lagret),
             'linjer'         => array_map(static fn(array $l): array => [
                 'nivaaId' => $l['nivaa_id'] !== null ? (int) $l['nivaa_id'] : null,
                 'navn'    => (string) $l['navn'],
@@ -275,9 +321,7 @@ final class PopPris
      */
     public static function kassa(int $bookingId, array $valg, ?int $adminId): array
     {
-        $nivaer = array_column(self::nivaer(), null, 'id');
-        $linjer = [];
-        $sum = 0;
+        $onsket = [];
         foreach ($valg as $id => $n) {
             $id = (int) $id;
             $n = (int) $n;
@@ -287,18 +331,23 @@ final class PopPris
             if ($n < 0 || $n > self::MAKS_PER_NIVAA) {
                 throw new RuntimeException('Antallet må være mellom 0 og ' . self::MAKS_PER_NIVAA . '.');
             }
-            if (!isset($nivaer[$id])) {
-                throw new RuntimeException('Fant ikke prisnivået. Last siden på nytt.');
-            }
-            $linjer[] = ['nivaa_id' => $id, 'navn' => $nivaer[$id]['navn'], 'pris_ore' => $nivaer[$id]['prisOre'], 'antall' => $n];
-            $sum += $nivaer[$id]['prisOre'] * $n;
+            $onsket[$id] = $n;
         }
-        if ($linjer === []) {
+        if ($onsket === []) {
             throw new RuntimeException('Velg minst én gjenstand.');
         }
 
-        return DB::iTransaksjon(static function () use ($bookingId, $linjer, $sum, $adminId): array {
+        return DB::iTransaksjon(static function () use ($bookingId, $onsket, $adminId): array {
             self::kassaBooking($bookingId, true);
+            // Linjene som alt er slått inn, leses under låsen. De beholder
+            // prisen de ble slått inn med (kontrollen 08.10): «Endre
+            // gjenstander» skal ikke prise om det kunden alt har fått en sum
+            // på. Bare nye gjenstander får dagens nivåpris.
+            [$linjer, $sum] = self::regnLinjer(
+                $onsket,
+                array_column(self::nivaer(), null, 'id'),
+                self::lagredeLinjer($bookingId)
+            );
             // En betaling som fortsatt er på vei i Vipps kan sette bookingen
             // til «betalt» når den kommer (Booking::markerBetalt). Da ville
             // resten for gjenstandene forsvunnet. Vent til den er avklart.
@@ -326,6 +375,61 @@ final class PopPris
             $st = Booking::settBetaltStatus($bookingId);
             return ['sumOre' => $sum, 'betaltOre' => $betalt, 'skyldigOre' => (int) $st['skyldig']];
         });
+    }
+
+    /**
+     * Linjene som er slått inn, per nivå, i den rekkefølgen de ble lagret.
+     *
+     * @return array<int, list<array{navn:string,prisOre:int,antall:int}>>
+     */
+    private static function lagredeLinjer(int $bookingId): array
+    {
+        $ut = [];
+        foreach (DB::alle(
+            'SELECT nivaa_id, navn, pris_ore, antall FROM pop_kasselinjer
+              WHERE booking_id = :b AND nivaa_id IS NOT NULL ORDER BY id',
+            ['b' => $bookingId]
+        ) as $l) {
+            $ut[(int) $l['nivaa_id']][] = ['navn' => (string) $l['navn'], 'prisOre' => (int) $l['pris_ore'], 'antall' => (int) $l['antall']];
+        }
+        return $ut;
+    }
+
+    /**
+     * Linjene og summen for et nytt valg. Per nivå brukes først de lagrede
+     * linjene (med sin pris), og bare det som kommer i tillegg prises med
+     * dagens nivåpris. Et nivå som er tatt bort i admin kan beholde eller
+     * redusere det som alt er slått inn, men ikke få flere.
+     *
+     * @param array<int,int> $onsket nivå-id => antall
+     * @param array<int,array<string,mixed>> $nivaer aktive nivåer per id
+     * @param array<int, list<array{navn:string,prisOre:int,antall:int}>> $lagret
+     * @return array{0: list<array<string,mixed>>, 1: int}
+     */
+    public static function regnLinjer(array $onsket, array $nivaer, array $lagret): array
+    {
+        $linjer = [];
+        $sum = 0;
+        foreach ($onsket as $id => $n) {
+            $igjen = $n;
+            foreach ($lagret[$id] ?? [] as $l) {
+                if ($igjen <= 0) {
+                    break;
+                }
+                $ta = min($igjen, $l['antall']);
+                $linjer[] = ['nivaa_id' => $id, 'navn' => $l['navn'], 'pris_ore' => $l['prisOre'], 'antall' => $ta];
+                $sum += $l['prisOre'] * $ta;
+                $igjen -= $ta;
+            }
+            if ($igjen > 0) {
+                if (!isset($nivaer[$id])) {
+                    throw new RuntimeException('Fant ikke prisnivået. Last siden på nytt.');
+                }
+                $linjer[] = ['nivaa_id' => $id, 'navn' => $nivaer[$id]['navn'], 'pris_ore' => $nivaer[$id]['prisOre'], 'antall' => $igjen];
+                $sum += $nivaer[$id]['prisOre'] * $igjen;
+            }
+        }
+        return [$linjer, $sum];
     }
 
     /**

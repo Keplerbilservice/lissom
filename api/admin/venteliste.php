@@ -336,6 +336,14 @@ switch (Foresporsel::tekst('handling')) {
             $medlem = count($treff) === 1 ? $treff[0] : null;
         }
         $pris = Booking::belopFor($okt, 1, Booking::faarMedlemsrabatt($medlem));
+        // Paint on Pots med beløp ved booking (migrasjon 260): plassen fra
+        // ventelista er en vanlig PoP-booking — beløpet ved booking (kursets,
+        // uten rabatt), merket som det, og resten i kassa.
+        $popPer = PopPris::depositumPerPerson((int) $okt['course_id']);
+        if ($popPer !== null) {
+            $pris = ['brutto' => $popPer, 'rabatt' => 0.0, 'netto' => $popPer, 'medlemsrabatt' => false];
+        }
+        $popFelt = PopPris::bookingFelt((int) $okt['course_id'], (int) $pris['netto']);
 
         // Plassen maa finnes. Uten sjekken kunne to fra lista faa den samme
         // stolen, og det oppdages foerst den kvelden.
@@ -344,7 +352,7 @@ switch (Foresporsel::tekst('handling')) {
         // laaser som et kjoep paa nettsida tar. Uten den leste to samtidige
         // «gi plass» det samme bildet, og begge fikk den siste stolen.
         try {
-            $bookingId = DB::iTransaksjon(static function () use ($okt, $oktId, $rad, $id, $medlem, $pris): int {
+            $bookingId = DB::iTransaksjon(static function () use ($okt, $oktId, $rad, $id, $medlem, $pris, $popFelt): int {
                 if (Booking::ledigePlasser($oktId, true) < 1) {
                     throw new RuntimeException('Den datoen er full nå. Velg en annen, eller varsle i stedet.', 409);
                 }
@@ -368,7 +376,7 @@ switch (Foresporsel::tekst('handling')) {
                     'betalt_maate'      => 'Betaler ved oppmøte',
                     'notat'             => 'Fra ventelista',
                     'reservert_til'     => null,
-                ];
+                ] + $popFelt;
                 if (DB::harKolonne('bookings', 'rabatt_prosent')) {
                     $felt['rabatt_prosent'] = $pris['rabatt'];
                 }

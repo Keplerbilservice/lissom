@@ -1242,9 +1242,16 @@ if (!in_array($maate, MAATER, true)) {
 // uansett hva som staar i feltet — ellers ville en fribillett kunnet vise en
 // sum i regnskapet.
 $belopRaa = Foresporsel::tekst('belop');
+// Paint on Pots med beløp ved booking (migrasjon 260): plassen lagt inn her
+// håndteres som en nettbooking. Tomt felt = beløpet ved booking × antall
+// (kursets, ikke øktas pris), og beløpet merkes som det som betales ved
+// booking — kontant her er altså beløpet ved booking betalt kontant. Resten
+// slås inn i kassa.
+$popPer = PopPris::depositumPerPerson((int) $okt['course_id']);
 $belop = $maate === 'Gratis'
     ? 0
-    : ($belopRaa === '' ? (int) $okt['pris_ore'] * $antall : Foresporsel::heltall('belop') * 100);
+    : ($belopRaa === '' ? ($popPer ?? (int) $okt['pris_ore']) * $antall : Foresporsel::heltall('belop') * 100);
+$popFelt = PopPris::bookingFelt((int) $okt['course_id'], $belop);
 if ($belop < 0 || $belop > 10000000) {
     Svar::feil('Beløpet må være mellom 0 og 100 000 kroner.');
 }
@@ -1308,7 +1315,7 @@ if ($fra !== null) {
 $ledige = Booking::ledigePlasser($oktId);
 
 try {
-$bookingId = DB::iTransaksjon(static function () use ($okt, $oktId, $navn, $epost, $telefon, $antall, $belop, $status, $maate, $admin, $medlemId, $kort): int {
+$bookingId = DB::iTransaksjon(static function () use ($okt, $oktId, $navn, $epost, $telefon, $antall, $belop, $status, $maate, $admin, $medlemId, $kort, $popFelt): int {
     // Samme laaserekkefoelge som ellers: kortet foer betalingene.
     if ($maate === 'Gavekort' && $kort !== null) {
         Booking::laasKort([(int) $kort['id']]);
@@ -1327,7 +1334,7 @@ $bookingId = DB::iTransaksjon(static function () use ($okt, $oktId, $navn, $epos
         'lagt_inn_av'       => (int) $admin['id'],
         'notat'             => mb_substr(Foresporsel::tekst('notat'), 0, 255) ?: null,
         'reservert_til'     => null,
-    ]);
+    ] + $popFelt);
 
     // ── Trekket fra gavekortet ───────────────────────────────────────
     //

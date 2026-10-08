@@ -53,7 +53,7 @@ function reservasjonArk(r,etter,maks){
    r.kanKassa?button('Slå inn gjenstander',()=>{s.close();popKassa(r.bookingId,etter);},'primary'):null,
    button('Ta betalt og betalinger',()=>{s.close();bookingPayments(r.bookingId,etter);},r.kanKassa?'':'primary'),
    button('Endre tid',()=>form('Ny ankomsttid',[field('dato','Dag','date',{required:true}),field('tid','Ankomst','time',{required:true,step:900})],{dato:r.dato,tid:r.fra},async v=>{await api('malebord.php',{handling:'flytt',bookingId:r.bookingId,dato:v.dato,tid:v.tid});toast('Flyttet.');s.close();etter&&etter();})),
-   button('Endre antall',()=>form('Antall personer',[field('antall','Antall','number',{min:1,max:maks,required:true,help:'Sjekkes mot ledige plasser før det lagres. Beløpet regnes på nytt etter de vanlige reglene.'})],{antall:r.antall},async v=>{await api('malebord.php',{handling:'sjekk',bookingId:r.bookingId,antall:v.antall});await api('pamelding.php',{handling:'endre',id:r.bookingId,antall:v.antall});toast('Antallet er endret.');s.close();etter&&etter();})),
+   button('Endre antall',()=>form('Antall personer',[field('antall','Antall','number',{min:1,max:maks,required:true,help:'Sjekkes mot ledige plasser før det lagres. Beløpet ved booking regnes på nytt (antall × beløp per person). Eldre bookinger og bookinger der gjenstandene er slått inn i kassa regnes ikke om.'})],{antall:r.antall},async v=>{await api('malebord.php',{handling:'sjekk',bookingId:r.bookingId,antall:v.antall});await api('pamelding.php',{handling:'endre',id:r.bookingId,antall:v.antall});toast('Antallet er endret.');s.close();etter&&etter();})),
    button(r.mott?'Møtte ikke opp':'Møtte likevel',async()=>{try{await api('pamelding.php',{handling:'status',id:r.bookingId,status:r.mott?'ikke_mott':r.forStatus});toast('Lagret.');s.close();etter&&etter();}catch(e){toast(e.message);}}),
    button('Avbestill',async()=>{if(!await confirm('Avbestill reservasjonen?',`Avbestill ${r.antall} ${r.antall===1?'plass':'plasser'} for ${r.navn}. Betaling gjennom Vipps må refunderes først.`,'Avbestill'))return;try{await api('pamelding.php',{handling:'fjern',id:r.bookingId});toast('Avbestilt.');s.close();etter&&etter();}catch(e){toast(e.message);}},'danger'))));
 }
@@ -134,11 +134,14 @@ export async function popKassa(bookingId,etter){
  const valg=new Map();for(const l of d.linjer)if(l.nivaaId)valg.set(l.nivaaId,(valg.get(l.nivaaId)||0)+l.antall);
  const boks=el('div',{});let s;
  const tegn=()=>{
-  const sum=d.nivaer.reduce((a,n)=>a+n.prisOre*(valg.get(n.id)||0),0);const rest=Math.max(0,sum-d.betaltOre);
+  // Samme regnestykke som PopPris::regnLinjer(): det som alt er slått inn beholder prisen sin, nye får dagens nivåpris.
+  const lagretAntall=id=>((d.lagret||{})[id]||[]).reduce((a,l)=>a+l.antall,0);
+  const linjeSum=n=>{let igjen=valg.get(n.id)||0,s=0;for(const l of ((d.lagret||{})[n.id]||[])){const t=Math.min(igjen,l.antall);s+=t*l.prisOre;igjen-=t;}return s+igjen*n.prisOre;};
+  const sum=d.nivaer.reduce((a,n)=>a+linjeSum(n),0);const rest=Math.max(0,sum-d.betaltOre);
   boks.replaceChildren(
    el('p',{class:'muted',text:`${d.naar} · ${d.antall} ${d.antall===1?'person':'personer'}`}),
    el('div',{class:'list'},d.nivaer.map(n=>{const x=valg.get(n.id)||0;return el('div',{class:'row'},el('div',{},el('strong',{text:`${n.navn} · ${money(n.prisOre)}`}),el('small',{text:n.gjenstander})),
-    el('div',{class:'actions'},button('−',()=>{x>1?valg.set(n.id,x-1):valg.delete(n.id);tegn();}),el('strong',{text:String(x),'aria-live':'polite'}),button('+',()=>{if(x>=50)return;valg.set(n.id,x+1);tegn();})));})),
+    el('div',{class:'actions'},button('−',()=>{x>1?valg.set(n.id,x-1):valg.delete(n.id);tegn();}),el('strong',{text:String(x),'aria-live':'polite'}),button('+',()=>{if(x>=50||(n.aktiv===false&&x>=lagretAntall(n.id)))return;valg.set(n.id,x+1);tegn();})));})),
    el('div',{class:'list',style:'margin-top:16px'},
     el('div',{class:'row'},el('span',{text:'Gjenstander'}),el('strong',{text:money(sum)})),
     el('div',{class:'row'},el('span',{text:'Betalt ved booking'}),el('strong',{text:'−'+money(d.betaltOre)})),

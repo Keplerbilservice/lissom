@@ -135,9 +135,11 @@ $leire = static function () use ($klar, $paa, $medlemId): array {
 };
 
 if (Foresporsel::metode() === 'GET') {
+    // Leire bestilles bare i leiredelen over (eieren 8. oktober 2026), ikke her.
+    $utenLeire = DB::harKolonne('products', 'leire') ? ' AND leire = 0' : '';
     $varer = $klar && $paa ? DB::alle(
         "SELECT id, tittel, artikkelnr FROM products
-          WHERE kan_bestilles = 1 AND status = 'publisert'
+          WHERE kan_bestilles = 1 AND status = 'publisert'" . $utenLeire . "
           ORDER BY tittel"
     ) : [];
     Svar::json([

@@ -205,7 +205,7 @@ if ($handling === 'forhandsvis') {
         'alleredeSendt' => $mal === 'kurspaaminnelse' ? count($alleP) - count($liste) : 0,
         // Kan «Send påminnelse» trykkes? Uten migrasjon 270: bare naar oekta
         // ikke er sendt (som foer). Med: naar noen uten noekkel naas.
-        'kanSendes'  => $naas > 0 && (Paaminnelse::harNokler() || ($okt['paaminnelse_sendt_at'] ?? null) === null),
+        'kanSendes'  => $naas > 0 && Paaminnelse::harNokler(),
         'naas'       => $naas,
         'epost'      => $epostN,
         'sms'        => $smsN,
@@ -297,6 +297,12 @@ if ($handling === 'flyttet') {
 }
 
 if ($handling === 'paaminnelse') {
+    // Uten varsel_utsendinger (migrasjon 270) sendes ingen paaminnelse for
+    // haand: da ville okta faa paaminnelse_sendt_at og cron hoppe over dem
+    // som ikke fikk den naa. Cron virker som foer til oppdateringen er kjoert.
+    if (!Paaminnelse::harNokler()) {
+        Svar::feil('Kjør oppdateringene først.', 503);
+    }
     if ((string) $okt['status'] === 'avlyst') {
         Svar::feil('Datoen er avlyst.');
     }

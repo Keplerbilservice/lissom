@@ -512,7 +512,7 @@ try {
     $tekstD = (string) DB::verdi("SELECT tekst FROM notifications WHERE ref_type = 'course_session' AND ref_id = :i ORDER BY id DESC LIMIT 1", ['i' => $oktD]);
     sjekk('M teksten bygges fra raden under låsen (ikke den utvalget leste)', $rt['sendt'] === 1 && !str_contains($tekstD, 'UTDATERT') && str_contains($tekstD, $tag . ' Dreiekurs'), mb_substr($tekstD, 0, 200));
 
-    // 4) Uten migrasjon 270: «Ny dato» 503, påminnelsen tar hele økta som før.
+    // 4) Uten migrasjon 270: «Ny dato» og påminnelse for hånd svarer 503 (cron virker som før).
     DB::kobling()->exec('RENAME TABLE varsel_utsendinger TO varsel_utsendinger_nyadmtest');
     try {
         $u1 = kall('/api/admin/okt-varsel.php', ['handling' => 'flyttet', 'oktId' => $oktF, 'fra' => $C, 'forventet' => $forv($oktF)], $tA);
@@ -520,13 +520,12 @@ try {
         $oktU = DB::settInn('course_sessions', ['course_id' => $k, 'start_tid' => $tid('+18 days 18:00'), 'status' => 'planlagt']);
         $nyBooking($k, $oktU, 'Uten1', 'betalt', ['created_at' => $gammel]);
         $pu1 = kall('/api/admin/okt-varsel.php', ['handling' => 'paaminnelse', 'oktId' => $oktU, 'forventet' => $forv($oktU)], $tA);
-        sjekk('M uten 270: påminnelse for hånd sendt til 1 og økta merket', $pu1[0] === 200 && ($pu1[1]['sendt'] ?? 0) === 1
-            && DB::verdi('SELECT paaminnelse_sendt_at FROM course_sessions WHERE id = :i', ['i' => $oktU]) !== null, $vis($pu1));
-        $nyBooking($k, $oktU, 'Uten2', 'betalt', ['created_at' => $gammel]);
-        $pu2 = kall('/api/admin/okt-varsel.php', ['handling' => 'paaminnelse', 'oktId' => $oktU, 'forventet' => $forv($oktU)], $tA);
-        sjekk('M uten 270: hele økta er sendt (409), som før', $pu2[0] === 409 && $ko('course_session', $oktU) === 1, $vis($pu2));
+        sjekk('M uten 270: påminnelse for hånd sperret (503), økta ikke merket, ingenting i køen', $pu1[0] === 503
+            && str_contains((string) ($pu1[1]['feil'] ?? ''), 'Kjør oppdateringene først')
+            && DB::verdi('SELECT paaminnelse_sendt_at FROM course_sessions WHERE id = :i', ['i' => $oktU]) === null
+            && $ko('course_session', $oktU) === 0, $vis($pu1));
         $fu = kall('/api/admin/okt-varsel.php', ['handling' => 'forhandsvis', 'oktId' => $oktU, 'mal' => 'kurspaaminnelse'], $tA);
-        sjekk('M uten 270: forhåndsvisningen sier sendt og kan ikke sendes', ($fu[1]['kanSendes'] ?? true) === false && ($fu[1]['paaminnelseSendt'] ?? '') !== '', $vis($fu));
+        sjekk('M uten 270: forhåndsvisningen kan ikke sendes', ($fu[1]['kanSendes'] ?? true) === false, $vis($fu));
     } finally {
         DB::kobling()->exec('RENAME TABLE varsel_utsendinger_nyadmtest TO varsel_utsendinger');
     }

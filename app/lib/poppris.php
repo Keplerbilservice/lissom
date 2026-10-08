@@ -530,26 +530,7 @@ final class PopPris
      */
     public static function kassa(int $bookingId, array $valg, ?int $adminId): array
     {
-        $onsket = [];
-        foreach ($valg as $k => $v) {
-            if (is_array($v)) {
-                $nk = (int) ($v['nivaaId'] ?? 0) . '|' . trim(mb_substr((string) ($v['gjenstand'] ?? ''), 0, 100));
-                $n = (int) ($v['antall'] ?? 0);
-            } else {
-                $nk = self::nokkel($k);
-                $n = (int) $v;
-            }
-            if ($n === 0) {
-                continue;
-            }
-            if ($n < 0 || $n > self::MAKS_PER_NIVAA) {
-                throw new RuntimeException('Antallet må være mellom 0 og ' . self::MAKS_PER_NIVAA . '.');
-            }
-            $onsket[$nk] = ($onsket[$nk] ?? 0) + $n;
-        }
-        if ($onsket === []) {
-            throw new RuntimeException('Velg minst én gjenstand.');
-        }
+        $onsket = self::lesValg($valg);
 
         return DB::iTransaksjon(static function () use ($bookingId, $onsket, $adminId): array {
             self::kassaBooking($bookingId, true);
@@ -613,6 +594,75 @@ final class PopPris
             $st = Booking::settBetaltStatus($bookingId);
             return ['sumOre' => $sum, 'betaltOre' => $betalt, 'skyldigOre' => (int) $st['skyldig']];
         });
+    }
+
+    /**
+     * Valget fra kassa som «nivå-id|gjenstand» => antall. Samme regler for
+     * admin (kassa()) og iPad-kassa (forhandsvis()).
+     *
+     * @param array<int|string,mixed> $valg [{nivaaId, gjenstand, antall}] — eller nivå-id => antall
+     * @return array<string,int>
+     */
+    private static function lesValg(array $valg): array
+    {
+        $onsket = [];
+        foreach ($valg as $k => $v) {
+            if (is_array($v)) {
+                $nk = (int) ($v['nivaaId'] ?? 0) . '|' . trim(mb_substr((string) ($v['gjenstand'] ?? ''), 0, 100));
+                $n = (int) ($v['antall'] ?? 0);
+            } else {
+                $nk = self::nokkel($k);
+                $n = (int) $v;
+            }
+            if ($n === 0) {
+                continue;
+            }
+            if ($n < 0 || $n > self::MAKS_PER_NIVAA) {
+                throw new RuntimeException('Antallet må være mellom 0 og ' . self::MAKS_PER_NIVAA . '.');
+            }
+            $onsket[$nk] = ($onsket[$nk] ?? 0) + $n;
+        }
+        if ($onsket === []) {
+            throw new RuntimeException('Velg minst én gjenstand.');
+        }
+        return $onsket;
+    }
+
+    /**
+     * Det kassa() ville kommet fram til, uten å lagre noe: summen av
+     * gjenstandene (lagrede linjer med sin pris, nye med dagens nivåpris),
+     * det som er betalt, og det som står igjen. iPad-kassa (Kasse) viser
+     * dette før det tas betalt, så tallet på skjermen er serverens.
+     *
+     * @param array<int|string,mixed> $valg
+     * @return array{sumOre:int, betaltOre:int, skyldigOre:int, linjer:list<array<string,mixed>>}
+     */
+    public static function forhandsvis(int $bookingId, array $valg): array
+    {
+        self::kassaBooking($bookingId, false);   // finnes, er Paint on Pots, er aktiv
+        [$linjer, $sum] = self::regnLinjer(
+            self::lesValg($valg),
+            array_column(self::nivaer(), null, 'id'),
+            self::lagredeLinjer($bookingId)
+        );
+        $betalt = (int) Booking::betalingerFor($bookingId)['sum'];
+        $belop = max($sum, $betalt);
+        return ['sumOre' => $sum, 'betaltOre' => $betalt, 'skyldigOre' => max(0, $belop - $betalt), 'linjer' => $linjer];
+    }
+
+    /**
+     * Er dette en Paint on Pots-booking der gjenstandene er slått inn? Da er
+     * resten (beløp minus betalt) noe som skal tas betalt for i verkstedet,
+     * selv om beløpet ved booking kom med Vipps. Samme sjekk som «Ta betalt»
+     * (api/admin/kursbetaling.php).
+     */
+    public static function harRest(int $bookingId): bool
+    {
+        return DB::harKolonne('bookings', 'gjenstander_ore')
+            && DB::verdi(
+                'SELECT 1 FROM bookings WHERE id = :i AND depositum_ore IS NOT NULL AND gjenstander_ore IS NOT NULL',
+                ['i' => $bookingId]
+            ) !== null;
     }
 
     /**

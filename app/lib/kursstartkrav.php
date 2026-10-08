@@ -313,7 +313,10 @@ final class KursstartKrav
             if ($skyldig === 0) {
                 throw new RuntimeException('Denne er alt gjort opp.', 409);
             }
-            if ($viaVipps !== null && $viaVipps !== false) {
+            // Unntak: Paint on Pots der beløpet ved booking kom med Vipps og
+            // gjenstandene er slått inn — resten skal betales i verkstedet.
+            // Samme unntak som «Ta betalt» (kursbetaling.php, PopPris::harRest).
+            if ($viaVipps !== null && $viaVipps !== false && !PopPris::harRest($bookingId)) {
                 throw new RuntimeException('Denne er betalt gjennom Vipps. Bruk «Ta betalt» hvis noe står igjen.', 409);
             }
             if ($skyldig < Vipps::MINSTE_BELOP_ORE) {

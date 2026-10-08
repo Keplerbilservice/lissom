@@ -6494,6 +6494,72 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "kasse-ipad-20261008",
+            "dato": "2026-10-08",
+            "hva": "Lissom Kasse på iPad (skissen Rm1Casf4CpVv8i5zwyfecX, «ok, bygg det»): egen kasse på /kasse med rollen «kasse» (kommer bare til api/kasse/, innlogget i 30 dager), 4-sifret PIN per person (settes under Brukere, lagres som hash), låser seg etter 5 minutter uten bruk, bryteren «Vis/kasse» (av til eieren slår den på). I dag: dagens påmeldte med hva de skylder og medlemmer som er inne; varer med fast pris, Paint on Pots uten booking, gavekort, timepakke og «Skriv beløp». Paint on Pots: gjenstander per nivå, betalt ved booking trekkes fra, «Endre» → «Betalte ikke» annullerer beløpet ved booking (slettes ikke). Betaling: hvem betaler (personen eller Kontantkunde), Vipps-QR, Kontant, Del betalingen, Betalt på annen måte (Vipps-nummer, faktura). Beløpene regnes på serveren, idempotensnøkkel per del. Kvittering den vanlige veien, Dagens oppgjør fra samme rader som Penger.",
+            "hvor": "/kasse (kasse.html, admin-ny/kasse.js, admin-ny/kasse.css), api/kasse/, app/lib/kasse.php, Brukere og Synlighet i admin-ny",
+            "kode": [
+                {
+                    "fil": "app/lib/session.php",
+                    "finnes": [
+                        "public const KASSE_VARIGHET_TIMER = 720;",
+                        "if ($rolle === 'kasse' && !self::kasseSti()) {"
+                    ]
+                },
+                {
+                    "fil": "app/lib/kasse.php",
+                    "finnes": [
+                        "public const LAAS_MINUTTER = 5;",
+                        "['n' => 'Vis/kasse']",
+                        "Svar::feil('Kassa er låst.', 423, ['laast' => true]);",
+                        "password_hash($pin, PASSWORD_DEFAULT)",
+                        "'Beløpet er endret til ' . self::kr($sum) . '. Se over kurven og prøv igjen.'",
+                        "' · Annullert: betalte ikke ved booking (kassa)'"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kasse.js",
+                    "finnes": [
+                        "'Hvem står i kassa?'",
+                        "'🎨 Paint on Pots uten booking'",
+                        "'Endre: betalte de ved booking?'",
+                        "'Betalte ikke'",
+                        "'👤 Kontantkunde'",
+                        "maate('Vipps','Kunden skanner QR'",
+                        "maate('Kontant','Registreres med en gang'",
+                        "maate('Del betalingen','To eller flere betaler'",
+                        "maate('Betalt på annen måte','Vipps-nummer, faktura'",
+                        "'Telles ved stenging'"
+                    ]
+                },
+                {
+                    "fil": "api/admin/brukere.php",
+                    "finnes": [
+                        "if ($handling === 'kassepin') {"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/innhold-og-kurs.js",
+                    "finnes": [
+                        "['Vis/kasse','Kassa på iPad (/kasse)',false]"
+                    ]
+                },
+                {
+                    "fil": ".htaccess",
+                    "finnes": [
+                        "RewriteRule ^kasse/?$ /kasse.html [L]"
+                    ]
+                },
+                {
+                    "fil": "db/migrations/263_kasse_ipad.sql",
+                    "finnes": [
+                        "MODIFY rolle ENUM('medlem', 'admin', 'regnskap', 'kasse')",
+                        "ADD COLUMN IF NOT EXISTS kasse_pin_hash"
+                    ]
+                }
+            ]
         }
     ]
 }

@@ -1961,8 +1961,9 @@ final class Booking
                 ['i' => (int) $o['id']]
             )->rowCount();
             if ($n === 1) {
-                // Bare nettbutikken (B-) trakk lageret i markerBetalt().
-                $lager = str_starts_with((string) $o['ordrenr'], 'B-');
+                // Bare nettbutikken (B-) og Vipps-QR fra kassa (Q-) trakk
+                // lageret i markerBetalt().
+                $lager = str_starts_with((string) $o['ordrenr'], 'B-') || str_starts_with((string) $o['ordrenr'], 'Q-');
                 if ($lager) {
                     self::leggTilbakeLager((int) $o['id']);
                 }
@@ -2099,7 +2100,11 @@ final class Booking
                 // Vipps skal ikke ta varer fra hylla. Betalingen er laast over
                 // (FOR UPDATE), saa dette skjer én gang. Bare nettbutikken
                 // (B-): samlebestillingen (H-) er varer bestilt fra leverandoer.
-                if (str_starts_with((string) $ordre['ordrenr'], 'B-')) {
+                // Q- er Vipps-QR fra kassa: iPad-kassa (Kasse) setter varer
+                // fra hylla paa den, og de gaar ut av lageret naar pengene er
+                // inne. QR-salg fra admin-kassa har ingen varelinjer, saa der
+                // trekkes ingenting.
+                if (str_starts_with((string) $ordre['ordrenr'], 'B-') || str_starts_with((string) $ordre['ordrenr'], 'Q-')) {
                     self::trekkLager((int) $ordre['id']);
                 }
                 // «Ta med barn» (migrasjon 192): tillegget paa ordren blir
@@ -2214,8 +2219,14 @@ final class Booking
         return implode("\n", $deler);
     }
 
-    /** Legger kvitteringen i varselkøen. Cron sender den. */
-    public static function sendBekreftelse(int $bookingId): void
+    /**
+     * Legger kvitteringen i varselkøen. Cron sender den.
+     *
+     * @param string|null $kunKanal «epost» eller «sms»: kvitteringen fra
+     *   iPad-kassa (Kasse), bare den ene veien og uten beskjed til verkstedet
+     *   — plassen er ikke ny. null = som før.
+     */
+    public static function sendBekreftelse(int $bookingId, ?string $kunKanal = null): void
     {
         $b = DB::en(
             'SELECT b.*, c.tittel, cs.start_tid, cs.slutt_tid,
@@ -2256,8 +2267,8 @@ final class Booking
         $samlingskort = Samlinger::forEpost((int) ($b['course_session_id'] ?? 0));
         $kursinfo = self::kursinfo($b, $samlingskort !== []);
         Varsel::mal('ordrebekreftelse', [
-            'epost'   => $b['m_epost'] ?? $b['gjest_epost'],
-            'telefon' => $b['m_telefon'] ?? $b['gjest_telefon'],
+            'epost'   => $kunKanal === 'sms' ? null : ($b['m_epost'] ?? $b['gjest_epost']),
+            'telefon' => $kunKanal === 'epost' ? null : ($b['m_telefon'] ?? $b['gjest_telefon']),
         ], [
             'navn'  => (string) ($b['m_navn'] ?: $b['gjest_navn']),
             'kurs'  => (string) $b['tittel'],
@@ -2287,6 +2298,10 @@ final class Booking
             // oppsett() tegner dem som egne kort under faktakortet.
             Varsel::SAMLINGER => $samlingskort !== [] ? (string) json_encode($samlingskort, JSON_UNESCAPED_UNICODE) : '',
         ], 'booking', $bookingId);
+
+        if ($kunKanal !== null) {
+            return;
+        }
 
         // ── Og en beskjed til verkstedet ──────────────────────────────
         //
@@ -3413,7 +3428,8 @@ final class Booking
         string $maate,
         ?int $medlemId = null,
         ?int $adminId = null,
-        string $kommentar = ''
+        string $kommentar = '',
+        ?string $idempotensNokkel = null
     ): int {
         $felt = [
             // «MANUELL-» foran gjor det umulig aa forveksle raden med en
@@ -3426,7 +3442,10 @@ final class Booking
             'kommentar'       => $kommentar !== '' ? mb_substr($kommentar, 0, 300) : null,
             'belop_ore'       => max(0, $belopOre),
             'status'          => 'betalt',
-            'idempotency_key' => Vipps::uuid(),
+            // iPad-kassa (Kasse) sender sin egen noekkel, saa et dobbelttrykk
+            // eller et nytt forsoek ikke kan lage raden to ganger: kolonnen er
+            // unik. Alle andre faar en ny, som foer.
+            'idempotency_key' => $idempotensNokkel ?? Vipps::uuid(),
         ];
         // Kolonnene kommer med migrasjon 084. Uten dem skal raden fortsatt
         // lages — den er et bilag uansett — men uten koblingen.

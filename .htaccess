@@ -28,6 +28,11 @@ RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L,NE]
 # adressen før mappesperren, uten å åpne kataloglisting eller andre mapper.
 RewriteRule ^admin-ny/?$ /admin-ny.html [L]
 
+# Kassa på iPaden i verkstedet (eieren 8. oktober 2026). Egen innlogging
+# (rollen «kasse») og PIN; siden selv er bare skallet, alt bak den krever
+# kassekontoen. Se app/lib/kasse.php.
+RewriteRule ^kasse/?$ /kasse.html [L]
+
 # ── Det som ikke er nettsida, svarer 403 ───────────────────────────────
 #
 # Sikkerhetsskanning 13. september 2026, mot den ekte sida:

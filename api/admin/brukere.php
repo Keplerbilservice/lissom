@@ -86,9 +86,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $numre = Config::adminNumre();
     $plass = $numre ? implode(',', array_fill(0, count($numre), '?')) : "''";
 
+    // Kasse-PIN (migrasjon 263): bare om personen har en, aldri selve PIN-en.
+    $pinFelt = DB::harKolonne('members', 'kasse_pin_hash')
+        ? 'kasse_pin_hash IS NOT NULL AS har_kassepin' : '0 AS har_kassepin';
     $rader = DB::alle(
         "SELECT id, brukernavn, navn, epost, telefon, rolle, siste_innlogging,
-                passord_hash IS NOT NULL AS har_passord, vipps_sub IS NOT NULL AS har_vipps
+                passord_hash IS NOT NULL AS har_passord, vipps_sub IS NOT NULL AS har_vipps,
+                {$pinFelt}
            FROM members
           WHERE brukernavn IS NOT NULL
              OR rolle IN ('admin', 'regnskap')
@@ -118,18 +122,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             'rolle'      => (string) $r['rolle'] === 'admin'
                                 || in_array(normaliser_telefon((string) ($r['telefon'] ?? '')), $numre, true)
                                 ? 'admin'
-                                : ((string) $r['rolle'] === 'regnskap' ? 'regnskap' : 'medlem'),
+                                : (in_array((string) $r['rolle'], ['regnskap', 'kasse'], true) ? (string) $r['rolle'] : 'medlem'),
             'fraNodluke' => (string) $r['rolle'] !== 'admin'
                                 && in_array(normaliser_telefon((string) ($r['telefon'] ?? '')), $numre, true),
             'kursholder' => isset($holderEposter[mb_strtolower(trim((string) ($r['epost'] ?? '')))]),
             'harPassord' => (bool) $r['har_passord'],
             'harVipps'   => (bool) $r['har_vipps'],
+            'harKassePin' => (bool) $r['har_kassepin'],
             'sist'       => $r['siste_innlogging']
                                 ? Booking::norskDato((string) $r['siste_innlogging'])
                                 : 'Aldri logget inn',
             'erDeg'      => (int) $r['id'] === (int) $jeg['id'],
         ], $rader),
         'minstLengde' => PASSORD_MINST,
+        // Kassa på iPaden: rollen og PIN-ene finnes først etter migrasjon 263.
+        'kanKasse'    => DB::harKolonne('members', 'kasse_pin_hash'),
     ]);
 }
 
@@ -140,7 +147,9 @@ $handling = Foresporsel::tekst('handling');
 $id       = Foresporsel::heltall('id');
 // Tre roller naa. «regnskap» kom 1. september: eieren ville gi
 // regnskapsfoereren en egen innlogging framfor aa gi henne hele verkstedet.
-$rolle    = in_array(Foresporsel::tekst('rolle'), ['admin', 'regnskap'], true)
+// «kasse» kom 8. oktober 2026 (migrasjon 263): iPaden i verkstedet, som bare
+// kommer til kassa.
+$rolle    = in_array(Foresporsel::tekst('rolle'), ['admin', 'regnskap', 'kasse'], true)
                 ? Foresporsel::tekst('rolle') : 'medlem';
 // «kursholder» er ingen egen rolle i basen: en medlemsinnlogging som i tillegg
 // staar i kursholderregisteret.
@@ -155,15 +164,18 @@ $somKursholder = Foresporsel::tekst('rolle') === 'kursholder';
  * 1. september: «faar ikke opprettet paa regnskap».
  */
 $rollenFinnes = static function (string $r): bool {
-    if ($r !== 'regnskap') {
+    if ($r !== 'regnskap' && $r !== 'kasse') {
         return true;   // medlem og admin har vaert der siden 001
     }
     $type = (string) DB::verdi(
         "SELECT COLUMN_TYPE FROM information_schema.columns
           WHERE table_schema = DATABASE() AND table_name = 'members' AND column_name = 'rolle'"
     );
-    return str_contains($type, "'regnskap'");
+    return str_contains($type, "'" . $r . "'");
 };
+if ($rolle === 'kasse' && !$rollenFinnes($rolle)) {
+    Svar::feil('Rollen «Kasse» krever en oppdatering av databasen. Trykk ⚙ Kjør oppdateringer først.', 503);
+}
 if (!$rollenFinnes($rolle)) {
     Svar::feil('Rollen «Regnskap» krever en oppdatering av databasen. '
         . 'Kjør vedlikeholdet fra menyen nederst til venstre, så kan du opprette henne.', 503);
@@ -215,6 +227,22 @@ if ($handling === 'opprett') {
 $bruker = DB::en('SELECT * FROM members WHERE id = :id', ['id' => $id]);
 if (!$bruker) {
     Svar::feil('Fant ikke brukeren.', 404);
+}
+
+// ── Kasse-PIN ──────────────────────────────────────────────────────────
+//
+// Lissom Kasse på iPad (eieren 8. oktober 2026): den som står i kassa låser
+// opp med en 4-sifret PIN. Den settes her, ett sted, og lagres bare som hash.
+// Tom PIN = fjern (og står personen i kassa nå, låses den).
+if ($handling === 'kassepin') {
+    $pin = Foresporsel::tekst('pin');
+    try {
+        Kasse::settPin((int) $id, $pin === '' ? null : $pin);
+    } catch (RuntimeException $e) {
+        Svar::feil($e->getMessage());
+    }
+    revider($pin === '' ? 'kasse_pin_fjernet' : 'kasse_pin_satt', 'member', (int) $id);
+    Svar::ok(['beskjed' => $pin === '' ? 'PIN-en er fjernet.' : 'PIN-en er lagret.']);
 }
 
 if ($handling === 'endre') {

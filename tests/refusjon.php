@@ -9,6 +9,8 @@ $port = $LISSOM_SECRETS['db_port'] ?? 3306;
 require dirname(__DIR__) . '/app/config.php';
 require dirname(__DIR__) . '/app/lib/db.php';
 require dirname(__DIR__) . '/app/lib/booking.php';
+// Booking::plasserEtterFullRefusjon legger tilbake PoP-lager (migrasjon 262).
+require dirname(__DIR__) . '/app/lib/poppris.php';
 
 
 final class Vipps

@@ -4424,7 +4424,7 @@
                     "fil": "admin-ny/innhold-og-kurs.js",
                     "finnes": [
                         "['#minside','minside']",
-                        "src:'/admin?apne=fhmedlem'",
+                        "src:MEDLEM_FORHANDSVIS",
                         "['Medlemschat','Vis/minsidechat']"
                     ]
                 },
@@ -6287,7 +6287,7 @@
                         "flis('★','Kampanje','Banner på Min side',",
                         "el('h2',{text:'Dette ser medlemmene'})",
                         "card('Slå av og på',",
-                        "src:'/admin?apne=fhmedlem'",
+                        "src:MEDLEM_FORHANDSVIS",
                         "kjor({handling:'tavle'},'Lagt ut på Min side.')",
                         "kjor({til:'medlemmer',ogsaaSms:'ja'},'Lagt ut og sendt.')",
                         "tema:'Kun for medlemmer'",
@@ -6315,6 +6315,58 @@
                     "finnes": [
                         "if (Foresporsel::tekst('handling') === 'tavle') {",
                         "Svar::ok(['beskjed' => 'Lagt ut på Min side.']);"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "admin-ny-gammel-inn-20261008",
+            "dato": "2026-10-08",
+            "hva": "Eieren, 8. oktober 2026 (gamle admin pensjoneres): «Se som medlem» i admin-ny bruker /min-side?forhandsvis=medlem (samme forhåndsvisning, adminbrukerens egne tall, bare for innlogget admin, uten knappene til det gamle admin) i stedet for /admin?apne=fhmedlem; «Feil tid — si fra» lenker til admin-ny (Folk og Henvendelser); glasurkalkulator (liter + fargestoff i prosent, ca. 1 kg tørrstoff per liter) og glasurlapp (navn, dato, batch) under Oppskrifter i admin-ny.",
+            "hvor": "admin-ny/forhandsvis.js, admin-ny/medlemmene.js, admin-ny/innhold-og-kurs.js, admin-ny/kampanjer.js, admin-ny/glasur.js, admin-ny/arbeidsoppgaver.js, lissom-2108.html (forhandsvisFraAdresse), api/stempling.php, tests/nyadmin-gammel-inn.mjs",
+            "kode": [
+                {
+                    "fil": "admin-ny/forhandsvis.js",
+                    "finnes": [
+                        "export const MEDLEM_FORHANDSVIS='/min-side?forhandsvis=medlem';"
+                    ]
+                },
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "forhandsvisFraAdresse() {",
+                        "this.forhandsvisFraAdresse();",
+                        "fhKnapper: !!this.state.fhRolle && this.state.fhFra !== 'admin-ny',",
+                        "<sc-if value=\"{{ fhKnapper }}\""
+                    ]
+                },
+                {
+                    "fil": "lissom-2108-uten-admin.html",
+                    "finnes": [
+                        "forhandsvisFraAdresse"
+                    ]
+                },
+                {
+                    "fil": "api/stempling.php",
+                    "finnes": [
+                        "'https://lissom.no/admin-ny#folk'",
+                        "'https://lissom.no/admin-ny#foresporsler'",
+                        "'type'    => 'Feil stemplingstid',"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/glasur.js",
+                    "finnes": [
+                        "export function glasurKalkulator(r){",
+                        "'Regner ca. 1 kg tørrstoff per liter ferdig glasur. Fargestoff kommer i tillegg — 3 % av 1 000 g er 30 g.'",
+                        "button('Skriv ut lapp',",
+                        "LISSOM · GLASUR"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/arbeidsoppgaver.js",
+                    "finnes": [
+                        "button('Utregning og lapp',()=>glasurKalkulator(r))"
                     ]
                 }
             ]

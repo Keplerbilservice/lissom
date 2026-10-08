@@ -96,14 +96,15 @@ if (Foresporsel::metode() === 'POST') {
         // peke dit. Eieren, 14. september 2026, med bilde fra telefonen:
         // «i eposten jeg får må det være link». Medlemmet staar oeverst i
         // lista naar navnet soekes opp; en egen adresse per medlem finnes
-        // ikke i admin.
+        // ikke i admin. Eieren 8. oktober 2026: lenkene gaar til admin-ny
+        // (Folk og Henvendelser), saa de virker uten det gamle admin.
         $melding = $navn . ' sier at tida på denne økta ble feil.' . "\n\n"
             . ($fra !== '' ? 'Stemplet inn: ' . Booking::norskDato($fra) . "\n" : '')
             . ($min !== null ? 'Registrert: ' . $min . ' minutter' . "\n" : '')
             . "\nØkta er lukket. Rett tida under Admin → Medlemmer:\n"
-            . 'https://lissom.no/admin/medlemmer' . "\n\n"
+            . 'https://lissom.no/admin-ny#folk' . "\n\n"
             . "Henvendelsen ligger under Ubesvarte:\n"
-            . 'https://lissom.no/admin/ubesvarte';
+            . 'https://lissom.no/admin-ny#foresporsler';
         try {
             $sak = DB::settInn('enquiries', [
                 'navn'    => $navn,

@@ -5710,9 +5710,9 @@
                     "finnes": [
                         "const tilbakeKnapp=()=>button('Tilbake',",
                         "main.replaceChildren(...(!accountant&&RENDERERS[current]&&current!=='idag'?[tilbakeKnapp()]:[]),node);",
-                        "const VIS=[['nett','Nettbutikk',p=>p.iNettbutikk],['intern','Internt',p=>p.kunMedlemmer],['alle','Alle',()=>true]];let vis='nett';",
-                        "const erLite=p=>p.lager!=null&&p.status!=='kladd'&&p.lager<=(p.lagerMin??terskel);",
-                        "text:'Lite på lager '+antLite"
+                        "const VIS=[['nett','Nettbutikk',p=>p.iNettbutikk],['intern','Internt',p=>p.kunMedlemmer],['alle','Alle',()=>true],",
+                        "const erLite=p=>p.lager!=null&&p.status!=='kladd'&&p.lager<=(p.lagerMin??LITE_STANDARD);",
+                        "['lite','Lite på lager',erLite]"
                     ],
                     "ikkeFinnes": [
                         "options:[['aktiv','Aktive medlemmer'],['ikke','Ikke medlemmer']]"
@@ -6101,6 +6101,63 @@
                     "fil": "api/admin/marked.php",
                     "finnes": [
                         "'kilder'      => ["
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "butikk-piller-bilde-leirebestilling",
+            "dato": "2026-10-08",
+            "hva": "Eieren, 8. oktober 2026. Butikk i admin-ny: pillene Nettbutikk / Internt / Alle / Lite på lager uten tall, og lista står rett under pillene så trykket synes med en gang; «Terskel» er fjernet — Lite på lager = lager på eller under «Varsle når under» (lagerMin, 3 når feltet er tomt). Varebilde 44 px til venstre på hver rad; mangler bildet, en stiplet rute «Legg til bilde» som åpner bildevalget. «Bestill mer» rett på raden for varer som er lite på lager (legger varen i handlelista hos leverandøren, fyller opp til maks). Leirebestilling: «Neste leirebestilling» øverst i Handlelister (frist, varer med bilde per leverandør, hvem som har bestilt hvor mye, frakt delt, Send bestilling og Krev inn med Vipps), og tidligere bestillinger med status Bestilt → Kommet → Hentet (migrasjon 260). Min side: leirene med bilde og pris, antall rett i neste bestilling («Med i neste bestilling, frist …»), og status Bestilt / «Leira di er kommet» / Hentet.",
+            "hvor": "admin-ny › Butikk og Handlelister; Min side › Handleliste",
+            "kode": [
+                {
+                    "fil": "admin-ny/app.js",
+                    "finnes": [
+                        "const VIS=[['nett','Nettbutikk',p=>p.iNettbutikk],['intern','Internt',p=>p.kunMedlemmer],['alle','Alle',()=>true],['lite','Lite på lager',erLite]];",
+                        "field('lagerMin','Varsle når under','number'",
+                        "text:'Legg til bilde'",
+                        "button('Bestill mer',()=>bestillMer(p,bm),'primary')"
+                    ],
+                    "ikkeFinnes": [
+                        "lissom-lite-terskel",
+                        "button('Terskel '"
+                    ]
+                },
+                {
+                    "fil": "api/admin/produkter.php",
+                    "finnes": [
+                        "if ($handling === 'bestillMer') {"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/leirebestilling.js",
+                    "finnes": [
+                        "card('Neste leirebestilling'",
+                        "card('Tidligere bestillinger'",
+                        "ettTrykk('Kommet',{handling:'kommet',ider:b.ider},'primary')",
+                        "ettTrykk('Hentet',{handling:'hentet',ider:m.ider})"
+                    ]
+                },
+                {
+                    "fil": "api/admin/handlelister.php",
+                    "finnes": [
+                        "'leire'        => handleliste_leire($levBilde),",
+                        "if ($handling === 'frist') {",
+                        "if ($handling === 'kommet' || $handling === 'hentet') {"
+                    ]
+                },
+                {
+                    "fil": "api/handleliste.php",
+                    "finnes": [
+                        "if ($handling === 'leire') {"
+                    ]
+                },
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "const neste = 'Med i neste bestilling' + (frist ? ', frist ' + frist : '');",
+                        "kommet: 'Leira di er kommet'"
                     ]
                 }
             ]

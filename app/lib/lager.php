@@ -247,4 +247,48 @@ final class Lager
            ORDER BY lager, tittel"
         ));
     }
+
+    // ── Leirebestillingen (eieren 08.10.2026) ─────────────────────────────
+    //
+    // Fristen for neste bestilling staar i innstillinger (leirebestilling_frist,
+    // ÅÅÅÅ-MM-DD). Statusen per linje (Bestilt -> Kommet -> Hentet) krever
+    // migrasjon 260; foer den er kjoert er alt som er bestilt «Bestilt».
+
+    /** Er kolonnene for Kommet og Hentet paa plass (migrasjon 260)? */
+    public static function harLeireStatus(): bool
+    {
+        return DB::harTabell('handleliste_linjer') && DB::harKolonne('handleliste_linjer', 'kommet_at')
+            && DB::harKolonne('handleliste_linjer', 'hentet_at') && DB::harKolonne('handleliste_linjer', 'bestilling_nr');
+    }
+
+    /**
+     * Fristen for neste leirebestilling.
+     *
+     * @return array{dato:string,tekst:string} tom dato naar ingen frist er satt
+     */
+    public static function leireFrist(): array
+    {
+        $dato = trim((string) (DB::verdi("SELECT verdi FROM innstillinger WHERE nokkel = 'leirebestilling_frist'") ?? ''));
+        $d = preg_match('/^\d{4}-\d{2}-\d{2}$/', $dato) ? DateTimeImmutable::createFromFormat('!Y-m-d', $dato) : false;
+        if ($d === false) {
+            return ['dato' => '', 'tekst' => ''];
+        }
+        $dager = ['mandag', 'tirsdag', 'onsdag', 'torsdag', 'fredag', 'lørdag', 'søndag'];
+        $mnd = ['januar', 'februar', 'mars', 'april', 'mai', 'juni',
+                'juli', 'august', 'september', 'oktober', 'november', 'desember'];
+        return [
+            'dato'  => $dato,
+            'tekst' => $dager[(int) $d->format('N') - 1] . ' ' . (int) $d->format('j') . '. ' . $mnd[(int) $d->format('n') - 1],
+        ];
+    }
+
+    /** Bildeadressen til en vare slik nettleseren trenger den ('' = ingen). */
+    public static function bildeUrl(?string $bilde): string
+    {
+        $b = trim((string) $bilde);
+        if ($b === '') {
+            return '';
+        }
+        return preg_match('#^https?://#', $b) ? $b : '/' . ltrim($b, '/');
+    }
 }

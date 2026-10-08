@@ -7,6 +7,7 @@
  *   POST handling=antall     { linjeId, antall }  0 = ta bort linja
  *   POST handling=linje      { leverandorId, artikkelnr, navn, antall }
  *   POST handling=send       send lista til verkstedet
+ *   POST handling=leire      { produktId, antall } leira i neste bestilling (0 = ta bort)
  *
  * «linje» er en vare medlemmet har funnet selv i nettbutikken til en av
  * leverandoerene admin har slaatt paa (leverandorer.vis_medlemmer). Eieren,
@@ -79,6 +80,60 @@ $mine = static function () use ($klar, $harLev, $medlemId): array {
     ], $rader);
 };
 
+/**
+ * Leira (eieren 08.10.2026): leirene medlemmet kan bestille (leire og «Kan
+ * bestilles», publisert), med bilde, pris og hvor mange hun har med i neste
+ * bestilling, fristen, og statusen paa det som er bestilt: Bestilt, Kommet
+ * eller Hentet (migrasjon 260). Hentet vises i 30 dager.
+ */
+$leire = static function () use ($klar, $paa, $medlemId): array {
+    $tom = ['leire' => [], 'leireFrist' => ['dato' => '', 'tekst' => ''], 'leireStatus' => []];
+    if (!$klar || !$paa || !DB::harKolonne('products', 'leire')) {
+        return $tom;
+    }
+    $mine = [];
+    foreach (DB::alle(
+        "SELECT product_id, SUM(antall) AS antall FROM handleliste_linjer
+          WHERE member_id = :m AND status = 'sendt' AND bestilt_at IS NULL AND product_id IS NOT NULL
+          GROUP BY product_id",
+        ['m' => $medlemId]
+    ) as $r) {
+        $mine[(int) $r['product_id']] = (int) $r['antall'];
+    }
+    $varer = DB::alle(
+        "SELECT id, tittel, bilde, pris_ore FROM products
+          WHERE leire = 1 AND kan_bestilles = 1 AND status = 'publisert'
+          ORDER BY tittel"
+    );
+    $harStatus = Lager::harLeireStatus();
+    $kol = $harStatus ? 'h.kommet_at, h.hentet_at' : 'NULL AS kommet_at, NULL AS hentet_at';
+    $status = DB::alle(
+        "SELECT h.antall, h.status, {$kol}, p.tittel
+           FROM handleliste_linjer h
+           JOIN products p ON p.id = h.product_id AND p.leire = 1
+          WHERE h.member_id = :m AND h.status = 'ferdig' AND h.bestilt_at IS NOT NULL
+            AND h.bestilt_at >= NOW() - INTERVAL 120 DAY"
+            . ($harStatus ? ' AND (h.hentet_at IS NULL OR h.hentet_at >= NOW() - INTERVAL 30 DAY)' : '')
+            . ' ORDER BY h.bestilt_at DESC, h.id',
+        ['m' => $medlemId]
+    );
+    return [
+        'leire' => array_map(static fn($v) => [
+            'id'     => (int) $v['id'],
+            'navn'   => (string) $v['tittel'],
+            'bilde'  => Lager::bildeUrl($v['bilde'] ?? null),
+            'pris'   => Booking::kroner((int) $v['pris_ore']),
+            'antall' => $mine[(int) $v['id']] ?? 0,
+        ], $varer),
+        'leireFrist'  => Lager::leireFrist(),
+        'leireStatus' => array_map(static fn($r) => [
+            'navn'   => (string) $r['tittel'],
+            'antall' => (int) $r['antall'],
+            'status' => $r['hentet_at'] !== null ? 'hentet' : ($r['kommet_at'] !== null ? 'kommet' : 'bestilt'),
+        ], $status),
+    ];
+};
+
 if (Foresporsel::metode() === 'GET') {
     $varer = $klar && $paa ? DB::alle(
         "SELECT id, tittel, artikkelnr FROM products
@@ -93,6 +148,7 @@ if (Foresporsel::metode() === 'GET') {
             'nummer' => (string) $v['artikkelnr'],
         ], $varer),
         'mine'  => $mine(),
+    ] + $leire() + [
         // Andelen min av frakten fra Pakke-Express (migrasjon 237), naar
         // bestillingen er priset. Null naar det ikke er noe aa vise.
         'frakt' => (static function () use ($klar, $paa, $medlemId): ?string {
@@ -188,6 +244,51 @@ if ($handling === 'linje') {
         'antall'        => $antall,
     ]);
     Svar::ok(['mine' => $mine()]);
+}
+
+// Leira (eieren 08.10.2026): antallet medlemmet velger gaar rett inn i neste
+// bestilling — linja er «sendt» med varens pris, saa den staar i samlebestillingen
+// i admin og faar Vipps-kravet som de andre. 0 tar den bort. Er kravet sendt,
+// eller bestillingen gaatt til leverandoeren, endres den ikke herfra.
+if ($handling === 'leire') {
+    if (!DB::harKolonne('products', 'leire')) {
+        Svar::feil('Leira krever oppdatering av databasen først.');
+    }
+    $produktId = Foresporsel::heltall('produktId');
+    $antall = max(0, min(99, Foresporsel::heltall('antall')));
+    $vare = DB::en(
+        "SELECT id, pris_ore FROM products
+          WHERE id = :p AND leire = 1 AND kan_bestilles = 1 AND status = 'publisert'",
+        ['p' => $produktId]
+    );
+    if ($vare === null) {
+        Svar::feil('Denne leira kan ikke bestilles.');
+    }
+    $linje = DB::en(
+        "SELECT id, order_id FROM handleliste_linjer
+          WHERE member_id = :m AND product_id = :p AND status = 'sendt' AND bestilt_at IS NULL
+          ORDER BY order_id IS NULL, id LIMIT 1",
+        ['m' => $medlemId, 'p' => $produktId]
+    );
+    if ($linje !== null && $linje['order_id'] !== null) {
+        Svar::feil('Leira er allerede krevd inn. Ta kontakt med verkstedet for å endre.');
+    }
+    if ($linje === null && $antall > 0) {
+        DB::settInn('handleliste_linjer', [
+            'member_id'  => $medlemId,
+            'product_id' => $produktId,
+            'antall'     => $antall,
+            'status'     => 'sendt',
+            'pris_ore'   => (int) $vare['pris_ore'],
+            'sendt_at'   => gmdate('Y-m-d H:i:s'),
+        ]);
+    } elseif ($linje !== null && $antall > 0) {
+        DB::oppdater('handleliste_linjer', ['antall' => $antall, 'pris_ore' => (int) $vare['pris_ore']], ['id' => (int) $linje['id']]);
+    } elseif ($linje !== null) {
+        DB::kjor('DELETE FROM handleliste_linjer WHERE id = :l AND order_id IS NULL', ['l' => (int) $linje['id']]);
+    }
+    revider('leire_valgt', 'product', $produktId, ['medlem' => $medlemId, 'antall' => $antall]);
+    Svar::ok(['mine' => $mine()] + $leire());
 }
 
 if ($handling === 'legg') {

@@ -8,6 +8,7 @@
  *   POST handling=slett          fjern en vare
  *   POST handling=fyllPaa        { id, antall } legg varer som kom inn til lageret
  *   POST handling=taUt           { id }         ta én fra lageret, uten betaling
+ *   POST handling=bestillMer     { id }         legg varen i handlelista (fyll opp til maks)
  *
  * Prisen som settes her er den kunden faktisk trekkes. Nettleseren sender
  * aldri belop ved kjop — den sender hvilke varer, og serveren regner ut
@@ -137,6 +138,32 @@ if ($handling === 'fyllPaa') {
     $naa = (int) DB::verdi('SELECT lager FROM products WHERE id = :i', ['i' => $id]);
     revider('vare_fylt_paa', 'product', $id, ['antall' => $n, 'lager' => $naa]);
     Svar::ok(['id' => $id, 'lager' => $naa, 'beskjed' => 'Lageret er nå ' . $naa . '.']);
+}
+
+// ------------------------------------------------------------ bestill mer
+//
+// «Bestill mer» rett paa raden i Butikk (eieren 08.10.2026): varen legges i
+// handlelista hos leverandoeren som «Verkstedets lager», med antallet som
+// fyller opp til «Fyll opp lageret til» — samme regel som naar varen naar
+// grensen av seg selv (Lager::tilHandlelista). Sendes med «Send bestilling».
+if ($handling === 'bestillMer') {
+    $vare = DB::en('SELECT * FROM products WHERE id = :i', ['i' => $id]);
+    if ($vare === null || $vare['lager'] === null) {
+        Svar::feil('Fant ikke varen.');
+    }
+    if (empty($vare['leverandor_id'])) {
+        Svar::feil('Velg leverandør på varen først.');
+    }
+    $antall = Lager::aaBestille((int) $vare['lager'], isset($vare['lager_maks']) && $vare['lager_maks'] !== null ? (int) $vare['lager_maks'] : null);
+    if ($antall <= 0) {
+        Svar::feil('Sett «Fyll opp lageret til» på varen først.');
+    }
+    if (!Lager::harVerkstedslinjer()) {
+        Svar::feil('Dette krever oppdatering 253. Kjør oppdateringene først.');
+    }
+    Lager::tilHandlelista($vare);
+    revider('vare_bestill_mer', 'product', $id, ['antall' => $antall]);
+    Svar::ok(['id' => $id, 'antall' => $antall, 'beskjed' => 'Lagt i handlelista: ' . $antall . ' stk.']);
 }
 
 // ------------------------------------------------------------------ ta ut

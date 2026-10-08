@@ -6895,6 +6895,33 @@ window.__resources = {
                   </sc-if>
                 </div>
 
+                <!-- Leira (eieren 08.10.2026): leirene med bilde og pris; antallet går rett inn i neste
+                     bestilling, og det som er bestilt viser Bestilt / Leira di er kommet / Hentet. -->
+                <sc-if value="{{ hlLeireHar }}" hint-placeholder-val="{{ true }}">
+                  <div class="lx-leire" style="margin-bottom: var(--space-5);">
+                    <div style="font-size: var(--text-sm); font-weight: 700; color: var(--text-heading); margin-bottom: 4px;">Leire</div>
+                    <sc-for list="{{ hlLeire }}" as="v" hint-placeholder-count="2">
+                      <div class="lx-leirerad" style="display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border-subtle); min-width: 0;">
+                        <div style="{{ v.bildeStil }}" role="img" aria-label="{{ v.navn }}"></div>
+                        <div style="flex: 1; min-width: 0;">
+                          <div style="font-weight: 700; color: var(--text-heading); font-size: var(--text-sm); overflow-wrap: anywhere;">{{ v.navn }}</div>
+                          <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ v.pris }}</div>
+                          <sc-if value="{{ v.iNeste }}" hint-placeholder-val="{{ true }}">
+                            <div style="font-size: var(--text-xs); color: var(--terracotta-600); font-weight: 700; margin-top: 2px;">{{ v.nesteTekst }}</div>
+                          </sc-if>
+                        </div>
+                        <span style="display: inline-flex; align-items: center; gap: 5px; flex: none; white-space: nowrap;">
+                          <button type="button" onClick="{{ v.faerre }}" aria-label="Færre" style="appearance: none; cursor: pointer; width: 28px; height: 28px; border-radius: var(--radius-pill); border: 2px solid var(--lissom-brown); background: var(--clay-100); color: var(--lissom-brown); font-weight: 700; line-height: 1;">−</button>
+                          <span style="min-width: 18px; text-align: center; font-weight: 700; color: var(--text-heading);">{{ v.antall }}</span>
+                          <button type="button" onClick="{{ v.flere }}" aria-label="Flere" style="appearance: none; cursor: pointer; width: 28px; height: 28px; border-radius: var(--radius-pill); border: 2px solid var(--lissom-brown); background: var(--clay-100); color: var(--lissom-brown); font-weight: 700; line-height: 1;">+</button>
+                        </span>
+                      </div>
+                    </sc-for>
+                    <sc-for list="{{ hlLeireStatus }}" as="st" hint-placeholder-count="1">
+                      <div class="lx-leirestatus" style="display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-heading);"><span style="min-width: 0; overflow-wrap: anywhere;">{{ st.linje }}</span><span style="{{ st.stil }}">{{ st.tekst }}</span></div>
+                    </sc-for>
+                  </div>
+                </sc-if>
                 <sc-if value="{{ hlHarLev }}" hint-placeholder-val="{{ true }}">
                   <div style="font-size: var(--text-sm); font-weight: 700; color: var(--text-heading); margin-bottom: 6px;">Leverandør</div>
                   <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-3);">
@@ -38804,7 +38831,8 @@ class Component extends DCLogic {
         this._hlHentes = false;
         this._hlHentet = true;
         if (d) this.setState({ hlPaa: !!d.paa, hlVarer: d.varer || [], hlMine: d.mine || [],
-          hlLevListe: d.leverandorer || [], hlGebyr: typeof d.gebyr === 'number' ? d.gebyr : null, hlFraktAndel: d.frakt || '' });
+          hlLevListe: d.leverandorer || [], hlGebyr: typeof d.gebyr === 'number' ? d.gebyr : null, hlFraktAndel: d.frakt || '',
+          hlLeire: d.leire || [], hlLeireFrist: d.leireFrist || null, hlLeireStatus: d.leireStatus || [] });
       })
       .catch(() => { this._hlHentes = false; });
   }
@@ -38829,6 +38857,7 @@ class Component extends DCLogic {
         this._hlSender = false;
         if (!ok) { this.setState({ kvitteringTone: 'danger', kvittering: d.feil || 'Fikk ikke sendt. Prøv igjen om litt.' }); return; }
         this.setState(Object.assign({ hlMine: d.mine || [] },
+          Array.isArray(d.leire) ? { hlLeire: d.leire, hlLeireFrist: d.leireFrist || null, hlLeireStatus: d.leireStatus || [] } : {},
           kropp.handling === 'linje' ? { hlNyNr: '', hlNyNavn: '', hlNyAntall: '1' } : {},
           kropp.handling === 'send' ? { hlKvittering: true, hlSok: '', hlVelgApen: false } : {}));
       })
@@ -38871,11 +38900,46 @@ class Component extends DCLogic {
         fjern: () => this.hlKall({ handling: 'antall', linjeId: h.id, antall: 0 }),
       })),
       ...this.hlLevVals(),
+      ...this.hlLeireVals(),
       hlSendTekst: 'Send til verkstedet',
       hlSendNa: () => this.hlKall({ handling: 'send' }),
       hlKvittering: !!this.state.hlKvittering,
       // Varene verkstedet har lagt inn finnes ikke alltid.
       hlHarVarer: varer.length > 0,
+    };
+  }
+
+  /**
+   * Leira paa Min side (eieren 08.10.2026): bilde, pris og antall. Antallet
+   * gaar rett inn i neste bestilling (api/handleliste.php, handling leire),
+   * og det som er bestilt viser Bestilt, «Leira di er kommet» eller Hentet.
+   */
+  hlLeireVals() {
+    const leire = this.state.hlLeire || [];
+    const status = this.state.hlLeireStatus || [];
+    const frist = (this.state.hlLeireFrist || {}).tekst || '';
+    const neste = 'Med i neste bestilling' + (frist ? ', frist ' + frist : '');
+    const sett = (v, n) => this.hlKall({ handling: 'leire', produktId: v.id, antall: Math.max(0, Math.min(99, n)) });
+    const TEKST = { bestilt: 'Bestilt', kommet: 'Leira di er kommet', hentet: 'Hentet' };
+    return {
+      hlLeireHar: leire.length > 0 || status.length > 0,
+      hlLeire: leire.map(v => ({
+        navn: v.navn,
+        pris: v.pris,
+        antall: v.antall || 0,
+        iNeste: (v.antall || 0) > 0,
+        nesteTekst: neste,
+        bildeStil: Object.assign({ width: '52px', height: '52px', flex: 'none', borderRadius: 'var(--radius-md)', background: 'var(--clay-100)' },
+          v.bilde ? { backgroundImage: "url('" + v.bilde + "')", backgroundSize: 'cover', backgroundPosition: 'center' } : {}),
+        flere: () => sett(v, (v.antall || 0) + 1),
+        faerre: () => sett(v, (v.antall || 0) - 1),
+      })),
+      hlLeireStatus: status.map(x => ({
+        linje: x.antall + ' × ' + x.navn,
+        tekst: TEKST[x.status] || 'Bestilt',
+        stil: { flex: 'none', fontWeight: 700, whiteSpace: 'nowrap', borderRadius: 'var(--radius-pill)', padding: '4px 11px', fontSize: 'var(--text-xs)',
+          background: x.status === 'kommet' ? 'var(--lissom-yellow)' : 'var(--clay-100)', color: 'var(--lissom-brown)' },
+      })),
     };
   }
 

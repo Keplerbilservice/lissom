@@ -5900,6 +5900,27 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "kalender-x-pameldte",
+            "dato": "2026-10-08",
+            "hva": "Eieren, 8. oktober 2026: «5/8 er dårlig info, jeg vil det skal stå x antall påmeldte». Kalenderen i admin-ny viser «4 påmeldte» (1 påmeldt) i stedet for «4/8» på kort, brikker, lister og «Går nå». Refunderte plasser telles ikke som påmeldt. Plassene står fortsatt i økt-arket.",
+            "hvor": "admin-ny › kalender",
+            "kode": [
+                {
+                    "fil": "admin-ny/kalender-ark.js",
+                    "finnes": [
+                        "export const antPameldt=n=>`${n||0} påmeldt${(n||0)===1?'':'e'}`;",
+                        "text:antPameldt(e.pameldt)})];"
+                    ]
+                },
+                {
+                    "fil": "api/admin/kalender.php",
+                    "finnes": [
+                        "if ((string) $b['status'] !== 'refundert') {"
+                    ]
+                }
+            ]
         }
     ]
 }

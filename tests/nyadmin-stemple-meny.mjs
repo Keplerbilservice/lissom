@@ -36,7 +36,7 @@ try{
   if(width>=760){const navn=await p.locator('#meny .nav-link').allTextContents();const i=navn.findIndex(t=>t.includes('Markedsføring'));assert.ok(navn[i-1].includes('Innhold')&&navn[i+1].includes('Alle funksjoner'),navn.join('|'));await p.locator('#meny .nav-link[data-route="marked"]').click();}
   else await p.goto('http://lokal.lissom.no:8140/admin-ny.html#marked');
   await p.getByRole('heading',{name:'Markedsføring',exact:true}).waitFor();
-  for(const n of ['SEO','GEO','Artikler','Referanser','Kursvelger','Videokurs','Mobilvisning','Tekstmaler'])assert.equal(await p.locator('main').getByRole('link',{name:n,exact:true}).count(),1,n);
+  for(const n of ['SEO per side','GEO per side','Artikler','Referanser','Kursvelger','Videokurs','Mobilvisning','Tekstmaler'])assert.equal(await p.locator('main').getByRole('link',{name:n,exact:true}).count(),1,n);
   assert.equal(await p.locator('main').getByRole('link',{name:'Innboks',exact:true}).count(),0,'Innboks ligger ikke under Markedsføring');
   assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
   console.log(`${width} px: Markedsføring åpner med lenkene`);

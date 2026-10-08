@@ -206,6 +206,13 @@ $kode = (string) DB::verdi('SELECT avbestill_kode FROM bookings WHERE id = :i', 
 sjekk('… og lenka med kode', preg_match('/^[a-f0-9]{32}$/', $kode) === 1 && str_contains($tekst, 'pop-avbestill.php?b=' . $b4 . '&k=' . $kode));
 sjekk('riktig kode stemmer', PopPris::kodeStemmer($b4, $kode));
 sjekk('feil kode stemmer ikke', !PopPris::kodeStemmer($b4, str_repeat('0', 32)) && !PopPris::kodeStemmer($b1, $kode));
+$uten = PopPris::bekreftelse(DB::en('SELECT * FROM bookings WHERE id = :i', ['i' => $b2]));
+sjekk('ingenting betalt: ingen «Betalt» og ingen refusjonsløfte',
+    str_starts_with($uten, 'Prisen på gjenstandene betaler du i verkstedet.')
+    && !str_contains($uten, 'Betalt') && !str_contains($uten, 'tilbake'), $uten);
+$pm = (string) file_get_contents(__DIR__ . '/../api/admin/pamelding.php');
+sjekk('admin-påmelding med kontant lager betalingsrad for beløpet ved booking',
+    str_contains($pm, "Booking::manuellBetaling(\$bookingId, \$belop, \$maate,"));
 sjekk('vanlig booking får ingen tekst', PopPris::bekreftelse(['id' => $b3, 'depositum_ore' => null, 'course_id' => $kurs]) === '');
 
 $rydd();

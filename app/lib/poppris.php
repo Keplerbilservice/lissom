@@ -219,10 +219,18 @@ final class PopPris
         if ($dep <= 0) {
             return '';
         }
-        $kr = str_replace("\u{a0}", ' ', self::kr($dep));
-        $kroner = number_format($dep / 100, 0, ',', ' ');
-        $timer = self::fristFor($b) ?? 48;
+        // Det som faktisk er betalt (kontrollen 08.10), ikke det som skulle
+        // betales: en plass lagt inn i admin uten betaling har ingenting å
+        // trekke fra og ingenting å refundere.
+        $betalt = (int) Booking::betalingerFor((int) $b['id'])['sum'];
         $lenke = self::avbestillLenke((int) $b['id']);
+        if ($betalt <= 0) {
+            return 'Prisen på gjenstandene betaler du i verkstedet.'
+                . ($lenke !== null ? ' Avbestill her: ' . $lenke : '');
+        }
+        $kr = str_replace("\u{a0}", ' ', self::kr($betalt));
+        $kroner = number_format($betalt / 100, 0, ',', ' ');
+        $timer = self::fristFor($b) ?? 48;
         return 'Betalt: ' . $kr . '. Prisen på gjenstandene betaler du i verkstedet. De ' . $kroner
             . ' kronene trekkes fra. Avbestiller du senest ' . $timer . ' timer før, får du pengene tilbake. '
             . 'Møter du ikke, beholdes beløpet.'

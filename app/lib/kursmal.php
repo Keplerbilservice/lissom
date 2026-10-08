@@ -44,7 +44,7 @@ final class Kursmal
      * Naa staar den ett sted: her, som standard for «ferdigTid». «Dette faar
      * du med hjem» sier hva du faar med deg, dette sier naar.
      */
-    public const HENTING = 'Den er normalt klar til henting etter 2–4 uker. Du får beskjed når den er klar. '
+    public const HENTING = 'Den er klar til henting etter tre uker. Du får beskjed når den er klar. '
         . 'Du kan også se selv når din keramikk er klar på lissom.no/ferdigbrent, '
         . 'eller ved å logge inn på Min side.';
 

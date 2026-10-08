@@ -443,6 +443,9 @@ final class Deler
             . '</a>'
             . '<a href="tel:+4794134601" style="color: var(--clay-200); text-decoration: none; transition: color .18s ease; padding: 3px 0;" data-hover="color: var(--lissom-yellow);">' . $e($innh('Footer/1/Telefon')) . '</a>'
             . '<a href="mailto:monica@lissom.no" style="color: var(--clay-200); text-decoration: none; transition: color .18s ease; padding: 3px 0;" data-hover="color: var(--lissom-yellow);">' . $e($innh('Footer/1/E-post')) . '</a>'
+            // Telefontid og parkering (eieren, «ok, godkjent» 8. oktober 2026).
+            . ($innh('Footer/1/Telefontid') !== '' ? '<span style="padding: 3px 0; font-size: var(--text-sm); color: var(--clay-300);">' . $e($innh('Footer/1/Telefontid')) . '</span>' : '')
+            . ($innh('Footer/1/Parkering') !== '' ? '<span style="padding: 3px 0; font-size: var(--text-sm); color: var(--clay-300);">' . $e($innh('Footer/1/Parkering')) . '</span>' : '')
             . '<div style="margin-top: 10px; font-size: var(--text-sm); line-height: 1.45; color: var(--clay-300); display: flex; flex-direction: column;">'
             . '<span style="font: var(--type-label); font-size: 11px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-yellow); margin-bottom: 2px;">' . $e($innh('Footer/2/Overskrift')) . '</span>'
             . '<span>' . $e($apning1) . '</span>'

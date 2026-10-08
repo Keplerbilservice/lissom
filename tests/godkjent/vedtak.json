@@ -6856,6 +6856,62 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "ny-info-monica-verksted-tre-uker-20261008",
+            "dato": "2026-10-08",
+            "hva": "Eieren, «ok, godkjent» 8. oktober 2026 (fremvisning YGp25LcNzhN9Xi3eUHSDTE): Monica holder kurset (boks med bilde og merkelapp «Med Monica»), verkstedboks på kurssidene og kort versjon på Paint on Pots, «Hva har jeg på meg?» med forkle og håndkle til låns, gratis parkering, barn fra 6 år på Paint on Pots, «Slik blir du medlem» og utstyr på medlemssiden, tre nye spørsmål, telefontid hver dag kl. 08–21 i bunnen og på kontaktsiden, og hentetid tre uker overalt.",
+            "hvor": "lissom.no/kurs/*, /kurs/paint-on-pots, /medlemskap, /sporsmal-og-svar, /kontakt, bunnen",
+            "kode": [
+                {
+                    "fil": "app/nett/sider/kursside.php",
+                    "finnes": [
+                        "'Med Monica',",
+                        "$innh('Kurs/10/Kursholder tekst')",
+                        "'Forkle og håndkle til låns.', 'Gratis parkering rett utenfor.'",
+                        "$innh('Paint on Pots/9/Verkstedet tekst')"
+                    ]
+                },
+                {
+                    "fil": "app/nett/sider/medlemskap.php",
+                    "finnes": [
+                        "$innh('Medlemskap/5/Overskrift')",
+                        "$innh('Medlemskap/6/Overskrift')",
+                        "$innh('Medlemskap/1/Miljø')"
+                    ]
+                },
+                {
+                    "fil": "app/nett/deler.php",
+                    "finnes": [
+                        "$innh('Footer/1/Telefontid')"
+                    ]
+                },
+                {
+                    "fil": "app/nett/sider/kontakt.php",
+                    "finnes": [
+                        "'tid' => 'Hver dag kl. 08–21'"
+                    ]
+                },
+                {
+                    "fil": "app/lib/kursmal.php",
+                    "finnes": [
+                        "klar til henting etter tre uker"
+                    ],
+                    "ikke": [
+                        "2–4 uker"
+                    ]
+                },
+                {
+                    "fil": "innhold-standard.json",
+                    "finnes": [
+                        "Gratis parkering rett utenfor",
+                        "Telefon: hver dag kl. 08–21"
+                    ],
+                    "ikke": [
+                        "to til fire uker"
+                    ]
+                }
+            ]
         }
     ]
 }

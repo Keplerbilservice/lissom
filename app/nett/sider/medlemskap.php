@@ -54,6 +54,7 @@ $avsnitt = 'margin: 0 0 var(--space-4); color: var(--text-body); font-size: var(
 $h .= '<section style="background: var(--clay-50); padding: 0 var(--space-8) var(--space-12);"><div class="lx-cols2" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-10); align-items: start;">'
     . '<div><div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">' . $e($innh('Medlemskap/1/Kicker')) . '</div>'
     . '<h2 style="margin: 0 0 var(--space-4); font-size: var(--text-3xl);">' . $e($innh('Medlemskap/1/Overskrift')) . '</h2>'
+    . ($innh('Medlemskap/1/Miljø') !== '' ? '<p style="' . $avsnitt . '">' . $e($innh('Medlemskap/1/Miljø')) . '</p>' : '')
     . '<p style="' . $avsnitt . '">Et medlemskap hos Lissom gir deg mer enn bare tilgang til et verksted. Du blir en del av et kreativt, sosialt og faglig fellesskap hvor du kan utvikle deg videre i ditt eget tempo.</p>'
     . '<p style="' . $avsnitt . '">For mange er medlemskap faktisk rimeligere enn å bygge opp et eget keramikkverksted hjemme. Du slipper investeringer i utstyr, verktøy, brenning og plass, samtidig som du får tilgang til et fullt utstyrt verksted og et inspirerende miljø.</p>'
     . '<p style="' . $avsnitt . '">Mange opplever at de lærer minst like mye av samtalene rundt arbeidsbordet som av selve kursene. Som medlem blir du en del av et miljø hvor man inspirerer hverandre, deler erfaringer og utvikler seg sammen.</p>'
@@ -78,6 +79,27 @@ foreach (['Aldri har jobbet med leire — ta nybegynnerkurset først', 'Bare vil
 }
 $h .= '<div style="margin-top: var(--space-2); font-size: var(--text-sm);"><a href="/kurs" style="appearance: none; background: transparent; border: none; padding: 0; cursor: pointer; font: inherit; color: var(--text-heading); font-weight: 700; text-decoration: underline; text-underline-offset: 3px;">' . $e($innh('Medlemskap/1/Lenke til kurs')) . '</a></div>'
     . '</div></div></div></section>' . "\n";
+
+// Slik blir du medlem, og verkstedet (eieren, «ok, godkjent» 8. oktober 2026,
+// fremvisningen YGp25LcNzhN9Xi3eUHSDTE).
+$kortStil = 'background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);';
+$h .= '<section style="background: var(--clay-50); padding: 0 var(--space-8) var(--space-12);"><div class="lx-cols2" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-6); align-items: start;">'
+    . '<div style="' . $kortStil . '"><h2 style="margin: 0 0 var(--space-3); font-size: var(--text-2xl);">' . $e($innh('Medlemskap/5/Overskrift')) . '</h2>'
+    . '<p style="' . $avsnitt . '">' . $e($innh('Medlemskap/5/Tekst')) . '</p>'
+    . '<div style="display: flex; gap: 10px; flex-wrap: wrap;">'
+    . Deler::knapp('Send oss en e-post', ['href' => 'mailto:monica@lissom.no', 'lenke' => true, 'variant' => 'ink'])
+    . Deler::knapp('Ring oss', ['href' => 'tel:+4794134601', 'lenke' => true, 'variant' => 'secondary'])
+    . '</div></div>'
+    . '<div style="' . $kortStil . '"><h2 style="margin: 0 0 var(--space-3); font-size: var(--text-2xl);">' . $e($innh('Medlemskap/6/Overskrift')) . '</h2>'
+    . '<p style="' . $avsnitt . '">' . $e($innh('Medlemskap/6/Tekst')) . '</p>'
+    . '<div style="display: flex; flex-direction: column; gap: 10px;">';
+foreach ([$innh('Medlemskap/6/Punkt 1'), $innh('Medlemskap/6/Punkt 2')] as $pk) {
+    if (trim($pk) !== '') {
+        $h .= '<div style="display: flex; gap: 10px; align-items: flex-start; font-size: var(--text-base); color: var(--text-body);"><span style="color: var(--sage-600); font-weight: 700; flex: 0 0 auto;">✓</span><span>' . $e($pk) . '</span></div>';
+    }
+}
+$h .= '</div></div></div></section>' . "
+";
 
 $h .= '<section style="background: var(--clay-50); padding: 0 var(--space-8) var(--section-y);"><div style="max-width: var(--width-content); margin: 0 auto;">'
     . '<h2 style="margin: 0 0 var(--space-8); font-size: var(--text-3xl);">' . $e($innh('Medlemskap/2/Overskrift')) . '</h2>'

@@ -126,7 +126,7 @@ $eksempel = [
     'kursinfo' => "2 ganger à 3 timer og 30 minutter\n\n"
         . "Dag 1 – Sentrere og dreie\nDu lærer å sentrere leiren, åpne formen og dreie dine første ting på skiven. Vi hjelper deg hele veien.\n\n"
         . "Dag 2 – Trimme og dekorere\nDu trimmer foten på det du dreide kvelden før, og vi dekorerer. Etterpå glaserer og brenner vi arbeidene for deg.\n\n"
-        . "Praktisk\n– Vi serverer enkel snacks, og kaffe eller te.\n– Dere får låne forkle, men regn med å bli litt skitten.\n– Leire, verktøy, glasur og brenning er inkludert.",
+        . "Praktisk\n– Vi serverer enkel snacks, og kaffe eller te.\n– Dere låner forkle og håndkle. Dere kan bli litt skitne, men leira går av i vask.\n– Leire, verktøy, glasur og brenning er inkludert.",
 ];
 
 // Kursbekreftelsen med to samlinger, som dreiekurset: ett kort per samling
@@ -143,7 +143,7 @@ $medSamlinger = static function (string $malNavn, array $felter): array {
          'beskrivelse' => 'Du trimmer foten på det du dreide kvelden før, og vi dekorerer. Etterpå glaserer og brenner vi arbeidene for deg.'],
     ], JSON_UNESCAPED_UNICODE);
     $felter['kursinfo'] = "2 ganger à 3 timer og 30 minutter\n\n"
-        . "Praktisk\n– Vi serverer enkel snacks, og kaffe eller te.\n– Dere får låne forkle, men regn med å bli litt skitten.\n– Leire, verktøy, glasur og brenning er inkludert.";
+        . "Praktisk\n– Vi serverer enkel snacks, og kaffe eller te.\n– Dere låner forkle og håndkle. Dere kan bli litt skitne, men leira går av i vask.\n– Leire, verktøy, glasur og brenning er inkludert.";
     return $felter;
 };
 

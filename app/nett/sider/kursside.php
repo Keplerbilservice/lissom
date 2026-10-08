@@ -156,6 +156,7 @@ $flis = array_values(array_filter([
     $nivaa,
     (string) ($kort['duration'] ?? ''),
     $plasserN > 0 ? 'Maks ' . $plasserN : '',
+    'Med Monica',
 ]));
 $h .= '<div style="display: flex; flex-wrap: wrap; gap: 8px; margin: var(--space-8) 0 var(--space-4);">';
 foreach ($flis as $f) {
@@ -237,18 +238,54 @@ if ($fakta !== []) {
 $punkter = (array) ($kat['punkter'] ?? []);
 if ($punkter === []) {
     $punkter = $erEvent
-        ? ['Ingen erfaring nødvendig — vi viser deg alt underveis.', 'Leire, materialer, glasering og brenning er inkludert.', 'Passer venninnekvelder, utdrikningslag, bedrifter og par.', 'Arbeidene brennes og er klare til henting etter to til fire uker.']
+        ? ['Ingen erfaring nødvendig — vi viser deg alt underveis.', 'Leire, materialer, glasering og brenning er inkludert.', 'Passer venninnekvelder, utdrikningslag, bedrifter og par.', 'Arbeidene brennes og er klare til henting etter tre uker.']
         : ['Leire, verktøy, glasur og brenning er inkludert.', 'Ingen forkunnskaper nødvendig.'];
 }
 $plasser = $plasserN;
 if ($plasser > 0) {
     array_unshift($punkter, 'Maks ' . $plasser . ' deltakere.');
 }
+// Forkle, haandkle og parkering (eieren, 8. oktober 2026). Paint on Pots
+// har parkeringen i verkstedboksen.
+if (!$erPop) {
+    array_push($punkter, 'Forkle og håndkle til låns.', 'Gratis parkering rett utenfor.');
+}
 $h .= '<div style="display: flex; flex-direction: column; gap: 10px; max-width: 52ch;">';
 foreach ($punkter as $p) {
     $h .= '<div style="display: flex; gap: 10px; align-items: flex-start; font-size: var(--text-base); color: var(--text-body);"><span style="color: var(--sage-600); font-weight: 700; flex: 0 0 auto;">✓</span><span>' . $e((string) $p) . '</span></div>';
 }
 $h .= '</div>';
+
+// ── Hvem som holder kurset, verkstedet og klærne ──────────────────────
+//
+// Eieren, «ok, godkjent» 8. oktober 2026, til fremvisningen
+// YGp25LcNzhN9Xi3eUHSDTE: Monica holder kurset, lokalet og utstyret,
+// forkle og haandkle til laans. Paint on Pots faar bare den korte
+// verkstedteksten. Tekstene redigeres under Nettsiden → Innhold.
+$infoBoks = 'background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-top: var(--space-6); max-width: 58ch;';
+$infoH3 = static fn(string $t): string => '<h3 style="margin: 0 0 var(--space-2); font-size: var(--text-lg);">' . $e($t) . '</h3>';
+$infoP = static fn(string $t): string => '<p style="margin: 0; color: var(--text-body); font-size: var(--text-base); line-height: 1.6; text-wrap: pretty;">' . $e($t) . '</p>';
+if ($erPop) {
+    $vt = trim($innh('Paint on Pots/9/Verkstedet tekst'));
+    if ($vt !== '') {
+        $h .= '<div style="' . $infoBoks . '">' . $infoH3('Verkstedet') . $infoP($vt) . '</div>';
+    }
+} else {
+    $mt = trim($innh('Kurs/10/Kursholder tekst'));
+    if ($mt !== '') {
+        $h .= '<div style="' . $infoBoks . ' display: flex; gap: var(--space-5); align-items: center; flex-wrap: wrap;">'
+            . '<img src="uploads_monica.jpg" alt="Monica i verkstedet på Lissom" width="88" height="88" loading="lazy" decoding="async" style="width: 88px; height: 88px; border-radius: 50%; object-fit: cover; flex: 0 0 auto;">'
+            . '<div style="flex: 1; min-width: 200px;">' . $infoH3($innh('Kurs/10/Kursholder overskrift')) . $infoP($mt) . '</div></div>';
+    }
+    $vt = trim($innh('Kurs/10/Verkstedet tekst'));
+    if ($vt !== '') {
+        $h .= '<div style="' . $infoBoks . '">' . $infoH3('Verkstedet') . $infoP($vt) . '</div>';
+    }
+    $kt = trim($innh('Kurs/10/Klær tekst'));
+    if ($kt !== '') {
+        $h .= '<div style="' . $infoBoks . '">' . $infoH3('Hva har jeg på meg?') . $infoP($kt) . '</div>';
+    }
+}
 
 // ── Det lange stoffet, bak ett trykk ──────────────────────────────────
 //
@@ -580,7 +617,7 @@ if ($erPop) {
     if ($tid !== '') {
         $faq[] = ['q' => 'Hvor lang tid tar det?', 'a' => 'Du maler i ' . mb_strtolower($tid) . '. Du velger selv når du kommer.'];
     }
-    foreach ([3, 2, 1, 4] as $i) {
+    foreach ([3, 2, 1, 4, 5] as $i) {
         $q = trim($innh('Paint on Pots/8/Spørsmål ' . $i));
         $a = trim($innh('Paint on Pots/8/Svar ' . $i));
         if ($q !== '' && $a !== '') {

@@ -149,7 +149,7 @@ $h .= '<section style="background: var(--clay-50); padding: 0 var(--space-8) var
 // Introboksene.
 $bokser = $valgt === 'Events' ? [
     ['Passer for', ['Venninnekvelder og par', 'Utdrikningslag og bursdager', 'Bedrifter og teambuilding']],
-    ['Slik fungerer det', ['Kom som du er — ingen erfaring nødvendig', 'Alt utstyr og materialer er inkludert', 'Arbeidene brennes og hentes etter to til fire uker']],
+    ['Slik fungerer det', ['Kom som du er — ingen erfaring nødvendig', 'Alt utstyr og materialer er inkludert', 'Arbeidene brennes og hentes etter tre uker']],
     ['For grupper', ['Flere enn 8? Vi setter opp egen kveld', 'Send en uforpliktende forespørsel', 'Vi svarer som regel samme dag']],
 ] : [
     ['Passer for', ['Nybegynnere — ingen forkunnskaper', 'Deg som vil lære teknikk fra bunnen', 'Deg som vil gjøre noe kreativt, alene eller sammen']],
@@ -171,7 +171,7 @@ $h .= '</div></section>' . "\n";
 
 // Ordensregler og HMS.
 $regler = [
-    'Du får låne forkle av oss, men regn med å bli litt skitten.',
+    'Du låner forkle og håndkle av oss. Du kan bli litt skitten, men leira går av i vask.',
     'Ta av ringer og armbånd, og sett opp langt hår før du setter deg ved dreieskiva.',
     'Husk å bruke en fuktig klut, så du unngår at støvet virvler opp. Aldri kost eller blås bort leirestøv — det kan inneholde kvarts.',
     'Unngå sliping og pussing av leire. Er det mye støv i lokalet, bruk støvmaske.',

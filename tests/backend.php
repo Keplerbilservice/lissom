@@ -5144,9 +5144,10 @@ sjekk('… med feltene til aa kopiere', str_contains($sida2, 'navigator.clipboar
 //
 // Sidene sa «to uker» fire steder og «2–3 uker» tre steder, og butikkassa
 // lovet «Hentetid i butikken: to uker» mens e-posten lovet to virkedager.
-sjekk('hentetida staar som 2–4 uker, ett sted',
+// Eieren, 8. oktober 2026: «hentetid skal være 3 uker overalt».
+sjekk('hentetida staar som tre uker, ett sted',
     str_contains(les_testfil(dirname(__DIR__) . '/app/lib/kursmal.php'),
-        "klar til henting etter 2–4 uker"));
+        "klar til henting etter tre uker"));
 sjekk('… og ingen side sier noe annet',
     !str_contains($sida2, '2–3 uker') && !str_contains($sida2, 'etter ca. to uker'));
 // Butikkvarer er ikke keramikk laget her, og skal ikke ha et antall dager.
@@ -6564,7 +6565,7 @@ sjekk('… og alle fem malene har den, med reservemalen',
     substr_count($mal, "'ferdigTid'       => self::HENTING,") === 6);
 // Og eieren ba om at det skal staa hvor man ser det selv.
 sjekk('… og teksten sier hvor man kan se det selv',
-    str_contains($mal, '2–4 uker')
+    str_contains($mal, 'tre uker')
     && str_contains($mal, 'lissom.no/ferdigbrent')
     && str_contains($mal, 'logge inn på Min side'));
 // Fire kurs hadde den innlimte teksten. Migrasjonen toemmer bare den
@@ -8459,10 +8460,10 @@ sjekk('butikken lover ikke aa holde av varen',
     !str_contains($sida, 'Nordre Løkkevei 15, 3120 Nøtterøy. Vi holder av varen')
     && str_contains($sida, "tekst: 'Nordre Løkkevei 15, 3120 Nøtterøy.' }"));
 
-// Brennetida er noe annet, og skal fortsatt vaere to til fire uker.
-sjekk('brennetida er to til fire uker, og staar ett sted',
+// Brennetida er noe annet: tre uker (eieren, 8. oktober 2026).
+sjekk('brennetida er tre uker, og staar ett sted',
     str_contains(les_testfil(dirname(__DIR__) . '/app/lib/kursmal.php'),
-                 "const HENTING = 'Den er normalt klar til henting etter 2–4 uker."));
+                 "const HENTING = 'Den er klar til henting etter tre uker."));
 // Oppbevaring skal si tre uker; brennetiden er fortsatt to til fire uker.
 sjekk('ingen oppbevaringstekst lover to uker lenger',
     !preg_match('~oppbevar\w*[^.]{0,40}to uker~iu', $sida)

@@ -28,6 +28,8 @@ try {
     $linjer = [['dag' => 'Verkstedet', 'tid' => 'Etter avtale'], ['dag' => 'Kurs og events', 'tid' => 'Se datoer under kurs']];
 }
 $linjer[] = ['dag' => 'Medlemmer', 'tid' => 'Døgnåpent, 24 timer'];
+// Telefontiden (eieren, «ok, godkjent» 8. oktober 2026).
+$linjer[] = ['dag' => 'Telefon', 'tid' => 'Hver dag kl. 08–21'];
 return [
     // Foresporselsskjemaet er en rute i appen: knappen aapner den der.
     'kropp' => Mal::tegn('Kontakt', ['apningstider' => $linjer, 'apningsforklaring' => $forklaring, 'sant' => true], ['goForesporsel' => '/kontakt?skjema=1']) . "\n" . Deler::bunn(false),

@@ -23,9 +23,9 @@ function oktRader(okter){
  return el('div',{class:'list'},okter.map(o=>el('div',{class:'row'},el('strong',{text:`${o.fra}–${o.til}`}),badge(o.stoler?`${o.booket} av ${o.stoler}`:`${o.antall} pers.`,o.stoler&&o.booket>=o.stoler?'bad':'good'))));
 }
 
-// a) Kortet øverst på Oversikt: dagens tidsrom og én stor knapp.
-export async function popIdagKort(){
- let d;try{d=await api('malebord.php');}catch{return null;}
+// a) Dagens tidsrom og én stor knapp («Fullt resten av dagen» / «Åpne igjen»). Står i arket fra I dag-raden.
+export async function popIdagKort(forhand,iArk){
+ let d=forhand;if(!d){try{d=await api('malebord.php');}catch{return null;}}
  const boks=card('Paint on Pots i dag');
  const tegn=d=>{
   const s=d.idag.status;
@@ -33,7 +33,7 @@ export async function popIdagKort(){
   const hoved=!d.klar?null:(s==='fullt'||s==='stengt')
    ?button('Åpne igjen',async ev=>{ev.target.disabled=true;try{const r=await api('malebord.php',{handling:'apne',dato:d.idag.dato});toast(r.beskjed||'Åpent igjen.');tegn(r);}catch(e){toast(e.message);ev.target.disabled=false;}},'primary pop-bred')
    :el('button',{class:'button pop-fullt',type:'button',text:'Fullt resten av dagen',onclick:async ev=>{ev.target.disabled=true;try{const r=await api('malebord.php',{handling:'restenAvDagen'});toast(r.beskjed||'Lagret.');tegn(r);}catch(e){toast(e.message);ev.target.disabled=false;}}});
-  boks.replaceChildren(...[el('h2',{text:'Paint on Pots i dag'}),merke,oktRader(d.idag.okter),el('div',{class:'pop-knapper'},hoved,button('Paint on Pots: dager og reservasjoner',()=>popUkeArk()))].filter(Boolean));
+  boks.replaceChildren(...[el('h2',{text:'Paint on Pots i dag'}),merke,oktRader(d.idag.okter),el('div',{class:'pop-knapper'},hoved,iArk?null:button('Paint on Pots: dager og reservasjoner',()=>popUkeArk()))].filter(Boolean));
  };
  tegn(d);return boks;
 }
@@ -99,6 +99,26 @@ export function popUkeKort(start){
  boks.append(el('p',{class:'empty',text:'Henter …'}));last();return boks;
 }
 export function popUkeArk(){sheet('Paint on Pots',popUkeKort());}
+
+// I dag (eieren 08.10.2026): Paint on Pots er én vanlig rad blant dagens kurs, ingen egen boks.
+// «Paint on Pots · 12:00–20:00 · N personer booket». Trykk åpner arket med dagens knapp og dagslista.
+// Ingen PoP i dag (stengt eller ikke åpent, og ingen reservasjoner) → ingen rad.
+export async function popIdagRad(){
+ let d;try{d=await api('malebord.php');}catch{return null;}
+ const res=(d.dag?.reservasjoner||[]).filter(r=>r.mott);
+ const antall=res.reduce((a,r)=>a+(Number(r.antall)||0),0);
+ const s=d.idag?.status||'apen',vindu=d.dag?.vindu||'';
+ if((s==='stengt'||!vindu)&&!antall)return null;
+ const fra=vindu?vindu.slice(0,5):(res[0]?.fra||'');
+ const merke=s==='fullt'?badge(d.idag.fra?`Fullt fra ${d.idag.fra}`:'Fullt','bad'):s==='stengt'?badge('Ingen PoP i dag','bad'):null;
+ const rad=el('button',{type:'button',class:'row row-link pop-res',onclick:()=>popIdagArk(d)},
+  el('div',{},el('strong',{text:'Paint on Pots'}),el('small',{text:[vindu,`${antall} ${antall===1?'person':'personer'} booket`].filter(Boolean).join(' · ')})),merke);
+ return {tid:fra,rad};
+}
+export async function popIdagArk(d){
+ const topp=await popIdagKort(d,true);
+ sheet('Paint on Pots i dag',el('div',{},topp?el('div',{style:'margin-bottom:22px'},topp):null,popUkeKort()));
+}
 
 // c) Fra kalenderbrikka: merk dagen full eller åpne den igjen.
 export function popDagKnapp(dato,popDager,etter){

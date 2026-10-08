@@ -5726,7 +5726,7 @@
         {
             "id": "adminny-lukk-tilbake-folk-butikk",
             "dato": "2026-10-08",
-            "hva": "Eieren, 8. oktober 2026: «inne på brukere, jeg har ingen lukke eller tilbake, denne må globalt fikses». Alle ark i admin-ny har × i hodet som blir stående når arket rulles; Esc og nettleserens tilbake-knapp lukker det øverste arket; undersider (ikke hovedmenyens sider) har «Tilbake» øverst. Folk: fanene Medlemmer og Deltakere, hver med Aktive og Tidligere. Butikk: fanene Nettbutikk, Internt og Alle; «Lite på lager» filtrerer fanen og viser antallet (varens egen grense, ellers terskel 3 som kan endres).",
+            "hva": "Eieren, 8. oktober 2026: «inne på brukere, jeg har ingen lukke eller tilbake, denne må globalt fikses». Alle ark i admin-ny har × i hodet som blir stående når arket rulles; Esc og nettleserens tilbake-knapp lukker det øverste arket; undersider (ikke hovedmenyens sider) har «Tilbake» øverst. Folk: fanene Medlemmer og Deltakere, hver med Aktive og Tidligere. Butikk: fanene Nettbutikk, Internt og Alle; «Lite på lager» filtrerer fanen og viser antallet (varens egen grense, ellers terskel 3 som kan endres). ENDRET 2026-10-08 (eieren): ingen tall i Folk-knappene, og Deltakere vises kurs for kurs — se folk-kurskort-idag-pop.",
             "hvor": "admin-ny › alle ark, undersider, Folk og Butikk",
             "kode": [
                 {
@@ -5747,10 +5747,6 @@
                     "finnes": [
                         "const tilbakeKnapp=()=>button('Tilbake',",
                         "main.replaceChildren(...(!accountant&&RENDERERS[current]&&current!=='idag'?[tilbakeKnapp()]:[]),node);",
-                        "pille('Medlemmer '+GRUPPER.medlemmer.aktive.length",
-                        "pille('Deltakere '+delt.aktive.length",
-                        "pille('Aktive '+g.aktive.length",
-                        "pille('Tidligere '+g.tidligere.length",
                         "const VIS=[['nett','Nettbutikk',p=>p.iNettbutikk],['intern','Internt',p=>p.kunMedlemmer],['alle','Alle',()=>true]];let vis='nett';",
                         "const erLite=p=>p.lager!=null&&p.status!=='kladd'&&p.lager<=(p.lagerMin??terskel);",
                         "text:'Lite på lager '+antLite"
@@ -5989,6 +5985,46 @@
                     "fil": "admin-ny/app.js",
                     "finnes": [
                         "const forelder=r=>NAV.some(n=>n[0]===r)?'idag':"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "folk-kurskort-idag-pop",
+            "dato": "2026-10-08",
+            "hva": "Eieren, 8. oktober 2026: Folk åpner på Medlemmer › Aktive. Knappene «Medlemmer» / «Deltakere» og under «Aktive» / «Tidligere medlemmer» (Deltakere: «På kurs nå og kommende» / «Tidligere deltakere») — ingen tall i knappene. Aktive: medlemmer som mangler betaling står først i egen gruppe «Mangler betaling» med rød merkelapp og betalingsteksten, så resten; hele raden åpner medlemskortet. #folk?betaling=mangler viser bare gruppen «Mangler betaling». Deltakere: ett kort per kursdato (kursnavn + «Pågår · samling 2 av 4» / «Starter lør. 18.10 kl. 11:00» / «Avsluttet …») med deltakerne inni og Betalt / Ikke betalt (pameldte.php?kursliste=1); første fane kurs som pågår eller kommer, Tidligere avsluttede kurs nyeste først; Paint on Pots er ikke med. I dag: den store Paint on Pots-boksen øverst er fjernet; Paint on Pots er én rad i «Kurs og notater i dag» («Paint on Pots · 12:00–20:00 · N personer booket»), og raden åpner arket med «Fullt resten av dagen»/«Åpne igjen» og dagslista. Ingen PoP i dag → ingen rad.",
+            "hvor": "admin-ny › Folk og I dag",
+            "kode": [
+                {
+                    "fil": "admin-ny/app.js",
+                    "finnes": [
+                        "pille('Medlemmer',gruppe==='medlemmer'",
+                        "pille('Deltakere',gruppe==='deltakere'",
+                        "['Aktive','Tidligere medlemmer']:['På kurs nå og kommende','Tidligere deltakere']",
+                        "el('h3',{text:'Mangler betaling'})",
+                        "api('pameldte.php?kursliste=1')",
+                        "popIdagRad().catch(()=>null)",
+                        "e.type!=='pop'"
+                    ],
+                    "ikkeFinnes": [
+                        "pop?el('div',{style:'margin-bottom:22px'},pop):null",
+                        "pille('Medlemmer '+",
+                        "pille('Aktive '+"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/malebord.js",
+                    "finnes": [
+                        "export async function popIdagRad(){",
+                        "`${antall} ${antall===1?'person':'personer'} booket`",
+                        "sheet('Paint on Pots i dag',"
+                    ]
+                },
+                {
+                    "fil": "api/admin/pameldte.php",
+                    "finnes": [
+                        "if (Foresporsel::heltall('kursliste') === 1) {",
+                        "AND LOWER(c.tittel) NOT LIKE 'paint on pots%'"
                     ]
                 }
             ]

@@ -47,7 +47,7 @@ try {
  // Enklere admin (08.10.2026): flisene på Innhold og Oppsett følger bruken. «Tilbakestill rekkefølgen» er tatt bort fra I dag; nullstillingen prøves mot API-et.
  await p.goto('http://lokal.lissom.no:8140/admin-ny#innhold');
  await p.locator('a.flis').filter({hasText:'Min side for medlemmer'}).click();
- await p.waitForFunction(()=>location.hash.startsWith('#minside'));
+ await p.waitForFunction(()=>/^#(minside|medlemmene)/.test(location.hash));
  const usage=await p.evaluate(async()=>await(await fetch('/api/admin/kortbruk.php')).json());assert.ok(usage.bruk.minside.antall>=1);
  await p.evaluate(async()=>await fetch('/api/admin/kortbruk.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({handling:'null'})}));
  const reset=await p.evaluate(async()=>await(await fetch('/api/admin/kortbruk.php')).json());assert.deepEqual(reset.bruk,[]);

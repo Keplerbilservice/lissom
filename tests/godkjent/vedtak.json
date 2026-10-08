@@ -5964,6 +5964,20 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "adminny-logo-til-idag",
+            "dato": "2026-10-08",
+            "hva": "Eieren, 8. oktober 2026: «admin, jeg vil trykke på lissom logoen så går den tilbake» — valgte «Til I dag (startsiden)». Lissom-logoen øverst i menyen i admin-ny er en lenke til I dag (regnskapsføreren: til Regnskap).",
+            "hvor": "admin-ny › menyen",
+            "kode": [
+                {
+                    "fil": "admin-ny/app.js",
+                    "finnes": [
+                        "el('a',{href:href('idag'),class:'brand-lenke','aria-label':'Lissom, til I dag'}"
+                    ]
+                }
+            ]
         }
     ]
 }

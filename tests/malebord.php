@@ -49,7 +49,12 @@ $rydd = static function () use ($dato, $dato2): void {
     $kurs = array_column(DB::alle("SELECT id FROM courses WHERE slug IN ('testmalebord','testverksted-mb')"), 'id');
     if ($kurs !== []) {
         $inn = implode(',', array_map('intval', $kurs));
+        $bet = array_filter(array_map('intval', array_column(DB::alle("SELECT payment_id FROM bookings WHERE course_id IN ($inn)"), 'payment_id')));
+        DB::kjor("DELETE FROM notifications WHERE mottaker LIKE 'malebord%@example.com'");
         DB::kjor("DELETE FROM bookings WHERE course_id IN ($inn)");
+        if ($bet !== []) {
+            DB::kjor('DELETE FROM payments WHERE id IN (' . implode(',', $bet) . ')');
+        }
         DB::kjor("DELETE FROM course_sessions WHERE course_id IN ($inn)");
         DB::kjor("DELETE FROM kurs_ukeplan WHERE course_id IN ($inn)");
         DB::kjor("DELETE FROM courses WHERE id IN ($inn)");
@@ -146,6 +151,9 @@ sjekk('… neste ledige er dagen etter', ($forste['dato'] ?? '') === $dato2, jso
 Apent::leggUtPaaApneTider();
 sjekk('… øktene med bookinger står', (int) DB::verdi('SELECT COUNT(*) FROM course_sessions WHERE id IN (' . $a . ',' . $c . ')') === 2);
 sjekk('… og bookingene er urørt', (int) DB::verdi('SELECT SUM(antall) FROM bookings WHERE id IN (' . $bA . ',' . $bC . ')') === 4);
+$avvist = false;
+try { Malebord::settDag($dato, 'tider', '10:10', '18:00', null); } catch (InvalidArgumentException $e) { $avvist = true; }
+sjekk('andre tider må stå på hele kvarter (10:10 avvises)', $avvist);
 Malebord::settDag($dato, 'tider', '15:00', '18:00', null);
 $k = Malebord::kvarter($pop, $dato, 1);
 sjekk('andre tider 15–18: vinduet er 15:00–18:00', $k['vindu'] === "15:00\u{2013}18:00", $k['vindu']);
@@ -175,6 +183,63 @@ sjekk('betal ved oppmøte står ikke som betalt', ($perId[$bC]['betaling'] ?? ''
 echo "\n── Antallet kuttes ikke i stillhet ──────────────────────────\n";
 $bookFil = (string) file_get_contents(__DIR__ . '/../api/book.php');
 sjekk('book.php avviser i stedet for min(10, …)', !str_contains($bookFil, 'min(10, Foresporsel::heltall(\'antall\'') && str_contains($bookFil, 'Malebord::MAKS_ANTALL'));
+
+echo "\n── Beløpet er pris × antall hele veien gjennom book.php ─────\n";
+// Ekte endepunkt i en egen php -S, mot en falsk Vipps. Sender ingen ekte
+// betaling, e-post eller SMS (e-postene gaar til @example.com i testmiljoet).
+DB::oppdater('ressurser', ['antall' => 20, 'aktiv' => 1], ['id' => $resPop]);
+if (DB::harKolonne('courses', 'fra_pris')) {
+    DB::oppdater('courses', ['fra_pris' => 1], ['id' => $pop]);   // som Paint on Pots: ingen grupperabatt
+}
+Malebord::glem();
+$rot = dirname(__DIR__);
+$pv = random_int(20000, 29000);
+$pw = $pv + 1;
+$logg = sys_get_temp_dir() . '/malebord-test.log';
+$miljo = array_merge(getenv(), ['FALSK_VIPPS_PORT' => (string) $pv, 'LISSOM_VIPPS_BASE' => "http://127.0.0.1:$pv"]);
+$ut = [0 => ['pipe', 'r'], 1 => ['file', $logg, 'a'], 2 => ['file', $logg, 'a']];
+$prosesser = [
+    proc_open(['node', $rot . '/tests/falsk-vipps.mjs'], $ut, $r1, $rot, $miljo),
+    proc_open([PHP_BINARY, '-S', "127.0.0.1:$pw", '-t', $rot, $rot . '/tests/nettleser/ruter.php'], $ut, $r2, $rot, $miljo),
+];
+foreach ([$pv, $pw] as $port) {
+    for ($i = 0; $i < 50 && !@fsockopen('127.0.0.1', $port, $en, $to, 0.2); $i++) {
+        usleep(150000);
+    }
+}
+$post = static function (array $kropp) use ($pw): array {
+    $svar = @file_get_contents("http://127.0.0.1:$pw/api/book.php", false, stream_context_create(['http' => [
+        'method' => 'POST', 'ignore_errors' => true, 'timeout' => 30,
+        'header' => "Content-Type: application/json\r\nAccept: application/json\r\n",
+        'content' => json_encode($kropp),
+    ]]));
+    return json_decode((string) $svar, true) ?: ['raa' => substr((string) $svar, 0, 300)];
+};
+$pris = (int) DB::verdi('SELECT pris_ore FROM courses WHERE id = :k', ['k' => $pop]);
+$felles = ['kursId' => $pop, 'navn' => 'Malebord Belop', 'telefon' => '41234567', 'harAllergier' => 'nei'];
+foreach ([[3, 'oppmote', '17:00'], [12, '', '17:30']] as [$n, $betaling, $kl]) {
+    $r = $post($felles + ['antall' => $n, 'tid' => $dato2 . ' ' . $kl, 'betaling' => $betaling,
+                          'epost' => 'malebord' . $n . '@example.com']);
+    $id = (int) ($r['bookingId'] ?? 0);
+    if ($id === 0 && isset($r['referanse'])) {
+        $id = (int) DB::verdi('SELECT b.id FROM bookings b JOIN payments p ON p.id = b.payment_id WHERE p.vipps_reference = :r', ['r' => $r['referanse']]);
+    }
+    $b = DB::en('SELECT antall, belop_ore, payment_id, status FROM bookings WHERE id = :i', ['i' => $id]) ?? [];
+    $hva = $betaling === 'oppmote' ? 'betal ved besøket' : 'Vipps (falsk)';
+    sjekk("$n personer, $hva: bestillingen er lagret", ($r['ok'] ?? false) === true && $id > 0, json_encode($r, JSON_UNESCAPED_UNICODE));
+    sjekk("… antallet er $n", (int) ($b['antall'] ?? 0) === $n);
+    sjekk("… beløpet er pris × $n", (int) ($b['belop_ore'] ?? 0) === $pris * $n, (string) ($b['belop_ore'] ?? ''));
+    if ($betaling === '') {
+        $p = DB::en('SELECT belop_ore, status FROM payments WHERE id = :i', ['i' => (int) ($b['payment_id'] ?? 0)]) ?? [];
+        sjekk('… Vipps blir bedt om pris × ' . $n, (int) ($p['belop_ore'] ?? 0) === $pris * $n, json_encode($p));
+        sjekk('… og ingenting står som betalt før Vipps har bekreftet', ($b['status'] ?? '') === 'reservert' && ($p['status'] ?? '') !== 'betalt');
+    } else {
+        sjekk('… og ingen betaling er laget', ($b['payment_id'] ?? null) === null);
+    }
+}
+foreach ($prosesser as $pr) {
+    if (is_resource($pr)) { proc_terminate($pr); }
+}
 
 $rydd();
 Malebord::glem();

@@ -39,7 +39,7 @@ export async function popIdagKort(){
 }
 
 // Én reservasjon: kontakt, kommentar, betaling og handlingene.
-function reservasjonArk(r,etter){
+function reservasjonArk(r,etter,maks){
  const s=sheet(`${r.navn} · ${r.fra}–${r.til}`,el('div',{},
   el('div',{class:'list'},
    el('div',{class:'row'},el('span',{text:'Dag og tid'}),el('strong',{text:`${dagTekst(r.dato)}, ${r.fra}–${r.til}`})),
@@ -52,7 +52,7 @@ function reservasjonArk(r,etter){
   el('div',{class:'actions',style:'margin-top:16px'},
    button('Ta betalt og betalinger',()=>{s.close();bookingPayments(r.bookingId,etter);},'primary'),
    button('Endre tid',()=>form('Ny ankomsttid',[field('dato','Dag','date',{required:true}),field('tid','Ankomst','time',{required:true,step:900})],{dato:r.dato,tid:r.fra},async v=>{await api('malebord.php',{handling:'flytt',bookingId:r.bookingId,dato:v.dato,tid:v.tid});toast('Flyttet.');s.close();etter&&etter();})),
-   button('Endre antall',()=>form('Antall personer',[field('antall','Antall','number',{min:1,required:true,help:'Sjekkes mot ledige plasser før det lagres. Beløpet regnes på nytt etter de vanlige reglene.'})],{antall:r.antall},async v=>{await api('malebord.php',{handling:'sjekk',bookingId:r.bookingId,antall:v.antall});await api('pamelding.php',{handling:'endre',id:r.bookingId,antall:v.antall});toast('Antallet er endret.');s.close();etter&&etter();})),
+   button('Endre antall',()=>form('Antall personer',[field('antall','Antall','number',{min:1,max:maks,required:true,help:'Sjekkes mot ledige plasser før det lagres. Beløpet regnes på nytt etter de vanlige reglene.'})],{antall:r.antall},async v=>{await api('malebord.php',{handling:'sjekk',bookingId:r.bookingId,antall:v.antall});await api('pamelding.php',{handling:'endre',id:r.bookingId,antall:v.antall});toast('Antallet er endret.');s.close();etter&&etter();})),
    button(r.mott?'Møtte ikke opp':'Møtte likevel',async()=>{try{await api('pamelding.php',{handling:'status',id:r.bookingId,status:r.mott?'ikke_mott':r.forStatus});toast('Lagret.');s.close();etter&&etter();}catch(e){toast(e.message);}}),
    button('Avbestill',async()=>{if(!await confirm('Avbestill reservasjonen?',`Avbestill ${r.antall} ${r.antall===1?'plass':'plasser'} for ${r.navn}. Betaling gjennom Vipps må refunderes først.`,'Avbestill'))return;try{await api('pamelding.php',{handling:'fjern',id:r.bookingId});toast('Avbestilt.');s.close();etter&&etter();}catch(e){toast(e.message);}},'danger'))));
 }
@@ -79,7 +79,7 @@ export function popUkeKort(start){
    last(v==='apen'?{handling:'apne',dato:x.dato}:{handling:'dag',dato:x.dato,status:v});}}));
   const rader=x.reservasjoner;
   return el('div',{},el('h3',{text:`${dagTekst(x.dato)}${x.vindu?' · åpent '+x.vindu:''}`}),el('div',{class:'actions pop-status'},valg),
-   rader.length?el('div',{class:'list'},rader.map(r=>el('button',{type:'button',class:'row row-link pop-res',onclick:()=>reservasjonArk(r,etter)},
+   rader.length?el('div',{class:'list'},rader.map(r=>el('button',{type:'button',class:'row row-link pop-res',onclick:()=>reservasjonArk(r,etter,d.kurs.maksAntall)},
     el('div',{},el('strong',{text:`${r.fra}–${r.til} · ${r.navn}`}),el('small',{text:`${r.antall} ${r.antall===1?'person':'personer'}${r.telefon?' · '+r.telefon:''}${r.mott?'':' · møtte ikke opp'}`})),betalingMerke(r.betaling)))):el('p',{class:'empty',text:'Ingen reservasjoner denne dagen.'}));
  }
  function tegn(d){

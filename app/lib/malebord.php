@@ -92,6 +92,7 @@ final class Malebord
             'stoler'     => self::stoler($id),
             'utenGrense' => self::utenGrense($id),
             'ressurs'    => self::ressurs($id),
+            'maksAntall' => self::maksAntall($id),
             'lengde'     => Apent::plassMinutter($id),
             'prisOre'    => (int) $k['pris_ore'],
             'ukeplan'    => Apent::ukeplan($id),
@@ -409,6 +410,14 @@ final class Malebord
     {
         if (!in_array($status, ['fullt', 'stengt', 'tider'], true)) {
             throw new InvalidArgumentException('Ukjent status.');
+        }
+        // «Andre tider» staar paa hele kvarter, saa kundetidene kan bookes.
+        if ($status === 'tider') {
+            foreach ([$fra, $til] as $t) {
+                if ($t === null || preg_match('/^([01]\d|2[0-3]):(00|15|30|45)$/', $t) !== 1) {
+                    throw new InvalidArgumentException('Bruk hele kvarter.');
+                }
+            }
         }
         $felt = ['d' => $dato, 's' => $status, 'f' => $fra !== null ? $fra . ':00' : null, 'a' => $av];
         if (DB::harKolonne('pop_dager', 'til_tid')) {

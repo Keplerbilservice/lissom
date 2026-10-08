@@ -952,8 +952,12 @@ if ($handling === 'endre') {
     // tjue. Null plasser er ikke en paamelding — den fjernes.
     if (Foresporsel::tekst('antall') !== '') {
         $nyttAntall = Foresporsel::heltall('antall');
-        if ($nyttAntall < 1 || $nyttAntall > 20) {
-            Svar::feil('Antallet må være mellom 1 og 20. Skal plassen bort, fjern den i stedet.');
+        // Paint on Pots: samme grense som bestillingen (ressursens antall, eller
+        // Malebord::MAKS_ANTALL uten plassgrense). Eieren 8. oktober 2026.
+        $kursIdEndre = (int) DB::verdi('SELECT course_id FROM course_sessions WHERE id = :o', ['o' => (int) $rad['course_session_id']]);
+        $maksEndre = Malebord::gjelder($kursIdEndre) ? Malebord::maksAntall($kursIdEndre) : 20;
+        if ($nyttAntall < 1 || $nyttAntall > $maksEndre) {
+            Svar::feil('Antallet må være mellom 1 og ' . $maksEndre . '. Skal plassen bort, fjern den i stedet.');
         }
         $felt['antall'] = $nyttAntall;
     }

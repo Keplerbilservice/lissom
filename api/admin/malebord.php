@@ -41,6 +41,9 @@ $gyldigDato = static function (string $d): bool {
     return checkdate($m, $dd, $y);
 };
 $gyldigKlokke = static fn (string $t): bool => preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $t) === 1;
+// Aapningstider staar paa hele kvarter, saa kundetidene alltid kan bookes
+// (Apent::oktForTid godtar bare kvarter).
+$heltKvarter = static fn (string $t): bool => preg_match('/^([01]\d|2[0-3]):(00|15|30|45)$/', $t) === 1;
 
 $svar = static function () use (&$kurs, $kursId, $naa, $idag, $gyldigDato): array {
     $kurs = Malebord::kurs() ?? $kurs;
@@ -128,6 +131,9 @@ switch (Foresporsel::tekst('handling')) {
             if (!$gyldigKlokke($fra) || !$gyldigKlokke($til)) {
                 Svar::feil('Skriv klokkeslettene som 17:00 og 20:00.');
             }
+            if (!$heltKvarter($fra) || !$heltKvarter($til)) {
+                Svar::feil('Bruk hele kvarter, for eksempel 17:00 eller 17:15.');
+            }
             if ($til <= $fra) {
                 Svar::feil('«Til» må være etter «Fra».');
             }
@@ -187,11 +193,26 @@ switch (Foresporsel::tekst('handling')) {
             Svar::feil('Det er ikke plass til ' . (int) $b['antall'] . ' kl. ' . $tid . ' den dagen.', 409);
         }
         $fraOkt = (int) $b['course_session_id'];
-        $tilOkt = DB::iTransaksjon(static function () use ($kursId, $dato, $tid, $b): int {
-            $okt = Apent::oktForTid($kursId, $dato . ' ' . $tid);
-            DB::oppdater('bookings', ['course_session_id' => $okt], ['id' => (int) $b['id']]);
-            return $okt;
-        });
+        try {
+            $tilOkt = DB::iTransaksjon(static function () use ($kursId, $dato, $tid, $b): int {
+                // Kursraden laases som i Booking::reserverOgBetal (ledigePlasser
+                // med laas), saa to samtidige endringer ikke begge ser den siste
+                // plassen. Tilgjengeligheten regnes paa nytt inne i laasen.
+                DB::en('SELECT id FROM courses WHERE id = :k FOR UPDATE', ['k' => $kursId]);
+                $start = (new DateTimeImmutable($dato . ' ' . $tid, new DateTimeZone('Europe/Oslo')))
+                    ->setTimezone(new DateTimeZone('UTC'));
+                $slutt = $start->modify('+' . Apent::plassMinutter($kursId) . ' minutes');
+                if (Malebord::ledige($kursId, $start->format('Y-m-d H:i:s'), $slutt->format('Y-m-d H:i:s'), (int) $b['id'])
+                    < (int) $b['antall']) {
+                    throw new RuntimeException('Det er ikke plass til ' . (int) $b['antall'] . ' kl. ' . $tid . ' den dagen.');
+                }
+                $okt = Apent::oktForTid($kursId, $dato . ' ' . $tid);
+                DB::oppdater('bookings', ['course_session_id' => $okt], ['id' => (int) $b['id']]);
+                return $okt;
+            });
+        } catch (RuntimeException $e) {
+            Svar::feil($e->getMessage(), 409);
+        }
         // Den gamle oekta tas bort bare naar den ble laget av en bestilling
         // og ingen andre bookinger (heller ikke avbestilte) peker paa den.
         if ($fraOkt !== $tilOkt && DB::harKolonne('course_sessions', 'fra_apningstid')) {

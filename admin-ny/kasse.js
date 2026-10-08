@@ -221,9 +221,8 @@ function tegnKurv(){
   el('button',{type:'button',class:'k-pille k-rabattknapp'+(salg.rabatt?' v':''),disabled:!r||!r.deler.length,onclick:rabattArk,text:'Rabatt på kjøpet'}),
   el('div',{class:'k-sum'},el('span',{text:'Totalt'}),el('span',{text:r?r.sum:kr(0)})),
   salg.feil?el('p',{class:'k-feil',role:'alert',text:salg.feil}):null,
-  el('div',{class:'k-betal3'},
+  el('div',{class:'k-betal2'},
    kort({disabled:!kan,onclick:()=>qrStart()},el('b',{text:'Vipps'}),el('small',{text:'QR-kode'})),
-   kort({disabled:true},el('b',{text:'Kort'}),el('small',{text:'Ikke satt opp'})),
    kort({disabled:!kan,onclick:()=>registrer('Kontant','kontant')},el('b',{text:'Kontant'}))),
   el('button',{type:'button',class:'k-pille k-flere',disabled:!kan,onclick:flereValg,text:'Flere valg'}));
 }

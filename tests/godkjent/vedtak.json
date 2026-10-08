@@ -6995,7 +6995,7 @@
         {
             "id": "enkel-kasse-oppsett-a-20261008",
             "dato": "2026-10-08",
-            "hva": "Den enklere kassa på iPad (eieren «ja» 8. oktober 2026, oppsett A fra fremvisningen enkel-kasse.html): valgene til venstre (61 %), kurven fast til høyre (34 %). Venstre: Kontantkunde og + Ny kunde; «Dagens kurs» fire i bredden med klokkeslett, navn og rødt «N skal betale», sortert etter tid, bare kurs der noen skal betale, kort med fast høyde, bare venstre flate ruller; «Paint on Pots · prislisten» (de fire nivåene fra pop_prisnivaer); «Annet salg»: Varer, Gavekort, Skriv beløp (Timepakke som fast valg der). Trykk på et kurs: bare de som ikke har betalt (samme påmeldinger som Kalender), med «Tilbake»; lista hentes på nytt hvert 15. sekund. + Ny kunde: navn og telefon, «Knytt til dagens kurs» (påmelding på en ledig plass, med lås) eller «Bare kjøp». Kurven: − antall +, trykk på prisen for å endre den, «Rabatt på kjøpet» i prosent (10/20/50) eller kroner med valgfritt hvorfor; serveren regner og validerer (pris ≥ 0, rabatt ≤ summen) og lagrer opprinnelig pris, ny pris, rabatt, hvem og hvorfor (kasse_justeringer, migrasjon 269), som vises på kvitteringen og i Dagens oppgjør. Betal: Vipps (QR-kode), Kort, Kontant, og «Flere valg» (Del betalingen, Faktura, Vipps-nummer). Dagens oppgjør og Lås i menyen ⋯. Låsen etter 5 minutter og PIN som før.",
+            "hva": "Den enklere kassa på iPad (eieren «ja» 8. oktober 2026, oppsett A fra fremvisningen enkel-kasse.html): valgene til venstre (61 %), kurven fast til høyre (34 %). Venstre: Kontantkunde og + Ny kunde; «Dagens kurs» fire i bredden med klokkeslett, navn og rødt «N skal betale», sortert etter tid, bare kurs der noen skal betale, kort med fast høyde, bare venstre flate ruller; «Paint on Pots · prislisten» (de fire nivåene fra pop_prisnivaer); «Annet salg»: Varer, Gavekort, Skriv beløp (Timepakke som fast valg der). Trykk på et kurs: bare de som ikke har betalt (samme påmeldinger som Kalender), med «Tilbake»; lista hentes på nytt hvert 15. sekund. + Ny kunde: navn og telefon, «Knytt til dagens kurs» (påmelding på en ledig plass, med lås) eller «Bare kjøp». Kurven: − antall +, trykk på prisen for å endre den, «Rabatt på kjøpet» i prosent (10/20/50) eller kroner med valgfritt hvorfor; serveren regner og validerer (pris ≥ 0, rabatt ≤ summen) og lagrer opprinnelig pris, ny pris, rabatt, hvem og hvorfor (kasse_justeringer, migrasjon 269), som vises på kvitteringen og i Dagens oppgjør. Betal: to like kort, Vipps (QR-kode) og Kontant (eieren: «Kort» tas helt bort), og «Flere valg» (Del betalingen, Faktura, Vipps-nummer). Dagens oppgjør og Lås i menyen ⋯. Låsen etter 5 minutter og PIN som før.",
             "hvor": "/kasse (admin-ny/kasse.js, admin-ny/kasse.css), api/kasse/kasse.php, app/lib/kassekurv.php, app/lib/kassejustering.php, app/lib/kasse.php, app/lib/poppris.php, db/migrations/269_kasse_pris_og_rabatt.sql, tests/kasse-enkel.php",
             "kode": [
                 {
@@ -7016,7 +7016,12 @@
                         "text:'Flere valg'",
                         "el('b',{text:'Timepakke'})",
                         "},15000);}",
-                        "aria-label':'Meny',text:'⋯'"
+                        "aria-label':'Meny',text:'⋯'",
+                        "el('div',{class:'k-betal2'},"
+                    ],
+                    "ikkeFinnes": [
+                        "el('b',{text:'Kort'})",
+                        "Ikke satt opp"
                     ]
                 },
                 {

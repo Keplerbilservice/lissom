@@ -11,7 +11,7 @@ try{
  const c=await browser.newContext({viewport:{width:1280,height:950}});await c.addCookies([{name:'lissom_sesjon',value:s.token,domain:'lokal.lissom.no',path:'/'}]);
  const p=await c.newPage(),errors=[];p.on('pageerror',e=>errors.push(e.message));
  // Folk › Brukere, slik eieren går.
- await p.goto(URL+'#folk');await p.getByRole('heading',{name:'Folk',exact:true}).waitFor();await p.getByRole('link',{name:'Brukere',exact:true}).click();await p.getByRole('heading',{name:'Brukere',exact:true}).waitFor();
+ await p.goto(URL+'#folk');await p.getByRole('heading',{name:'Folk',exact:true}).waitFor();await p.getByRole('button',{name:'Filter',exact:true}).click();await p.getByRole('dialog').getByRole('link',{name:'Brukere',exact:true}).click();await p.getByRole('heading',{name:'Brukere',exact:true}).waitFor();
  await p.getByRole('button',{name:'Ny bruker',exact:true}).click();
  const tilgang=p.getByRole('combobox',{name:'Tilgang',exact:true});
  assert.deepEqual(await tilgang.locator('option').allTextContents(),['Medlem','Kursholder','Regnskap','Administrator']);

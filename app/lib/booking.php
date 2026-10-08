@@ -3021,6 +3021,11 @@ final class Booking
             $liste[] = sprintf('%d × %s — %s', $l['antall'], $l['tittel'],
                 self::kroner((int) $l['pris_ore'] * (int) $l['antall']));
         }
+        // Endret pris og rabatt i iPad-kassa (migrasjon 269): står på
+        // kvitteringen, så summen stemmer med linjene.
+        foreach (KasseJustering::kvitteringslinjer($ordreId) as $t) {
+            $liste[] = $t;
+        }
 
         // ── Henting eller pakke ──────────────────────────────────────
         //

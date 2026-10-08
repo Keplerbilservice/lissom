@@ -6034,7 +6034,7 @@
                 {
                     "fil": "app/lib/poppris.php",
                     "finnes": [
-                        "'belop_ore'       => max($sum, $betalt),",
+                        "'belop_ore'       => max($sum - $rabatt, $betalt),",
                         "'Betalt: ' . $kr . '. Prisen på gjenstandene betaler du i verkstedet. De ' . $kroner"
                     ]
                 },
@@ -6528,14 +6528,10 @@
                     "fil": "admin-ny/kasse.js",
                     "finnes": [
                         "'Hvem står i kassa?'",
-                        "'🎨 Paint on Pots uten booking'",
                         "'Endre: betalte de ved booking?'",
                         "'Betalte ikke'",
-                        "'👤 Kontantkunde'",
-                        "maate('Vipps','Kunden skanner QR'",
-                        "maate('Kontant','Registreres med en gang'",
-                        "maate('Del betalingen','To eller flere betaler'",
-                        "maate('Betalt på annen måte','Vipps-nummer, faktura'",
+                        "kort({onclick:()=>{lukk();deltArk();}},el('b',{text:'Del betalingen'}),el('small',{text:'To eller flere betaler'}))",
+                        "kort({onclick:()=>{lukk();registrer('Vipps','med Vipps-nummer');}},el('b',{text:'Vipps-nummer'}),el('small',{text:'Betalt på annen måte'}))",
                         "'Telles ved stenging'"
                     ]
                 },
@@ -6960,6 +6956,81 @@
                         "uploads_verksted-1.jpg",
                         "uploads_verksted-2.jpg",
                         "uploads_verksted-3.jpg"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "enkel-kasse-oppsett-a-20261008",
+            "dato": "2026-10-08",
+            "hva": "Den enklere kassa på iPad (eieren «ja» 8. oktober 2026, oppsett A fra fremvisningen enkel-kasse.html): valgene til venstre (61 %), kurven fast til høyre (34 %). Venstre: Kontantkunde og + Ny kunde; «Dagens kurs» fire i bredden med klokkeslett, navn og rødt «N skal betale», sortert etter tid, bare kurs der noen skal betale, kort med fast høyde, bare venstre flate ruller; «Paint on Pots · prislisten» (de fire nivåene fra pop_prisnivaer); «Annet salg»: Varer, Gavekort, Skriv beløp (Timepakke som fast valg der). Trykk på et kurs: bare de som ikke har betalt (samme påmeldinger som Kalender), med «Tilbake»; lista hentes på nytt hvert 15. sekund. + Ny kunde: navn og telefon, «Knytt til dagens kurs» (påmelding på en ledig plass, med lås) eller «Bare kjøp». Kurven: − antall +, trykk på prisen for å endre den, «Rabatt på kjøpet» i prosent (10/20/50) eller kroner med valgfritt hvorfor; serveren regner og validerer (pris ≥ 0, rabatt ≤ summen) og lagrer opprinnelig pris, ny pris, rabatt, hvem og hvorfor (kasse_justeringer, migrasjon 269), som vises på kvitteringen og i Dagens oppgjør. Betal: Vipps (QR-kode), Kort, Kontant, og «Flere valg» (Del betalingen, Faktura, Vipps-nummer). Dagens oppgjør og Lås i menyen ⋯. Låsen etter 5 minutter og PIN som før.",
+            "hvor": "/kasse (admin-ny/kasse.js, admin-ny/kasse.css), api/kasse/kasse.php, app/lib/kassekurv.php, app/lib/kassejustering.php, app/lib/kasse.php, app/lib/poppris.php, db/migrations/269_kasse_pris_og_rabatt.sql, tests/kasse-enkel.php",
+            "kode": [
+                {
+                    "fil": "admin-ny/kasse.js",
+                    "finnes": [
+                        "el('h3',{text:'Dagens kurs'})",
+                        "el('h3',{text:'Paint on Pots · prislisten'})",
+                        "el('h3',{text:'Annet salg'})",
+                        "el('b',{text:'Kontantkunde'}),el('small',{text:'Salg uten navn'})",
+                        "el('b',{text:'+ Ny kunde'}),el('small',{text:'Navn og telefon'})",
+                        "text:k.skalBetale+' skal betale'",
+                        "text:'Rabatt på kjøpet'",
+                        "text:'Bare kjøp'",
+                        "el('h3',{text:'Knytt til dagens kurs'})",
+                        "'Pris endret fra '",
+                        "el('b',{text:'Vipps'}),el('small',{text:'QR-kode'})",
+                        "el('b',{text:'Kontant'})",
+                        "text:'Flere valg'",
+                        "el('b',{text:'Timepakke'})",
+                        "},15000);}",
+                        "aria-label':'Meny',text:'⋯'"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kasse.css",
+                    "finnes": [
+                        ".k-a{flex:1;box-sizing:border-box;display:grid;grid-template-columns:minmax(0,61fr) minmax(0,34fr);",
+                        ".k-g4{grid-template-columns:repeat(4,minmax(0,1fr))}",
+                        ".k-k.valgt{border:2px solid #ffcf38;background:#fff3c9}"
+                    ]
+                },
+                {
+                    "fil": "app/lib/kassekurv.php",
+                    "finnes": [
+                        "public static function nyKunde(string $navn, string $telefonRaa, int $oktId, int $antall, array $person): array",
+                        "if (Booking::ledigePlasser($oktId, true) < $antall) {",
+                        "public static function kurs(int $oktId): array",
+                        "throw new RuntimeException('Rabatten kan ikke være større enn ' . self::kr($base) . '.');",
+                        "throw new RuntimeException('Prisen må være 0 kroner eller mer.');"
+                    ]
+                },
+                {
+                    "fil": "app/lib/kassejustering.php",
+                    "finnes": [
+                        "if (DB::verdi('SELECT id FROM kasse_justeringer WHERE nokkel = :k', ['k' => $nokkel]) !== null) {",
+                        "DB::kjor('UPDATE kasse_justeringer SET erstattet_at = UTC_TIMESTAMP() WHERE id IN ('"
+                    ]
+                },
+                {
+                    "fil": "app/lib/kasse.php",
+                    "finnes": [
+                        "KasseJustering::settBooking($d, $nokkel, $person);",
+                        "KasseJustering::settOrdre($d, $nokkel, $ordreId, $person);"
+                    ]
+                },
+                {
+                    "fil": "api/kasse/kasse.php",
+                    "finnes": [
+                        "case 'nyKunde':",
+                        "if (isset($_GET['okt'])) {"
+                    ]
+                },
+                {
+                    "fil": "db/migrations/269_kasse_pris_og_rabatt.sql",
+                    "finnes": [
+                        "CREATE TABLE IF NOT EXISTS kasse_justeringer (",
+                        "ADD COLUMN IF NOT EXISTS kasse_rabatt_ore INT NOT NULL DEFAULT 0"
                     ]
                 }
             ]

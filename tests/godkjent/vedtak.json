@@ -6912,6 +6912,27 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "kursbevis-eksempel-20261008",
+            "dato": "2026-10-08",
+            "hva": "Eieren, 8. oktober 2026 («bare send oss et tomt kursbevis», valgt «Ja, lag eksempel og send»): lissom.no/k/eksempel viser kursbeviset med Ola Nordmann, Nybegynner dreiekurs og dagens dato, Monica som instruktør. Ingen påmelding, noindex.",
+            "hvor": "lissom.no/k/eksempel",
+            "kode": [
+                {
+                    "fil": "api/kursbevis.php",
+                    "finnes": [
+                        "$navn = 'Ola Nordmann';",
+                        "$kurs = 'Nybegynner dreiekurs';"
+                    ]
+                },
+                {
+                    "fil": ".htaccess",
+                    "finnes": [
+                        "RewriteRule ^k/eksempel$ /api/kursbevis.php?eksempel=1 [L]"
+                    ]
+                }
+            ]
         }
     ]
 }

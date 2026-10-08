@@ -18,6 +18,19 @@ declare(strict_types=1);
 require __DIR__ . '/_boot.php';
 
 Foresporsel::krevMetode('GET');
+// Eksempelet (eieren, 8. oktober 2026: «bare send oss et tomt kursbevis»):
+// /k/eksempel viser arket med et oppdiktet navn og kurs, uten paamelding,
+// slik at det kan sendes for aa se hvordan SMS-en og beviset ser ut.
+$eksempel = Foresporsel::tekst('eksempel') === '1';
+if ($eksempel) {
+    $medKode = true;
+    $navn = 'Ola Nordmann';
+    $kurs = 'Nybegynner dreiekurs';
+    $dato = Booking::norskDatoKort(gmdate('Y-m-d H:i:s'));
+    $instruktor = 'Monica Væthe-Larsen';
+    $signatur = 'signatur-monica.png';
+    header('X-Robots-Tag: noindex');
+} else {
 // Lenken i e-posten etter kurset har en personlig kode (?k=), og virker uten
 // innlogging — ogsaa for den som booket uten konto. Eieren, 25. september
 // 2026: kursbeviset sendes ut sammen med Google-anmeldelsen. Uten kode
@@ -135,6 +148,8 @@ if (!preg_match('/^[A-Za-z0-9._-]+\.(png|jpg|jpeg|svg)$/', $signatur)
     && preg_match('~^api/bilde\.php\?artikkel=[A-Za-z0-9._-]{1,120}$~', $signatur) !== 1) {
     $signatur = '';
 }
+
+} // slutt paa ekte paamelding
 
 $e = static fn(string $s): string => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
 

@@ -75,7 +75,7 @@ async function visIdag(){
  person=data.person;laasMs=(data.laasMinutter||5)*60*1000;
  const venstre=[];
  for(const g of data.grupper){venstre.push(el('h3',{text:g.tittel}));for(const r of g.rader)venstre.push(el('button',{type:'button',class:'k-rad',onclick:()=>nyttSalg({bookingId:r.bookingId,navn:r.navn})},el('span',{},r.navn,el('small',{text:r.info})),el('span',{class:'k-merke '+r.pille.tone,text:r.pille.tekst})));}
- if(data.inne.length){venstre.push(el('h3',{text:'Medlemmer inne'}));for(const m of data.inne)venstre.push(el('button',{type:'button',class:'k-rad',onclick:()=>nyttSalg({medlemId:m.medlemId,navn:m.navn})},el('span',{},m.navn,el('small',{text:m.info})),el('span',{class:'k-merke inne',text:'Inne'})));}
+ // Ingen «Medlemmer inne» i kassa (eieren 08.10.2026): bare betaling.
  if(!venstre.length)venstre.push(el('p',{class:'k-tom',text:'Ingen påmeldte i dag.'}));
  rot.replaceChildren(topp('Lissom Kasse · '+data.dato,...personValg()),el('div',{class:'k-innhold'},el('div',{class:'k-kol'},venstre),el('div',{class:'k-kol'},el('h3',{text:'Selg'}),fliser(true))));
 }

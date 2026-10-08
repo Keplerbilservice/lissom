@@ -8,7 +8,7 @@ export const STEDER = [
   ['Kasse · ta betalt', '/admin/uttak'], ['Økonomi og dagsoppgjør', '/admin/okonomi'], ['Nettbutikk', '/admin/butikk'],
   ['Markedsføring', '/admin/markedsforing'], ['Innboks (SoMe)', '/admin/markedsforing?apne=innboks'], ['SEO', '/admin/seo'],
   ['Maler', '/admin/maler'], ['Varsler', '/admin/varsler'], ['Feilmeldinger', '/admin/feilmeldinger'],
-  ['Skisser', '/skisser.html'], ['Det gamle admin', '/admin'],
+  ['Skisser', '/skisser.html'], ['Det gamle admin', '/admin?gammel=1'],
   ['Dugnad', '/admin/ubesvarte?apne=dugnad'], ['Medlemssøknader', '/admin/medlemssoknader'],
   ['Nye påmeldinger', '/admin/nye-pameldinger'], ['Registrer medlem', '/admin/ny-registrering'],
   ['Verkstedet', '/admin/oppskrifter'], ['Vakter', '/admin/oppskrifter?apne=vakter'],

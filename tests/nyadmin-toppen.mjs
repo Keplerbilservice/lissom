@@ -22,6 +22,7 @@ try{
   else{assert.ok(m.hoyre.bottom<=m.sok.top+1,'mobil: knappene over søket');}
   // Søket virker som før.
   await p.getByRole('searchbox',{name:'Søk etter personer og funksjoner'}).fill('kurs');await p.locator('.search-results a').first().waitFor();
+  await p.locator('.search-wrap input').focus();await p.waitForTimeout(250);
   assert.equal(await p.evaluate(()=>getComputedStyle(document.querySelector('.search-wrap input')).backgroundColor)!=='rgba(0, 0, 0, 0)',true,'boksen kommer når du trykker i søket');
   if(width===1280)await p.screenshot({path:`/tmp/toppen-${width}.png`}).catch(()=>{});
   assert.deepEqual(errors,[]);console.log(width+' px: toppen — diskret søk, Stemple og Ovn samlet, Hvem er inne? bare på I dag.');await c.close();

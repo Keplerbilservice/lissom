@@ -56,6 +56,9 @@ $kursbevis = static function (array $b, bool $betalt): ?string {
 
 // Kom med migrasjon 045.
 $bevisFelt = DB::harKolonne('bookings', 'bevis_sperret') ? 'b.bevis_sperret,' : '';
+// Beloep ved booking (migrasjon 260): bare da gjelder kursets egen frist.
+$depFelt = DB::harKolonne('bookings', 'avbestilling_timer')
+    ? 'b.depositum_ore, b.avbestilling_timer,' : 'NULL AS depositum_ore, NULL AS avbestilling_timer,';
 
 /** Bildene deltakeren har lagt inn paa én paamelding. Kom med migrasjon 055. */
 $bilder = static function (int $bookingId): array {
@@ -74,7 +77,7 @@ $bilder = static function (int $bookingId): array {
 };
 
 $bookinger = DB::alle(
-    "SELECT b.id, b.course_id, b.antall, b.status, b.belop_ore, b.created_at, {$bevisFelt}
+    "SELECT b.id, b.course_id, b.antall, b.status, b.belop_ore, b.created_at, {$bevisFelt} {$depFelt}
             c.tittel, c.tema, cs.start_tid, cs.slutt_tid, p.vipps_reference
        FROM bookings b
        JOIN courses c ON c.id = b.course_id
@@ -88,7 +91,7 @@ $bookinger = DB::alle(
 
 $plasser = [];
 foreach ($bookinger as $b) {
-    [$fristTekst, $kanAvbestille] = $frist($b['start_tid'], PopPris::avbestillingTimer((int) $b['course_id']));
+    [$fristTekst, $kanAvbestille] = $frist($b['start_tid'], PopPris::fristFor($b));
     $betalt = $b['status'] === 'betalt';
 
     $plasser[] = [

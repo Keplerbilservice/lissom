@@ -30,8 +30,8 @@ try {
     $ok = PopPris::kodeStemmer($id, $kode);
     if ($ok) {
         $b = DB::en(
-            'SELECT b.id, b.status, b.antall, b.course_id, b.gjenstander_ore,
-                    COALESCE(b.depositum_ore, 0) AS depositum_ore, c.tittel, cs.start_tid
+            'SELECT b.id, b.status, b.antall, b.course_id, b.gjenstander_ore, b.depositum_ore,
+                    b.avbestilling_timer, c.tittel, cs.start_tid
                FROM bookings b
                JOIN courses c ON c.id = b.course_id
           LEFT JOIN course_sessions cs ON cs.id = b.course_session_id
@@ -60,16 +60,32 @@ if (!$ok || $b === null) {
     $linjer = ['Denne plassen kan ikke avbestilles her lenger. Ta kontakt med oss.'];
 } else {
     $timerIgjen = (strtotime((string) $b['start_tid'] . ' UTC') - time()) / 3600;
-    $frist = PopPris::avbestillingTimer((int) $b['course_id']);
+    $frist = PopPris::fristFor($b);
     $regel = Booking::avbestillingsregel($timerIgjen, $frist);
     $n = (int) $b['antall'];
-    $belop = str_replace("\u{a0}", ' ', PopPris::kr((int) $b['depositum_ore']));
+    // Det som faktisk gaar tilbake: Vipps-delen til Vipps, gavekortdelen til
+    // kortet (samme deling som api/avbestill.php).
+    $vipps = 0;
+    $gave = 0;
+    foreach (Booking::betalingerFor((int) $b['id'])['rader'] as $p) {
+        if ($p['annullert_at'] !== null || !in_array((string) $p['status'], ['betalt', 'delvis_refundert'], true)) {
+            continue;
+        }
+        $gave += Booking::gavekortBrukt((int) $p['id']);
+        if ((string) $p['type'] !== 'manuell') {
+            $vipps += max(0, (int) $p['belop_ore'] - (int) $p['refundert_ore']);
+        }
+    }
+    $kr = static fn(int $ore): string => str_replace("\u{a0}", ' ', PopPris::kr($ore));
     $tittel = 'Avbestill ' . (string) $b['tittel'];
     $linjer = [
         Booking::norskDato((string) $b['start_tid']) . ' · ' . $n . ($n === 1 ? ' person' : ' personer'),
-        $regel['andel'] >= 1.0
-            ? 'Du får ' . $belop . ' tilbake på Vipps.'
-            : 'Det er mindre enn ' . ($frist ?? 48) . ' timer igjen, så beløpet beholdes.',
+        $regel['andel'] < 1.0
+            ? 'Det er mindre enn ' . ($frist ?? 48) . ' timer igjen, så beløpet beholdes.'
+            : ($gave > 0
+                ? ($vipps > 0 ? 'Du får ' . $kr($vipps) . ' tilbake på Vipps og ' : 'Du får ')
+                  . $kr($gave) . ' tilbake på gavekortet.'
+                : 'Du får ' . $kr($vipps) . ' tilbake på Vipps.'),
     ];
     $knapp = true;
 }

@@ -69,7 +69,9 @@ ALTER TABLE bookings
   ADD COLUMN IF NOT EXISTS gjenstander_ore INT UNSIGNED NULL
       COMMENT 'Summen av gjenstandene slått inn i kassa. NULL = ikke slått inn ennå.',
   ADD COLUMN IF NOT EXISTS avbestill_kode CHAR(32) NULL
-      COMMENT 'Koden i avbestillingslenka i bekreftelsen (Paint on Pots).';
+      COMMENT 'Koden i avbestillingslenka i bekreftelsen (Paint on Pots).',
+  ADD COLUMN IF NOT EXISTS avbestilling_timer SMALLINT UNSIGNED NULL
+      COMMENT 'Fristen som gjaldt da bookingen ble gjort (Paint on Pots). Endres den i admin, gjelder den nye for nye bookinger.';
 
 -- Paint on Pots-kurset: 100 kr per person ved booking, avbestilling senest
 -- 24 timer før, og ingen «fra»-pris. Bare kurset; ingen økter eller

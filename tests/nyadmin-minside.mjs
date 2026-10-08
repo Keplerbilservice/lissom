@@ -1,5 +1,6 @@
 // admin-ny: SEO/GEO/Tekster henter kartene bak krev_admin (ikke .json rett),
 // og «Min side» har bryter per modul + «Se som medlem» (eieren 3. oktober 2026).
+// Fra 8. oktober 2026: #minside peker til #medlemmene (admin-ny/medlemmene.js).
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {execFileSync} from 'node:child_process';
@@ -21,37 +22,39 @@ try{
    await p.goto(`${ADR}/admin-ny.html#${r}`);await p.getByRole('heading',{name,exact:true}).waitFor();await p.getByRole('searchbox',{name:sok}).waitFor();
    assert.ok(await p.locator('article.list-item').count()>3,r+': listen er fylt');
   }
-  // 3) Min side: bryter per modul.
-  await p.goto(`${ADR}/admin-ny.html#minside`);await p.getByRole('heading',{name:'Min side',exact:true}).waitFor();
-  assert.equal(await p.locator('article.list-item').count(),25,'alle modulene står i lista');
-  const rad=p.locator('article.list-item').filter({hasText:'Stemple inn og timene dine'});
-  if(await rad.getByRole('button',{name:'Slå på',exact:true}).count()){await rad.getByRole('button',{name:'Slå på',exact:true}).click();await p.getByRole('dialog').getByRole('button',{name:'Slå på',exact:true}).click();await p.waitForTimeout(800);}
-  await rad.getByRole('button',{name:'Slå av',exact:true}).click();await p.getByRole('dialog').getByRole('button',{name:'Slå av',exact:true}).click();
-  await p.locator('article.list-item').filter({hasText:'Stemple inn og timene dine'}).getByText('Skjult',{exact:true}).waitFor();
-  // «Se som medlem»: den eksisterende forhåndsvisningen i en ramme.
+  // 3) Medlemmene (eieren 08.10): #minside peker hit; fire fliser, forhåndsvisning og én bryter per modul (uten bekreftelse).
+  await p.goto(`${ADR}/admin-ny.html#minside`);await p.getByRole('heading',{name:'Medlemmene',exact:true}).waitFor();
+  assert.equal(new URL(p.url()).hash,'#medlemmene','#minside peker til #medlemmene');
+  for(const t of ['Beskjed','Internt kurs','Vare','Kampanje'])await p.locator(`button.mm-flis[data-ny="${t}"]`).waitFor();
+  assert.equal(await p.locator('.mm-rad').count(),25,'alle modulene står i lista');
+  const sw=navn=>p.getByRole('switch',{name:new RegExp('^'+navn+': (på|av)$')});
+  const sett=async(navn,paa)=>{const b=sw(navn);if((await b.getAttribute('aria-checked'))!==String(paa)){await b.click();await p.getByRole('switch',{name:`${navn}: ${paa?'på':'av'}`,exact:true}).waitFor();}};
+  await sett('Stemple inn og timene dine',true);await sett('Stemple inn og timene dine',false);
+  // «Dette ser medlemmene»: den eksisterende forhåndsvisningen i en ramme.
   await p.frameLocator('iframe[title="Min side slik et medlem ser den"]').getByText(/Slik ser Min side ut for et medlem/).first().waitFor({timeout:20000});
   // Medlemmet ser ikke modulen.
   const m=await browser.newContext({viewport:{width,height:950}});await m.addCookies([{name:'lissom_sesjon',value:medlem.token,domain:'lokal.lissom.no',path:'/'}]);await m.addInitScript(()=>localStorage.setItem('lissom-samtykke','nei'));
   const mp=await m.newPage();mp.on('pageerror',e=>errors.push('medlem: '+e.message));await mp.goto(`${ADR}/min-side`);await mp.getByRole('switch',{name:'Ovnen: vis/skjul',exact:true}).waitFor();
   assert.equal(await mp.locator('[data-ms-modul="stempel"]').isVisible(),false,'stempel skjult for medlemmet');
   // Slå på igjen — modulen er tilbake.
-  await p.locator('article.list-item').filter({hasText:'Stemple inn og timene dine'}).getByRole('button',{name:'Slå på',exact:true}).click();await p.getByRole('dialog').getByRole('button',{name:'Slå på',exact:true}).click();
-  await p.locator('article.list-item').filter({hasText:'Stemple inn og timene dine'}).getByText('Vises',{exact:true}).waitFor();
+  await sett('Stemple inn og timene dine',true);
   await mp.reload();await mp.getByRole('switch',{name:'Stemple inn og timene dine: vis/skjul',exact:true}).waitFor();assert.equal(await mp.locator('[data-ms-modul="stempel"]').isVisible(),true,'stempel tilbake');
   // Ovnen av: bare ovn-delen forsvinner, «Ta med barn» i samme kort står (egen bryter).
-  const barnRad=()=>p.locator('article.list-item').filter({hasText:'Ta med barn'});const barnVarAv=await barnRad().getByRole('button',{name:'Slå på',exact:true}).count()>0;
-  if(barnVarAv){await barnRad().getByRole('button',{name:'Slå på',exact:true}).click();await p.getByRole('dialog').getByRole('button',{name:'Slå på',exact:true}).click();await barnRad().getByText('Vises',{exact:true}).waitFor();await mp.reload();await mp.getByRole('switch',{name:'Ta med barn: vis/skjul',exact:true}).waitFor();}
+  const barnVarAv=(await sw('Ta med barn').getAttribute('aria-checked'))==='false';
+  if(barnVarAv){await sett('Ta med barn',true);await mp.reload();await mp.getByRole('switch',{name:'Ta med barn: vis/skjul',exact:true}).waitFor();}
   assert.equal(await mp.locator('[data-ms-modul="barn"]').isVisible(),true,'barn vises før');
-  const ovn=()=>p.locator('article.list-item').filter({hasText:'Ovnen'});
-  await ovn().getByRole('button',{name:'Slå av',exact:true}).click();await p.getByRole('dialog').getByRole('button',{name:'Slå av',exact:true}).click();await ovn().getByText('Skjult',{exact:true}).waitFor();
+  await sett('Ovnen',false);
   await mp.reload();await mp.getByRole('switch',{name:'Ta med barn: vis/skjul',exact:true}).waitFor();
   assert.equal(await mp.getByRole('button',{name:'Råbrann satt',exact:true}).count(),0,'ovn-delen borte');
   assert.equal(await mp.getByRole('switch',{name:'Ovnen: vis/skjul',exact:true}).isVisible(),false,'ovn-bryteren skjult');
   assert.equal(await mp.locator('[data-ms-modul="barn"]').isVisible(),true,'Ta med barn står når Ovnen er av');
-  await ovn().getByRole('button',{name:'Slå på',exact:true}).click();await p.getByRole('dialog').getByRole('button',{name:'Slå på',exact:true}).click();await ovn().getByText('Vises',{exact:true}).waitFor();
-  if(barnVarAv){await barnRad().getByRole('button',{name:'Slå av',exact:true}).click();await p.getByRole('dialog').getByRole('button',{name:'Slå av',exact:true}).click();await barnRad().getByText('Skjult',{exact:true}).waitFor();}
+  await sett('Ovnen',true);
+  if(barnVarAv)await sett('Ta med barn',false);
+  // Beskjed-arket: «Legg ut» og «Legg ut og send SMS» (ingenting sendes her).
+  await p.locator('button.mm-flis[data-ny="Beskjed"]').click();const ark=p.getByRole('dialog',{name:'Beskjed til alle medlemmer'});
+  await ark.getByRole('button',{name:'Legg ut',exact:true}).waitFor();await ark.getByRole('button',{name:'Legg ut og send SMS',exact:true}).waitFor();await ark.getByRole('button',{name:'Avbryt',exact:true}).click();
   assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,width+': ingen vannrett rulling');
   assert.deepEqual(json403,[],'ingen .json-feil');assert.deepEqual(errors,[]);
-  await m.close();await c.close();console.log(width+' px: SEO/GEO/Tekster laster, Min side-brytere og Se som medlem bestått.');
+  await m.close();await c.close();console.log(width+' px: SEO/GEO/Tekster laster, Medlemmene: fliser, brytere og forhåndsvisning bestått.');
  }
 }finally{await browser.close();fixture('cleanup',admin);fixture('cleanup',medlem);}

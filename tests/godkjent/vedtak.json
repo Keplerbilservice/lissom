@@ -6270,6 +6270,54 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "admin-ny-medlemmene-20261008",
+            "dato": "2026-10-08",
+            "hva": "«Medlemmene» i admin-ny (fasit: skjermen Medlemmene i enklere-admin-visning): fire fliser «Legg ut til medlemmene» (Beskjed med «Legg ut» = bare Min side og «Legg ut og send SMS» = vanlig utsending, Internt kurs = kurs med tema «Kun for medlemmer», Vare = internbutikken, Kampanje = campaignEditor med publikum medlemmer), «Dette ser medlemmene» (samme forhåndsvisning /admin?apne=fhmedlem, Mobil/PC) og «Slå av og på» (samme Vis/*-brytere som Min side, forhåndsvisningen lastes på nytt med en gang). #minside peker til #medlemmene.",
+            "hvor": "admin-ny/medlemmene.js, admin-ny/app.js (registrering), admin-ny/innhold-og-kurs.js (MINSIDE_MODULER), api/admin/beskjed.php (handling=tavle), tests/nyadmin-minside.mjs",
+            "kode": [
+                {
+                    "fil": "admin-ny/medlemmene.js",
+                    "finnes": [
+                        "etikett('Legg ut til medlemmene')",
+                        "flis('✉','Beskjed','Til alle medlemmer',nyBeskjed)",
+                        "flis('◇','Internt kurs','Bare for medlemmer',",
+                        "flis('▢','Vare','I internbutikken',",
+                        "flis('★','Kampanje','Banner på Min side',",
+                        "el('h2',{text:'Dette ser medlemmene'})",
+                        "card('Slå av og på',",
+                        "src:'/admin?apne=fhmedlem'",
+                        "kjor({handling:'tavle'},'Lagt ut på Min side.')",
+                        "kjor({til:'medlemmer',ogsaaSms:'ja'},'Lagt ut og sendt.')",
+                        "tema:'Kun for medlemmer'",
+                        "kunMedlemmer:'ja',iNettbutikk:'nei'",
+                        "campaignEditor({publikum:'medlemmer'}",
+                        "history.replaceState(null,'','#medlemmene')",
+                        "frame.contentWindow.location.reload()"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/app.js",
+                    "finnes": [
+                        "import {medlemmeneScreens} from './medlemmene.js';",
+                        "Object.assign(RENDERERS,medlemmeneScreens(refresh));"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/innhold-og-kurs.js",
+                    "finnes": [
+                        "export const MINSIDE_MODULER=[['Kampanje til medlemmer','Vis/medlemskampanje',false,'']"
+                    ]
+                },
+                {
+                    "fil": "api/admin/beskjed.php",
+                    "finnes": [
+                        "if (Foresporsel::tekst('handling') === 'tavle') {",
+                        "Svar::ok(['beskjed' => 'Lagt ut på Min side.']);"
+                    ]
+                }
+            ]
         }
     ]
 }

@@ -18,6 +18,7 @@ import {commerceScreens,commerceRoutes} from './kasse-og-handel.js';
 import {marketScreens,marketRoutes} from './marked.js';
 import {chatScreens,chatPlaces} from './chat.js';
 import {STEDER} from './steder.js';
+import {medlemmeneScreens} from './medlemmene.js';
 
 // A separate interface. No legacy administrator page is mounted or framed.
 const NAV=[['idag','I dag','◉'],['kalender','Kalender','▦'],['kurs','Kurs','◇'],['folk','Folk','♧'],['penger','Penger','○'],['butikk','Butikk','▢'],['verksted','Verksted','⌂'],['innhold','Innhold','✎'],['marked','Markedsføring','✦'],['alle','Alle funksjoner','☷']];
@@ -187,6 +188,7 @@ RENDERERS.lenker=()=>usefulLinks(refresh);
 RENDERERS.bilder=()=>imageLibrary(refresh);
 Object.assign(RENDERERS,chatScreens());
 Object.assign(RENDERERS,standardScreens(refresh),adminScreens(refresh),marketingExtras(refresh),recordScreens(refresh),extraScreens(refresh),contentScreens(refresh),setupScreens(refresh),commerceScreens(refresh),marketScreens(refresh));
+Object.assign(RENDERERS,medlemmeneScreens(refresh));
 let lastHash=location.hash;
 document.querySelector('.skip').addEventListener('click',e=>{e.preventDefault();main.focus();});
 shell();window.addEventListener('hashchange',async()=>{if(hasUnsaved()){if(!await confirm('Forkaste endringene?','Du har ulagret tekst. Vil du forkaste den og bytte side?','Forkast')){history.replaceState(null,'',lastHash||'#idag');return;}discardUnsaved();}lastHash=location.hash;iAppen=true;render();});render();

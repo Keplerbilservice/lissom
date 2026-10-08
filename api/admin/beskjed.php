@@ -60,6 +60,26 @@ if (mb_strlen($tekst) > 4000) {
     Svar::feil('Meldingen er for lang.');
 }
 
+// «Legg ut» fra Medlemmene i admin-ny (eieren, 8. oktober 2026): beskjeden
+// legges bare paa oppslagstavla paa Min side, uten e-post og uten SMS. Samme
+// tabell som utsendingen under skriver til. «Legg ut og send SMS» gaar den
+// vanlige veien (til=medlemmer, ogsaaSms=ja).
+if (Foresporsel::tekst('handling') === 'tavle') {
+    try {
+        DB::settInn('medlemsbeskjeder', [
+            'tittel' => $emne,
+            'tekst'  => $tekst,
+            'type'   => '',
+            'av'     => mb_substr((string) ($jeg['navn'] ?? ''), 0, 191),
+        ]);
+    } catch (Throwable $e) {
+        logg('Beskjed: fikk ikke lagt ut paa Min side', ['feil' => $e->getMessage()]);
+        Svar::feil('Fikk ikke lagt ut beskjeden. Prøv igjen.', 500);
+    }
+    revider('beskjed_tavle', null, null, ['emne' => $emne]);
+    Svar::ok(['beskjed' => 'Lagt ut på Min side.']);
+}
+
 /** @var list<array{navn:string,epost:?string,telefon:?string}> $mottakere */
 $mottakere = [];
 $hvem = '';

@@ -73,6 +73,11 @@ $kontakt = $medlem !== null
 if ($b['status'] === 'avbestilt' || $b['status'] === 'refundert') {
     Svar::feil('Denne plassen er allerede avbestilt.', 409);
 }
+// Gjort opp i kassa (Paint on Pots): da er det ikke en avbestilling lenger,
+// verken fra lenka eller fra Min side.
+if (($b['depositum_ore'] ?? null) !== null && ($b['gjenstander_ore'] ?? null) !== null) {
+    Svar::feil('Denne plassen kan ikke avbestilles her lenger. Ta kontakt med oss.', 409);
+}
 // Lenka i bekreftelsen avbestiller bare en plass som ikke har vaert ennaa,
 // og som ikke er gjort opp i kassa.
 if ($medKode && (!in_array((string) $b['status'], ['betalt', 'reservert'], true)
@@ -138,9 +143,10 @@ if ($betalt === 0 && $gavekort === 0) {
     // Selve regelen staar i Booking::avbestillingsregel(). Den samme brukes
     // av api/mine-plasser.php, som forteller kunden hva hen faar — sto den to
     // steder, kunne de si hver sitt om de samme pengene.
-    // Paint on Pots har sin egen frist (courses.avbestilling_timer). Andre
-    // kurs: null, og vilkaarenes 2 dager gjelder som foer.
-    $r = Booking::avbestillingsregel($timerIgjen, PopPris::avbestillingTimer((int) $b['course_id']));
+    // Paint on Pots har sin egen frist (courses.avbestilling_timer), men bare
+    // for bookinger med beloep ved booking (migrasjon 260). Eldre bookinger og
+    // andre kurs: null, og vilkaarenes 2 dager gjelder som foer.
+    $r = Booking::avbestillingsregel($timerIgjen, PopPris::fristFor($b));
     $andel = $r['andel'];
     $regel = $r['regel'];
 }
@@ -159,7 +165,9 @@ $claim = static function () use ($bookingId, $medlem, $b, &$harClaim, $gavedeler
     $endret = DB::kjor(
     "UPDATE bookings SET status = 'avbestilt', avbestilt_at = UTC_TIMESTAMP()
       WHERE id = :i AND " . ($medlem !== null ? 'member_id = :m' : 'avbestill_kode = :m') . "
-        AND status = :s AND avbestilt_at IS NULL",
+        AND status = :s AND avbestilt_at IS NULL"
+        // Kassa kan ha slaatt inn gjenstandene mens dette sto paa.
+        . (DB::harKolonne('bookings', 'gjenstander_ore') ? ' AND (depositum_ore IS NULL OR gjenstander_ore IS NULL)' : ''),
     ['i' => $bookingId, 'm' => $medlem !== null ? $medlem['id'] : (string) $b['avbestill_kode'], 's' => $b['status']]
     )->rowCount();
     if ($endret !== 1) {

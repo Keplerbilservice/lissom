@@ -981,6 +981,25 @@ if ($handling === 'endre') {
         }
     }
 
+    // Paint on Pots (migrasjon 260): kursprisen er naa beloepet ved booking.
+    //  - Eldre bookinger (depositum_ore NULL) paa et slikt kurs: et nytt antall
+    //    regner ikke beloepet paa nytt — da ville 100 kr × antall erstattet
+    //    det de ble booket til. Skriv beloepet i stedet.
+    //  - Gjenstandene slaatt inn i kassa: beloepet er summen av dem, og
+    //    roeres ikke av et nytt antall.
+    $popDep = false;
+    $popRegnes = true;
+    if (DB::harKolonne('bookings', 'gjenstander_ore') && DB::harKolonne('courses', 'depositum')) {
+        $pr = DB::en(
+            'SELECT b.depositum_ore, b.gjenstander_ore, c.depositum
+               FROM bookings b JOIN courses c ON c.id = b.course_id WHERE b.id = :i',
+            ['i' => $id]
+        );
+        $popDep = $pr !== null && $pr['depositum_ore'] !== null;
+        $popRegnes = $pr === null
+            || ($pr['gjenstander_ore'] === null && ((int) $pr['depositum'] !== 1 || $popDep));
+    }
+
     $belopRaa = trim(Foresporsel::tekst('belop'));
     if ($belopRaa !== '') {
         $belop = (int) round((float) str_replace(',', '.', $belopRaa) * 100);
@@ -988,13 +1007,10 @@ if ($handling === 'endre') {
             Svar::feil('Beløpet må være mellom 0 og 100 000 kroner.');
         }
         $felt['belop_ore'] = $belop;
-    } elseif ((isset($felt['antall']) || $rabatt !== null)
-        // Paint on Pots: gjenstandene er slaatt inn i kassa (migrasjon 260).
-        // Da er beloepet summen av dem, ikke kursprisen gange antall — det
-        // roeres ikke av et nytt antall.
-        && (!DB::harKolonne('bookings', 'gjenstander_ore')
-            || DB::verdi('SELECT gjenstander_ore FROM bookings WHERE id = :i', ['i' => $id]) === null)) {
-        $prisKol = DB::harKolonne('course_sessions', 'pris_ore')
+    } elseif ((isset($felt['antall']) || $rabatt !== null) && $popRegnes) {
+        // Beloep ved booking staar paa kurset, ikke paa oekta (som
+        // Booking::reserverOgBetal()).
+        $prisKol = DB::harKolonne('course_sessions', 'pris_ore') && !$popDep
             ? 'COALESCE(cs.pris_ore, c.pris_ore)' : 'c.pris_ore';
         $pris = DB::verdi(
             "SELECT {$prisKol} FROM course_sessions cs

@@ -165,7 +165,15 @@ switch (Foresporsel::tekst('handling', 'registrer')) {
               LIMIT 1",
             ['b' => $bookingId, 'b2' => $bookingId]
         );
-        if ($viaVipps !== null) {
+        // Unntak: Paint on Pots med beloep ved booking (migrasjon 260). Vipps
+        // dekket bare beloepet ved booking; naar gjenstandene er slaatt inn i
+        // kassa, er resten (beloep minus betalt) noe som skal registreres her.
+        $popRest = DB::harKolonne('bookings', 'gjenstander_ore')
+            && DB::verdi(
+                'SELECT 1 FROM bookings WHERE id = :i AND depositum_ore IS NOT NULL AND gjenstander_ore IS NOT NULL',
+                ['i' => $bookingId]
+            ) !== null;
+        if ($viaVipps !== null && !$popRest) {
             Svar::feil('Denne er betalt gjennom Vipps. Bruk refusjon under Økonomi hvis noe skal rettes.');
         }
 

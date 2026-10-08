@@ -1189,6 +1189,13 @@ final class Booking
         // «betal ved oppmoete». Katalogen tilbyr det ikke, og et kall rett hit
         // avvises med samme beskjed som naar bryteren er av.
         $depositum = (int) ($okt['depositum'] ?? 0) === 1;
+        // Beloepet ved booking staar paa kurset (settes i admin). En egen pris
+        // paa en enkelt oekt gjelder ikke da — den ville blitt trukket som
+        // «beloep ved booking».
+        if ($depositum) {
+            $okt['pris_ore'] = (int) DB::verdi('SELECT pris_ore FROM courses WHERE id = :k', ['k' => (int) $okt['course_id']]);
+            $gratis = (int) $okt['pris_ore'] === 0;
+        }
         $oppmote = $utenForskudd && !$gratis && !$depositum && Oppmote::kurs();
         if ($utenForskudd && !$gratis && !$oppmote) {
             throw new RuntimeException('Dette kurset må betales når du melder deg på.');
@@ -1295,6 +1302,11 @@ final class Booking
             // som skiller en slik booking fra en eldre (migrasjon 260).
             if ($depositum && !$gratis && DB::harKolonne('bookings', 'depositum_ore')) {
                 $felter['depositum_ore'] = $belop;
+                // Fristen som loves i bekreftelsen, saa en senere endring i
+                // admin ikke endrer den for denne bookingen.
+                if (DB::harKolonne('bookings', 'avbestilling_timer')) {
+                    $felter['avbestilling_timer'] = PopPris::avbestillingTimer((int) $okt['course_id']);
+                }
             }
 
             // Kolonnen kommer med migrasjon 057. Er den ikke kjort, skal en

@@ -165,6 +165,19 @@ sjekk('23,9 timer før: beholdes', Booking::avbestillingsregel(23.9, 24)['andel'
 sjekk('andre kurs: 2 dager som før', Booking::avbestillingsregel(30.0)['andel'] === 0.0
     && Booking::avbestillingsregel(49.0)['andel'] === 1.0);
 sjekk('fristen leses fra kurset', PopPris::avbestillingTimer($kurs) === 24);
+sjekk('… men fristen lagret på bookingen går foran',
+    PopPris::fristFor(['depositum_ore' => 20000, 'avbestilling_timer' => 48, 'course_id' => $kurs]) === 48);
+sjekk('eldre booking på kurset: vilkårenes 2 dager (null)',
+    PopPris::fristFor(['depositum_ore' => null, 'avbestilling_timer' => null, 'course_id' => $kurs]) === null);
+
+echo "\n── Resten registreres i «Ta betalt» ─────────────────────────\n";
+// Kontrolløren 08.10: «Registrer» avviste alt etter en Vipps-betaling. Paa en
+// PoP-booking som er slaatt inn i kassa skal resten kunne registreres.
+$kb = (string) file_get_contents(__DIR__ . '/../api/admin/kursbetaling.php');
+sjekk('kursbetaling slipper resten gjennom etter kassa',
+    str_contains($kb, "AND depositum_ore IS NOT NULL AND gjenstander_ore IS NOT NULL")
+    && str_contains($kb, 'if ($viaVipps !== null && !$popRest) {'));
+sjekk('kassa tømmer reservert_til', DB::verdi('SELECT reservert_til FROM bookings WHERE id = :i', ['i' => $b1]) === null);
 
 echo "\n── Bekreftelsen ─────────────────────────────────────────────\n";
 [$b4] = $lagBooking(2, 20000);

@@ -136,6 +136,24 @@ final class PopPris
         return $t === null ? null : max(0, (int) $t);
     }
 
+    /**
+     * Fristen for én booking: den som gjaldt da den ble gjort (lovet i
+     * bekreftelsen). Bare bookinger med beloep ved booking — eldre bookinger
+     * og andre kurs faar null, og vilkaarenes 2 dager gjelder som foer.
+     *
+     * @param array<string,mixed> $b bookingraden (depositum_ore, avbestilling_timer, course_id)
+     */
+    public static function fristFor(array $b): ?int
+    {
+        if (($b['depositum_ore'] ?? null) === null) {
+            return null;
+        }
+        if (($b['avbestilling_timer'] ?? null) !== null) {
+            return max(0, (int) $b['avbestilling_timer']);
+        }
+        return self::avbestillingTimer((int) ($b['course_id'] ?? 0));
+    }
+
     /** «500 kr», «1 000 kr» — slik fremvisningen skrev prisene. */
     public static function kr(int $ore): string
     {
@@ -172,7 +190,7 @@ final class PopPris
         }
         $kr = str_replace("\u{a0}", ' ', self::kr($dep));
         $kroner = number_format($dep / 100, 0, ',', ' ');
-        $timer = self::avbestillingTimer((int) ($b['course_id'] ?? 0)) ?? 48;
+        $timer = self::fristFor($b) ?? 48;
         $lenke = self::avbestillLenke((int) $b['id']);
         return 'Betalt: ' . $kr . '. Prisen på gjenstandene betaler du i verkstedet. De ' . $kroner
             . ' kronene trekkes fra. Avbestiller du senest ' . $timer . ' timer før, får du pengene tilbake. '
@@ -298,9 +316,12 @@ final class PopPris
                 DB::settInn('pop_kasselinjer', $l + ['booking_id' => $bookingId, 'registrert_av' => $adminId]);
             }
             $betalt = (int) Booking::betalingerFor($bookingId)['sum'];
+            // reservert_til toemmes: en plass som er gjort opp i kassa skal
+            // ikke slippes av cron fordi en Vipps-frist en gang sto paa den.
             DB::oppdater('bookings', [
                 'belop_ore'       => max($sum, $betalt),
                 'gjenstander_ore' => $sum,
+                'reservert_til'   => null,
             ], ['id' => $bookingId]);
             $st = Booking::settBetaltStatus($bookingId);
             return ['sumOre' => $sum, 'betaltOre' => $betalt, 'skyldigOre' => (int) $st['skyldig']];

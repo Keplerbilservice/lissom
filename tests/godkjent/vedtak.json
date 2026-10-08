@@ -6963,6 +6963,21 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "pop-fra-pris-i-appen-20261008",
+            "dato": "2026-10-08",
+            "hva": "Eieren, 8. oktober 2026: «prisen fjernet fra datovelger … det er gjort på pc, men ikke mobil». Bookingboksen i appen (lissom-2108.html) viser også bare «Fra 500 kr» per gjenstand over datoene på Paint on Pots, ikke hele prislista.",
+            "hvor": "lissom.no/kurs/paint-on-pots i appen (mobil)",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "bPopNivaerVis: false,",
+                        "bPris: 'Fra ' + Math.round(laveste / 100)"
+                    ]
+                }
+            ]
         }
     ]
 }

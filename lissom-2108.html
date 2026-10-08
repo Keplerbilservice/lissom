@@ -59975,7 +59975,7 @@ class Component extends DCLogic {
       erGratis: (this.state.valgtKurs && this.state.valgtKurs.price) === 'Gratis'
              && !(this.state.valgtKurs && this.state.valgtKurs.kunKontakt)
              && this.state.fra !== 'medlemskap',
-      bPrisNote: (this.state.valgtKurs && this.state.valgtKurs.price) === 'Gratis' ? 'for medlemmer' : (this.state.valgtKurs && this.state.valgtKurs.level) === 'Medlemskap' ? ((this.state.valgtKurs.duration || 'per måned')) : ((this.state.valgtKurs || {}).tema !== 'Medlemskap' && (this.state.bAntallN || 1) > 1) ? ('totalt for ' + this.state.bAntallN + ' personer') : 'per person',
+      bPrisNote: (this.katalogKurs().depositum && (this.katalogKurs().popNivaer || []).length) ? 'per gjenstand' : (this.state.valgtKurs && this.state.valgtKurs.price) === 'Gratis' ? 'for medlemmer' : (this.state.valgtKurs && this.state.valgtKurs.level) === 'Medlemskap' ? ((this.state.valgtKurs.duration || 'per måned')) : ((this.state.valgtKurs || {}).tema !== 'Medlemskap' && (this.state.bAntallN || 1) > 1) ? ('totalt for ' + this.state.bAntallN + ' personer') : 'per person',
       vlNavn: this.state.vlNavn || '',
       settVlNavn: e => this.setState({ vlNavn: e.target.value, vlFeil: null }),
       vlEpost: this.state.vlEpost || '',
@@ -60160,8 +60160,10 @@ class Component extends DCLogic {
       // Prisnivaaene i boksen i stedet for én pris (fremvisningen
       // PU3RwTARY6oVYx6dbwaLwo).
       bPopNivaer: this.katalogKurs().depositum ? (this.katalogKurs().popNivaer || []) : [],
-      bPopNivaerVis: !!(this.katalogKurs().depositum && (this.katalogKurs().popNivaer || []).length),
-      bPrisVis: !(this.katalogKurs().depositum && (this.katalogKurs().popNivaer || []).length),
+      // Prisene bare ett sted (eieren, 8. oktober 2026): over datoene bare
+      // «Fra 500 kr», som paa kurssida. Hele lista staar under Priser.
+      bPopNivaerVis: false,
+      bPrisVis: true,
       bookBetalLinje: !this.state.innlogget
         ? 'Du logger inn med Vipps først — så betaler du ' + this.bookSum()
         : 'Du betaler ' + this.bookSum(),
@@ -60869,7 +60871,8 @@ class Component extends DCLogic {
         // Paint on Pots med prisnivaaer (eieren, 8. oktober 2026): boksen
         // viser nivaaene, ikke beloepet ved booking som en pris.
         if (kat2 && kat2.depositum && (kat2.popNivaer || []).length) {
-          return { bPris: '', bPrisAntallNote: '', bRabattLinje: '', bRabattTeaser: '' };
+          const laveste = Math.min(...kat2.popNivaer.map(n => Number(n.prisOre) || 0));
+          return { bPris: 'Fra ' + Math.round(laveste / 100).toLocaleString('nb-NO') + ' kr', bPrisAntallNote: 'Glasur og brenning er med i prisen', bRabattLinje: '', bRabattTeaser: '' };
         }
         if (kat2 && (kat2.gjenstandIKassa || kat2.fraPris) && kat2.prisFraOre) {
           return {

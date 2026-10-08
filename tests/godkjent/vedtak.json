@@ -3154,7 +3154,7 @@
                 {
                     "fil": "admin-ny/ramme.js",
                     "finnes": [
-                        "pamelding:()=>[button('Sett som sett'"
+                        "pamelding:()=>[trykk('Sett som sett'"
                     ]
                 }
             ]
@@ -6651,6 +6651,57 @@
                     "finnes": [
                         "utvalg=p=>!p.rolleAdmin&&finn(p)",
                         "link('Brukere',href('brukere'))])"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "lest-og-sett-paa-serveren",
+            "dato": "2026-10-08",
+            "hva": "Eieren, 8. oktober 2026 («Ok, bygg det» på idé 1 og 2 i forbedringsvisningen): (1) Medlemschatten husker hva hver admin har lest (chat_lest, migrasjon 265). Åpnes Chat i arbeidsrommet, er det som står framme lest. Meldinger-flisen under «Må gjøres» har saken «Medlemschat: N uleste» (under: siste avsender, klokkeslett og start på meldingen) med «Svar» og «Marker som lest». Uten migrasjonen er chatten ikke med, som før. (2) «Sett som sett» på nye påmeldinger lagres på serveren (pamelding_sett, migrasjon 265), så det gjelder på mobil og PC; Kurs-flisen teller bare usette. Uten migrasjonen huskes det i nettleseren som før.",
+            "hvor": "admin-ny › I dag › Må gjøres (Meldinger, Kurs), admin-ny › Chat",
+            "kode": [
+                {
+                    "fil": "api/admin/oversikt.php",
+                    "finnes": [
+                        "'Medlemschat: ' . $n . ' uleste'",
+                        "'settPaaServer' => DB::harTabell('pamelding_sett'),",
+                        "SELECT booking_id FROM pamelding_sett WHERE booking_id IN ("
+                    ]
+                },
+                {
+                    "fil": "api/chat.php",
+                    "finnes": [
+                        "if ($handling === 'lest') {",
+                        "ON DUPLICATE KEY UPDATE sist_lest_id = GREATEST(sist_lest_id, VALUES(sist_lest_id))"
+                    ]
+                },
+                {
+                    "fil": "api/admin/pamelding.php",
+                    "finnes": [
+                        "if ($handling === 'sett') {",
+                        "INSERT IGNORE INTO pamelding_sett (booking_id, sett_av) VALUES (:b, :a)"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/chat.js",
+                    "finnes": [
+                        "api('../chat.php',{handling:'lest',siste:til})"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/ramme.js",
+                    "finnes": [
+                        "chat:()=>[link('Svar','#chat','primary'),trykk('Marker som lest'",
+                        "api('pamelding.php',{handling:'sett',id:s.id})",
+                        "const sett=d.settPaaServer?new Set():settLes();"
+                    ]
+                },
+                {
+                    "fil": "db/migrations/265_lest_og_sett.sql",
+                    "finnes": [
+                        "CREATE TABLE IF NOT EXISTS chat_lest (",
+                        "CREATE TABLE IF NOT EXISTS pamelding_sett ("
                     ]
                 }
             ]

@@ -7,6 +7,7 @@
  *   POST                       { tekst }     send en melding
  *   POST handling=slett        { id }        angre sin egen — admin kan alle
  *   POST handling=angre-slett  { id }        hent en slettet melding tilbake
+ *   POST handling=lest         { siste }     admin har lest hit (migrasjon 265)
  *
  * Meldingene laa i localStorage. De var altsaa synlige bare for den som
  * skrev dem — chatten gikk én vei, og det kom aldri et varsel, fordi det
@@ -117,6 +118,28 @@ Foresporsel::krevMetode('POST');
 Foresporsel::krevSammeOpphav();
 
 $handling = Foresporsel::tekst('handling');
+
+// Lest (eieren, 8. oktober 2026, idé 1): admin har lest chatten fram til
+// { siste }. Meldinger-flisen paa I dag teller det som er nyere. Bare admin;
+// tabellen kommer i migrasjon 265 — er den ikke kjort, gjoer dette ingenting.
+if ($handling === 'lest') {
+    if (!$erAdmin) {
+        Svar::feil('Bare for admin.', 403);
+    }
+    $lagret = false;
+    if (DB::harTabell('chat_lest')) {
+        $hoyest = (int) (DB::verdi('SELECT COALESCE(MAX(id), 0) FROM chat_meldinger') ?? 0);
+        $tilId = min(max(0, Foresporsel::heltall('siste')), $hoyest);
+        DB::kjor(
+            'INSERT INTO chat_lest (member_id, sist_lest_id) VALUES (:m, :s)
+             ON DUPLICATE KEY UPDATE sist_lest_id = GREATEST(sist_lest_id, VALUES(sist_lest_id))',
+            ['m' => $megId, 's' => $tilId]
+        );
+        $lagret = true;
+    }
+    Svar::ok(['lagret' => $lagret]);
+}
+
 if ($handling === 'slett' || $handling === 'angre-slett') {
     $id = Foresporsel::heltall('id');
     $rad = DB::en('SELECT id, member_id FROM chat_meldinger WHERE id = :i', ['i' => $id]);

@@ -21,14 +21,14 @@ const etikett=tekst=>el('h2',{class:'flis-etikett',text:tekst});
 
 /* ── Må gjøres ─────────────────────────────────────────────────────────── */
 const GRUPPER=[['Meldinger','✉'],['Medlemmer','♧'],['Betaling','kr'],['Kurs','◇'],['Verksted','⌂'],['Butikk','▢']];
-/* «Sett som sett» på nye påmeldinger huskes i nettleseren (det finnes ingen sett-status på serveren). */
+/* «Sett som sett» på nye påmeldinger lagres på serveren (migrasjon 265, idé 2 08.10); før den er kjørt huskes det i nettleseren. */
 const SETT='lissom-sett-pameldinger';
 const settLes=()=>{try{return new Set(JSON.parse(localStorage.getItem(SETT)||'[]'));}catch{return new Set();}};
 const settLegg=id=>{const s=settLes();s.add(id);try{localStorage.setItem(SETT,JSON.stringify([...s].slice(-300)));}catch{}};
 const gaa=h=>{if(location.hash===h)window.dispatchEvent(new HashChangeEvent('hashchange'));else location.hash=h;};
 
 function maGjores(d,ctx){
- const sett=settLes();
+ const sett=d.settPaaServer?new Set():settLes();
  const saker=(d.maGjores||[]).filter(s=>!(s.type==='pamelding'&&sett.has(s.id)));
  const gjort=new Set();const nokkel=s=>s.type+':'+s.id;
  const igjen=g=>saker.filter(s=>s.gruppe===g&&!gjort.has(nokkel(s)));
@@ -42,6 +42,7 @@ function maGjores(d,ctx){
   const ferdig=tekst=>{gjort.add(nokkel(s));ark?.close();toast(tekst||'Gjort.');tegn();if(igjen(s.gruppe).length)setTimeout(()=>visGruppe(s.gruppe),0);};
   const trykk=(tekst,gjor,kind='')=>{const b=button(tekst,async()=>{b.disabled=true;try{await gjor();}catch(e){toast(e.message);}finally{b.disabled=false;}},kind);return b;};
   const handlinger=({
+   chat:()=>[link('Svar','#chat','primary'),trykk('Marker som lest',async()=>{await api('../chat.php',{handling:'lest',siste:s.siste});ferdig('Merket som lest.');})],
    henvendelse:()=>[link('Svar','#foresporsler','primary'),trykk('Ferdig',async()=>{await api('foresporsler.php',{id:s.id,status:'besvart'});ferdig('Merket som besvart.');})],
    innboks:()=>[link('Svar','#innboks','primary')],
    feil:()=>[link('Svar','#feilmeldinger','primary'),trykk('Løst',async()=>{await api('feilrapporter.php',{handling:'status',id:s.id,status:'lukket'});ferdig('Merket som løst.');})],
@@ -49,7 +50,7 @@ function maGjores(d,ctx){
    frys:()=>[trykk('Godkjenn frys',async()=>{const r=await api('frys.php',{handling:'godkjenn',id:s.id});ferdig(r.beskjed||'Frysen er godkjent.');},'primary'),trykk('Avslå',async()=>{const r=await api('frys.php',{handling:'avslag',id:s.id});ferdig(r.beskjed||'Frysen er avslått.');})],
    bidrag:()=>[s.bilde?trykk('Godkjenn til galleriet',async()=>{const r=await api('medlemsforslag.php',{handling:'godkjenn',id:s.id,instagram:'0',galleri:'1'});ferdig(r.beskjed||'Godkjent til galleriet.');},'primary'):link('Godkjenn','#medlemsbidrag','primary'),trykk('Avvis',async()=>{if(!await confirm('Avvis','Avvis bidraget. Opplastingen slettes.','Avvis'))return;const r=await api('medlemsforslag.php',{handling:'avvis',id:s.id});ferdig(r.beskjed||'Bidraget er avvist.');},'danger')],
    betaling:()=>[button('Åpne medlemmet',()=>{ark.close();setTimeout(()=>ctx.medlem(s.id),0);},'primary')],
-   pamelding:()=>[button('Sett som sett',()=>{settLegg(s.id);ferdig('Satt som sett.');},'primary'),link('Åpne kurset','#'+s.rute)],
+   pamelding:()=>[trykk('Sett som sett',async()=>{const r=await api('pamelding.php',{handling:'sett',id:s.id});if(!r||!r.lagret)settLegg(s.id);ferdig('Satt som sett.');},'primary'),link('Åpne kurset','#'+s.rute)],
    venteliste:()=>[trykk('Tilby plassen til '+(s.fornavn||'første på lista'),async()=>{const r=await api('venteliste.php',{handling:'varsle',id:s.id});ferdig(r.beskjed);},'primary')],
    henting:()=>[button('Send «Klar til henting»',()=>{ark.close();setTimeout(()=>ctx.henting(s.id),0);},'primary')],
    leire:()=>[link('Åpne bestillingen','#handlelister','primary')],

@@ -8,6 +8,9 @@ export function chatScreens(){
  async function chat(){
   if(poll){clearInterval(poll);poll=null;}
   let meldinger=[],siste=0,nye=0,feil='',henter=false,sender=false;
+  // Lest (idé 1, 08.10.2026): det som står framme her, er lest. Teller ned Meldinger-flisen på I dag.
+  let lestSendt=0;
+  function merkLest(){if(!siste||siste<=lestSendt||document.hidden)return;const til=siste;lestSendt=til;api('../chat.php',{handling:'lest',siste:til}).catch(()=>{lestSendt=0;});}
   const status=el('p',{class:'muted','aria-live':'polite'});
   const nytt=el('span',{class:'badge warn',text:'Nytt',style:'display:none'});
   const liste=el('div',{class:'list',style:'max-height:55vh;max-height:55dvh;overflow-y:auto;gap:10px;display:grid;margin-bottom:14px'});
@@ -37,7 +40,7 @@ export function chatScreens(){
    try{const d=await api('../chat.php'+(!forste&&siste?'?etter='+siste:''));
     if(d&&d.meldinger){const gamle=forste?[]:meldinger;const ny=d.meldinger.filter(m=>!gamle.some(g=>g.id===m.id));
      if(!forste)nye+=ny.filter(m=>!m.egen).length;
-     meldinger=gamle.concat(ny);siste=d.siste||siste;tegn();}
+     meldinger=gamle.concat(ny);siste=d.siste||siste;tegn();merkLest();}
    }catch(e){if(forste){feil=e.message;tegnStatus();}}
    finally{henter=false;}
   }

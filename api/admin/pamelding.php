@@ -12,6 +12,7 @@
  *   POST handling=endre      { id, antall?, belop?, rabatt? }   retter antall og sum
  *   POST handling=bevis      { id, navn?, kurs?, sperret? }  retter kursbeviset
  *   POST handling=bekreftelse { id, oppmote? }  sender paameldingsbekreftelsen
+ *   POST handling=sett       { id }   «Sett som sett» paa en ny paamelding (migrasjon 265)
  *
  * Ikke alle bestiller paa nett. Noen ringer, noen staar i doera. De maa staa
  * paa samme deltakerliste som alle andre — ellers foerer verkstedet to
@@ -45,6 +46,26 @@ const MAATER = ['Kontant', 'Vipps', 'Vipps i verkstedet', 'Gavekort',
 
 $handling = Foresporsel::tekst('handling', 'legg-til');
 $id       = Foresporsel::heltall('id');
+
+// ------------------------------------------------------------ sett
+//
+// «Sett som sett» paa en ny paamelding (eieren, 8. oktober 2026, idé 2).
+// Laa foer bare i nettleseren; naa paa serveren, saa det gjelder paa mobil
+// og PC. Tabellen kommer i migrasjon 265 — er den ikke kjort, svarer vi
+// lagret=false og skjermen husker det i nettleseren som foer.
+if ($handling === 'sett') {
+    if ($id <= 0) {
+        Svar::feil('Mangler påmelding.');
+    }
+    if (!DB::harTabell('pamelding_sett')) {
+        Svar::ok(['lagret' => false]);
+    }
+    DB::kjor(
+        'INSERT IGNORE INTO pamelding_sett (booking_id, sett_av) VALUES (:b, :a)',
+        ['b' => $id, 'a' => (int) ($admin['id'] ?? 0) ?: null]
+    );
+    Svar::ok(['lagret' => true]);
+}
 
 // ------------------------------------------------------------ fjern plass
 //

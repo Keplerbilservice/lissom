@@ -24,9 +24,11 @@
  * tekster: malen eieren har skrevet under Maler er det som gaar ut.
  *
  * En paaminnelse sendt for haand merker hver paamelding den gikk til
- * («paaminnelse:<booking>», migrasjon 270), saa cron ikke sender dem én til
- * dagen foer (eieren 08.10: én SMS per anledning) — men den som meldte seg paa
- * etterpaa, faar cron sin. paaminnelse_sendt_at er «sist sendt». Paaminnelsen
+ * («paaminnelse:<booking>:<oekt>», migrasjon 270), saa cron ikke sender dem
+ * én til dagen foer (eieren 08.10: én SMS per anledning) — men den som meldte
+ * seg paa etterpaa, faar cron sin, og en paamelding flyttet til en ny oekt faar
+ * den for den nye datoen. En oekt sendt foer noeklene (paaminnelse_sendt_at,
+ * ingen noekler) regnes som sendt til dem som var paameldt da. paaminnelse_sendt_at er «sist sendt». Paaminnelsen
  * gaar gjennom Paaminnelse (app/lib/paaminnelse.php), felles med cron: samme
  * mottakere (bare betalte, og 14-dagersregelen — kontrolloeren 9. oktober
  * 2026), og oekta tas og meldingene legges i koen i én transaksjon. To klikk,

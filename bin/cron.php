@@ -362,8 +362,10 @@ switch ($jobb) {
         $tilOslo = (int) $naaOslo->format('G') >= 12 ? $iDag->modify('+2 days') : $iDag->modify('+1 day');
         // Med utsendingsnoeklene (migrasjon 270) merkes hver paamelding for
         // seg: en paaminnelse sendt for haand tidlig stopper ikke cron for dem
-        // som kom til etterpaa (kontrolloeren runde 3, 9. oktober 2026). Uten
-        // tabellen: hele oekta, som foer.
+        // som kom til etterpaa (kontrolloeren runde 3, 9. oktober 2026). En
+        // oekt sendt foer noeklene (paaminnelse_sendt_at, ingen noekler) er
+        // sendt til dem som var paameldt da (Paaminnelse::mottakere og
+        // fyllEldre, utfylt i migrasjon 270). Uten tabellen: hele oekta, som foer.
         $ikkeSendt = Paaminnelse::harNokler() ? '' : 'AND cs.paaminnelse_sendt_at IS NULL';
         $okter = DB::alle(
             "SELECT cs.id, cs.start_tid, cs.slutt_tid, c.tittel, c.sms_paaminnelse

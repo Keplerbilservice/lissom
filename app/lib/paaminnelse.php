@@ -10,7 +10,7 @@
  * feltene og «naar»-linja herfra.
  *
  * Utsendingen er atomisk (Codex runde 2): oekta laases, paameldingene merkes
- * (varsel_utsendinger, «paaminnelse:<booking>») og meldingene legges i koen i
+ * (varsel_utsendinger, «paaminnelse:<booking>:<oekt>») og meldingene legges i koen i
  * én transaksjon. Feiler noe midt i, rulles alt tilbake — ingen halv
  * utsending, ingen merket. To faner eller cron samtidig: den andre venter paa
  * laasen og finner noeklene. Uten migrasjon 270 tas hele oekta med
@@ -33,14 +33,27 @@ final class Paaminnelse
     public static function mottakere(int $oktId, bool $utenSendte = false): array
     {
         // $utenSendte: bare dem som ikke har faatt paaminnelsen for denne
-        // paameldingen (noekkel «paaminnelse:<booking>», migrasjon 270).
+        // paameldingen paa denne oekta (noekkel «paaminnelse:<booking>:<oekt>»,
+        // migrasjon 270). En paamelding som flyttes til en ny oekt, faar
+        // paaminnelsen for den nye datoen.
+        //
+        // Sikkerhetsnett for eldre sending (foer noeklene): har oekta
+        // paaminnelse_sendt_at, men ingen paaminnelsesnoekler i det hele tatt,
+        // er den sendt som foer — ingen ny til dem som var paameldt da. Bare
+        // paameldinger opprettet etterpaa kan faa den.
         $uten = $utenSendte && self::harNokler()
-            ? " AND NOT EXISTS (SELECT 1 FROM varsel_utsendinger v WHERE v.nokkel = CONCAT('paaminnelse:', b.id))"
+            ? " AND NOT EXISTS (SELECT 1 FROM varsel_utsendinger v
+                                 WHERE v.nokkel = CONCAT('paaminnelse:', b.id, ':', cs.id))
+                AND NOT (cs.paaminnelse_sendt_at IS NOT NULL
+                         AND b.created_at <= cs.paaminnelse_sendt_at
+                         AND NOT EXISTS (SELECT 1 FROM varsel_utsendinger v2
+                                          WHERE v2.nokkel LIKE CONCAT('paaminnelse:%:', cs.id)))"
             : '';
         return DB::alle(
             "SELECT b.id, b.gjest_navn, b.gjest_epost, b.gjest_telefon,
                     m.navn AS m_navn, m.epost AS m_epost, m.telefon AS m_telefon
                FROM bookings b
+               JOIN course_sessions cs ON cs.id = b.course_session_id
           LEFT JOIN members m ON m.id = b.member_id
               WHERE b.course_session_id = :s AND b.status = 'betalt'
                 AND b.created_at <= DATE_SUB(NOW(), INTERVAL 14 DAY){$uten}
@@ -60,9 +73,33 @@ final class Paaminnelse
         return DB::harTabell('varsel_utsendinger');
     }
 
-    public static function nokkel(int $bookingId): string
+    /**
+     * Gjoer en eldre sending (foer noeklene) om til noekler for én oekt: har
+     * oekta paaminnelse_sendt_at og ingen paaminnelsesnoekler, faar hver
+     * paamelding opprettet foer sendingen sin noekkel. Samme utfylling som
+     * migrasjon 270. Kalles under laasen i send(), saa en ny paamelding som
+     * faar sin noekkel ikke aapner for de gamle igjen.
+     */
+    public static function fyllEldre(int $oktId): int
     {
-        return 'paaminnelse:' . $bookingId;
+        return DB::kjor(
+            "INSERT IGNORE INTO varsel_utsendinger (nokkel, created_at)
+             SELECT CONCAT('paaminnelse:', b.id, ':', cs.id), cs.paaminnelse_sendt_at
+               FROM bookings b
+               JOIN course_sessions cs ON cs.id = b.course_session_id
+              WHERE cs.id = :i
+                AND cs.paaminnelse_sendt_at IS NOT NULL
+                AND b.created_at <= cs.paaminnelse_sendt_at
+                AND NOT EXISTS (SELECT 1 FROM varsel_utsendinger v
+                                 WHERE v.nokkel LIKE CONCAT('paaminnelse:%:', cs.id))",
+            ['i' => $oktId]
+        )->rowCount();
+    }
+
+    /** «paaminnelse:<booking>:<oekt>» — oekta med, saa en flyttet paamelding faar den for den nye datoen. */
+    public static function nokkel(int $bookingId, int $oktId): string
+    {
+        return 'paaminnelse:' . $bookingId . ':' . $oktId;
     }
 
     /**
@@ -168,8 +205,10 @@ final class Paaminnelse
      * raden under laasen.
      *
      * Med noeklene (migrasjon 270): hver paamelding merkes for seg
-     * («paaminnelse:<booking>») i samme transaksjon som koeleggingen, og bare
-     * paameldte uten noekkel faar den. paaminnelse_sendt_at settes som «sist
+     * («paaminnelse:<booking>:<oekt>») i samme transaksjon som koeleggingen, og
+     * bare paameldte uten noekkel faar den. En oekt sendt foer noeklene
+     * (paaminnelse_sendt_at satt, ingen noekler) regnes som sendt til dem som
+     * var paameldt da (se mottakere()). paaminnelse_sendt_at settes som «sist
      * sendt» naar noe gikk ut, men stopper ikke cron for nye. Uten tabellen:
      * oekta tas med paaminnelse_sendt_at, som foer (grunn «sendt» naar den
      * alt er tatt).
@@ -211,6 +250,10 @@ final class Paaminnelse
                 $pdo->rollBack();
                 return $tom('sendt');
             }
+            if ($nokler) {
+                // Eldre sending uten noekler: gjoer den om til noekler foerst.
+                self::fyllEldre($oktId);
+            }
             $naar = self::naar($oktId, (string) $okt['start_tid'], (string) ($okt['slutt_tid'] ?? ''));
             $sted = self::sted();
             $sendt = 0;
@@ -226,7 +269,7 @@ final class Paaminnelse
                         continue;
                     }
                 }
-                $n = self::nokkel((int) $d['id']);
+                $n = self::nokkel((int) $d['id'], $oktId);
                 if ($nokler && DB::kjor('INSERT IGNORE INTO varsel_utsendinger (nokkel) VALUES (:n)', ['n' => $n])->rowCount() !== 1) {
                     $alt++;
                     continue;

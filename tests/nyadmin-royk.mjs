@@ -57,6 +57,23 @@ try {
       assert.equal(await p.evaluate(() => document.querySelector('dialog#ark').open), false, 'arket er lukket');
       assert.ok(p.url().includes('#kurs?okt='), 'står fortsatt på kurssiden');
       console.log('PC: «Send beskjed» uten forhåndsvalg, låst knapp, Tilbake spør «Vil du forkaste?».');
+      // Rediger påmelding (kontrolløren 09.10.2026): rabatt og beløp kan ikke begge gjelde. Rabatten låser beløpet og
+      // viser det serveren vil regne ut (pris × antall − rabatt); et skrevet beløp låser rabatten. Ingenting lagres her.
+      await p.goto(`${BASE}/ny-admin#kurs?okt=${s.session}&fra=kurs`, {waitUntil: 'networkidle'});
+      await p.locator(`[data-k="deltaker"][data-booking="${s.booking}"]`).first().click();
+      await ark.locator('[data-k="dRediger"]').click();
+      await ark.locator('#d-rabatt').fill('10');
+      assert.equal(await ark.locator('#d-belop').isDisabled(), true, 'rabatt: beløpet er låst');
+      assert.equal(await ark.locator('#d-belop').inputValue(), '90', 'rabatt: beløpet regnes som på serveren (100 kr − 10 %)');
+      assert.match(await ark.locator('#d-hint').innerText(), /Nytt beløp/, 'rabatt: det nye beløpet vises før lagring');
+      await ark.locator('#d-rabatt').fill('');
+      assert.equal(await ark.locator('#d-belop').isDisabled(), false, 'rabatten tilbake: beløpet er åpent igjen');
+      assert.equal(await ark.locator('#d-belop').inputValue(), '100', 'rabatten tilbake: beløpet er som før');
+      await ark.locator('#d-belop').fill('80');
+      assert.equal(await ark.locator('#d-rabatt').isDisabled(), true, 'beløp: rabatten er låst');
+      assert.match(await ark.locator('#d-hint').innerText(), /Beløpet du skrev gjelder/, 'beløp: det skrevne gjelder');
+      await ark.locator('[data-k="lukk"]').first().click();
+      console.log('PC: Rediger påmelding låser rabatt eller beløp og viser beløpet før lagring.');
     }
     feil.push(...her.map(f => `${navn}: ${f}`));
     await c.close();

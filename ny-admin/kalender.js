@@ -525,12 +525,19 @@ function nyTid(h) {
   if (FL.til === 'dag') return {dato: pluss(h.dato, 1), tid: h.tid};
   return {dato: FL.dato || h.dato, tid: FL.tid || h.tid};
 }
-const flerdager = h => (K.data?.hendelser || []).some(x => String(x.id).startsWith('saml-' + h.oktId + '-'));
-export function arkFlytt(liste, avlys) {
+// Kurs over flere dager: avgjøres av serverens tall (kalender.php antSamlinger), hentet på nytt før arket åpnes — ikke bare
+// av det Kalender har lastet (K.data). Fra Kurs uten Kalender lastet flyttet «Endre dato og tid» ellers bare dag 1
+// (kurs.php endredato flytter ikke samlingene; kontrolløren 09.10.2026).
+const flerdager = h => (h.antSamlinger || 0) > 1 || (K.data?.hendelser || []).some(x => String(x.id).startsWith('saml-' + h.oktId + '-'));
+export async function arkFlytt(liste, avlys) {
   liste = liste.filter(h => h && !h.avlyst);
   if (!liste.length) return toast('Ingen kurs å endre.');
+  if (!avlys) {
+    for (const d of new Set(liste.map(h => h.dato))) await hentPeriode(d, d);
+    liste = liste.map(h => OKTER.get(h.oktId) || h);
+    if (liste.some(flerdager)) return toast('Kurs over flere dager flyttes i kursoppsettet.');
+  }
   Object.assign(FL, {liste, avlys, til: '', dato: liste[0].dato, tid: liste[0].tid, varsle: '', kanal: ''});
-  if (!avlys && liste.some(flerdager)) return toast('Kurs over flere dager flyttes i kursoppsettet.');
   tegnFlytt();
 }
 // Hovedknappen er låst til valgene er gjort.
@@ -618,7 +625,7 @@ export const kanalFelt = k => k === 'sms' ? {ogsaaSms: 'ja', bareSms: 'ja'} : k 
 const ikkeNaaddTekst = l => l.length ? ` <b>Ikke nådd:</b> ${esc([...new Set(l)].join(', '))}.` : '';
 H.flyttOk = async b => {
   lesFlytt(); if (!flyttKlar()) return; b.disabled = true;
-  let ok = 0, varslet = 0; const feil = [], ikke = [];
+  let ok = 0, varslet = 0, alt = 0; const feil = [], ikke = [];
   for (const h of FL.liste) {
     const t = nyTid(h);
     let slutt = '';
@@ -626,11 +633,11 @@ H.flyttOk = async b => {
     try {
       await api('kurs.php', {handling: 'endredato', oktId: h.oktId, start: `${t.dato} ${t.tid}`, slutt});
       ok++;
-      if (FL.varsle === 'ja' && h.pameldt > 0) { const r = await api('okt-varsel.php', {handling: 'flyttet', oktId: h.oktId, fra: `${h.dato} ${h.tid}`}); varslet += r.sendt || 0; ikke.push(...(r.ikkeNaadd || [])); }
+      if (FL.varsle === 'ja' && h.pameldt > 0) { const r = await api('okt-varsel.php', {handling: 'flyttet', oktId: h.oktId, fra: `${h.dato} ${h.tid}`}); varslet += r.sendt || 0; alt += r.alleredeSendt || 0; ikke.push(...(r.ikkeNaadd || [])); }
     } catch (e) { feil.push(`${kortDato(h.dato)} ${h.tittel}: ${e.message}`); }
   }
   K.valgt.clear(); lukk(true);
-  toast(`<b>${ok} kurs flyttet.</b>${FL.varsle === 'ja' ? ` ${varslet} påmeldte har fått «Ny dato på kurset».` : ''}${ikkeNaaddTekst(ikke)}${feil.length ? ' ' + esc(feil.join(' ')) : ''}`);
+  toast(`<b>${ok} kurs flyttet.</b>${FL.varsle === 'ja' ? ` ${varslet} påmeldte har fått «Ny dato på kurset».${alt ? ` ${alt} hadde alt fått beskjed om denne datoen.` : ''}` : ''}${ikkeNaaddTekst(ikke)}${feil.length ? ' ' + esc(feil.join(' ')) : ''}`);
   await oppfrisk();
 };
 H.avlysOk = async b => {
@@ -713,7 +720,7 @@ export async function arkPaaminnelse(oktId) {
   boks.innerHTML = r.paaminnelseSendt
     ? `<b>Påminnelse sendt ${esc(r.paaminnelseSendt)}.</b> Den sendes ikke en gang til.`
     : r.aktiv
-      ? `<b>${r.naas} av ${r.antall} får påminnelsen (${r.epost} e-post, ${r.sms} SMS):</b>${r.ikkeNaadd?.length ? ` <span class="ikke-naadd">Ikke nådd: ${r.ikkeNaadd.map(esc).join(', ')}</span>` : ''}<br>${r.epost ? esc(r.emne) + '<br>' : ''}<span class="forh-tekst">${esc(r.tekst)}</span><br><small>Den automatiske påminnelsen dagen før sendes da ikke.</small>`
+      ? `<b>${r.naas} av ${r.antall} får påminnelsen (${r.epost} e-post, ${r.sms} SMS):</b>${r.ikkeNaadd?.length ? ` <span class="ikke-naadd">Ikke nådd: ${r.ikkeNaadd.map(esc).join(', ')}</span>` : ''}${r.ikkeMed ? `<br><small>${r.ikkeMed} på lista får den ikke: påminnelsen går bare til dem som har betalt og meldte seg på for minst 14 dager siden.</small>` : ''}<br>${r.epost ? esc(r.emne) + '<br>' : ''}<span class="forh-tekst">${esc(r.tekst)}</span><br><small>Den automatiske påminnelsen dagen før sendes da ikke.</small>`
       : '<b>Meldingen «Påminnelse før kurset» er slått av.</b> Slå den på under Innstillinger › Meldinger.';
   const k = document.getElementById('nk-pok');
   if (k) { k.disabled = !!r.paaminnelseSendt || !r.aktiv || !r.naas; if (r.paaminnelseSendt) k.textContent = 'Påminnelse sendt'; }
@@ -727,8 +734,12 @@ H.paaminnelseOk = async b => {
 // ── Nytt kurs eller serie ────────────────────────────────────────────────────
 let KURS = null, FERIER = null, POP = null;
 // Paint on Pots: nivåene og prisene fra samme kilde som nettsida og kassa (pop-priser.php → PopPris::nivaer()).
-export async function hentPop() { if (!POP) { try { POP = await api('pop-priser.php'); } catch { POP = {nivaer: [], depositumKurs: []}; } } return POP; }
+// Feiler pop-priser.php, vet vi ikke hvilke kurs som er Paint on Pots. Da skal de ikke behandles som vanlige kurs
+// (Registrer betaling med kursets beløp, pris i serie): popUkjent() stopper dem, og neste kall prøver igjen (09.10.2026).
+export async function hentPop() { if (!POP || POP.feil) { try { POP = await api('pop-priser.php'); } catch { POP = {nivaer: [], depositumKurs: [], feil: true}; } } return POP; }
 export const erPop = kursId => !!POP?.depositumKurs?.includes(kursId);
+export const popUkjent = () => !!POP?.feil;
+export const POP_FEIL = 'Fikk ikke hentet Paint on Pots-oppsettet. Last siden på nytt og prøv igjen.';
 export const popPrisliste = () => (POP?.nivaer || []).length ? `<div class="hgruppe"><div class="type">Paint on Pots · prislisten</div><div class="valgknapper">${POP.nivaer.map(n => `<span class="merke" title="${esc(n.gjenstander)}">${esc(n.navn)} ${esc(n.pris)}</span>`).join('')}</div><small>Gjenstanden betales i kassa.</small></div>` : '';
 export async function hentKurs(tving) { if (!KURS || tving) KURS = await api('kurs.php'); return KURS; }
 async function hentFerier() { if (!FERIER) { try { FERIER = (await api('skoleferier.php')).perioder || []; } catch { FERIER = []; } } return FERIER; }
@@ -816,6 +827,7 @@ H.seOk = async b => {
   if (minutter(SE.til) <= minutter(SE.fra)) return toast('Sluttida må være etter starttida.');
   // Prisen i hele kroner. «500,50» eller «-500» avvises i stedet for å bli skrevet om (Codex 08.10.2026).
   const pris = String(SE.pris ?? '').trim();
+  if (popUkjent()) return toast(POP_FEIL);
   if (!erPop(k.id) && pris !== '' && !/^\d+$/.test(pris)) return toast('Skriv prisen i hele kroner, uten komma eller minus.');
   const datoer = serieDatoer().filter(x => !x[1]).map(([d]) => ({start: `${d} ${SE.fra}`, slutt: `${d} ${SE.til}`}));
   b.disabled = true;

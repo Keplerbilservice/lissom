@@ -5734,8 +5734,13 @@
                 {
                     "fil": "bin/cron.php",
                     "finnes": [
-                        "$tilOslo = (int) $naaOslo->format('G') >= 12 ? $iDag->modify('+2 days') : $iDag->modify('+1 day');",
-                        "'dato'    => norsk_ukedag_dato((string) $okt['start_tid']),",
+                        "$tilOslo = (int) $naaOslo->format('G') >= 12 ? $iDag->modify('+2 days') : $iDag->modify('+1 day');"
+                    ]
+                },
+                {
+                    "fil": "app/lib/paaminnelse.php",
+                    "finnes": [
+                        "'dato'    => self::ukedagDato((string) $okt['start_tid']),",
                         "'sted'    => $sted,"
                     ]
                 }
@@ -7177,7 +7182,7 @@
                     "fil": "api/admin/okt-varsel.php",
                     "finnes": [
                         "Varsel::mal('pamelding_flyttet'",
-                        "Varsel::mal('kurspaaminnelse'",
+                        "Paaminnelse::send($okt, true)",
                         "paaminnelse_sendt_at"
                     ]
                 },
@@ -7323,16 +7328,22 @@
                 {
                     "fil": "api/admin/okt-varsel.php",
                     "finnes": [
-                        "'UPDATE course_sessions SET paaminnelse_sendt_at = :t WHERE id = :i AND paaminnelse_sendt_at IS NULL'",
+                        "$r = Paaminnelse::send($okt, true);",
                         "Booking::aktivSql('b')",
                         "'ikkeNaadd'",
                         "Svar::feil('Påminnelsen er alt sendt '"
                     ]
                 },
                 {
-                    "fil": "bin/cron.php",
+                    "fil": "app/lib/paaminnelse.php",
                     "finnes": [
                         "'UPDATE course_sessions SET paaminnelse_sendt_at = :t WHERE id = :i AND paaminnelse_sendt_at IS NULL'"
+                    ]
+                },
+                {
+                    "fil": "bin/cron.php",
+                    "finnes": [
+                        "$r = Paaminnelse::send($okt, false);"
                     ]
                 },
                 {
@@ -7435,6 +7446,97 @@
                     "fil": "tests/nettleser/ruter.php",
                     "finnes": [
                         "if (preg_match('~^/ny-admin/?$~', $sti))"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "ny-admin-kontroll-runde2-20261009",
+            "dato": "2026-10-09",
+            "hva": "Ny admin etter kontrolløren og Codex runde 2 (grundig sjekk, eieren 09.10.2026). (1) Rediger påmelding: rabatt og beløp kan ikke begge gjelde — endres rabatten, låses beløpet og viser det serveren regner ut (pris på datoen × antall × (1 − rabatt), som pamelding.php «endre»); skrives et beløp, låses rabatten. Bare feltet som gjelder sendes, og beløpet serveren lagret vises etter lagring. Paint on Pots: beløpet skrives (rabatten er låst). (2) Endre dato og tid sjekker flerdagerskurs på serverens tall (kalender.php antSamlinger), hentet på nytt før arket åpnes — også fra Kurs uten Kalender lastet — og stopper med «Kurs over flere dager flyttes i kursoppsettet.». (3) Påminnelse for hånd har samme mottakere som cron: bare betalte, og bare den som meldte seg på for 14 dager siden eller mer (eieren 25.09). Utvalg, felter og «når» ligger i app/lib/paaminnelse.php (Paaminnelse), brukt av både bin/cron.php og okt-varsel.php. Forhåndsvisningen sier hvor mange på lista som ikke får den (ikkeMed). (4) Utsending atomisk: påminnelsen (for hånd og cron) tar datoen og legger i kø i én transaksjon — feil midt i ruller alt tilbake, datoen er ikke merket, neste forsøk sender én gang. «Ny dato på kurset» fra ny admin: én utsendingsnøkkel per påmelding + ny dato + kanal (varsel_utsendinger, migrasjon 270) i samme transaksjon som køen, og datoen låses; et nytt trykk eller en annen fane gir ingen dublett (alleredeSendt). Uten migrasjon 270 sendes det atomisk og låst, men uten nøkkel. (5) «Ny dato på kurset» tilbys ikke som SMS under Innstillinger › Meldinger (pamelding.php sender den bare med e-post), og okt-varsel.php sender den uten telefon. (6) Betaling i ny admin: Registrer betaling viser det som gjenstår når noe er betalt (kalender.php betaltOre, samme regnestykke som Booking::betalingerFor); «Ikke betalt» i topplinja og arket summerer det som gjenstår (oversikt.php restOre); feiler pop-priser.php, stoppes Ta betalt og pris i ny serie (PoP behandles ikke som vanlige kurs); pågår en Vipps-betaling (opprettet/venter) for påmeldingen, vises «Vipps pågår» i stedet for Ta betalt; betalingsmåtene følger Booking::MAATER (Kontant, Vipps, Gratis) + Gavekort med kode — ikke Faktura. Nye tekster: «Vipps pågår», «En Vipps-betaling pågår for denne påmeldingen. Vent til den er ferdig.», «Fikk ikke hentet Paint on Pots-oppsettet. Last siden på nytt og prøv igjen.», «… gjenstår (… betalt)», «Nytt beløp: … (pris × antall − rabatt).», «Beløpet du skrev gjelder. Rabatten endres ikke.», «Paint on Pots: skriv beløpet.», «Beløp nå: ….», «N hadde alt fått beskjed om denne datoen.», «N på lista får den ikke: påminnelsen går bare til dem som har betalt og meldte seg på for minst 14 dager siden.» (bare i admin).",
+            "hvor": "app/lib/paaminnelse.php, app/lib/booking.php (betaltSql, vippsPaaVeiSql), bin/cron.php paaminnelser, api/admin/okt-varsel.php, api/admin/meldinger.php, api/admin/kalender.php, api/admin/oversikt.php, db/migrations/270_varsel_utsendinger.sql, ny-admin/kurs.js, ny-admin/kalender.js, ny-admin/felles.js, tests/ny-admin.php (D, K, L, J), tests/nyadmin-royk.mjs",
+            "kode": [
+                {
+                    "fil": "app/lib/paaminnelse.php",
+                    "finnes": [
+                        "WHERE b.course_session_id = :s AND b.status = 'betalt'",
+                        "AND b.created_at <= DATE_SUB(NOW(), INTERVAL 14 DAY)",
+                        "'UPDATE course_sessions SET paaminnelse_sendt_at = :t WHERE id = :i AND paaminnelse_sendt_at IS NULL'",
+                        "$pdo->beginTransaction();",
+                        "$pdo->rollBack();"
+                    ]
+                },
+                {
+                    "fil": "bin/cron.php",
+                    "finnes": [
+                        "$r = Paaminnelse::send($okt, false);"
+                    ],
+                    "ikkeFinnes": [
+                        "AND b.created_at <= DATE_SUB(NOW(), INTERVAL 14 DAY)"
+                    ]
+                },
+                {
+                    "fil": "api/admin/okt-varsel.php",
+                    "finnes": [
+                        "$r = Paaminnelse::send($okt, true);",
+                        "'INSERT IGNORE INTO varsel_utsendinger (nokkel) VALUES (:n)'",
+                        "SELECT start_tid FROM course_sessions WHERE id = :i FOR UPDATE",
+                        "        'telefon' => null,"
+                    ]
+                },
+                {
+                    "fil": "db/migrations/270_varsel_utsendinger.sql",
+                    "finnes": [
+                        "CREATE TABLE IF NOT EXISTS varsel_utsendinger ("
+                    ]
+                },
+                {
+                    "fil": "api/admin/meldinger.php",
+                    "ikkeFinnes": [
+                        "'innmelding_ordner_selv', 'pamelding_flyttet'];"
+                    ]
+                },
+                {
+                    "fil": "api/admin/kalender.php",
+                    "finnes": [
+                        "'betaltOre'   => (int) ($b['betalt_ore'] ?? 0),",
+                        "'vippsPaaVei' => (int) ($b['vipps_paa_vei'] ?? 0) === 1,",
+                        "'antSamlinger' => count($samlingKart[$id] ?? []),"
+                    ]
+                },
+                {
+                    "fil": "api/admin/oversikt.php",
+                    "finnes": [
+                        "'restOre'  => max(0, (int) $r['belop_ore'] - (int) ($r['betalt_ore'] ?? 0)),"
+                    ]
+                },
+                {
+                    "fil": "ny-admin/kurs.js",
+                    "finnes": [
+                        "const TB_MAATER = ['Kontant', 'Vipps', 'Gavekort', 'Gratis'];",
+                        "const MAATER = ['Ikke betalt', 'Kontant', 'Vipps', 'Gavekort', 'Gratis'];",
+                        "if (popUkjent()) return toast(POP_FEIL);",
+                        "if (d.vippsPaaVei) return toast(",
+                        "const rest = Math.max(0, (d.belopOre || 0) - (d.betaltOre || 0));",
+                        "if (RED.modus === 'belop') body.belop = bel;"
+                    ],
+                    "ikkeFinnes": [
+                        "'Faktura'",
+                        "if (rab !== String(d.rabatt || '')) body.rabatt = rab || '0';"
+                    ]
+                },
+                {
+                    "fil": "ny-admin/kalender.js",
+                    "finnes": [
+                        "const flerdager = h => (h.antSamlinger || 0) > 1",
+                        "for (const d of new Set(liste.map(h => h.dato))) await hentPeriode(d, d);",
+                        "catch { POP = {nivaer: [], depositumKurs: [], feil: true}; }"
+                    ]
+                },
+                {
+                    "fil": "ny-admin/felles.js",
+                    "finnes": [
+                        "const ubSum = ub.reduce((s, r) => s + igjen(r), 0);"
                     ]
                 }
             ]

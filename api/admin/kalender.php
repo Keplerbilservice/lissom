@@ -122,6 +122,8 @@ if ($oktIder !== []) {
     foreach (DB::alle(
         "SELECT b.id, b.course_session_id, b.member_id, b.status, b.antall,
                 b.belop_ore, {$rabattKol} AS rabatt_prosent,
+                " . Booking::betaltSql('b') . " AS betalt_ore,
+                " . Booking::vippsPaaVeiSql('b') . " AS vipps_paa_vei,
                 b.created_at, {$allergi} AS merknad,
                 COALESCE(m.navn, b.gjest_navn) AS navn,
                 COALESCE(m.epost, b.gjest_epost) AS epost,
@@ -518,6 +520,11 @@ foreach ($okter as $o) {
             'belopOre'  => (int) ($b['belop_ore'] ?? 0),
             'rabatt'    => (float) ($b['rabatt_prosent'] ?? 0),
             'prisOre'   => (int) ($o['pris_ore'] ?? 0),
+            // Det som alt er betalt (delbetaling), saa «Registrer betaling» i
+            // ny admin viser det som gjenstaar — og om en Vipps-betaling
+            // pagaar, saa den ikke tilbys mens kunden betaler (09.10.2026).
+            'betaltOre'   => (int) ($b['betalt_ore'] ?? 0),
+            'vippsPaaVei' => (int) ($b['vipps_paa_vei'] ?? 0) === 1,
             // Kontaktopplysningene, saa deltakerruta kan vise dem framfor aa
             // regne dem ut av navnet. Den gjorde noeyaktig det: «kari.nordmann
             // @epost.no» og et telefonnummer laget av lengden paa navnet.
@@ -607,6 +614,11 @@ foreach ($okter as $o) {
             return $o['slutt_tid'] !== null ? $iOslo((string) $o['slutt_tid'], 'H:i') : '';
         })(),
         'timerFoert' => $foertFor(isset($o['holder_id']) ? (int) $o['holder_id'] : null, $iOslo((string) $o['start_tid'], 'Y-m-d'), (string) $o['tittel']),
+        // Hvor mange samlinger (dager) datoen har. Over én: kurset gaar over
+        // flere dager, og ny admin flytter det ikke med «Endre dato og tid»
+        // (kurs.php endredato flytter bare dag 1). Fra serveren, saa Kurs-siden
+        // vet det uten at Kalender er lastet (kontrolloeren 9. oktober 2026).
+        'antSamlinger' => count($samlingKart[$id] ?? []),
     ];
 
     // ── Dag to og tre ───────────────────────────────────────────────────

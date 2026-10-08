@@ -370,63 +370,24 @@ switch ($jobb) {
                 AND cs.start_tid < :til",
             ['til' => $tilOslo->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s')]
         );
-        $sted = trim((string) Config::hent('verksted_adresse', 'Lissom Keramikk & Håndverk, Teie'));
-
         $antall = 0;
         foreach ($okter as $okt) {
-            // Ta oekta foer noe legges i koen. Har noen sendt paaminnelsen for
-            // haand i mellomtiden (ny admin, «Send påminnelse»), treffer ikke
-            // UPDATE-en, og den gaar ikke ut to ganger (kontrolloeren 8. oktober 2026).
-            if (DB::kjor(
-                'UPDATE course_sessions SET paaminnelse_sendt_at = :t WHERE id = :i AND paaminnelse_sendt_at IS NULL',
-                ['t' => gmdate('Y-m-d H:i:s'), 'i' => $okt['id']]
-            )->rowCount() !== 1) {
+            // Utvalget, feltene og utsendingen ligger i Paaminnelse, felles med
+            // «Send påminnelse» i ny admin (kontrolloeren 9. oktober 2026: samme
+            // mottakere begge steder — bare betalte, og 14-dagersregelen).
+            //
+            // Oekta tas og meldingene legges i koen i én transaksjon. Er den
+            // alt sendt for haand, treffer ikke UPDATE-en. Feiler koeleggingen
+            // midt i, rulles alt tilbake: oekta er ikke merket sendt, og neste
+            // kjoering proever igjen (Codex 9. oktober 2026).
+            try {
+                $r = Paaminnelse::send($okt, false);
+            } catch (Throwable $e) {
+                logg_feil('Påminnelsen feilet og prøves igjen', $e);
+                $si('Påminnelse for økt ' . (int) $okt['id'] . ' feilet og prøves igjen: ' . $e->getMessage());
                 continue;
             }
-            $deltakere = DB::alle(
-                "SELECT b.gjest_navn, b.gjest_epost, b.gjest_telefon,
-                        m.navn AS m_navn, m.epost AS m_epost, m.telefon AS m_telefon
-                   FROM bookings b
-              LEFT JOIN members m ON m.id = b.member_id
-                  WHERE b.course_session_id = :s AND b.status = 'betalt'
-                    AND b.created_at <= DATE_SUB(NOW(), INTERVAL 14 DAY)",
-                ['s' => $okt['id']]
-            );
-            // «AND b.created_at …»: paaminnelsen gaar bare til den som meldte
-            // seg paa for to uker siden eller mer. Eieren, 25. september 2026:
-            // «påminnelse før kurset, sendes kun om det er 2 uker eller mer
-            // siden de ble påmeldt». Den som meldte seg paa nylig, har
-            // bekreftelsen friskt i minne.
-
-            // Naar kurset er, ferdig skrevet. Eieren, 14. september 2026:
-            // «ogsaa info om kurset de meldte seg paa? Dato og klokkeslett»,
-            // og «husk faa med tid dag to etc dersom aktuelt».
-            //
-            // Gaar kurset over flere dager, ligger dagene som samlinger paa
-            // oekta (migrasjon 155). Da staar de hver for seg. Er det ett
-            // moete, staar dagen og klokkeslettet paa én linje. Foer sto det
-            // «i morgen» — og det var loegn for alle som hadde kurs samme dag,
-            // for paaminnelsen gaar ut inntil 30 timer for.
-            $naar = paaminnelse_naar((int) $okt['id'], (string) $okt['start_tid'], (string) ($okt['slutt_tid'] ?? ''));
-
-            foreach ($deltakere as $d) {
-                $heleNavnet = (string) ($d['m_navn'] ?: $d['gjest_navn']);
-                Varsel::mal('kurspaaminnelse', [
-                    'epost'   => $d['m_epost'] ?? $d['gjest_epost'],
-                    'telefon' => $okt['sms_paaminnelse'] ? ($d['m_telefon'] ?? $d['gjest_telefon']) : null,
-                ], [
-                    // «navn» staar igjen for en mal eieren har skrevet om selv
-                    // og fortsatt bruker det feltet. Malen vaar bruker fornavn.
-                    'navn'    => $heleNavnet,
-                    'fornavn' => fornavnet($heleNavnet),
-                    'kurs'    => (string) $okt['tittel'],
-                    'tid'     => norsk_klokkeslett((string) $okt['start_tid']),
-                    'naar'    => $naar,
-                    'dato'    => norsk_ukedag_dato((string) $okt['start_tid']),
-                    'sted'    => $sted,
-                ], 'course_session', (int) $okt['id']);
-                $antall++;
-            }
+            $antall += $r['sendt'];
         }
         $si("Påminnelser: {$antall} lagt i kø for " . count($okter) . " økt(er).");
 
@@ -737,66 +698,11 @@ switch ($jobb) {
 
 $si(sprintf('(%.2f sekunder)', microtime(true) - $start));
 
-/** 2026-08-22 17:00:00 (UTC) → «17:00» norsk tid */
-function norsk_klokkeslett(string $utc): string
-{
-    $d = new DateTimeImmutable($utc, new DateTimeZone('UTC'));
-    return $d->setTimezone(new DateTimeZone('Europe/Oslo'))->format('H:i');
-}
-
-/** «onsdag 9. september», norsk tid. Klokkeslettet staar i {tid}. */
-function norsk_ukedag_dato(string $utc): string
-{
-    $d = (new DateTimeImmutable($utc, new DateTimeZone('UTC')))->setTimezone(new DateTimeZone('Europe/Oslo'));
-    $dager = ['mandag', 'tirsdag', 'onsdag', 'torsdag', 'fredag', 'lørdag', 'søndag'];
-    $mnd = ['januar', 'februar', 'mars', 'april', 'mai', 'juni',
-            'juli', 'august', 'september', 'oktober', 'november', 'desember'];
-    return $dager[(int) $d->format('N') - 1] . ' ' . (int) $d->format('j') . '. ' . $mnd[(int) $d->format('n') - 1];
-}
-
 /**
- * Forste ord i navnet. «Mia Sørensen» → «Mia».
- *
- * Eieren, 14. september 2026: «bruk kun fornavn». Er navnet tomt, staar det
- * «Hei!» framfor «Hei ,» — et komma uten navn er verre enn ingen tiltale.
+ * Forste ord i navnet. «Mia Sørensen» → «Mia». Samme regel som paaminnelsen
+ * (Paaminnelse::fornavn), ett sted.
  */
 function fornavnet(string $navn): string
 {
-    $biter = preg_split('/\s+/', trim($navn)) ?: [];
-    return $biter === [] ? '' : (string) $biter[0];
-}
-
-/**
- * Naar kurset er, ferdig skrevet for e-posten.
- *
- * Ett moete:      «onsdag 9. september, 17:00–20:00»
- * Flere dager:    «Dag 1: onsdag 9. september, 17:00–20:00»
- *                 «Dag 2: torsdag 10. september, 17:00–20:00»
- *
- * Dagene ligger som samlinger paa kursdatoen (migrasjon 155), og de er alt
- * skrevet ferdig av Samlinger — samme setning som staar paa nettsida og i
- * kalenderen. Finnes de ikke, er det ett moete, og da regnes linja ut av
- * oektas egen start og slutt.
- */
-function paaminnelse_naar(int $oktId, string $startUtc, string $sluttUtc): string
-{
-    $samlinger = DB::harTabell('okt_samlinger') ? Samlinger::forOkt($oktId) : [];
-
-    if (count($samlinger) > 1) {
-        $linjer = [];
-        foreach ($samlinger as $i => $s) {
-            $linjer[] = 'Dag ' . ((int) ($s['nummer'] ?: $i + 1)) . ': ' . $s['naar'];
-        }
-        return implode("\n", $linjer);
-    }
-    if (count($samlinger) === 1) {
-        return (string) $samlinger[0]['naar'];
-    }
-
-    // «onsdag 9. september, 17:00» fra Booking, og sluttiden bak.
-    $linje = Booking::norskDato($startUtc);
-    if ($sluttUtc !== '') {
-        $linje .= '–' . norsk_klokkeslett($sluttUtc);
-    }
-    return $linje;
+    return Paaminnelse::fornavn($navn);
 }

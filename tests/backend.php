@@ -19785,19 +19785,23 @@ sjekk('… og en tekst han har endret selv blir staaende',
     str_contains($pmM, "AND tekst LIKE 'Hei {navn}! Vi gleder oss til å se deg i morgen.%';"));
 
 $cron = (string) les_testfil(dirname(__DIR__) . '/bin/cron.php');
+// Utvalget, feltene og «naar» ligger i Paaminnelse (app/lib/paaminnelse.php),
+// felles med «Send påminnelse» i ny admin (kontrolloeren 9. oktober 2026).
+$pmLib = (string) les_testfil(dirname(__DIR__) . '/app/lib/paaminnelse.php');
 sjekk('paaminnelsen sender fornavn, ikke hele navnet',
-    str_contains($cron, "'fornavn' => fornavnet(\$heleNavnet),")
-    && str_contains($cron, 'function fornavnet(string $navn): string')
+    str_contains($pmLib, "'fornavn' => self::fornavn(\$heleNavnet),")
+    && str_contains($pmLib, 'public static function fornavn(string $navn): string')
     // «navn» staar igjen for en mal eieren har skrevet om selv.
-    && str_contains($cron, "'navn'    => \$heleNavnet,"));
+    && str_contains($pmLib, "'navn'    => \$heleNavnet,")
+    && str_contains($cron, '$r = Paaminnelse::send($okt, false);'));
 sjekk('… og den sier hvilket kurs, hvilken dag og hvilket klokkeslett',
-    str_contains($cron, "'naar'    => \$naar,")
-    && str_contains($cron, 'function paaminnelse_naar(int $oktId, string $startUtc, string $sluttUtc): string'));
+    str_contains($pmLib, "'naar'    => \$naar,")
+    && str_contains($pmLib, 'public static function naar(int $oktId, string $startUtc, string $sluttUtc): string'));
 // Gaar kurset over flere dager, staar hver dag for seg. Dagene ligger som
 // samlinger paa kursdatoen — migrasjon 155.
 sjekk('… og flerdagerskurs faar én linje per dag',
-    str_contains($cron, "\$linjer[] = 'Dag ' . ((int) (\$s['nummer'] ?: \$i + 1)) . ': ' . \$s['naar'];")
-    && str_contains($cron, 'if (count($samlinger) > 1) {'));
+    str_contains($pmLib, "\$linjer[] = 'Dag ' . ((int) (\$s['nummer'] ?: \$i + 1)) . ': ' . \$s['naar'];")
+    && str_contains($pmLib, 'if (count($samlinger) > 1) {'));
 // Sluttiden maa hentes for den kan skrives. Uten denne sto bare starten.
 sjekk('… og oekta henter sluttiden sin',
     str_contains($cron, "SELECT cs.id, cs.start_tid, cs.slutt_tid, c.tittel, c.sms_paaminnelse"));

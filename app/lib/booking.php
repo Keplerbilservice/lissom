@@ -3469,6 +3469,37 @@ final class Booking
     }
 
     /**
+     * Det som er betalt paa en paamelding, som et SQL-uttrykk for lister
+     * (kalenderen og «Ikke betalt» i ny admin). Samme regnestykke som
+     * betalingerFor(): begge pekerne, netto etter refusjon, gavekortdelen med,
+     * annullerte teller ikke. $b er aliaset paa bookings i spoerringen.
+     */
+    public static function betaltSql(string $b): string
+    {
+        if (!DB::harKolonne('payments', 'booking_id')) {
+            return '0';
+        }
+        $gave = DB::harKolonne('payments', 'gavekort_ore') ? ' + COALESCE(p.gavekort_ore, 0)' : '';
+        return "(SELECT COALESCE(SUM(GREATEST(0, CAST(p.belop_ore AS SIGNED) - CAST(COALESCE(p.refundert_ore, 0) AS SIGNED)){$gave}), 0)
+                   FROM payments p
+                  WHERE (p.booking_id = {$b}.id OR p.id = {$b}.payment_id)
+                    AND p.annullert_at IS NULL
+                    AND p.status IN ('betalt', 'autorisert', 'delvis_refundert'))";
+    }
+
+    /**
+     * Pågaar en Vipps-betaling for paameldingen (opprettet eller venter)?
+     * Samme vakt som «endre» og flyttingen i api/admin/pamelding.php.
+     */
+    public static function vippsPaaVeiSql(string $b): string
+    {
+        $bid = DB::harKolonne('payments', 'booking_id') ? " OR p.booking_id = {$b}.id" : '';
+        return "EXISTS(SELECT 1 FROM payments p
+                        WHERE (p.id = {$b}.payment_id{$bid})
+                          AND p.status IN ('opprettet', 'venter'))";
+    }
+
+    /**
      * Betalingene som gjelder én paamelding, og summen av dem.
      *
      * Annullerte teller ikke i summen, men blir staaende i lista — det er

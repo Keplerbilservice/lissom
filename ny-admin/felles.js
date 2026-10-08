@@ -297,6 +297,8 @@
     l.classList.toggle('borte', !ok);
     $('#live-tekst').textContent = ok ? 'Live' : 'Frakoblet';
   }
+  // Det som står igjen på en rad i «Ikke betalt»: delbetalt trekkes fra (oversikt.php restOre, betalingseksperten 09.10.2026).
+  const igjen = r => Number(typeof r.restOre === 'number' ? r.restOre : r.belopOre) || 0;
   function tegnTopp(d) {
     if (!$('#topptall')) return;
     const o = d.omsetning || {};
@@ -305,7 +307,7 @@
     const idag = eks('idagEksOre', 'idagOre'), mnd = eks('manedEksOre', 'manedOre'), forr = eks('forrigeMndEksOre', 'forrigeMndOre'), uke = eks('forrigeUkedagEksOre', 'forrigeUkedagOre');
     const diff = forr > 0 ? Math.round((mnd / forr - 1) * 100) : null;
     const ub = d.ubetalte || [];
-    const ubSum = ub.reduce((s, r) => s + (Number(r.belopOre) || 0), 0);
+    const ubSum = ub.reduce((s, r) => s + igjen(r), 0);
     const inne = d.verkstedet || [];
     const megNavn = NA.meg?.navn;
     $('#topptall').innerHTML = `<button class="tall-pille" type="button" data-topp="omsetning" data-tips="Samme ukedag forrige uke: ${kr(uke)}"><small>I dag</small><b>${kr(idag)}</b></button>
@@ -352,12 +354,12 @@
   /* Hele raden er trykkbar: et medlem åpner medlemmet under Medlemmer, en påmelding åpner kurset (der «Ta betalt» står). */
   function arkUbetalt() {
     const ub = NA.sist?.ubetalte || [];
-    const sum = ub.reduce((s, r) => s + (Number(r.belopOre) || 0), 0);
+    const sum = ub.reduce((s, r) => s + igjen(r), 0);
     const mal = r => r.slag === 'medlem' ? (erMobil() ? '' : `data-medlem="${Number(r.id)}"`)
       : (r.oktId ? `data-gatil="kurs" data-p="${esc(new URLSearchParams({okt: r.oktId, booking: r.id}).toString())}"` : '');
     apneArk(`${arkHode('Ikke betalt · ' + kr(sum))}
       <div class="radliste">${ub.length ? ub.map(r => { const m = mal(r); const inn = `<span class="tekst"><b>${esc(r.navn)}</b><small>${esc([r.kurs, r.naar].filter(Boolean).join(' · '))}</small></span>
-        <span class="merke rod">${esc(r.belop || kr(r.belopOre))}</span>`;
+        <span class="merke rod">${esc(typeof r.restOre === 'number' && r.restOre !== r.belopOre ? kr(r.restOre) : (r.belop || kr(r.belopOre)))}</span>`;
         return m ? `<button class="rad radknapp" type="button" ${m}>${inn}</button>` : `<div class="rad">${inn}</div>`; }).join('') : '<p class="tom">Alle har betalt.</p>'}</div>`);
   }
   function arkInne() {

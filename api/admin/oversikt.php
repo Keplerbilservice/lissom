@@ -1350,6 +1350,10 @@ Svar::json([
             'naar'    => Booking::norskDato((string) $r['start_tid']),
             'belop'   => Booking::kroner((int) $r['belop_ore']),
             'belopOre' => (int) $r['belop_ore'],
+            // Det som gjenstaar naar noe alt er betalt (delbetaling). Ny admin
+            // summerer «Ikke betalt» av dette (betalingseksperten 09.10.2026).
+            'betaltOre' => (int) ($r['betalt_ore'] ?? 0),
+            'restOre'  => max(0, (int) $r['belop_ore'] - (int) ($r['betalt_ore'] ?? 0)),
             // «Ta betalt» (eieren, 24. september 2026): steget regner
             // pris × antall minus rabatt, og kan endre alle tre.
             'antall'  => (int) ($r['antall'] ?? 1),
@@ -1363,7 +1367,7 @@ Svar::json([
         "SELECT b.id, b.course_session_id, b.gjest_navn, b.gjest_telefon, b.belop_ore, b.betalt_maate,
                 b.antall, " . (DB::harKolonne('bookings', 'rabatt_prosent') ? 'b.rabatt_prosent' : '0') . " AS rabatt_prosent,
                 " . (DB::harKolonne('course_sessions', 'pris_ore') ? 'COALESCE(cs.pris_ore, c.pris_ore)' : 'c.pris_ore') . " AS pris_ore,
-                c.tittel, cs.start_tid,
+                c.tittel, cs.start_tid, " . Booking::betaltSql('b') . " AS betalt_ore,
                 DATEDIFF(UTC_DATE(), DATE(b.created_at)) AS dager
            FROM bookings b
            JOIN courses c ON c.id = b.course_id

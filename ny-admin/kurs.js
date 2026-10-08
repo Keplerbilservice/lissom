@@ -4,7 +4,7 @@
 // kurs.php for datoen, beskjed.php og okt-varsel.php for beskjeder med eksisterende maler.
 import {api, ark, lukk, toast, registrer, poll, gaaTil, esc, idag, pluss, langDato, kortDato, kr, erMobil,
   OKTER, KURSHOLDERE, hentPeriode, erOkt, samleDag, ubetalte, H, oppfrisk, vedOppfrisk,
-  arkFlytt, arkBeskjed, arkPaaminnelse, arkSerie, stengOkt, kopierOkt, hentKurs, hentPop, erPop, popPrisliste} from './kalender.js';
+  arkFlytt, arkBeskjed, arkPaaminnelse, arkSerie, stengOkt, kopierOkt, hentKurs, hentPop, erPop, popPrisliste, popUkjent, POP_FEIL} from './kalender.js';
 
 const KS = {okt: 0, fra: '', kurs: 0, booking: 0, el: null, liste: null, feil: '', bareUbetalt: false, delt: null};
 
@@ -92,7 +92,7 @@ function tegnKursside(h) {
   </div></section>
   <section class="kort">
     <div class="kort-head"><h2>Deltakere ${h.pameldt}/${h.kap}</h2>${ub ? `<button class="knapp liten rod" data-k="filterUbetalt" aria-pressed="${KS.bareUbetalt}">${ub} ikke betalt</button>` : ''}</div>
-    ${sortert(vis).map(d => `<div class="rad deltaker-rad ${KS.booking === d.bookingId ? 'markert' : ''}" data-rad-booking="${d.bookingId}"><button class="tekst lenke radknapp-inn" data-k="deltaker" data-booking="${d.bookingId}"><b>${esc(d.navn)}${d.antall > 1 ? ` · ${d.antall} plasser` : ''}</b><small>Endre påmelding, flytte eller sperre kursbevis</small> ${merke(d, erPop(h.kursId))}</button>${d.status === 'Ikke betalt' && !erMobil() ? `<button class="knapp liten" data-k="taBetalt" data-booking="${d.bookingId}">Ta betalt</button>` : ''}</div>`).join('') || '<p class="muted">Ingen påmeldte ennå.</p>'}
+    ${sortert(vis).map(d => `<div class="rad deltaker-rad ${KS.booking === d.bookingId ? 'markert' : ''}" data-rad-booking="${d.bookingId}"><button class="tekst lenke radknapp-inn" data-k="deltaker" data-booking="${d.bookingId}"><b>${esc(d.navn)}${d.antall > 1 ? ` · ${d.antall} plasser` : ''}</b><small>Endre påmelding, flytte eller sperre kursbevis</small> ${merke(d, erPop(h.kursId))}</button>${d.status === 'Ikke betalt' && !erMobil() ? (d.vippsPaaVei ? '<span class="merke">Vipps pågår</span>' : `<button class="knapp liten" data-k="taBetalt" data-booking="${d.bookingId}">Ta betalt</button>`) : ''}</div>`).join('') || '<p class="muted">Ingen påmeldte ennå.</p>'}
   </section></div>`;
 }
 
@@ -149,16 +149,24 @@ H.kursBilde = () => tilGammel();
 // Ta betalt. Dagens kurs: kassa (/kasse), der personen står under «Dagens kurs». En annen dato: den eksisterende
 // registreringen (pamelding.php status=betalt med betalingsmåte), som «Status og betaling» i gammel admin.
 // Ingen ny pengelogikk, og ingen beløp regnes her. Paint on Pots tas alltid i kassa (gjenstanden avgjør prisen).
-const TB_MAATER = ['Kontant', 'Vipps', 'Gavekort', 'Faktura', 'Gratis'];
+// Betalingsmåtene følger Booking::MAATER (Kontant, Vipps, Gratis; eieren tok Faktura ut 4. september) + Gavekort med kode.
+const TB_MAATER = ['Kontant', 'Vipps', 'Gavekort', 'Gratis'];
 H.taBetalt = b => {
   const h = aktiv(), d = finnDelt(b.dataset.booking); if (!h || !d) return;
+  // Uten Paint on Pots-oppsettet vet vi ikke om kurset tas i kassa: stopp heller enn å behandle det som et vanlig kurs.
+  if (popUkjent()) return toast(POP_FEIL);
+  // En Vipps-betaling som pågår (opprettet/venter) for påmeldingen: ikke registrer en betaling ved siden av.
+  if (d.vippsPaaVei) return toast('En Vipps-betaling pågår for denne påmeldingen. Vent til den er ferdig.');
   if (h.dato === idag() || erPop(h.kursId)) {
     window.open('/kasse?booking=' + encodeURIComponent(d.bookingId), 'lissom-kasse');
     return toast(h.dato === idag() ? 'Kassa er åpnet. Personen står under «Dagens kurs».' : 'Kassa er åpnet. Paint on Pots tas betalt i kassa når gjenstandene er valgt.');
   }
   KS.delt = d;
+  // Delbetalt: det som gjenstår (kalender.php betaltOre, samme regnestykke som Booking::betalingerFor).
+  const rest = Math.max(0, (d.belopOre || 0) - (d.betaltOre || 0));
+  const belop = !d.belopOre ? '' : d.betaltOre > 0 ? ` · ${kr(rest)} gjenstår (${kr(d.betaltOre)} betalt)` : ' · ' + kr(d.belopOre);
   ark(`<div class="ark-head"><h2>Registrer betaling · ${esc(d.navn)}</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
-    <p class="muted">${esc(h.tittel)} · ${esc(langDato(h.dato))}${d.belopOre ? ' · ' + kr(d.belopOre) : ''}. Registrer bare betaling som er mottatt.</p>
+    <p class="muted">${esc(h.tittel)} · ${esc(langDato(h.dato))}${belop}. Registrer bare betaling som er mottatt.</p>
     <div><small>Betalt med</small><div class="valgknapper" style="margin-top:6px">${TB_MAATER.map(m => `<button class="knapp" data-k="tbMaate" data-maate="${m}" aria-pressed="false">${m}</button>`).join('')}</div></div>
     <label class="en-felt" id="tb-kodefelt" hidden><small>Gavekortkode</small><input id="tb-kode" class="felt" autocomplete="off"></label>
     <div class="ark-fot"><button class="knapp" data-k="lukk">Avbryt</button><button class="knapp hoved" id="tb-ok" data-k="tbOk" disabled>Registrer som betalt</button></div>`);
@@ -189,7 +197,7 @@ H.holder = () => {
 H.settHolder = async b => { await api('kurs.php', {handling: 'dato', oktId: KS.okt, kursholderId: +b.dataset.id}); lukk(true); toast('Kursholder er lagret.'); await oppfrisk(); };
 
 // ── Deltakere ───────────────────────────────────────────────────────────────
-const MAATER = ['Ikke betalt', 'Kontant', 'Vipps', 'Gavekort', 'Faktura', 'Gratis'];
+const MAATER = ['Ikke betalt', 'Kontant', 'Vipps', 'Gavekort', 'Gratis'];
 export function arkLeggTil(oktId) {
   KS.okt = +oktId || KS.okt;
   ark(`<div class="ark-head"><h2>Legg til deltaker</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
@@ -236,25 +244,52 @@ H.deltaker = b => {
    ${d.merknad ? `<p class="sms">${esc(d.merknad)}</p>` : ''}
    <div class="valgknapper"><button class="knapp" data-k="dRediger">Rediger påmelding (antall, rabatt)</button><button class="knapp" data-k="dBekreft">Send bekreftelse på nytt</button><button class="knapp" data-k="dFlytt">Flytt til annen dato</button><button class="knapp" data-k="dVente">Flytt til venteliste</button><button class="knapp rod" data-k="dSperr">Sperr kursbevis</button></div>`);
 };
+// Rabatt eller beløp: ett felt gjelder om gangen, og det andre låses (kontrolløren 09.10.2026). Før ble et innskrevet
+// beløp forkastet uten beskjed når rabatten også var endret. Rabatten: beløpet regnes som på serveren
+// (pamelding.php «endre»: pris på datoen × antall × (1 − rabatt)) og vises før lagring. Beløpet: det skrevne gjelder.
+// Paint on Pots regnes ikke her (gjenstanden og depositumet avgjør): der skrives beløpet.
+const RED = {modus: '', rab: '', bel: ''};
+const redFelt = () => ({ant: document.getElementById('d-ant'), rab: document.getElementById('d-rabatt'), bel: document.getElementById('d-belop'), hint: document.getElementById('d-hint')});
+const redRegn = (d, ant, rab) => Math.round((d.prisOre || 0) * ant * (1 - (parseFloat(String(rab).replace('%', '').replace(',', '.')) || 0) / 100));
+function redOppdater() {
+  const d = KS.delt, f = redFelt(); if (!d || !f.rab || !f.bel || !f.hint) return;
+  const ant = +f.ant.textContent, pop = erPop(aktiv()?.kursId);
+  f.rab.disabled = pop || RED.modus === 'belop'; f.bel.disabled = RED.modus === 'rabatt';
+  const regnes = !pop && (RED.modus === 'rabatt' || (RED.modus === '' && ant !== d.antall));
+  if (pop) f.hint.textContent = 'Paint on Pots: skriv beløpet.';
+  else if (RED.modus === 'belop') f.hint.textContent = 'Beløpet du skrev gjelder. Rabatten endres ikke.';
+  else if (regnes) { const ny = redRegn(d, ant, f.rab.value.trim()); f.bel.value = String(Math.round(ny / 100)); f.hint.textContent = `Nytt beløp: ${kr(ny)} (pris × antall − rabatt).`; }
+  else { f.bel.value = RED.bel; f.hint.textContent = ''; }
+}
+document.addEventListener('input', e => {
+  if (e.target.id === 'd-rabatt') { RED.modus = e.target.value.trim() !== RED.rab ? 'rabatt' : ''; redOppdater(); }
+  if (e.target.id === 'd-belop') { RED.modus = e.target.value.trim() !== RED.bel ? 'belop' : ''; redOppdater(); }
+});
 H.dRediger = () => {
   const d = KS.delt;
+  Object.assign(RED, {modus: '', rab: String(d.rabatt || ''), bel: String(Math.round((d.belopOre || 0) / 100))});
   ark(`${tilbakeDelt()}<div class="ark-head"><h2>Rediger påmelding</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
     <div style="display:grid;gap:5px"><small>Antall plasser</small><div class="ant stor"><button data-k="dAnt" data-d="-1" aria-label="Færre">−</button><b id="d-ant">${d.antall}</b><button data-k="dAnt" data-d="1" aria-label="Flere">+</button></div></div>
-    <div class="to-felt"><label><small>Rabatt (%)</small><input id="d-rabatt" inputmode="decimal" value="${d.rabatt || ''}"></label><label><small>Beløp (kr)</small><input id="d-belop" inputmode="numeric" value="${Math.round((d.belopOre || 0) / 100)}"></label></div>
+    <div class="to-felt"><label><small>Rabatt (%)</small><input id="d-rabatt" inputmode="decimal" value="${esc(RED.rab)}"></label><label><small>Beløp (kr)</small><input id="d-belop" inputmode="numeric" value="${esc(RED.bel)}"></label></div>
+    <small id="d-hint" class="muted"></small>
     <div class="ark-fot"><button class="knapp" data-k="deltaker" data-booking="${d.bookingId}">Avbryt</button><button class="knapp hoved" data-k="dRedigerOk">Lagre</button></div>`);
+  redOppdater();
 };
-H.dAnt = b => { const e = document.getElementById('d-ant'); e.textContent = Math.max(1, +e.textContent + +b.dataset.d); };
+H.dAnt = b => { const e = document.getElementById('d-ant'); e.textContent = Math.max(1, +e.textContent + +b.dataset.d); redOppdater(); };
 H.dRedigerOk = async () => {
-  const d = KS.delt, body = {handling: 'endre', id: d.bookingId};
-  const ant = +document.getElementById('d-ant').textContent, rab = document.getElementById('d-rabatt').value.trim(), bel = document.getElementById('d-belop').value.trim();
+  const d = KS.delt, body = {handling: 'endre', id: d.bookingId}, f = redFelt();
+  const ant = +f.ant.textContent, rab = f.rab.value.trim(), bel = f.bel.value.trim();
   if (ant !== d.antall) body.antall = ant;
-  if (rab !== String(d.rabatt || '')) body.rabatt = rab || '0';
-  else if (bel !== String(Math.round((d.belopOre || 0) / 100))) body.belop = bel;
+  // Bare det feltet som gjelder sendes, så serveren aldri velger et annet enn det skjermen viste.
+  if (RED.modus === 'belop') body.belop = bel;
+  else if (RED.modus === 'rabatt') body.rabatt = rab || '0';
   // Nytt antall uten nytt beløp: pamelding.php regner pris × antall på nytt og bruker bare rabatten som sendes
   // med. Uten den falt en lagret rabatt bort fra beløpet (betalingseksperten 09.10.2026).
   else if (body.antall !== undefined && rab) body.rabatt = rab;
   const r = await api('pamelding.php', body);
-  toast(esc(r.beskjed || 'Påmeldingen er endret.')); await oppfrisk(); KS.delt = finnDelt(d.bookingId) || d; H.deltaker({dataset: {booking: d.bookingId}});
+  // Det serveren faktisk lagret, så et beløp aldri endres uten at det vises.
+  toast(esc((r.beskjed || 'Påmeldingen er endret.') + (r.belop ? ` Beløp nå: ${r.belop}.` : '')));
+  await oppfrisk(); KS.delt = finnDelt(d.bookingId) || d; H.deltaker({dataset: {booking: d.bookingId}});
 };
 H.dBekreft = async () => { const r = await api('pamelding.php', {handling: 'bekreftelse', id: KS.delt.bookingId}); toast(esc(r.beskjed || 'Bekreftelsen er sendt.')); };
 // «Er du sikker?» før det som ikke kan angres med ett trykk (brukertesten 08.10.2026).

@@ -18956,8 +18956,10 @@ sjekk('… og salgsuka som staar der i dag flyttes inn som den foerste',
 // Forsiden leser bare content_blocks — se api/innhold.php. Speilinga er det
 // eneste som faar kampanjen ut til en besoekende.
 sjekk('den som staar ute speiles dit forsiden leser fra',
-    str_contains($kmpApi, "        'Kampanje/aktiv'  => (string) (int) \$k['id'],")
-    && str_contains($kmpApi, "        'Kampanje/pris'   => \$k['pris_ore'] === null ? '' : (string) (int) \$k['pris_ore'],")
+    // Prefikset er «Kampanje/» eller «Medlemskampanje/» siden 3aed995 (prefiks()).
+    str_contains($kmpApi, "        \$p . 'aktiv'  => (string) (int) \$k['id'],")
+    && str_contains($kmpApi, "        \$p . 'pris'   => \$k['pris_ore'] === null ? '' : (string) (int) \$k['pris_ore'],")
+    && str_contains($kmpApi, "    return \$publikum === 'medlemmer' ? 'Medlemskampanje/' : 'Kampanje/';")
     && str_contains($vis172, "          kampanjeBilde: il['Kampanje/bilde'] || '',"));
 // De gamle noeklene leses fortsatt: banneret skal staa uendret til eieren har
 // trykket «Kjoer oppdateringer».

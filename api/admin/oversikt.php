@@ -143,73 +143,10 @@ $linjer = static function (string $fra) use ($FORMAL): array {
     return $ut;
 };
 
-// Betalingene bak hver rad paa Penger (eieren, 3. oktober 2026: «vite hvor
-// mva-en kommer fra, til regnskapet»). Samme rader som perFormal() summerer
-// (Omsetning::rader), samme beloep og samme mva-sats (Omsetning::mvaFor) per
-// betaling. Bare lesing. Per formaal: dato, hva, beloep og mva.
-$detaljer = static function (string $fra) use ($FORMAL, $oslo, $utc): array {
-    $rader = Omsetning::rader($fra, '9999-12-31 00:00:00');
-    $betIder = [];
-    $bookIder = [];
-    foreach ($rader as $r) {
-        if (is_string($r['id']) && str_starts_with($r['id'], 'b')) {
-            $bookIder[] = (int) substr($r['id'], 1);
-        } else {
-            $betIder[] = (int) $r['id'];
-        }
-    }
-    $info = [];
-    // Delbetalinger: payments.order_id (migrasjon 134) kobler alle delene til ordren,
-    // orders.payment_id bare hovedraden. Samme kobling som Omsetning::rader().
-    $ordreVilkaar = DB::harKolonne('payments', 'order_id')
-        ? '(o.id = p.order_id OR o.payment_id = p.id)' : 'o.payment_id = p.id';
-    if ($betIder) {
-        $plass = implode(',', array_fill(0, count($betIder), '?'));
-        foreach (DB::alle(
-            "SELECT p.id, m.navn AS medlem,
-                    (SELECT c.tittel FROM bookings b JOIN courses c ON c.id = b.course_id
-                      WHERE b.payment_id = p.id LIMIT 1) AS kurs,
-                    (SELECT COALESCE(mb.navn, b.gjest_navn) FROM bookings b LEFT JOIN members mb ON mb.id = b.member_id
-                      WHERE b.payment_id = p.id LIMIT 1) AS deltaker,
-                    (SELECT CONCAT('Ordre ', o.ordrenr, IF(o.kunde_navn IS NULL OR o.kunde_navn = '', '', CONCAT(' · ', o.kunde_navn)))
-                       FROM orders o WHERE {$ordreVilkaar} LIMIT 1) AS ordre
-               FROM payments p
-          LEFT JOIN members m ON m.id = p.member_id
-              WHERE p.id IN ($plass)",
-            $betIder
-        ) as $i) {
-            $info[(string) $i['id']] = $i['ordre'] ?: implode(' · ', array_filter([$i['kurs'], $i['deltaker'] ?: $i['medlem']]));
-        }
-    }
-    if ($bookIder) {
-        $plass = implode(',', array_fill(0, count($bookIder), '?'));
-        foreach (DB::alle(
-            "SELECT b.id, c.tittel, COALESCE(m.navn, b.gjest_navn) AS navn
-               FROM bookings b JOIN courses c ON c.id = b.course_id
-          LEFT JOIN members m ON m.id = b.member_id
-              WHERE b.id IN ($plass)",
-            $bookIder
-        ) as $i) {
-            $info['b' . $i['id']] = implode(' · ', array_filter([$i['tittel'], $i['navn']]));
-        }
-    }
-    $ut = [];
-    foreach ($rader as $r) {
-        $ore = (int) $r['belop_ore'] - (int) ($r['refundert_ore'] ?? 0) + (int) ($r['gavekort_ore'] ?? 0);
-        if ($ore === 0) {
-            continue;
-        }
-        $f = (string) $r['formal'];
-        $maate = trim((string) ($r['radmaate'] ?? '')) ?: trim((string) ($r['betalt_maate'] ?? ''));
-        $ut[$f][] = [
-            'dato'     => (new DateTimeImmutable((string) $r['created_at'], $utc))->setTimezone($oslo)->format('d.m. H:i'),
-            'hva'      => implode(' · ', array_filter([$info[(string) $r['id']] ?? ($FORMAL[$f] ?? $f), $maate])),
-            'belopOre' => $ore,
-            'mvaOre'   => Omsetning::mvaFor($f, $ore)['mvaOre'],
-        ];
-    }
-    return $ut;
-};
+// Hvor pengene kommer fra (Penger, eieren 8. oktober 2026): omsetningen uten
+// mva per kilde, med salgene bak. Se Omsetning::perKilde(). Erstatter
+// betalingene per formaal med mva (3. oktober), som hoerer til regnskapet.
+$kilder = static fn(string $fra, string $til = '9999-12-31 00:00:00'): array => Omsetning::perKilde($fra, $til);
 
 $betaltIdag = $sum($dagStart);
 $eksIdag    = $eks($dagStart);
@@ -926,9 +863,16 @@ Svar::json([
         'maned'      => $kroner($betaltMnd),
         'linjerIdag' => $linjer($dagStart),
         'linjerMnd'  => $linjer($mndStart),
-        // Betalingene bak hver rad, per formaal (Penger, eieren 3. oktober 2026).
-        'detaljerIdag' => $detaljer($dagStart),
-        'detaljerMnd'  => $detaljer($mndStart),
+        // Hvor pengene kommer fra, uten mva, per periode (Penger, eieren
+        // 8. oktober 2026). «forrige» er hele forrige maaned.
+        'kilder' => [
+            'idag'    => $kilder($dagStart),
+            'maned'   => $kilder($mndStart),
+            'forrige' => $kilder(
+                $forrigeMndStartOslo->setTimezone($utc)->format('Y-m-d H:i:s'),
+                $naa->modify('first day of this month')->setTime(0, 0)->setTimezone($utc)->format('Y-m-d H:i:s')
+            ),
+        ],
         'idagOre'    => $betaltIdag,
         'manedOre'   => $betaltMnd,
         'forrigeMndOre'    => $betaltForrigeMnd,

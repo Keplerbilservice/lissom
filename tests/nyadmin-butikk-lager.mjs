@@ -10,14 +10,14 @@ const varer=async p=>(await p.evaluate(async()=>await(await fetch('/api/admin/pr
 try{
  const c=await browser.newContext({viewport:{width:1280,height:950}});await c.addCookies([{name:'lissom_sesjon',value:s.token,domain:'lokal.lissom.no',path:'/'}]);
  const p=await c.newPage(),errors=[];p.on('pageerror',e=>errors.push(e.message));
- // Butikk i hovedmenyen.
- await p.goto(URL+'#idag');await p.getByRole('heading',{name:'Kjøpt i dag',exact:true}).waitFor();
- await p.locator('#meny').getByRole('link',{name:/Butikk/}).click();await p.getByRole('heading',{name:'Butikk',exact:true}).waitFor();
- assert.equal(await p.locator('#meny a[aria-current="page"]').innerText().then(t=>t.includes('Butikk')),true,'Butikk lyser i menyen');
+ // Butikk nås fra Mer (enklere admin, eieren 08.10.2026).
+ await p.goto(URL+'#idag');await p.getByRole('heading',{name:'I dag',exact:true}).waitFor();
+ await p.locator('#meny').getByRole('link',{name:/Mer/}).click();await p.locator('main a.flis').filter({hasText:'Butikk'}).click();await p.getByRole('heading',{name:'Butikk',exact:true}).waitFor();
+ assert.equal(await p.locator('#meny a[aria-current="page"]').innerText().then(t=>t.includes('Mer')),true,'Mer lyser i menyen');
  // 08.10.2026 (andre runde): Nettbutikk / Internt / Alle / Lite på lager uten tall, Alle valgt først; «Terskel» er fjernet.
  assert.deepEqual(await p.locator('.butikk-piller button').allTextContents(),['Nettbutikk','Internt','Alle','Lite på lager']);assert.equal(await p.locator('.butikk-piller [data-vis="alle"]').getAttribute('aria-pressed'),'true');
  // Ny vare: begge bryterne, 2 på lager, min 5, maks 20.
- await p.getByRole('button',{name:'Ny vare',exact:true}).click();await p.getByText('Hvor skal varen vises?',{exact:true}).waitFor();
+ await p.locator('.ny-pluss').click();await p.locator('[data-ny-valg="Ny vare"]').click();await p.getByText('Hvor skal varen vises?',{exact:true}).waitFor();
  assert.equal(await p.getByLabel('Nettbutikken',{exact:true}).isChecked(),true,'ny vare: Nettbutikken er krysset av');
  await p.getByLabel('Varenavn',{exact:true}).fill(navn);await p.getByLabel('Pris i kroner',{exact:true}).fill('149');await p.getByLabel('Antall på lager',{exact:true}).fill('2');
  await p.getByLabel('Synlighet',{exact:true}).selectOption('publisert');await p.getByLabel('Internt',{exact:true}).check();
@@ -38,11 +38,11 @@ try{
  assert.equal(await p.locator('.butikk-piller [data-vis="lite"]').getAttribute('aria-pressed'),'true');assert.equal(await p.locator('.butikk-piller [data-vis="nett"]').getAttribute('aria-pressed'),'false');
  // Lite på lager: «Bestill mer» rett på raden, og tom bilderute når varen ikke har bilde.
  const lrad=p.locator('.vare-rad',{hasText:navn});await lrad.getByRole('button',{name:'Bestill mer',exact:true}).waitFor();assert.equal(await lrad.locator('.vare-bilde.tom').count(),1,'tom bilderute');
- // I dag: Lite på lager med Åpne butikken.
- await p.goto(URL+'#idag');const idag=p.locator('section.card').filter({has:p.getByRole('heading',{name:'Lite på lager',exact:true})});await idag.getByText(navn,{exact:true}).waitFor();
- await idag.getByRole('link',{name:'Åpne butikken',exact:true}).waitFor();
+ // I dag: Lite på lager er en sak i flisen «Butikk» under «Må gjøres» (Bestill mer, Fyll på).
+ await p.goto(URL+'#idag');await p.locator('[data-gruppe="Butikk"]').click();await p.locator('.sak',{hasText:'Lite på lager: '+navn}).click();
+ const sakArk=p.getByRole('dialog',{name:'Lite på lager: '+navn,exact:true});await sakArk.getByRole('button',{name:'Bestill mer',exact:true}).waitFor();
  // Fyll på 18 fra I dag: lageret blir 20, og varen er ute av Lite på lager.
- await idag.locator('.row',{hasText:navn}).getByRole('button',{name:'Fyll på',exact:true}).click();await p.getByRole('dialog',{name:'Fyll på · '+navn,exact:true}).waitFor();
+ await sakArk.getByRole('button',{name:'Fyll på',exact:true}).click();await p.getByRole('dialog',{name:'Fyll på · '+navn,exact:true}).waitFor();
  await p.getByLabel('Antall inn',{exact:true}).fill('18');await p.getByRole('button',{name:'Lagre',exact:true}).click();await p.getByText('Lageret er nå 20.',{exact:true}).waitFor();
  d=await varer(p);assert.equal(d.varer.find(r=>r.id===v.id).lager,20);assert.ok(!d.litePaaLager.some(r=>r.id===v.id),'ute av Lite på lager');
  console.log('Fyll på 18 fra I dag: lageret er 20, og varen er ute av Lite på lager.');
@@ -65,8 +65,8 @@ try{
  await tu.getByText(navn,{exact:true}).waitFor();await tu.locator(`[data-taut="${v.id}"]`).click();await p.getByText('Tatt ut 1. Lageret er nå 2.',{exact:true}).waitFor();
  d=await varer(p);assert.equal(d.varer.find(r=>r.id===v.id).lager,2);
  const hl2=await p.evaluate(async()=>await(await fetch('/api/admin/handlelister.php')).json());assert.equal(hl2.varer.find(r=>r.produktId===v.id).antall,17,'samme linje, ikke en ny');
- await p.goto(URL+'#idag');await p.locator('section.card').filter({has:p.getByRole('heading',{name:'Ta ut leire',exact:true})}).getByText(navn,{exact:true}).waitFor();
- console.log('Ta ut leire: lageret 3 → 2, ingen ny linje i handlelista; kortet står også på I dag.');
+ await p.goto(URL+'#idag');await p.locator('[data-gruppe="Butikk"]').click();await p.locator('.sak',{hasText:'Ta ut leire'}).click();await p.getByRole('dialog',{name:'Ta ut leire',exact:true}).getByText(navn,{exact:true}).waitFor();
+ console.log('Ta ut leire: lageret 3 → 2, ingen ny linje i handlelista; står også i flisen Butikk på I dag.');
  // Bare i admin: ingen av bryterne — ikke for gjester eller medlemmer, men i admin.
  const admin=await p.evaluate(async t=>await(await fetch('/api/admin/produkter.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({handling:'lagre',id:0,tittel:t,pris:250,lager:9,status:'publisert',iNettbutikk:'nei',kunMedlemmer:'nei',leire:'ja'})})).json(),s.tag+' Toffee');
  assert.ok(admin.id,'bare i admin lagres');

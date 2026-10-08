@@ -13,6 +13,8 @@ export const shift=(s,n)=>{const d=date(s);d.setDate(d.getDate()+n);return iso(d
 export const button=(text,action,kind='')=>el('button',{class:`button ${kind}`,type:'button',text,onclick:action});
 export const link=(text,href,kind='')=>el('a',{class:`button ${kind}`,text,href});
 export const badge=(text,kind='')=>el('span',{class:`badge ${kind}`,text});
+/* «+» (eieren 08.10.2026): #side?ny=1 åpner sidens nye-skjema. app.js setter flagget og fjerner ?ny=1 fra adressen før siden tegnes. */
+export const ny={paa:false};
 export const card=(title,...children)=>el('section',{class:'card'},el('h2',{text:title}),children);
 export function toast(text){const box=el('div',{class:'toast',text});document.querySelector('#meldinger').replaceChildren(box);setTimeout(()=>box.remove(),6500);}
 export const hasUnsaved=()=>Boolean(document.querySelector('dialog[data-dirty="true"]'));

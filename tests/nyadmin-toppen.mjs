@@ -8,11 +8,11 @@ try{
  for(const width of[390,820,1280]){
   const c=await browser.newContext({viewport:{width,height:900}});await c.addCookies([{name:'lissom_sesjon',value:s.token,domain:'lokal.lissom.no',path:'/'}]);
   const p=await c.newPage(),errors=[];p.on('pageerror',e=>errors.push(e.message));
-  await p.goto('http://lokal.lissom.no:8140/admin-ny.html#idag');await p.getByRole('heading',{name:'Kjøpt i dag',exact:true}).waitFor();
+  await p.goto('http://lokal.lissom.no:8140/admin-ny.html#idag');await p.getByRole('heading',{name:'I dag',exact:true}).waitFor();
   const topp=p.locator('#topp');await topp.locator('[data-stemple]').waitFor();
   assert.equal(await topp.locator('[data-inne]').count(),0,'Hvem er inne? er ikke i toppen');
   assert.equal(await topp.getByText(/Hvem er inne/).count(),0);
-  await p.getByRole('heading',{name:'Hvem er inne?',exact:true}).waitFor();// kortet på I dag står
+  await p.locator('main [data-inne-na]').waitFor();// flisen «Inne nå» på I dag står (enklere admin 08.10.2026)
   const m=await p.evaluate(()=>{const r=e=>document.querySelector(e).getBoundingClientRect();const i=document.querySelector('.search-wrap input'),cs=getComputedStyle(i);
    return{sok:r('.search-wrap'),hoyre:r('.topp-hoyre'),stemple:r('[data-stemple]'),ovn:r('[data-ovn]'),bg:cs.backgroundColor,kant:cs.borderTopWidth,bunn:cs.borderBottomWidth,vw:innerWidth,rull:document.documentElement.scrollWidth<=innerWidth};});
   assert.equal(m.rull,true,width+' px: ingen sideveis rulling');

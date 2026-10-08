@@ -4384,38 +4384,38 @@
             ]
         },
         {
-            "id": "penger-mva-tabeller",
-            "dato": "2026-10-03",
-            "hva": "Eieren, 3. oktober 2026: Penger i admin-ny viser mva-en og hvor den kommer fra, til regnskapet. «I dag» og «Denne måneden» har hvert sitt store tall «Mva å betale», en linje «Omsetning inkl. mva», og en tabell Kategori | Mva-sats | Grunnlag (ekskl. mva) | Mva med én rad per kategori og sats og en Sum-rad. Hver rad kan åpnes og viser betalingene bak (dato, hva, beløp, mva) fra Omsetning::rader. Satsene er systemets egne (Omsetning::mvaFor). Er Sum større enn radene (f.eks. dropin), vises differansen som «Annet». På mobil blir hver rad et kort uten sideveis rulling. Gavekort vises som «Utenfor mva».",
+            "id": "penger-kilder",
+            "dato": "2026-10-08",
+            "hva": "Eieren, 8. oktober 2026: Penger i admin-ny viser ikke mva (mva hører hjemme hos Regnskap; regnskapsførerens visning er urørt). Øverst fanene «I dag», «Denne måneden» og «Forrige måned» og et stort tall «Omsetning uten mva». Kortet «Hvor pengene kommer fra» har kildene Kurs, Paint on Pots, Medlemskap, Nettbutikk, Kasse i verkstedet og Gavekort, hver med kronebeløp uten mva og en stolpe; trykk på en kilde viser salgene bak. Paint on Pots skilles ut av booking på kurset (folger_apningstid / paint-on-pots), Kasse i verkstedet ut av ordre på ordrenummeret (D-, Q-, G- fra api/admin/uttak.php; B- er nettbutikken, T- «Ta med barn» regnes til Medlemskap). Tom periode viser kr 0. «Medlemmer som mangler betaling» står fortsatt på Penger.",
             "hvor": "admin-ny › Penger",
             "kode": [
                 {
                     "fil": "admin-ny/app.js",
                     "finnes": [
-                        "card('I dag',mvaTable(o.linjerIdag,o.idagEksOre,o.idagMvaOre,o.idagOre,o.detaljerIdag))",
-                        "card('Denne måneden',mvaTable(o.linjerMnd,o.manedEksOre,o.manedMvaOre,o.manedOre,o.detaljerMnd))",
-                        "['Kategori','Mva-sats','Grunnlag (ekskl. mva)','Mva']",
-                        "'Mva å betale: '+money(sM)",
-                        "'Omsetning inkl. mva: '+money(sI)",
-                        "const rest={navn:'Annet'",
-                        "r.nokkel==='gavekort'?'Utenfor mva'"
+                        "const faner=[['idag','I dag'],['maned','Denne måneden'],['forrige','Forrige måned']]",
+                        "el('h2',{text:'Omsetning uten mva'})",
+                        "el('h2',{text:'Hvor pengene kommer fra'})",
+                        "link('Medlemmer som mangler betaling',href('folk','betaling=mangler'))"
+                    ],
+                    "ikkeFinnes": [
+                        "'Mva å betale: '",
+                        "mvaTable("
                     ]
                 },
                 {
-                    "fil": "admin-ny/design.css",
+                    "fil": "app/lib/omsetning.php",
                     "finnes": [
-                        ".mva-table td[data-label]::before{content:attr(data-label)",
-                        "font-variant-numeric:tabular-nums",
-                        ".mva-table tr[hidden]{display:none}"
+                        "'pop'        => 'Paint on Pots',",
+                        "'kasse'      => 'Kasse i verkstedet',",
+                        "public const KASSE_PREFIKS = ['D-', 'Q-', 'G-'];",
+                        "public static function perKilde(string $fraUtc, string $tilUtc): array"
                     ]
                 },
                 {
                     "fil": "api/admin/oversikt.php",
                     "finnes": [
-                        "'detaljerIdag' => $detaljer($dagStart),",
-                        "'mvaOre'   => Omsetning::mvaFor($f, $ore)['mvaOre'],",
-                        "+ Omsetning::mvaFor($nokkel, $etter[$nokkel]);",
-                        "? '(o.id = p.order_id OR o.payment_id = p.id)' : 'o.payment_id = p.id';"
+                        "'kilder' => [",
+                        "'forrige' => $kilder("
                     ]
                 }
             ]
@@ -5975,6 +5975,39 @@
                     "fil": "admin-ny/app.js",
                     "finnes": [
                         "el('a',{href:href('idag'),class:'brand-lenke','aria-label':'Lissom, til I dag'}"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "marked-forside-kort",
+            "dato": "2026-10-08",
+            "hva": "Eieren, 8. oktober 2026: Markedsføring i admin-ny får tilbake det som manglet fra gamle admin, som kort på forsiden: «Kurs som fylles tregt» med «Lag markedsføring» (kursboost), «SEO og GEO» med poeng per side og knappene «Fyll inn og lagre» og «Optimaliser for GEO» (tekst eieren har skrevet blir stående), «Brytere» (Vis/autosvar, Vis/salgsuke, Banner/pa — samme innhold.php-nøkler og standard som Synlighet), «Analyse» (besøk hos Google, mest bookede kurs, hvor kjøpene kom fra), «Innboks og utkast» og «Oppsett» (GA-ID, GTM-ID, Meta-piksel og kjøpsmåling) under Markedsføring › Oppsett. Kampanjer er urørt.",
+            "hvor": "admin-ny › Markedsføring",
+            "kode": [
+                {
+                    "fil": "admin-ny/markedsforside.js",
+                    "finnes": [
+                        "card('Kurs som fylles tregt'",
+                        "button('Lag markedsføring',()=>boost(k),'primary')",
+                        "button('Fyll inn og lagre',fyllSeo,'primary')",
+                        "button('Optimaliser for GEO',fyllGeo,'primary')",
+                        "['Vis/autosvar','Svar automatisk på kommentarer',false],['Vis/salgsuke','Kampanje på forsiden',true],['Banner/pa','Banner under toppbildet',true]",
+                        "card('Analyse'",
+                        "card('Innboks og utkast'",
+                        "href:'#markedoppsett'"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/marked.js",
+                    "finnes": [
+                        "return{marked:forside.home,markedoppsett:forside.setup,"
+                    ]
+                },
+                {
+                    "fil": "api/admin/marked.php",
+                    "finnes": [
+                        "'kilder'      => ["
                     ]
                 }
             ]

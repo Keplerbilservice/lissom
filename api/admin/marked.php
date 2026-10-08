@@ -280,6 +280,30 @@ if (Foresporsel::metode() === 'GET') {
           GROUP BY c.id ORDER BY plasser DESC LIMIT 8"
     );
 
+    // Hvor kjoepene kom fra, siste 30 dager (Markedsfoering › Analyse, eieren
+    // 8. oktober 2026). Lest av sporingen som lagres paa betalingen naar
+    // kunden har sagt ja til maaling (Maaling::sporingFraNettleser, migrasjon
+    // 203): gclid = Google-annonse, fbc = Meta-annonse, ellers annen trafikk
+    // med samtykke. Uten samtykke vet vi ingenting, og det staar for seg.
+    $kjopKilder = ['google' => 0, 'meta' => 0, 'annen' => 0, 'ukjent' => 0];
+    if (DB::harKolonne('payments', 'sporing')) {
+        foreach (DB::alle(
+            "SELECT sporing FROM payments
+              WHERE status = 'betalt' AND created_at >= UTC_TIMESTAMP() - INTERVAL 30 DAY"
+        ) as $p) {
+            $s = json_decode((string) ($p['sporing'] ?? ''), true);
+            if (!is_array($s) || $s === []) {
+                $kjopKilder['ukjent']++;
+            } elseif (!empty($s['gclid'])) {
+                $kjopKilder['google']++;
+            } elseif (!empty($s['fbc'])) {
+                $kjopKilder['meta']++;
+            } else {
+                $kjopKilder['annen']++;
+            }
+        }
+    }
+
     // Utkastraden slik tavla trenger den: bildet ut av data-feltet, og
     // data-feltet ut av svaret. Resten av det som ligger der — fokusord,
     // metabeskrivelse, hashtags — hoerer til inne i utkastet, ikke paa tavla.
@@ -325,6 +349,12 @@ if (Foresporsel::metode() === 'GET') {
                 'plasser' => (int) $r['plasser'],
                 'kjop'    => (int) $r['antall'],
             ], $mestBookede),
+            'kilder'      => [
+                ['navn' => 'Google-annonser', 'antall' => $kjopKilder['google']],
+                ['navn' => 'Meta-annonser', 'antall' => $kjopKilder['meta']],
+                ['navn' => 'Annen trafikk med samtykke', 'antall' => $kjopKilder['annen']],
+                ['navn' => 'Uten samtykke til måling', 'antall' => $kjopKilder['ukjent']],
+            ],
             // Vi later ikke som vi har besokstall vi ikke har.
             'mangler'     => $gaId === ''
                 ? 'Besøkstall, mest leste sider og søkeord krever Google Analytics. Legg inn måle-ID-en under Innstillinger.'

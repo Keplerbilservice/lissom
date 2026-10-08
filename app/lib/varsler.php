@@ -302,16 +302,21 @@ final class Varsel
      * Sender en av malene fra `notification_templates`, med {navn}-plassholdere
      * fylt ut. Malen bestemmer selv om det blir e-post, SMS eller begge.
      *
+     * Svarer hvor mange meldinger som ble lagt i koen til mottakeren (0, 1
+     * eller 2). 0 betyr at malen er av, eller at ingen vei naadde fram — da
+     * kan den som kaller si fra i stedet for aa telle den som sendt (den nye
+     * adminen, 8. oktober 2026). Kall som ikke bruker svaret, er som foer.
+     *
      * @param array<string,string> $felter
      */
-    public static function mal(string $malNavn, array $mottaker, array $felter = [], ?string $refType = null, ?int $refId = null, ?string $egenHtml = null): void
+    public static function mal(string $malNavn, array $mottaker, array $felter = [], ?string $refType = null, ?int $refId = null, ?string $egenHtml = null): int
     {
         // «$egenHtml» er en ferdig HTML-utgave av meldingen (medlemsinvitasjonen
         // etter kurset, app/epost/fortsett.html). Tekstdelen er fortsatt
         // malen; HTML-en gaar i stedet for den automatiske omskrivinga.
         $mal = self::hentMal($malNavn);
         if ($mal === null) {
-            return;
+            return 0;
         }
 
         // ── Bare fornavnet til kunden ─────────────────────────────────
@@ -389,7 +394,7 @@ final class Varsel
         }
 
         if ($viaEpost || $viaSms) {
-            return;
+            return (int) $viaEpost + (int) $viaSms;
         }
 
         // ── En SMS til verkstedet selv, uten SMS ──────────────────────
@@ -407,7 +412,7 @@ final class Varsel
         // ikke kan gaa, skal bare loggfoeres — ikke bli en e-post til.
         if (str_starts_with($malNavn, 'intern_')) {
             logg('Intern SMS kunne ikke sendes — e-posten er alt sendt', ['mal' => $malNavn]);
-            return;
+            return 0;
         }
 
         // Ingen vei fram. «Plass ledig paa venteliste» og «keramikken er
@@ -427,6 +432,7 @@ final class Varsel
             $refType,
             $refId
         );
+        return 0;
     }
 
     /** @param array<string,string> $felter */

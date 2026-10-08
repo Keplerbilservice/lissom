@@ -4,13 +4,23 @@
 // kurs.php for datoen, beskjed.php og okt-varsel.php for beskjeder med eksisterende maler.
 import {api, ark, lukk, toast, registrer, poll, gaaTil, esc, idag, pluss, langDato, kortDato, kr, erMobil,
   OKTER, KURSHOLDERE, hentPeriode, erOkt, samleDag, ubetalte, H, oppfrisk, vedOppfrisk,
-  arkFlytt, arkBeskjed, arkPaaminnelse, arkSerie, stengOkt, oktMeny, hentKurs, hentPop, erPop, popPrisliste} from './kalender.js';
+  arkFlytt, arkBeskjed, arkPaaminnelse, arkSerie, stengOkt, kopierOkt, hentKurs, hentPop, erPop, popPrisliste} from './kalender.js';
 
-const KS = {okt: 0, fra: '', el: null, liste: null, feil: '', bareUbetalt: false, delt: null};
+const KS = {okt: 0, fra: '', kurs: 0, booking: 0, el: null, liste: null, feil: '', bareUbetalt: false, delt: null};
 
+// #kurs?okt= (kalenderen, I dag, «Ikke betalt» med &booking=) eller #kurs?kurs= (søket: neste dato på kurset).
 function lesHash() {
   const q = new URLSearchParams((location.hash.split('?')[1]) || '');
-  if (location.hash.startsWith('#kurs')) { KS.okt = +q.get('okt') || 0; KS.fra = q.get('fra') || ''; }
+  if (location.hash.startsWith('#kurs')) { KS.okt = +q.get('okt') || 0; KS.fra = q.get('fra') || ''; KS.kurs = +q.get('kurs') || 0; KS.booking = +q.get('booking') || 0; }
+}
+const iOslo = utc => new Intl.DateTimeFormat('sv-SE', {timeZone: 'Europe/Oslo'}).format(new Date(String(utc).replace(' ', 'T') + 'Z'));
+// Neste dato (i dag eller senere) på et kurs, fra kurs.php. 0 når kurset ikke har flere datoer.
+async function nesteOkt(kursId) {
+  const k = await hentKurs();
+  const kurs = (k.kurs || []).find(x => x.id === kursId);
+  const datoer = (kurs?.datoer || []).filter(o => o.startUtc && iOslo(o.startUtc) >= idag() && o.status !== 'avlyst')
+    .sort((a, b) => a.startUtc.localeCompare(b.startUtc));
+  return {kurs, oktId: datoer[0]?.oktId || 0};
 }
 
 async function hentListe() {
@@ -26,7 +36,7 @@ async function hentOkt(tving) {
     let dato = h?.dato;
     if (!dato) {
       const k = await hentKurs();
-      for (const kurs of k.kurs || []) for (const o of kurs.datoer || []) if (o.oktId === KS.okt) dato = new Intl.DateTimeFormat('sv-SE', {timeZone: 'Europe/Oslo'}).format(new Date(o.startUtc.replace(' ', 'T') + 'Z'));
+      for (const kurs of k.kurs || []) for (const o of kurs.datoer || []) if (o.oktId === KS.okt) dato = iOslo(o.startUtc);
     }
     if (dato) await hentPeriode(dato, dato);
     h = OKTER.get(KS.okt);
@@ -64,33 +74,44 @@ function tegnKursside(h) {
   const tilbake = ({kalender: 'Tilbake til kalenderen', idag: 'Tilbake til I dag', kurs: 'Alle kurs'})[KS.fra] || 'Alle kurs';
   if (!h) { el.innerHTML = `<div class="nk-kurs"><button class="knapp liten" data-k="kursTilbake">← ${tilbake}</button><p class="muted" style="margin-top:16px">${esc(KS.feil || 'Fant ikke kurset.')}</p></div>`; return; }
   const delt = h.deltakere || [], ub = ubetalte(h).length, bet = delt.filter(d => d.status === 'Betalt').length, vente = (h.venteliste || []).length;
+  // De som får en beskjed: betalt og ikke betalt (reservert) — samme utvalg som utsendingen (betalt + aktive reservasjoner).
+  const naas = delt.filter(d => d.status === 'Betalt' || d.status === 'Ikke betalt').length;
   const status = h.avlyst ? '<span class="merke rod">Avlyst</span>' : h.visFullt ? '<span class="merke">Stengt for påmelding</span>' : '<span class="merke gronn">Åpen for påmelding</span>';
   const vis = KS.bareUbetalt ? delt.filter(d => d.status === 'Ikke betalt') : delt;
   el.innerHTML = `<div class="nk-kurs">
   <div class="head"><div><button class="knapp liten" data-k="kursTilbake">← ${tilbake}</button>
     <div class="eyebrow" style="margin-top:14px">${esc(langDato(h.dato))} · ${esc(h.tid)}${h.slutt ? '–' + esc(h.slutt) : ''}</div><h1>${esc(h.tittel)}</h1>
-    <p class="muted" style="margin-top:6px">Kursholder: <button class="knapp liten" data-k="holder">${esc(h.holder || 'Velg')} ▾</button> · ${status}</p></div>
-    <button class="knapp hoved" data-k="kursBeskjed" ${delt.length ? '' : 'disabled'}>✉ Send beskjed til ${delt.length}</button></div>
+    <p class="muted" style="margin-top:6px">Kursholder: <button class="knapp liten" data-k="holder" aria-label="${esc(h.holder || 'Velg kursholder')}, bytt kursholder">${esc(h.holder || 'Velg kursholder')}</button> · ${status}</p></div>
+    <button class="knapp hoved" data-k="kursBeskjed" ${naas ? '' : 'disabled'}>✉ Send beskjed til ${naas}</button></div>
   <section class="kort" style="margin-bottom:20px"><div class="hgrupper">
     ${gruppe('Deltakere', [['＋ Legg til deltaker', 'leggTil'], [`Venteliste ${vente}${vente ? ' · Gi plass' : ''}`, 'venteliste'], ['Skriv ut liste', 'utskrift']])}
-    ${gruppe('Send', [['Påminnelse', 'kursPaaminnelse'], [`Kursbevis til ${bet} betalte`, 'kursbevis'], ['Bekreftelse på nytt', 'bekreftAlle']])}
+    ${gruppe('Send', [['Påminnelse', 'kursPaaminnelse'], [`Kursbevis til ${bet} som har betalt`, 'kursbevis'], ['Bekreftelse på nytt', 'bekreftAlle']])}
     ${gruppe('Datoen', [['Endre dato og tid', 'kursFlytt'], ['Avlys dato', 'kursAvlys', h.avlyst ? 'disabled' : ''], ['Kopier økta', 'kursKopier'], [h.visFullt ? 'Åpne for påmelding' : 'Steng for påmelding', 'kursSteng']])}
     ${erPop(h.kursId) ? popPrisliste() : ''}
-    ${erMobil() ? '' : gruppe('Kurset', [['Rediger kurset', 'kursRediger'], ['Notat', 'kursNotat'], ['Legg til bilde', 'kursBilde'], ['Slett kurs', 'kursSlett', 'style="color:var(--red)"']])}
+    ${erMobil() ? '' : gruppe('Kurset', [['Rediger kurset (gammel admin)', 'kursRediger'], ['Notat', 'kursNotat'], ['Legg til bilde (gammel admin)', 'kursBilde'], ['Slett kurs', 'kursSlett', 'style="color:var(--red)"']])}
   </div></section>
   <section class="kort">
     <div class="kort-head"><h2>Deltakere ${h.pameldt}/${h.kap}</h2>${ub ? `<button class="knapp liten rod" data-k="filterUbetalt" aria-pressed="${KS.bareUbetalt}">${ub} ikke betalt</button>` : ''}</div>
-    ${sortert(vis).map(d => `<div class="rad"><button class="tekst lenke" data-k="deltaker" data-booking="${d.bookingId}"><b>${esc(d.navn)}${d.antall > 1 ? ` · ${d.antall} plasser` : ''}</b><small>Trykk for å endre påmelding, flytte eller sperre kursbevis</small></button>${merke(d, erPop(h.kursId))}${d.status === 'Ikke betalt' && !erMobil() ? `<button class="knapp liten" data-k="taBetalt" data-booking="${d.bookingId}">Ta betalt</button>` : ''}</div>`).join('') || '<p class="muted">Ingen påmeldte ennå.</p>'}
+    ${sortert(vis).map(d => `<div class="rad deltaker-rad ${KS.booking === d.bookingId ? 'markert' : ''}" data-rad-booking="${d.bookingId}"><button class="tekst lenke radknapp-inn" data-k="deltaker" data-booking="${d.bookingId}"><b>${esc(d.navn)}${d.antall > 1 ? ` · ${d.antall} plasser` : ''}</b><small>Endre påmelding, flytte eller sperre kursbevis</small> ${merke(d, erPop(h.kursId))}</button>${d.status === 'Ikke betalt' && !erMobil() ? `<button class="knapp liten" data-k="taBetalt" data-booking="${d.bookingId}">Ta betalt</button>` : ''}</div>`).join('') || '<p class="muted">Ingen påmeldte ennå.</p>'}
   </section></div>`;
 }
 
 async function tegn(el) {
   KS.el = el; lesHash();
   await hentPop();
+  // Fra søket: kurset, ikke en bestemt dato. Da åpnes neste dato på kurset.
+  if (!KS.okt && KS.kurs) {
+    el.innerHTML = '<div class="nk-kurs"><p class="muted">Henter kurset …</p></div>';
+    try {
+      const {kurs, oktId} = await nesteOkt(KS.kurs);
+      if (oktId) { KS.okt = oktId; KS.fra = KS.fra || 'kurs'; }
+      else { el.innerHTML = `<div class="nk-kurs"><button class="knapp liten" data-k="kursTilbake">← Alle kurs</button><h1 style="margin-top:16px">${esc(kurs?.tittel || 'Kurset')}</h1><p class="muted" style="margin-top:8px">Kurset har ingen kommende datoer.</p><div class="valgknapper" style="margin-top:14px"><button class="knapp hoved" data-k="serie">＋ Nye datoer</button><button class="knapp" data-k="kursRediger" data-kurs="${KS.kurs}">Rediger kurset (gammel admin)</button></div></div>`; return; }
+    } catch (e) { el.innerHTML = `<div class="nk-kurs"><p class="feil">${esc(e.message)}</p></div>`; return; }
+  }
   if (KS.okt) {
     const h = OKTER.get(KS.okt);
     if (h) tegnKursside(h); else el.innerHTML = '<div class="nk-kurs"><p class="muted">Henter kurset …</p></div>';
-    try { const ny = await hentOkt(!!h); if (KS.el === el) tegnKursside(ny); }
+    try { const ny = await hentOkt(!!h); if (KS.el === el) { tegnKursside(ny); visBooking(); } }
     catch (e) { KS.feil = e.message; if (KS.el === el) tegnKursside(null); }
   } else {
     tegnListe(); await hentListe(); if (KS.el === el && !KS.okt) tegnListe();
@@ -103,29 +124,66 @@ async function oppdater() {
   else { await hentListe(); if (KS.el?.isConnected) tegnListe(); }
 }
 vedOppfrisk(oppdater);
+// Fra «Ikke betalt»: personen markeres og vises.
+function visBooking() {
+  if (!KS.booking || !KS.el) return;
+  const r = KS.el.querySelector(`[data-rad-booking="${KS.booking}"]`);
+  if (r) r.scrollIntoView({block: 'center', behavior: matchMedia('(prefers-reduced-motion:reduce)').matches ? 'auto' : 'smooth'});
+}
 registrer('kurs', {tittel: 'Kurs', ikon: '◉', mobil: true, tegn});
 
 const aktiv = () => OKTER.get(KS.okt);
-H.kursTilbake = () => { const til = KS.fra === 'kalender' || KS.fra === 'idag' ? KS.fra : 'kurs'; KS.okt = 0; KS.bareUbetalt = false; gaaTil(til); };
+H.kursTilbake = () => { const til = KS.fra === 'kalender' || KS.fra === 'idag' ? KS.fra : 'kurs'; KS.okt = 0; KS.kurs = 0; KS.booking = 0; KS.bareUbetalt = false; gaaTil(til); };
 H.filterUbetalt = () => { KS.bareUbetalt = !KS.bareUbetalt; tegnKursside(aktiv()); };
 H.kursBeskjed = () => arkBeskjed(KS.okt);
 H.kursPaaminnelse = () => arkPaaminnelse(KS.okt);
 H.kursFlytt = () => arkFlytt([aktiv()], false);
 H.kursAvlys = () => arkFlytt([aktiv()], true);
 H.kursSteng = () => stengOkt(aktiv());
-H.kursKopier = b => { const r = b.getBoundingClientRect(); oktMeny(KS.okt, r.left, r.bottom + 4); };
-H.kursRediger = () => { location.href = '/admin-ny#kurs'; };
-H.kursBilde = () => { location.href = '/admin-ny#kurs'; };
+H.kursKopier = () => kopierOkt(aktiv());
+// Kursoppsettet og bildet redigeres fortsatt i gammel admin. Kurs-id-en sendes med i adressen.
+const tilGammel = id => { location.href = '/admin-ny#kurs?kurs=' + encodeURIComponent(id || aktiv()?.kursId || ''); };
+H.kursRediger = b => tilGammel(+b.dataset.kurs);
+H.kursBilde = () => tilGammel();
 
-// Ta betalt: kassa (/kasse) tar ikke imot person og beløp i adressen i dag. Den åpnes, og
-// personen står under «Dagens kurs» der (samme påmeldinger). booking= ligger med til kassa kan lese den.
-H.taBetalt = b => { window.open('/kasse?booking=' + encodeURIComponent(b.dataset.booking), 'lissom-kasse'); toast('Kassa er åpnet. Personen står under «Dagens kurs».'); };
+// Ta betalt. Dagens kurs: kassa (/kasse), der personen står under «Dagens kurs». En annen dato: den eksisterende
+// registreringen (pamelding.php status=betalt med betalingsmåte), som «Status og betaling» i gammel admin.
+// Ingen ny pengelogikk, og ingen beløp regnes her. Paint on Pots tas alltid i kassa (gjenstanden avgjør prisen).
+const TB_MAATER = ['Kontant', 'Vipps', 'Gavekort', 'Faktura', 'Gratis'];
+H.taBetalt = b => {
+  const h = aktiv(), d = finnDelt(b.dataset.booking); if (!h || !d) return;
+  if (h.dato === idag() || erPop(h.kursId)) {
+    window.open('/kasse?booking=' + encodeURIComponent(d.bookingId), 'lissom-kasse');
+    return toast(h.dato === idag() ? 'Kassa er åpnet. Personen står under «Dagens kurs».' : 'Kassa er åpnet. Paint on Pots tas betalt i kassa når gjenstandene er valgt.');
+  }
+  KS.delt = d;
+  ark(`<div class="ark-head"><h2>Registrer betaling · ${esc(d.navn)}</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
+    <p class="muted">${esc(h.tittel)} · ${esc(langDato(h.dato))}${d.belopOre ? ' · ' + kr(d.belopOre) : ''}. Registrer bare betaling som er mottatt.</p>
+    <div><small>Betalt med</small><div class="valgknapper" style="margin-top:6px">${TB_MAATER.map(m => `<button class="knapp" data-k="tbMaate" data-maate="${m}" aria-pressed="false">${m}</button>`).join('')}</div></div>
+    <label class="en-felt" id="tb-kodefelt" hidden><small>Gavekortkode</small><input id="tb-kode" class="felt" autocomplete="off"></label>
+    <div class="ark-fot"><button class="knapp" data-k="lukk">Avbryt</button><button class="knapp hoved" id="tb-ok" data-k="tbOk" disabled>Registrer som betalt</button></div>`);
+};
+const tbValgt = () => document.querySelector('[data-k="tbMaate"][aria-pressed="true"]')?.dataset.maate || '';
+const tbSjekk = () => { const m = tbValgt(), ok = document.getElementById('tb-ok'); if (ok) ok.disabled = !m || (m === 'Gavekort' && !(document.getElementById('tb-kode')?.value || '').trim()); };
+H.tbMaate = b => {
+  document.querySelectorAll('[data-k="tbMaate"]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  const f = document.getElementById('tb-kodefelt'); if (f) f.hidden = b.dataset.maate !== 'Gavekort';
+  tbSjekk();
+};
+H.tbOk = async b => {
+  const maate = tbValgt(); if (!maate) return;
+  b.disabled = true;
+  try {
+    const r = await api('pamelding.php', {handling: 'status', id: KS.delt.bookingId, status: 'betalt', maate, ...(maate === 'Gavekort' ? {kode: (document.getElementById('tb-kode')?.value || '').trim()} : {})});
+    lukk(true); toast(esc(r.beskjed || `${KS.delt.navn} er registrert som betalt.`)); await oppfrisk();
+  } catch (e) { b.disabled = false; throw e; }
+};
 
 // ── Kursholder ──────────────────────────────────────────────────────────────
 H.holder = () => {
   const h = aktiv();
   ark(`<div class="ark-head"><h2>Velg kursholder</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
-    <div class="valgknapper">${KURSHOLDERE.map(k => `<button class="knapp ${h.kursholderId === k.id ? 'hoved' : ''}" data-k="settHolder" data-id="${k.id}">${esc(k.navn)}</button>`).join('')}</div>
+    <div class="valgknapper">${KURSHOLDERE.map(k => `<button class="knapp" data-k="settHolder" data-id="${k.id}" aria-pressed="${h.kursholderId === k.id}">${esc(k.navn)}</button>`).join('')}</div>
     <small>Kursholderen ser kurset og deltakerlista på sin side.</small>`);
 };
 H.settHolder = async b => { await api('kurs.php', {handling: 'dato', oktId: KS.okt, kursholderId: +b.dataset.id}); lukk(true); toast('Kursholder er lagret.'); await oppfrisk(); };
@@ -137,19 +195,32 @@ export function arkLeggTil(oktId) {
   ark(`<div class="ark-head"><h2>Legg til deltaker</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
     <div class="to-felt"><label><small>Navn</small><input id="nd-navn" autocomplete="off"></label><label><small>Telefon</small><input id="nd-tlf" inputmode="tel"></label>
     <label><small>E-post</small><input id="nd-epost" type="email"></label><label><small>Antall plasser</small><input id="nd-antall" type="number" min="1" value="1"></label></div>
-    <div><small>Betaling</small><div class="valgknapper" style="margin-top:6px">${MAATER.map((m, i) => `<button class="knapp ${i ? '' : 'hoved'}" data-k="ndMaate" data-maate="${m}">${m}</button>`).join('')}</div></div>
-    <label class="sjekk"><input type="checkbox" id="nd-varsle" checked> Send bekreftelse på e-post</label>
-    <div class="ark-fot"><button class="knapp" data-k="lukk">Avbryt</button><button class="knapp hoved" data-k="ndOk">Legg til</button></div>`);
+    <div><small>Betaling</small><div class="valgknapper" style="margin-top:6px">${MAATER.map(m => `<button class="knapp" data-k="ndMaate" data-maate="${m}" aria-pressed="false">${m}</button>`).join('')}</div></div>
+    <label class="en-felt" id="nd-kodefelt" hidden><small>Gavekortkode</small><input id="nd-kode" autocomplete="off"></label>
+    <label class="sjekk"><input type="checkbox" id="nd-varsle"> Send bekreftelse på e-post</label>
+    <div class="ark-fot"><button class="knapp" data-k="lukk">Avbryt</button><button class="knapp hoved" id="nd-ok" data-k="ndOk" disabled>Legg til</button></div>`);
 }
+const ndMaate = () => document.querySelector('[data-k="ndMaate"][aria-pressed="true"]')?.dataset.maate || '';
+const ndSjekk = () => {
+  const ok = document.getElementById('nd-ok'); if (!ok) return;
+  const navn = (document.getElementById('nd-navn')?.value || '').trim(), m = ndMaate();
+  ok.disabled = !navn || !m || (m === 'Gavekort' && !(document.getElementById('nd-kode')?.value || '').trim());
+};
+document.addEventListener('input', e => { if (['nd-navn', 'nd-kode'].includes(e.target.id)) ndSjekk(); if (e.target.id === 'tb-kode') tbSjekk(); });
 H.leggTil = () => arkLeggTil(KS.okt);
-H.ndMaate = b => document.querySelectorAll('[data-k="ndMaate"]').forEach(x => x.classList.toggle('hoved', x === b));
+H.ndMaate = b => {
+  document.querySelectorAll('[data-k="ndMaate"]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  const f = document.getElementById('nd-kodefelt'); if (f) f.hidden = b.dataset.maate !== 'Gavekort';
+  ndSjekk();
+};
 H.ndOk = async b => {
   const v = id => (document.getElementById(id)?.value || '').trim();
-  if (!v('nd-navn')) return toast('Skriv navnet først.');
+  const maate = ndMaate();
+  if (!v('nd-navn') || !maate) return;
   b.disabled = true;
   try {
     const r = await api('pamelding.php', {handling: 'legg-til', oktId: KS.okt, navn: v('nd-navn'), telefon: v('nd-tlf'), epost: v('nd-epost'),
-      antall: +v('nd-antall') || 1, betaltMaate: document.querySelector('[data-k="ndMaate"].hoved')?.dataset.maate || 'Ikke betalt',
+      antall: +v('nd-antall') || 1, betaltMaate: maate, ...(maate === 'Gavekort' ? {kode: v('nd-kode')} : {}),
       varsle: document.getElementById('nd-varsle')?.checked && v('nd-epost') ? 'ja' : 'nei'});
     lukk(true); toast(esc(r.beskjed || `${v('nd-navn')} er lagt til.`)); await oppfrisk();
   } catch (e) { b.disabled = false; throw e; }
@@ -183,8 +254,13 @@ H.dRedigerOk = async () => {
   toast(esc(r.beskjed || 'Påmeldingen er endret.')); await oppfrisk(); KS.delt = finnDelt(d.bookingId) || d; H.deltaker({dataset: {booking: d.bookingId}});
 };
 H.dBekreft = async () => { const r = await api('pamelding.php', {handling: 'bekreftelse', id: KS.delt.bookingId}); toast(esc(r.beskjed || 'Bekreftelsen er sendt.')); };
-H.dSperr = async () => { await api('pamelding.php', {handling: 'bevis', id: KS.delt.bookingId, sperret: 'ja'}); lukk(true); toast('Kursbeviset er sperret for denne deltakeren.'); };
-H.dVente = async () => {
+// «Er du sikker?» før det som ikke kan angres med ett trykk (brukertesten 08.10.2026).
+const sikker = (tittel, tekst, ja, k) => ark(`${tilbakeDelt()}<div class="ark-head"><h2>${tittel}</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
+  <p>${tekst}</p><div class="ark-fot"><button class="knapp" data-k="deltaker" data-booking="${KS.delt.bookingId}">Avbryt</button><button class="knapp rod" data-k="${k}">${ja}</button></div>`);
+H.dSperr = () => sikker('Sperr kursbeviset?', `${esc(KS.delt.navn)} får ikke kursbevis for dette kurset. Er du sikker?`, 'Ja, sperr kursbeviset', 'dSperrOk');
+H.dSperrOk = async () => { await api('pamelding.php', {handling: 'bevis', id: KS.delt.bookingId, sperret: 'ja'}); lukk(true); toast('Kursbeviset er sperret for denne deltakeren.'); };
+H.dVente = () => sikker('Flytt til ventelista?', `${esc(KS.delt.navn)} mister plassen, og plassen blir ledig for andre. Er du sikker?`, 'Ja, flytt til ventelista', 'dVenteOk');
+H.dVenteOk = async () => {
   const r = await api('pamelding.php', {handling: 'til-venteliste', id: KS.delt.bookingId});
   lukk(true); toast(esc(r.beskjed || 'Flyttet til ventelista. Plassen er ledig for andre.')); await oppfrisk();
 };
@@ -194,10 +270,17 @@ H.dFlytt = async () => {
   await hentPeriode(idag(), pluss(idag(), 90));
   const andre = [...OKTER.values()].filter(o => o.kursId === h.kursId && o.oktId !== h.oktId && !o.avlyst && o.dato >= idag()).sort((a, b) => (a.dato + a.tid).localeCompare(b.dato + b.tid));
   ark(`${tilbakeDelt()}<div class="ark-head"><h2>Flytt til annen dato</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
-    <div class="valgknapper">${andre.map(o => `<button class="knapp" data-k="dFlyttOk" data-okt="${o.oktId}">${esc(langDato(o.dato))} ${esc(o.tid)} · ${o.pameldt}/${o.kap}</button>`).join('') || '<p class="muted">Ingen andre datoer på dette kurset de neste tre månedene.</p>'}</div>
-    <div class="sms">${esc(d.navn)} får e-post med ny dato (malen «Ny dato på kurset»).</div>`);
+    <div class="valgknapper">${andre.map(o => `<button class="knapp" data-k="dFlyttVelg" data-okt="${o.oktId}" aria-pressed="false">${esc(langDato(o.dato))} ${esc(o.tid)} · ${o.pameldt}/${o.kap}</button>`).join('') || '<p class="muted">Ingen andre datoer på dette kurset de neste tre månedene.</p>'}</div>
+    <div class="sms">${esc(d.navn)} får e-post med ny dato (malen «Ny dato på kurset»).</div>
+    <div class="ark-fot"><button class="knapp" data-k="deltaker" data-booking="${d.bookingId}">Avbryt</button><button class="knapp hoved" id="df-ok" data-k="dFlyttOk" disabled>Flytt</button></div>`);
+};
+H.dFlyttVelg = b => {
+  document.querySelectorAll('[data-k="dFlyttVelg"]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  const ok = document.getElementById('df-ok'); if (ok) { ok.disabled = false; ok.dataset.okt = b.dataset.okt; }
 };
 H.dFlyttOk = async b => {
+  if (!b.dataset.okt) return;
+  b.disabled = true;
   const r = await api('pamelding.php', {handling: 'flytt', id: KS.delt.bookingId, oktId: +b.dataset.okt});
   lukk(true); toast(esc(r.beskjed || 'Deltakeren er flyttet.')); await oppfrisk();
 };
@@ -207,7 +290,7 @@ H.venteliste = () => {
   const h = aktiv(), ko = h.venteliste || [];
   if (!ko.length) return toast('Ingen på ventelista.');
   ark(`<div class="ark-head"><h2>Venteliste · ${ko.length}</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
-    ${ko.map((w, i) => `<div class="rad"><div class="tekst"><b>${esc(w.navn)}</b><small>Nr. ${w.posisjon}${w.varslet ? ' · varslet' : ''}${w.paaKurset ? ' · venter på kurset' : ''}</small></div><button class="knapp liten ${i ? '' : 'hoved'}" data-k="giPlass" data-id="${w.id}">Gi plass</button></div>`).join('')}`);
+    ${ko.map((w, i) => `<div class="rad"><div class="tekst"><b>${esc(w.navn)}</b><small>Nr. ${w.posisjon}${w.varslet ? ' · varslet' : ''}${w.paaKurset ? ' · venter på kurset' : ''}</small></div><button class="knapp liten" data-k="giPlass" data-id="${w.id}">Gi plass</button></div>`).join('')}`);
 };
 H.giPlass = async b => {
   const r = await api('venteliste.php', {handling: 'gi-plass', id: +b.dataset.id, oktId: KS.okt});
@@ -217,14 +300,23 @@ H.giPlass = async b => {
 // ── Send: kursbevis og bekreftelse til alle (samme kall som for én) ──────────
 async function tilAlle(rader, handling, tittel) {
   let ok = 0; const feil = [];
-  for (const d of rader) { try { await api('pamelding.php', {handling, id: d.bookingId}); ok++; } catch (e) { feil.push(`${d.navn}: ${e.message}`); } }
+  for (const d of rader) {
+    try { await api('pamelding.php', {handling, id: d.bookingId}); ok++; }
+    catch (e) {
+      feil.push({navn: d.navn, tekst: e.message});
+      // Meldingen er slått av: da går ingen ut, og det er ingen vits å prøve resten.
+      if (e.status === 409) break;
+    }
+  }
   lukk(true);
-  toast(`<b>${tittel} sendt til ${ok}.</b>${feil.length ? ' ' + esc(feil.join(' ')) : ''}`);
+  const like = feil.length && feil.every(f => f.tekst === feil[0].tekst);
+  if (!ok && feil.length) return toast(`<b>${tittel} ble ikke sendt.</b> ${esc(feil[0].tekst)}`);
+  toast(`<b>${tittel} sendt til ${ok}.</b>${feil.length ? ' ' + esc(like ? feil[0].tekst + ' (' + feil.map(f => f.navn).join(', ') + ')' : feil.map(f => f.navn + ': ' + f.tekst).join(' ')) : ''}`);
 }
 H.kursbevis = () => {
   const rader = (aktiv().deltakere || []).filter(d => d.status === 'Betalt');
   if (!rader.length) return toast('Ingen har betalt ennå.');
-  ark(`<div class="ark-head"><h2>Kursbevis til ${rader.length} betalte</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
+  ark(`<div class="ark-head"><h2>Kursbevis til ${rader.length} som har betalt</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
     <p class="muted">${rader.map(d => esc(d.navn)).join(', ')}</p><small>Samme e-post som etter kurset («Be om en anmeldelse» med kursbeviset).</small>
     <div class="ark-fot"><button class="knapp" data-k="lukk">Avbryt</button><button class="knapp hoved" data-k="kursbevisOk">Send kursbevis</button></div>`);
 };
@@ -240,7 +332,7 @@ H.bekreftAlleOk = b => { b.disabled = true; return tilAlle((aktiv().deltakere ||
 
 // ── Notat, slett, utskrift ──────────────────────────────────────────────────
 H.kursNotat = () => ark(`<div class="ark-head"><h2>Notat</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
-  <p class="muted">Internt notat i kalenderen denne dagen, bare synlig i admin.</p><textarea id="nk-notat" class="felt" rows="4" maxlength="500"></textarea>
+  <label class="en-felt" style="max-width:none"><small>Internt notat i kalenderen denne dagen, bare synlig i admin</small><textarea id="nk-notat" class="felt" rows="4" maxlength="500"></textarea></label>
   <div class="ark-fot"><button class="knapp" data-k="lukk">Avbryt</button><button class="knapp hoved" data-k="notatOk">Lagre</button></div>`);
 H.notatOk = async () => {
   const h = aktiv(), tekst = (document.getElementById('nk-notat')?.value || '').trim();

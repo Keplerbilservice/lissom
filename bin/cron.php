@@ -374,6 +374,15 @@ switch ($jobb) {
 
         $antall = 0;
         foreach ($okter as $okt) {
+            // Ta oekta foer noe legges i koen. Har noen sendt paaminnelsen for
+            // haand i mellomtiden (ny admin, «Send påminnelse»), treffer ikke
+            // UPDATE-en, og den gaar ikke ut to ganger (kontrolloeren 8. oktober 2026).
+            if (DB::kjor(
+                'UPDATE course_sessions SET paaminnelse_sendt_at = :t WHERE id = :i AND paaminnelse_sendt_at IS NULL',
+                ['t' => gmdate('Y-m-d H:i:s'), 'i' => $okt['id']]
+            )->rowCount() !== 1) {
+                continue;
+            }
             $deltakere = DB::alle(
                 "SELECT b.gjest_navn, b.gjest_epost, b.gjest_telefon,
                         m.navn AS m_navn, m.epost AS m_epost, m.telefon AS m_telefon
@@ -418,8 +427,6 @@ switch ($jobb) {
                 ], 'course_session', (int) $okt['id']);
                 $antall++;
             }
-
-            DB::oppdater('course_sessions', ['paaminnelse_sendt_at' => gmdate('Y-m-d H:i:s')], ['id' => $okt['id']]);
         }
         $si("Påminnelser: {$antall} lagt i kø for " . count($okter) . " økt(er).");
 

@@ -18,6 +18,26 @@ require __DIR__ . '/../_boot.php';
 
 krev_admin();
 
+/**
+ * Kanalene hver mal faktisk kan gaa paa, lest av kallene i koden (hvilke
+ * mottakerfelt de sender med til Varsel::mal). Skjermen viser bare disse, og
+ * lagringen nekter en kanal malen aldri sendes paa — ellers kunne en mal bli
+ * staaende paa «bare SMS» uten at noen SMS noen gang gikk ut (testmesteren
+ * 8. oktober 2026). Maler som ikke staar her, sendes bare paa e-post.
+ *
+ * @return list<string>
+ */
+function kanalerMulig(string $navn): array
+{
+    $begge = ['avbestilling', 'betaling_feilet', 'kurspaaminnelse', 'ordrebekreftelse', 'venteliste_ledig',
+              'venteliste_tildelt', 'ferdig_brent', 'innmelding_fast_trekk', 'innmelding_ordner_selv', 'pamelding_flyttet'];
+    $bareSms = ['foresporsel_svar_sms', 'kassekvittering_sms', 'kursbevis_sms', 'soknad_godkjent_sms', 'intern_nytt_medlem_sms'];
+    if (in_array($navn, $bareSms, true)) {
+        return ['sms'];
+    }
+    return in_array($navn, $begge, true) ? ['epost', 'sms'] : ['epost'];
+}
+
 if (!DB::harTabell('notification_templates')) {
     Svar::feil('Dette krever en oppdatering av databasen. Kjør vedlikeholdet fra menyen nederst til venstre.', 503);
 }
@@ -47,7 +67,13 @@ if (Foresporsel::metode() === 'GET') {
         'fortsett'        => $fortsett . ' dager etter kurset, om morgenen',
     ];
 
+    $kanaler = [];
+    foreach (DB::alle('SELECT navn FROM notification_templates') as $r) {
+        $kanaler[(string) $r['navn']] = kanalerMulig((string) $r['navn']);
+    }
+
     Svar::json([
+        'kanaler'  => (object) $kanaler,
         'telling'  => (object) $telling,
         'sum'      => $sum,
         'naar'     => $naar,
@@ -73,6 +99,10 @@ $sms  = !empty($k['sms']);
 $epost = !empty($k['epost']);
 if (!$sms && !$epost) {
     Svar::feil('Minst én av SMS og e-post må være på. Skal meldingen ikke sendes, slå den av i stedet.');
+}
+$mulig = kanalerMulig($navn);
+if (($sms && !in_array('sms', $mulig, true)) || ($epost && !in_array('epost', $mulig, true))) {
+    Svar::feil(Maler::tittel($navn) . ' kan bare sendes på ' . (in_array('sms', $mulig, true) ? 'SMS' : 'e-post') . '.');
 }
 $kanal = $sms && $epost ? 'epost_sms' : ($sms ? 'sms' : 'epost');
 

@@ -23,6 +23,8 @@
     ['Beskjeder', 'Vis/minsidebeskjeder'], ['Del på Instagram og i galleriet', 'Vis/medlemsforslag'], ['Kurs for medlemmer', 'Vis/internkurs'],
     ['Verv en venn', 'Vis/verving', false], ['Mine påmeldinger', 'Vis/minsidepameldinger'], ['Kursbevis', 'Vis/minsidekursbevis'],
     ['Medlemschat', 'Vis/minsidechat'], ['Ordensregler og HMS', 'Vis/minsidehms'], ['Ny Min side (fliser)', 'Vis/minsideny', false]];
+  // Min side-bryterne står bare her (Innstillinger viser dem ikke). Nøklene leses av innstillinger.js.
+  if (window.NA) window.NA.minSideNokler = MODULER.map(m => m[1]);
   const ROLLER = [['medlem', 'Se som medlem'], ['deltaker', 'Se som kursdeltaker'], ['prove', 'Se som Prøv Lissom']];
   const S = { innhold: {}, kampanjer: [], harMedlemmer: true, rolle: 'medlem', el: null, opptatt: false };
 
@@ -67,8 +69,8 @@
         <section class="kort"><div class="kort-head"><h2>Hva vises på Min side</h2><small>Endringer vises med en gang</small></div><div id="mss-brytere"><p class="muted">Henter …</p></div></section>
         <section class="kort"><div class="kort-head"><h2>Kampanjer og banner</h2><button class="knapp liten hoved" data-mss="nykampanje">＋ Ny kampanje</button></div><div id="mss-kamp"><p class="muted">Henter …</p></div></section>
         <section class="kort"><div class="kort-head"><h2>Legg ut internt</h2></div>
-          <input id="mss-emne" maxlength="191" placeholder="Overskrift (valgfritt)" aria-label="Overskrift" style="width:100%;margin-bottom:8px;padding:10px;border-radius:9px;border:1px solid #c6b1a0;background:var(--field);font:inherit;font-size:16px">
-          <textarea id="mss-intern" aria-label="Beskjed til alle medlemmer" placeholder="Beskjed til alle medlemmer, vises på Min side" style="width:100%;min-height:70px;padding:10px;border-radius:9px;border:1px solid #c6b1a0;background:var(--field);font:inherit;font-size:16px"></textarea>
+          <label class="felt" style="margin-bottom:8px"><small>Overskrift (valgfritt)</small><input id="mss-emne" maxlength="191"></label>
+          <label class="felt"><small>Beskjed til alle medlemmer, vises på Min side</small><textarea id="mss-intern" style="min-height:70px"></textarea></label>
           <div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="knapp hoved" data-mss="legguti">Legg ut</button></div></section>
       </div>
       <div class="kort ms-forhånd" style="padding:0;overflow:hidden">
@@ -87,7 +89,8 @@
     if (b.dataset.mssModul) {
       const k = b.dataset.mssModul, std = (MODULER.find(m => m[1] === k) || [])[2] !== false, ny = !paa(k, std);
       S.opptatt = true; b.disabled = true;
-      try { await kall('innhold.php', { endringer: { [k]: ny ? 'ja' : 'nei' } }); S.innhold[k] = ny ? 'ja' : 'nei'; b.setAttribute('aria-pressed', String(ny)); lastForhandsvisning(); }
+      try { await kall('innhold.php', { endringer: { [k]: ny ? 'ja' : 'nei' } }); S.innhold[k] = ny ? 'ja' : 'nei'; b.setAttribute('aria-pressed', String(ny)); lastForhandsvisning();
+        toast(`<b>${esc((MODULER.find(m => m[1] === k) || [k])[0])}</b> er slått ${ny ? 'på' : 'av'} på Min side.`); }
       catch (err) { toast(esc(err.message)); } finally { S.opptatt = false; b.disabled = false; }
       return;
     }

@@ -2,8 +2,10 @@
  * Alt er ekte data og eksisterende handlinger:
  *   Ovnen          /api/ovn.php (tomt, raabrann, glasurbrann). «Ovn er tømt» = ferdigbrent: velg kursdatoene som er
  *                  klare, og «Klar til henting» sendes med ferdigbrent.php handling=meld-alle (samme utsending som i dag).
- *   Dagens kurs    oversikt.php «kommende» for i dag + kursstart3.php?okt= (deltakerne, betalt/ikke betalt, Møtt).
- *                  «Møtt» = pamelding.php handling=status, samme regel som kursstart3.js.
+ *   Dagens kurs    oversikt.php «kommende» for i dag. Plassene og «ikke betalt» fra kalender.php, samme tall som
+ *                  Kalender og Kurs (én definisjon). «Start dagens kurs» bruker kursstart3.php?okt= når bryteren
+ *                  Vis/kursstart3 er på, ellers deltakerne fra kalender.php. Ingen kall til kursstart3 i oppdateringen.
+ *                  Møtt/Ikke møtt = pamelding.php handling=status, samme regel som kursstart3.js.
  *   Må gjøres      oversikt.php «maGjores» (uten påmeldinger) + medlemssalg som venter (medlemssalg.php).
  *   Til info       nye påmeldinger (oversikt.php «maGjores» type pamelding, tre dager). Utført = pamelding.php handling=sett.
  */
@@ -20,7 +22,7 @@
   let el = null;
   let ovn = null;
   let salg = [], salgTid = 0;
-  const kurs = new Map(); // oktId → {d, tid}
+  let kal = new Map(); // oktId → økta fra kalender.php (i dag)
   const gjort = new Set();
   const nokkel = s => s.type + ':' + s.id;
 
@@ -38,14 +40,14 @@
     try { salg = ((await NA.api('medlemssalg.php')).salg || []).filter(x => x.status === 'til_godkjenning'); } catch { salg = []; }
   }
   const dagensOkter = d => (d?.kommende || []).filter(o => String(o.startTid || '').slice(0, 10) === idagIso());
-  async function hentKurs(d, tving) {
-    await Promise.all(dagensOkter(d).map(async o => {
-      const c = kurs.get(o.oktId);
-      if (!tving && c && Date.now() - c.tid < 60000) return;
-      try { kurs.set(o.oktId, {d: await NA.api('kursstart3.php?okt=' + o.oktId), tid: Date.now()}); } catch { kurs.set(o.oktId, {d: null, tid: Date.now()}); }
-    }));
+  async function hentKal(d) {
+    if (!dagensOkter(d).length) { kal = new Map(); return; }
+    try {
+      const k = await NA.api('kalender.php?fra=' + idagIso() + '&til=' + idagIso());
+      kal = new Map((k.hendelser || []).filter(h => h.oktId > 0 && !String(h.id).startsWith('saml-')).map(h => [h.oktId, h]));
+    } catch { /* tallene fra oversikt.php står da */ }
   }
-  const ikkeBetalt = k => (k?.deltakere || []).filter(p => p.status === 'Ikke betalt' && Number(p.skyldigOre) > 0);
+  const ikkeBetalt = h => (h?.deltakere || []).filter(p => p.status === 'Ikke betalt');
 
   /* ── tegning ─────────────────────────────────────────────────────────── */
   function tegn(d) {
@@ -73,8 +75,8 @@
           </section>
           <section class="kort" aria-label="Dagens kurs">
             <div class="kort-head"><h2>Dagens kurs</h2></div>
-            ${okter.length ? okter.map(o => { const k = kurs.get(o.oktId)?.d; const ub = ikkeBetalt(k).length; const n = k ? k.deltakere.reduce((s, p) => s + (Number(p.antall) || 1), 0) : o.pameldte;
-              return `<div class="rad"><div class="tekst"><b>${esc(o.tittel)}</b><span class="muted">${esc(o.klokke)} · ${n} av ${o.kapasitet} plasser</span></div>${ub ? `<span class="merke rod">${ub} ikke betalt</span>` : (k ? '<span class="merke gronn">Alle har betalt</span>' : '')}
+            ${okter.length ? okter.map(o => { const h = kal.get(o.oktId); const ub = ikkeBetalt(h).length; const n = h ? h.pameldt : o.pameldte, kap = h ? h.kap : o.kapasitet;
+              return `<div class="rad"><div class="tekst"><b>${esc(o.tittel)}</b><span class="muted">${esc(o.klokke)} · ${n} av ${kap} plasser</span></div>${ub ? `<span class="merke rod">${ub} ikke betalt</span>` : (h && n ? '<span class="merke gronn">Alle har betalt</span>' : '')}
                 <button class="knapp hoved liten" type="button" data-startkurs="${o.oktId}">Start dagens kurs</button></div>`; }).join('') : '<p class="tom">Ingen kurs i dag.</p>'}
           </section>
         </div>
@@ -95,13 +97,13 @@
   }
   function radSak(s) {
     const k = esc(nokkel(s));
-    const gammel = `<a class="knapp liten" href="/admin-ny#${esc(String(s.rute || 'idag'))}">Åpne i gammel admin</a>`;
+    const gammel = `<a class="knapp liten" href="/admin-ny#${esc(String(s.rute || 'idag'))}">I gammel admin</a>`;
     const h = {
       henvendelse: () => knapp('Ferdig', 'besvart', false, `data-k="${k}"`) + knapp('Svar', 'svar', true, `data-k="${k}"`),
       soknad: () => knapp('Godkjenn', 'soknad', true, `data-k="${k}"`),
       frys: () => knapp('Avslå', 'frys-avslag', false, `data-k="${k}"`) + knapp('Godkjenn frys', 'frys-godkjenn', true, `data-k="${k}"`),
       bidrag: () => s.bilde ? knapp('Avvis', 'bidrag-avvis', false, `data-k="${k}"`) + knapp('Godkjenn til galleriet', 'bidrag-godkjenn', true, `data-k="${k}"`) : gammel,
-      betaling: () => `<button class="knapp liten hoved" type="button" data-medlem="${Number(s.id)}">Åpne medlemmet</button>`,
+      betaling: () => NA.erMobil() ? gammel : `<button class="knapp liten hoved" type="button" data-medlem="${Number(s.id)}">Til medlemmet</button>`,
       venteliste: () => knapp('Tilby plassen til ' + esc(s.fornavn || 'første på lista'), 'venteliste', true, `data-k="${k}"`),
       henting: () => knapp('Send «Klar til henting»', 'henting', true, `data-k="${k}"`),
       lager: () => knapp('Bestill mer', 'bestill', true, `data-k="${k}"`),
@@ -113,7 +115,7 @@
   /* ── oppdatering ─────────────────────────────────────────────────────── */
   async function oppdater(tving) {
     const d = await NA.oversikt(tving);
-    await Promise.all([hentOvn(), hentSalg(d), hentKurs(d)]);
+    await Promise.all([hentOvn(), hentSalg(d), hentKal(d)]);
     tegn(d);
   }
   const ferdig = (nok, tekst) => { gjort.add(nok); if (tekst) NA.toast(esc(tekst)); salgTid = 0; oppdater(true).catch(() => {}); };
@@ -155,36 +157,73 @@
   }
 
   /* ── start dagens kurs ───────────────────────────────────────────────── */
-  const forMott = new Map();
+  /* Hvem har kommet. Ingen er krysset av på forhånd (eierens regel): hver person får «Møtt» eller «Ikke møtt», og
+     «Kurset er i gang» er låst til alle har et valg. En som alt står som «Møtte ikke opp», står med det valget.
+     Lagres med pamelding.php handling=status når «Kurset er i gang» trykkes (samme regel som kursstart3.js):
+     ikke møtt = ikke_mott, møtt igjen = statusen før (forStatus). */
+  async function hentDeltakere(oktId) {
+    // Kalenderen sier om «Start kurset i tre steg» (Vis/kursstart3) er på. Er den av, spørres ikke kursstart3.php.
+    const k = await NA.api('kalender.php?fra=' + idagIso() + '&til=' + idagIso());
+    if (k.brytere?.kursstart3) {
+      try {
+        const t = await NA.api('kursstart3.php?okt=' + oktId);
+        return {tittel: t.okt?.tittel, liste: (t.deltakere || []).map(p => ({id: Number(p.bookingId), navn: p.navn, antall: Number(p.antall) || 1,
+          kode: p.statusKode, forStatus: p.forStatus || null, ub: p.status === 'Ikke betalt' && Number(p.skyldigOre) > 0, skyldig: p.skyldig, status: p.status}))};
+      } catch (e) {
+        if (e.status !== 403) throw e;
+      }
+    }
+    // Av: deltakerne fra kalenderen (samme som Kurs-siden).
+    const h = (k.hendelser || []).find(x => x.oktId === oktId);
+    const kode = {'Betalt': 'betalt', 'Ikke betalt': 'reservert', 'Møtte ikke opp': 'ikke_mott'};
+    return {tittel: h?.tittel, utenForStatus: true, liste: (h?.deltakere || []).map(p => ({id: Number(p.bookingId), navn: p.navn, antall: Number(p.antall) || 1,
+      kode: kode[p.status] || 'annet', forStatus: null, ub: p.status === 'Ikke betalt', skyldig: p.belopOre ? kr(p.belopOre) : '', status: p.status}))};
+  }
   async function arkStartKurs(oktId) {
     NA.apneArk(NA.arkHode('Start dagens kurs') + '<p class="laster">Henter deltakerne …</p>');
     let k;
-    try { k = await NA.api('kursstart3.php?okt=' + oktId); kurs.set(oktId, {d: k, tid: Date.now()}); }
+    try { k = await hentDeltakere(oktId); }
     catch (e) { NA.apneArk(NA.arkHode('Start dagens kurs') + `<p class="feil">${esc(e.message)}</p>`); return; }
     const o = dagensOkter(NA.sist).find(x => x.oktId === oktId) || {};
-    const rang = p => (p.status === 'Ikke betalt' && Number(p.skyldigOre) > 0 ? 0 : 1);
-    const liste = [...(k.deltakere || [])].sort((a, b) => rang(a) - rang(b));
-    const inn = NA.apneArk(`${NA.arkHode(esc((k.okt?.tittel || o.tittel || 'Kurset') + (o.klokke ? ' · ' + o.klokke : '')))}
-      <p class="muted">Kryss av hvem som har kommet. De som ikke har betalt står øverst.</p>
-      <div>${liste.length ? liste.map(p => { const kan = ['betalt', 'reservert', 'ikke_mott'].includes(p.statusKode); const ub = rang(p) === 0;
-        return `<div class="rad"><label class="mott tekst"><input type="checkbox" data-mott="${Number(p.bookingId)}" ${p.mott ? 'checked' : ''} ${kan ? '' : 'disabled'}><b>${esc(p.navn)}${Number(p.antall) > 1 ? ' · ' + Number(p.antall) + ' plasser' : ''}</b></label>
-          ${ub ? `<span class="merke rod">Ikke betalt · ${esc(p.skyldig)}</span>` : `<span class="merke ${p.status === 'Betalt' ? 'gronn' : ''}">${esc(p.status)}</span>`}
-          ${ub && !NA.erMobil() ? '<a class="knapp liten" href="/kasse">Ta betalt</a>' : ''}</div>`; }).join('') : '<p class="tom">Ingen påmeldte.</p>'}</div>
-      ${liste.some(p => rang(p) === 0) && !NA.erMobil() ? '<small>«Ta betalt» åpner kassa. Velg personen der.</small>' : ''}
-      <div class="ark-fot"><button class="knapp hoved" type="button" data-lukk>Kurset er i gang</button></div>`);
-    inn.onchange = async e => {
-      const boks = e.target.closest('[data-mott]'); if (!boks) return;
-      const id = Number(boks.dataset.mott);
-      const p = liste.find(x => Number(x.bookingId) === id); if (!p) return;
-      const mott = boks.checked;
-      if (!mott) forMott.set(id, p.statusKode);
-      const status = mott ? (forMott.get(id) || p.forStatus || 'reservert') : 'ikke_mott';
-      boks.disabled = true;
-      try { await NA.api('pamelding.php', {data: {handling: 'status', id, status}}); if (mott) forMott.delete(id); p.statusKode = status; p.mott = mott; }
-      catch (err) { boks.checked = !mott; NA.toast(esc(err.message)); }
-      boks.disabled = false;
+    const liste = [...k.liste].sort((a, b) => (a.ub ? 0 : 1) - (b.ub ? 0 : 1) || String(a.navn).localeCompare(String(b.navn), 'nb'));
+    const kan = p => ['betalt', 'reservert', 'ikke_mott'].includes(p.kode);
+    const valg = new Map(liste.filter(p => p.kode === 'ikke_mott').map(p => [p.id, 'nei']));
+    const mottKan = p => !(p.kode === 'ikke_mott' && !p.forStatus);
+    const inn = NA.apneArk(`${NA.arkHode(esc((k.tittel || o.tittel || 'Kurset') + (o.klokke ? ' · ' + o.klokke : '')))}
+      <p class="muted">Velg «Møtt» eller «Ikke møtt» for hver. De som ikke har betalt står øverst.</p>
+      <div>${liste.length ? liste.map(p => `<div class="rad"><div class="tekst"><b>${esc(p.navn)}${p.antall > 1 ? ' · ' + p.antall + ' plasser' : ''}</b>
+          ${p.ub ? `<span class="merke rod">Ikke betalt${p.skyldig ? ' · ' + esc(p.skyldig) : ''}</span>` : `<span class="merke ${p.status === 'Betalt' ? 'gronn' : ''}">${esc(p.status)}</span>`}</div>
+          ${kan(p) ? `<div class="mott-valg" role="group" aria-label="Oppmøte for ${esc(p.navn)}">
+            <button type="button" data-mott="${p.id}" data-v="ja" aria-pressed="false" ${mottKan(p) ? '' : 'disabled title="Endres på kurssiden"'}>Møtt</button>
+            <button type="button" class="nei" data-mott="${p.id}" data-v="nei" aria-pressed="${valg.get(p.id) === 'nei'}">Ikke møtt</button></div>` : ''}
+          ${p.ub && !NA.erMobil() ? '<a class="knapp liten" href="/kasse">Ta betalt</a>' : ''}</div>`).join('') : '<p class="tom">Ingen påmeldte.</p>'}</div>
+      ${liste.some(p => p.ub) && !NA.erMobil() ? '<small>«Ta betalt» åpner kassa. Personen står under «Dagens kurs» der.</small>' : ''}
+      <div class="ark-fot"><button class="knapp" type="button" data-lukk>Avbryt</button><button class="knapp hoved" type="button" data-igang disabled>Kurset er i gang</button></div>`);
+    const igang = inn.querySelector('[data-igang]');
+    const sjekk = () => { igang.disabled = !liste.filter(kan).every(p => valg.has(p.id)); };
+    sjekk();
+    inn.onclick = async e => {
+      const b = e.target.closest('button'); if (!b || b.disabled) return;
+      if (b.dataset.mott) {
+        const id = Number(b.dataset.mott); valg.set(id, b.dataset.v);
+        inn.querySelectorAll(`[data-mott="${id}"]`).forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+        return sjekk();
+      }
+      if (b.dataset.igang === undefined) return;
+      b.disabled = true;
+      const feil = [];
+      let endret = 0;
+      for (const p of liste.filter(kan)) {
+        const v = valg.get(p.id);
+        const status = v === 'nei' && p.kode !== 'ikke_mott' ? 'ikke_mott' : (v === 'ja' && p.kode === 'ikke_mott' ? p.forStatus : null);
+        if (!status) continue;
+        try { await NA.api('pamelding.php', {data: {handling: 'status', id: p.id, status}}); endret++; }
+        catch (err) { feil.push(p.navn + ': ' + err.message); }
+      }
+      NA.lukkArk(true);
+      NA.toast(`<b>Kurset er i gang.</b>${endret ? ' Oppmøtet er lagret.' : ''}${feil.length ? ' ' + esc(feil.join(' ')) : ''}`);
+      oppdater(true).catch(() => {});
     };
-    document.querySelector('#ark').addEventListener('close', () => { kurs.delete(oktId); oppdater(true).catch(() => {}); }, {once: true});
   }
 
   /* ── handlinger i Må gjøres ──────────────────────────────────────────── */

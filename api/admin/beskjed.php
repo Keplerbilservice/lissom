@@ -33,6 +33,10 @@ $bareSms = Foresporsel::tekst('bareSms') === 'ja';
 if ($bareSms) {
     $sms = true;
 }
+// «Med reserverte» fra den nye adminen: mottakerne er de som staar paa
+// deltakerlista (betalt + aktive reservasjoner, Booking::aktivSql), saa tallet
+// paa knappen og utsendingen er de samme. Uten feltet: bare betalte, som foer.
+$medReserverte = Foresporsel::tekst('medReserverte') === 'ja';
 $medBevis = Foresporsel::tekst('kursbevis') === 'ja';
 $emne  = mb_substr(Foresporsel::tekst('emne', 'Beskjed fra Lissom'), 0, 191);
 // Bildet og bildeteksten til et nyhetsbrev. En vanlig beskjed sender ingen
@@ -59,7 +63,8 @@ if (Foresporsel::tekst('handling') === 'forhandsvis') {
     )]);
 }
 
-if (mb_strlen($tekst) < 3) {
+// «antall» spør bare hvem som nås (den nye adminen viser det før teksten er skrevet).
+if (Foresporsel::tekst('handling') !== 'antall' && mb_strlen($tekst) < 3) {
     Svar::feil('Skriv en melding først.');
 }
 if (mb_strlen($tekst) > 4000) {
@@ -111,7 +116,8 @@ if ($til === 'okt') {
                 COALESCE(m.telefon, b.gjest_telefon) AS telefon
            FROM bookings b
       LEFT JOIN members m ON m.id = b.member_id
-          WHERE b.course_session_id = :o AND b.status = 'betalt'",
+          WHERE b.course_session_id = :o AND "
+            . ($medReserverte ? Booking::aktivSql('b') : "b.status = 'betalt'"),
         ['o' => $oktId]
     );
     $hvem = $okt['tittel'] . ' — ' . Booking::norskDato((string) $okt['start_tid']);
@@ -179,6 +185,13 @@ if (Foresporsel::tekst('handling') === 'antall') {
     Svar::ok([
         'antall' => count(array_filter($mottakere, static fn($m) => !empty($m['epost']))),
         'hvem'   => $hvem,
+        // Til forhaandsvisningen i den nye adminen: hvem kanalen ikke naar.
+        'alle'        => count($mottakere),
+        'utenEpost'   => array_values(array_map(static fn($m) => trim((string) $m['navn']),
+                            array_filter($mottakere, static fn($m) => empty($m['epost'])))),
+        'utenTelefon' => array_values(array_map(static fn($m) => trim((string) $m['navn']),
+                            array_filter($mottakere, static fn($m) => empty($m['telefon'])))),
+        'smsMulig'    => Varsel::smsMulig(),
     ]);
 }
 
@@ -203,6 +216,8 @@ $epost = 0;
 $antallSms = 0;
 /** @var list<string> $utenVei Mottakere beskjeden ikke naadde. */
 $utenVei = [];
+/** @var list<string> $ikkeNaadd Alle som ingenting ble lagt i koen til (navn). */
+$ikkeNaadd = [];
 
 foreach ($mottakere as $m) {
     $personlig = str_replace('{navn}', (string) $m['navn'], $tekst);
@@ -219,6 +234,7 @@ foreach ($mottakere as $m) {
         }
     }
 
+    $lagtFor = $epost + $antallSms;
     if (!$bareSms && !empty($m['epost'])) {
         // Oppsettet: bildet oeverst, overskriften, avsnittene og en
         // eventuell knapp. Uten bilde og knapp blir det den samme teksten
@@ -237,6 +253,12 @@ foreach ($mottakere as $m) {
             // det gjelder — ellers tror hun beskjeden gikk ut til alle.
             $utenVei[] = trim(((string) $m['navn']) . ' (' . (string) $m['telefon'] . ')');
         }
+    } elseif ($bareSms) {
+        // Bare SMS, og ingen telefon: hun naas ikke, og skal staa paa lista.
+        $utenVei[] = trim((string) $m['navn']);
+    }
+    if ($epost + $antallSms === $lagtFor) {
+        $ikkeNaadd[] = trim((string) $m['navn']);
     }
 }
 
@@ -307,5 +329,6 @@ Svar::ok([
     'epost'    => $epost,
     'sms'      => $antallSms,
     'uten_vei' => $utenVei,
+    'ikke_naadd' => $ikkeNaadd,
     'beskjed'  => $beskjed,
 ]);

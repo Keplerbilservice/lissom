@@ -1343,6 +1343,8 @@ Svar::json([
         return [
             'slag'    => 'booking',
             'id'      => (int) $r['id'],
+            // Kursdatoen, saa raden i den nye adminen kan aapne riktig kurs.
+            'oktId'   => $r['course_session_id'] !== null ? (int) $r['course_session_id'] : null,
             'navn'    => (string) $r['gjest_navn'],
             'kurs'    => (string) $r['tittel'],
             'naar'    => Booking::norskDato((string) $r['start_tid']),
@@ -1358,7 +1360,7 @@ Svar::json([
             'dager'   => (int) $r['dager'],
         ];
     }, DB::alle(
-        "SELECT b.id, b.gjest_navn, b.gjest_telefon, b.belop_ore, b.betalt_maate,
+        "SELECT b.id, b.course_session_id, b.gjest_navn, b.gjest_telefon, b.belop_ore, b.betalt_maate,
                 b.antall, " . (DB::harKolonne('bookings', 'rabatt_prosent') ? 'b.rabatt_prosent' : '0') . " AS rabatt_prosent,
                 " . (DB::harKolonne('course_sessions', 'pris_ore') ? 'COALESCE(cs.pris_ore, c.pris_ore)' : 'c.pris_ore') . " AS pris_ore,
                 c.tittel, cs.start_tid,

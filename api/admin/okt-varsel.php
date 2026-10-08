@@ -4,7 +4,8 @@
  * Brukes av den nye adminen (/ny-admin, Kalender og Kurs).
  *
  *   POST handling=forhandsvis { oktId, mal: pamelding_flyttet|kurspaaminnelse, fra?, til? }
- *        → { aktiv, kanal, emne, tekst, epost, sms, antall }   ingenting sendes
+ *        → { aktiv, kanal, emne, tekst, epostTekst, smsTekst, epost, sms, antall, naas,
+ *            ikkeNaadd: [navn], paaminnelseSendt }   ingenting sendes
  *   POST handling=flyttet     { oktId, fra }   «Ny dato paa kurset» til hver paameldt
  *   POST handling=paaminnelse { oktId }        «Paaminnelse foer kurset» naa
  *
@@ -19,7 +20,14 @@
  * tekster: malen eieren har skrevet under Maler er det som gaar ut.
  *
  * En paaminnelse sendt for haand setter paaminnelse_sendt_at, saa cron ikke
- * sender én til dagen foer (eieren 08.10: én SMS per anledning).
+ * sender én til dagen foer (eieren 08.10: én SMS per anledning). Feltet tas
+ * med én UPDATE … WHERE paaminnelse_sendt_at IS NULL foer noe legges i koen
+ * (to klikk, to faner eller cron samtidig gir bare én utsending), og slippes
+ * igjen hvis ingenting gikk ut — da kan cron fortsatt sende sin.
+ *
+ * Mottakerne er de som staar paa lista: betalt og aktive reservasjoner
+ * (Booking::aktivSql, samme regel som plassene). Malens kanal avgjoer om det
+ * blir e-post, SMS eller begge, og bare det som faktisk ble lagt i koen telles.
  */
 
 declare(strict_types=1);
@@ -34,8 +42,10 @@ $handling = Foresporsel::tekst('handling');
 $oktId = Foresporsel::heltall('oktId');
 
 $smsKol = DB::harKolonne('courses', 'sms_paaminnelse') ? 'c.sms_paaminnelse' : '0 AS sms_paaminnelse';
+$harSendtKol = DB::harKolonne('course_sessions', 'paaminnelse_sendt_at');
+$sendtKol = $harSendtKol ? 'cs.paaminnelse_sendt_at' : 'NULL AS paaminnelse_sendt_at';
 $okt = DB::en(
-    "SELECT cs.id, cs.start_tid, cs.slutt_tid, cs.status, c.tittel, {$smsKol}
+    "SELECT cs.id, cs.start_tid, cs.slutt_tid, cs.status, c.tittel, {$smsKol}, {$sendtKol}
        FROM course_sessions cs
        JOIN courses c ON c.id = cs.course_id
       WHERE cs.id = :i",
@@ -51,7 +61,7 @@ $deltakere = DB::alle(
             COALESCE(m.telefon, b.gjest_telefon) AS telefon
        FROM bookings b
   LEFT JOIN members m ON m.id = b.member_id
-      WHERE b.course_session_id = :o AND b.status IN ('betalt','reservert')
+      WHERE b.course_session_id = :o AND " . Booking::aktivSql('b') . "
    ORDER BY b.id",
     ['o' => $oktId]
 );
@@ -133,65 +143,169 @@ $felterFor = static function (string $mal, array $d) use ($okt, $fraTekst, $tilT
     ];
 };
 
+// Malen slik den staar, ogsaa naar den er av (da gaar ingenting ut).
+$malRad = static fn(string $navn): ?array
+    => DB::en('SELECT * FROM notification_templates WHERE navn = :n', ['n' => $navn]);
+
+// Hvem malen naar fram til, og hvordan. Samme regler som Varsel::mal():
+// kanalen paa malen, SMS bare naar SMS er satt opp, og en ren SMS-mal faller
+// tilbake til e-post. Paaminnelsen faar telefonen bare naar kurset har
+// SMS-paaminnelse paa (som i bin/cron.php).
+$mottakerFor = static function (string $mal, array $d) use ($okt): array {
+    $epost = trim((string) ($d['epost'] ?? ''));
+    $tlf = trim((string) ($d['telefon'] ?? ''));
+    if ($mal === 'kurspaaminnelse' && (int) $okt['sms_paaminnelse'] !== 1) {
+        $tlf = '';
+    }
+    return [
+        'navn'    => (string) ($d['navn'] ?? ''),
+        'epost'   => $epost !== '' ? $epost : null,
+        'telefon' => $tlf !== '' ? $tlf : null,
+    ];
+};
+$veiFor = static function (?array $m, array $mottaker): array {
+    if ($m === null || (int) ($m['aktiv'] ?? 0) !== 1) {
+        return ['epost' => false, 'sms' => false];
+    }
+    $kanal = (string) $m['kanal'];
+    $harEpost = !empty($mottaker['epost']) && filter_var((string) $mottaker['epost'], FILTER_VALIDATE_EMAIL) !== false;
+    $harSms = !empty($mottaker['telefon']) && Varsel::smsMulig() && normaliser_telefon((string) $mottaker['telefon']) !== '';
+    $e = in_array($kanal, ['epost', 'epost_sms'], true) && $harEpost;
+    $s = in_array($kanal, ['sms', 'epost_sms'], true) && $harSms;
+    if (!$e && !$s && $kanal === 'sms' && $harEpost) {
+        $e = true;
+    }
+    return ['epost' => $e, 'sms' => $s];
+};
+$iOsloTid = static fn(?string $u): string => ($u !== null && $u !== '') ? Booking::norskDato($u) : '';
+
 if ($handling === 'forhandsvis') {
     $mal = Foresporsel::tekst('mal');
     if (!in_array($mal, ['pamelding_flyttet', 'kurspaaminnelse'], true)) {
         Svar::feil('Ukjent mal.');
     }
-    $m = DB::en('SELECT emne, tekst, kanal, aktiv FROM notification_templates WHERE navn = :n', ['n' => $mal]);
+    $m = $malRad($mal);
     $forste = $deltakere[0] ?? ['navn' => ''];
     $f = $felterFor($mal, $forste);
     $f['navn'] = $fornavn((string) ($f['navn'] ?? ''));
     $f['fornavn'] = $f['fornavn'] ?? $f['navn'];
-    $medSms = $mal === 'kurspaaminnelse' && (int) $okt['sms_paaminnelse'] === 1;
+    $epostN = 0;
+    $smsN = 0;
+    $naas = 0;
+    $ikkeNaadd = [];
+    foreach ($deltakere as $d) {
+        $v = $veiFor($m, $mottakerFor($mal, $d));
+        $epostN += (int) $v['epost'];
+        $smsN += (int) $v['sms'];
+        if ($v['epost'] || $v['sms']) {
+            $naas++;
+        } else {
+            $ikkeNaadd[] = (string) $d['navn'];
+        }
+    }
+    // Det som faktisk gaar ut: e-posten i det felles oppsettet naar malen har
+    // det (migrasjon 227), ellers malens tekst. SMS-en er malens tekst.
+    $smsTekst = $m !== null ? Varsel::flett((string) $m['tekst'], $f) : '';
+    $epostTekst = $smsTekst;
+    if ($m !== null && Varsel::harOppsett($m)) {
+        $epostTekst = (string) Varsel::oppsett($m, $f, (string) ($m['gruppe'] ?? 'system'))[0];
+    }
     Svar::ok([
-        'aktiv'  => $m !== null && (int) $m['aktiv'] === 1,
-        'kanal'  => (string) ($m['kanal'] ?? ''),
-        'emne'   => $m !== null ? Varsel::flett((string) $m['emne'], $f) : '',
-        'tekst'  => $m !== null ? Varsel::flett((string) $m['tekst'], $f) : '',
-        'antall' => count($deltakere),
-        'epost'  => count(array_filter($deltakere, static fn($d) => trim((string) $d['epost']) !== '')),
-        'sms'    => $mal === 'pamelding_flyttet' ? 0
-                    : ($medSms ? count(array_filter($deltakere, static fn($d) => trim((string) $d['telefon']) !== '')) : 0),
+        'aktiv'      => $m !== null && (int) $m['aktiv'] === 1,
+        'kanal'      => (string) ($m['kanal'] ?? ''),
+        'emne'       => $m !== null ? Varsel::flett((string) $m['emne'], $f) : '',
+        'tekst'      => $epostN > 0 ? $epostTekst : $smsTekst,
+        'epostTekst' => $epostTekst,
+        'smsTekst'   => $smsTekst,
+        'antall'     => count($deltakere),
+        'naas'       => $naas,
+        'epost'      => $epostN,
+        'sms'        => $smsN,
+        'ikkeNaadd'  => $ikkeNaadd,
+        'paaminnelseSendt' => $iOsloTid($okt['paaminnelse_sendt_at'] ?? null),
     ]);
 }
 
 if ($handling === 'flyttet') {
+    $m = $malRad('pamelding_flyttet');
+    if ($m === null || (int) $m['aktiv'] !== 1) {
+        Svar::feil('Meldingen «Ny dato på kurset» er slått av under Innstillinger › Meldinger. Ingen fikk beskjed.', 409);
+    }
     $sendt = 0;
+    $ikkeNaadd = [];
     foreach ($deltakere as $d) {
-        if (trim((string) $d['epost']) === '') {
-            continue;
+        $mottaker = $mottakerFor('pamelding_flyttet', $d);
+        $v = $veiFor($m, $mottaker);
+        $lagt = ($v['epost'] || $v['sms'])
+            ? Varsel::mal('pamelding_flyttet', $mottaker, $felterFor('pamelding_flyttet', $d), 'booking', (int) $d['id'])
+            : 0;
+        if ($lagt > 0) {
+            $sendt++;
+        } else {
+            $ikkeNaadd[] = (string) $d['navn'];
         }
-        Varsel::mal('pamelding_flyttet', ['epost' => trim((string) $d['epost'])],
-            $felterFor('pamelding_flyttet', $d), 'booking', (int) $d['id']);
-        $sendt++;
     }
     revider('okt_flyttet_varslet', 'course_session', $oktId, ['sendt' => $sendt, 'fra' => $fraRaa]);
-    Svar::ok(['sendt' => $sendt, 'uten' => count($deltakere) - $sendt]);
+    Svar::ok(['sendt' => $sendt, 'uten' => count($ikkeNaadd), 'ikkeNaadd' => $ikkeNaadd]);
 }
 
 if ($handling === 'paaminnelse') {
     if ((string) $okt['status'] === 'avlyst') {
         Svar::feil('Datoen er avlyst.');
     }
-    $sendt = 0;
-    foreach ($deltakere as $d) {
-        $epost = trim((string) $d['epost']);
-        $tlf = (int) $okt['sms_paaminnelse'] === 1 ? trim((string) $d['telefon']) : '';
-        if ($epost === '' && $tlf === '') {
-            continue;
-        }
-        Varsel::mal('kurspaaminnelse', [
-            'epost'   => $epost !== '' ? $epost : null,
-            'telefon' => $tlf !== '' ? $tlf : null,
-        ], $felterFor('kurspaaminnelse', $d), 'course_session', $oktId);
-        $sendt++;
+    $m = $malRad('kurspaaminnelse');
+    if ($m === null || (int) $m['aktiv'] !== 1) {
+        Svar::feil('Meldingen «Påminnelse før kurset» er slått av under Innstillinger › Meldinger. Ingen fikk påminnelse.', 409);
     }
-    if (DB::harKolonne('course_sessions', 'paaminnelse_sendt_at')) {
-        DB::oppdater('course_sessions', ['paaminnelse_sendt_at' => gmdate('Y-m-d H:i:s')], ['id' => $oktId]);
+    // Ta datoen foer noe legges i koen. Treffer ikke UPDATE-en, har noen
+    // (et klikk til, en annen fane eller cron) alt sendt den.
+    $tatt = null;
+    if ($harSendtKol) {
+        $tatt = gmdate('Y-m-d H:i:s');
+        $rader = DB::kjor(
+            'UPDATE course_sessions SET paaminnelse_sendt_at = :t WHERE id = :i AND paaminnelse_sendt_at IS NULL',
+            ['t' => $tatt, 'i' => $oktId]
+        )->rowCount();
+        if ($rader !== 1) {
+            $naar = (string) DB::verdi('SELECT paaminnelse_sendt_at FROM course_sessions WHERE id = :i', ['i' => $oktId]);
+            Svar::feil('Påminnelsen er alt sendt ' . $iOsloTid($naar) . '.', 409);
+        }
+    }
+    $sendt = 0;
+    $ikkeNaadd = [];
+    try {
+        foreach ($deltakere as $d) {
+            $mottaker = $mottakerFor('kurspaaminnelse', $d);
+            $v = $veiFor($m, $mottaker);
+            $lagt = ($v['epost'] || $v['sms'])
+                ? Varsel::mal('kurspaaminnelse', $mottaker, $felterFor('kurspaaminnelse', $d), 'course_session', $oktId)
+                : 0;
+            if ($lagt > 0) {
+                $sendt++;
+            } else {
+                $ikkeNaadd[] = (string) $d['navn'];
+            }
+        }
+    } finally {
+        // Gikk ingenting ut, slippes datoen igjen: cron skal fortsatt kunne
+        // sende sin dagen foer.
+        if ($tatt !== null && $sendt === 0) {
+            DB::kjor(
+                'UPDATE course_sessions SET paaminnelse_sendt_at = NULL WHERE id = :i AND paaminnelse_sendt_at = :t',
+                ['i' => $oktId, 't' => $tatt]
+            );
+        }
     }
     revider('paaminnelse_sendt_manuelt', 'course_session', $oktId, ['sendt' => $sendt]);
-    Svar::ok(['sendt' => $sendt, 'uten' => count($deltakere) - $sendt]);
+    if ($sendt === 0) {
+        Svar::feil('Ingen av de påmeldte har e-post eller telefon som påminnelsen kan sendes til.', 409);
+    }
+    Svar::ok([
+        'sendt'     => $sendt,
+        'uten'      => count($ikkeNaadd),
+        'ikkeNaadd' => $ikkeNaadd,
+        'sendtAt'   => $tatt !== null ? $iOsloTid($tatt) : '',
+    ]);
 }
 
 Svar::feil('Ukjent handling.');

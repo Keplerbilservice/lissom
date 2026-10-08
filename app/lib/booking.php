@@ -509,7 +509,7 @@ final class Booking
      * spoerringer den samme regelen, og en regel som staar to steder svarer
      * til slutt forskjellig. Den som glemmes er den som selger plassen.
      */
-    private static function aktivSql(string $alias): string
+    public static function aktivSql(string $alias): string
     {
         return "({$alias}.status = 'betalt'
                    OR ({$alias}.status = 'reservert'

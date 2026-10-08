@@ -34,9 +34,11 @@
     ['Vis/kursstart3', 'Start kurset i tre steg, med QR-betaling', false], ['Vis/kalendergjenta', 'Kalenderen: gjenta kursdatoer og dupliser til neste uke', false],
     ['Vis/kalendermeny', 'Kalenderen: høyreklikk-menyer, dra og slipp, sideliste og dagsrapport', false], ['Vis/kasse', 'Kassa på iPad (/kasse)', false],
     ['Vis/magjoresmer', 'I dag: ovnen ferdig, kurs som fylles tregt, medlemmer ikke innom og mandagsoppsummering', true]];
+  // Hver bryter står ett sted (designvokteren 08.10.2026): det som vises på Min side styres bare under Medlemssiden
+  // (NA.minSideNokler fra medlemssiden.js), og Brytere-fanen har bare det som ikke står i en annen fane.
   const FANE_FLAGG = {
-    Kurs: ['Vis/internkurs', 'Vis/kursvelger', 'Vis/kursholdere', 'Vis/kursstart3', 'Vis/kalenderark', 'Vis/kalendergjenta', 'Vis/kalendermeny', 'Vis/skisserdeltakere'],
-    Medlemskap: ['Vis/medlemfrys', 'Vis/glemtstempling', 'Vis/dugnad', 'Vis/dugnadutvalgte', 'Vis/dugnadoverforing', 'Vis/tilleggbarn', 'Vis/verving', 'Vis/gaven'],
+    Kurs: ['Vis/kursvelger', 'Vis/kursholdere', 'Vis/kursstart3', 'Vis/kalenderark', 'Vis/kalendergjenta', 'Vis/kalendermeny', 'Vis/skisserdeltakere'],
+    Medlemskap: ['Vis/glemtstempling', 'Vis/dugnadutvalgte', 'Vis/dugnadoverforing', 'Vis/gaven'],
     Betaling: ['Vis/oppmotekurs', 'Vis/oppmotebutikk', 'Vis/oppmotemedlemskap', 'Vis/kasse'],
   };
   const GRUPPE = { system: 'Systemmeldinger', ordre: 'Ordrebekreftelser', kurs: 'Kursmeldinger', nyhetsbrev: 'Nyhetsbrev' };
@@ -64,6 +66,7 @@
 
   const bryterKnapp = (attr, verdi, navn, paa, av = false) => `<button class="av" ${attr}="${esc(verdi)}" aria-pressed="${paa}" aria-label="${esc(navn)}" ${av ? 'disabled' : ''}></button>`;
   const flaggPaa = (k, std) => { const v = (S.innhold || {})[k]; return v === undefined ? std : (std ? v !== 'nei' : v === 'ja'); };
+  const minSide = () => NA().minSideNokler || [];
   const harSms = k => k === 'sms' || k === 'epost_sms';
   const harEpost = k => k === 'epost' || k === 'epost_sms';
 
@@ -78,11 +81,16 @@
     const t = (S.telling && S.telling.telling) || {};
     return maler.map(m => {
       const n = (t[m.navn]?.sms || 0) + (t[m.navn]?.epost || 0);
+      // Bare kanalene malen faktisk kan sendes på (meldinger.php «kanaler»). Én mulig kanal = fast merke, ikke bryter.
+      const mulig = S.telling?.kanaler?.[m.navn] || ['epost'];
+      const kanalKnapp = (k, navn, paa) => mulig.length < 2
+        ? (mulig.includes(k) ? `<span class="kanal-fast ${paa ? 'paa' : ''}">${paa ? '✓ ' : ''}${navn}</span>` : '<span></span>')
+        : `<button class="kanal ${paa && m.aktiv ? 'paa' : ''}" data-inn-kanal="${esc(m.navn)}|${k}" aria-pressed="${paa}" ${m.aktiv ? '' : 'disabled'}>${paa ? '✓ ' : ''}${navn}</button>`;
       return `<div class="meld-rad ${m.aktiv ? '' : 'av-rad'}" style="display:grid;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--line)">
         ${bryterKnapp('data-inn-malpaa', m.navn, m.tittel + ' av eller på', m.aktiv)}
         <span><b>${esc(m.tittel)}</b><small style="display:block">${m.aktiv ? `${esc(S.telling?.naar?.[m.navn] || '')}${S.telling?.naar?.[m.navn] ? ' · ' : ''}sendt ${n} ganger siste 30 dager` : 'Slått av – sendes ikke'}</small></span>
-        <button class="kanal ${harSms(m.kanal) && m.aktiv ? 'paa' : ''}" data-inn-kanal="${esc(m.navn)}|sms" aria-pressed="${harSms(m.kanal)}" ${m.aktiv ? '' : 'disabled'}>${harSms(m.kanal) ? '✓ SMS' : 'SMS'}</button>
-        <button class="kanal ${harEpost(m.kanal) && m.aktiv ? 'paa' : ''}" data-inn-kanal="${esc(m.navn)}|epost" aria-pressed="${harEpost(m.kanal)}" ${m.aktiv ? '' : 'disabled'}>${harEpost(m.kanal) ? '✓ E-post' : 'E-post'}</button>
+        ${kanalKnapp('sms', 'SMS', harSms(m.kanal))}
+        ${kanalKnapp('epost', 'E-post', harEpost(m.kanal))}
         <button class="knapp liten" data-inn-tekst="${esc(m.navn)}">Tekst og tid</button></div>`;
     }).join('');
   }
@@ -96,14 +104,15 @@
         <div class="kort"><div class="type">E-post siste 30 dager</div><div class="ovnstatus" style="font-size:34px">${sum.epost}</div><small>Alle maler samlet</small></div></div>`;
     const grupper = intern ? [['', M]] : Object.entries(M.reduce((a, m) => ((a[m.gruppe] = a[m.gruppe] || []).push(m), a), {}));
     return topp + grupper.map(([g, liste]) => `<section class="kort" style="margin-bottom:16px">
-        <div class="kort-head"><h2>${intern ? 'Varsler til verkstedet' : esc(GRUPPE[g] || g)}</h2><small>Trykk for å slå SMS eller e-post av og på</small></div>
+        <div class="kort-head"><h2>${intern ? 'Varsler til verkstedet' : esc(GRUPPE[g] || g)}</h2></div><p class="muted" style="margin:-6px 0 8px;font-size:15px">Trykk for å slå SMS eller e-post av og på.</p>
         <div class="meld-tabell">${malRader(liste)}</div></section>`).join('')
       + manglerBoks(intern ? 'Varsler' : 'Meldinger');
   }
 
   function fanFlagg(nokler) {
     if (!S.innhold) return '<p class="muted">Henter …</p>';
-    const L = nokler ? FLAGG.filter(f => nokler.includes(f[0])) : FLAGG;
+    const andre = Object.values(FANE_FLAGG).flat();
+    const L = (nokler ? FLAGG.filter(f => nokler.includes(f[0])) : FLAGG.filter(f => !andre.includes(f[0]))).filter(f => !minSide().includes(f[0]));
     return `<section class="kort">${L.map(([k, navn, std]) => `<div class="bryter"><div><b>${esc(navn)}</b></div>${bryterKnapp('data-inn-flagg', k, navn, flaggPaa(k, std))}</div>`).join('')}</section>`;
   }
 
@@ -216,6 +225,7 @@
         const f = FLAGG.find(x => x[0] === ds.innFlagg); const ny = !flaggPaa(f[0], f[2]);
         await kall('innhold.php', { endringer: { [f[0]]: ny ? 'ja' : 'nei' } });
         S.innhold[f[0]] = ny ? 'ja' : 'nei';
+        toast(`<b>${esc(f[1])}</b> er slått ${ny ? 'på' : 'av'}.`);
       } else if (ds.innGjor === 'lagretekst') {
         const m = S.maler.find(x => x.navn === ds.navn);
         const tekst = (document.getElementById('inn-tekst')?.value || '').trim();

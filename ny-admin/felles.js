@@ -30,7 +30,12 @@
   const $ = s => document.querySelector(s);
   const esc = t => String(t ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
   const kr = ore => Math.round((Number(ore) || 0) / 100).toLocaleString('nb-NO') + ' kr';
-  const erMobil = () => innerWidth <= 760;
+  /* Mobilvisningen (bunnmeny, «Brukes på iPad eller PC») bare på berøringsskjerm og smal skjerm. En PC med 200 % zoom
+     eller et smalt vindu får hele adminen, som flyter om (designvokteren 08.10.2026). */
+  const MOBIL_MQ = '(pointer:coarse) and (max-width:600px)';
+  const erMobil = () => matchMedia(MOBIL_MQ).matches;
+  const merkMobil = () => document.documentElement.classList.toggle('na-mobil', erMobil());
+  merkMobil();
 
   /* Sidefilene (del A, B og C). Lastes etter tur; mangler en fil, står siden som «ikke bygd ennå».
      MODULER lastes som <script type="module" src> (kurs.js importerer fra kalender.js, så begge må ha samme adresse). */
@@ -67,6 +72,9 @@
 
   /* ── ark ─────────────────────────────────────────────────────────────── */
   let endret = false;
+  /* Arket legger en rad i nettleserens historikk, så Tilbake lukker arket (og spør «Vil du forkaste?» når noe er
+     skrevet) i stedet for å forlate siden. arkHistorikk = raden er vår og ikke brukt ennå. */
+  let arkHistorikk = false, hoppOverPop = false;
   const ark = () => $('#ark');
   function apneArk(innhold, {bred = false} = {}) {
     const inn = $('#ark-inn');
@@ -74,12 +82,20 @@
     if (typeof innhold === 'string') inn.innerHTML = innhold; else inn.replaceChildren(innhold);
     ark().classList.toggle('bred', !!bred);
     endret = false;
-    if (!ark().open) ark().showModal();
-    const forste = inn.querySelector('input:not([type=checkbox]),textarea,select');
+    /* Overskriften gir arket navnet (skjermleser) og tar fokus når innholdet byttes, så fokus aldri havner på body. */
+    const h2 = inn.querySelector('h2');
+    if (h2) { h2.id = h2.id || 'ark-tittel'; h2.tabIndex = -1; ark().setAttribute('aria-labelledby', h2.id); ark().removeAttribute('aria-label'); }
+    if (!ark().open) {
+      ark().showModal();
+      document.documentElement.classList.add('ark-apent');
+      if (!arkHistorikk) { try { history.pushState({naArk: 1}, '', location.href); arkHistorikk = true; } catch {} }
+    }
+    const forste = inn.querySelector('input:not([type=checkbox]):not([type=radio]),textarea,select');
     if (forste && !erMobil()) forste.focus();
+    else (h2 || inn.querySelector('.lukk') || inn).focus?.({preventScroll: true});
     return inn;
   }
-  function lukkArk(tving) {
+  function lukkArk(tving, {utenTilbake = false} = {}) {
     const d = ark();
     if (!d.open) return true;
     if (endret && !tving) {
@@ -88,13 +104,27 @@
       f.id = 'forkast'; f.className = 'forkast'; f.setAttribute('role', 'alert');
       f.innerHTML = '<b>Vil du forkaste det du har skrevet?</b><span class="valgknapper"><button class="knapp" data-na="fortsett">Fortsett å skrive</button><button class="knapp rod" data-na="forkast">Forkast</button></span>';
       $('#ark-inn').prepend(f);
+      f.querySelector('button').focus();
       return false;
     }
     endret = false;
     d.close();
     $('#ark-inn').replaceChildren();
+    document.documentElement.classList.remove('ark-apent');
+    if (arkHistorikk) {
+      arkHistorikk = false;
+      if (!utenTilbake) { hoppOverPop = true; history.back(); }
+    }
     return true;
   }
+  /* Nettleserens Tilbake med åpent ark: lukk det, eller spør først når noe er skrevet. */
+  window.addEventListener('popstate', () => {
+    if (hoppOverPop) { hoppOverPop = false; return; }
+    if (!ark().open || !arkHistorikk) return;
+    arkHistorikk = false;
+    if (endret) { try { history.pushState({naArk: 1}, '', location.href); arkHistorikk = true; } catch {} lukkArk(); }
+    else lukkArk(true, {utenTilbake: true});
+  });
   function settOppArk() {
     const d = ark();
     d.addEventListener('click', e => {
@@ -185,7 +215,7 @@
   };
 
   function registrerSide(id, def) {
-    sider.set(id, {tittel: def.tittel || id, ikon: def.ikon || '', tegn: def.tegn, mobil: !!def.mobil});
+    sider.set(id, {tittel: def.tittel || id, ikon: def.ikon || '', tegn: def.tegn, mobil: !!def.mobil, sok: def.sok || null});
     if (NA.meg && klar && rute.id === id) tegnSide();
   }
 
@@ -194,6 +224,7 @@
     if (ny.id !== rute.id || ny.params.toString() !== rute.params.toString()) forrige = rute;
     rute = ny;
     sidePollere.forEach(s => s()); sidePollere = [];
+    if (forrige && forrige.id !== rute.id && $('#sok')) { $('#sok').value = ''; $('#sokres').hidden = true; }
     const nr = ++tegnTeller;
     tegnMeny();
     const arbeid = $('#arbeid');
@@ -205,7 +236,7 @@
       return;
     }
     if (!side) {
-      arbeid.innerHTML = `<div class="head"><div><h1>${esc(menyNavn || rute.id)}</h1></div></div><section class="kort"><p class="muted">Denne delen er ikke bygd ennå i den nye adminen.</p><div style="margin-top:14px"><a class="knapp" href="/admin-ny">Åpne gammel admin</a></div></section>`;
+      arbeid.innerHTML = `<div class="head"><div><h1>${esc(menyNavn || rute.id)}</h1></div></div><section class="kort"><p class="muted">Denne delen er ikke bygd ennå i den nye adminen.</p><div style="margin-top:14px"><a class="knapp" href="/admin-ny">Gammel admin</a></div></section>`;
       return;
     }
     const el = document.createElement('div');
@@ -243,15 +274,19 @@
       </div>`;
     /* Bare når noe er endret: menyen tegnes ved hver oppdatering, og fokus skal ikke forsvinne. */
     if ($('#meny')._html !== meny) { $('#meny').innerHTML = meny; $('#meny')._html = meny; }
-    const mobil = MENY.filter(m => MOBIL.includes(m[0])).map(([id, navn, ic]) =>
-      `<button type="button" data-side="${id}" ${aktiv === id ? 'aria-current="page"' : ''}><span aria-hidden="true">${ic}</span>${navn}${id === 'idag' && n ? ` (${n})` : ''}</button>`).join('');
+    /* Bunnmenyen: på mobil bare I dag, Kalender og Kurs. På en smal PC-skjerm (zoom) alle sidene, så ingen blir borte. */
+    const alle = !erMobil();
+    const mobil = (alle ? [...MENY, ...BUNN] : MENY.filter(m => MOBIL.includes(m[0]))).map(([id, navn, ic]) => id === 'kasse'
+      ? `<a href="/kasse"><span aria-hidden="true">${ic}</span>${navn}</a>`
+      : `<button type="button" data-side="${id}" ${aktiv === id ? 'aria-current="page"' : ''}><span aria-hidden="true">${ic}</span>${navn}${id === 'idag' && n ? ` (${n})` : ''}</button>`).join('');
+    $('#mobil').classList.toggle('alle', alle);
     if ($('#mobil')._html !== mobil) { $('#mobil').innerHTML = mobil; $('#mobil')._html = mobil; }
   }
 
   /* ── topplinje ───────────────────────────────────────────────────────── */
   let stemplet = null;
   function tegnToppSkall() {
-    $('#topp').innerHTML = `<div class="sok-wrap"><input id="sok" type="search" class="sok" placeholder="⌕ Søk etter kurs, deltaker, medlem eller vare" autocomplete="off" aria-label="Søk"><div id="sokres" class="sokres" hidden></div></div>
+    $('#topp').innerHTML = `<div class="sok-wrap"><input id="sok" type="search" class="sok" placeholder="⌕ Søk" autocomplete="off" aria-label="Søk etter kurs, deltaker, medlem eller vare"><div id="sokres" class="sokres" hidden></div></div>
       <span id="topptall"></span><span class="topp-fyll"></span>
       <button class="knapp stemple-topp" id="stemple-topp" type="button" hidden></button>
       <span class="live" id="live" title="Oppdateres av seg selv"><i></i><span id="live-tekst">Live</span></span>`;
@@ -283,7 +318,7 @@
     if (!stemplet) { b.hidden = true; return; }
     b.hidden = false;
     b.className = 'knapp stemple-topp ' + (stemplet.innstemplet ? '' : 'hoved');
-    b.textContent = stemplet.innstemplet ? `Stemple ut · inne fra ${stemplet.siden || ''}` : 'Stemple inn';
+    b.innerHTML = stemplet.innstemplet ? `Stemple ut<span class="lang"> · inne fra ${esc(stemplet.siden || '')}</span>` : 'Stemple inn';
   }
   async function hentStemple() {
     try { stemplet = await api('/api/stempling.php'); } catch { stemplet = null; }
@@ -310,14 +345,16 @@
       <div><h3>I dag</h3>${linjer(o.linjerIdag)}</div>
       <div><h3>Denne måneden</h3>${linjer(o.linjerMnd)}</div>`);
   }
+  /* Hele raden er trykkbar: et medlem åpner medlemmet under Medlemmer, en påmelding åpner kurset (der «Ta betalt» står). */
   function arkUbetalt() {
     const ub = NA.sist?.ubetalte || [];
     const sum = ub.reduce((s, r) => s + (Number(r.belopOre) || 0), 0);
+    const mal = r => r.slag === 'medlem' ? (erMobil() ? '' : `data-medlem="${Number(r.id)}"`)
+      : (r.oktId ? `data-gatil="kurs" data-p="${esc(new URLSearchParams({okt: r.oktId, booking: r.id}).toString())}"` : '');
     apneArk(`${arkHode('Ikke betalt · ' + kr(sum))}
-      ${ub.length ? ub.map(r => `<div class="rad"><div class="tekst"><b>${esc(r.navn)}</b><small>${esc([r.kurs, r.naar].filter(Boolean).join(' · '))}</small></div>
-        <span class="merke rod">${esc(r.belop || kr(r.belopOre))}</span>
-        ${r.slag === 'medlem' ? `<button class="knapp liten" type="button" data-medlem="${Number(r.id)}">Åpne medlemmet</button>` : (erMobil() ? '' : '<a class="knapp liten" href="/kasse">Ta betalt</a>')}</div>`).join('') : '<p class="tom">Alle har betalt.</p>'}
-      ${ub.length && !erMobil() ? '<small>«Ta betalt» åpner kassa. Velg personen der.</small>' : ''}`);
+      <div class="radliste">${ub.length ? ub.map(r => { const m = mal(r); const inn = `<span class="tekst"><b>${esc(r.navn)}</b><small>${esc([r.kurs, r.naar].filter(Boolean).join(' · '))}</small></span>
+        <span class="merke rod">${esc(r.belop || kr(r.belopOre))}</span>`;
+        return m ? `<button class="rad radknapp" type="button" ${m}>${inn}</button>` : `<div class="rad">${inn}</div>`; }).join('') : '<p class="tom">Alle har betalt.</p>'}</div>`);
   }
   function arkInne() {
     const inne = NA.sist?.verkstedet || [];
@@ -350,6 +387,9 @@
   let sokNr = 0;
   async function sok(q) {
     const box = $('#sokres');
+    /* Én søkeboks per skjerm: står man på en side med egen liste (Medlemmer, Varer), filtrerer topplinjesøket den. */
+    const side = sider.get(rute.id);
+    if (side && typeof side.sok === 'function') { box.hidden = true; side.sok(q); return; }
     if (q.trim().length < 2) { box.hidden = true; return; }
     const nr = ++sokNr;
     box.hidden = false;
@@ -480,11 +520,14 @@
   document.addEventListener('click', e => {
     const b = e.target.closest('button,a');
     if (!e.target.closest('.sok-wrap') && $('#sokres')) $('#sokres').hidden = true;
+    /* Brytere: hele raden er trykkflaten (designvokteren 08.10.2026), ikke bare den lille bryteren. */
+    const bryterRad = !b && e.target.closest('.bryter');
+    if (bryterRad && !e.target.closest('input,select,textarea,label')) { bryterRad.querySelector('button.av:not([disabled])')?.click(); return; }
     if (!b) return;
     const d = b.dataset;
-    if (d.side) { if (ark().open && !lukkArk()) return; gaTil(d.side); window.scrollTo(0, 0); return; }
-    if (d.gatil) { $('#sokres').hidden = true; $('#sok').value = ''; if (ark().open && !lukkArk()) return; gaTil(d.gatil, new URLSearchParams(d.p || '')); window.scrollTo(0, 0); return; }
-    if (d.medlem) { lukkArk(true); gaTil('medlemmer', {person: d.medlem}); return; }
+    if (d.side) { if (ark().open && !lukkArk(false, {utenTilbake: true})) return; gaTil(d.side); window.scrollTo(0, 0); return; }
+    if (d.gatil) { $('#sokres').hidden = true; $('#sok').value = ''; if (ark().open && !lukkArk(false, {utenTilbake: true})) return; gaTil(d.gatil, new URLSearchParams(d.p || '')); window.scrollTo(0, 0); return; }
+    if (d.medlem) { lukkArk(true, {utenTilbake: true}); gaTil('medlemmer', {person: d.medlem}); return; }
     if (d.topp === 'omsetning') return arkOmsetning();
     if (d.topp === 'ubetalt') return arkUbetalt();
     if (d.topp === 'inne') return arkInne();
@@ -504,10 +547,11 @@
   window.addEventListener('hashchange', () => {
     /* «Hopp til innhold» er en lenke til #arbeid: den er ikke en side. */
     if (location.hash === '#arbeid') { const q = rute.params.toString(); history.replaceState(history.state, '', '#' + rute.id + (q ? '?' + q : '')); $('#arbeid').focus(); return; }
-    if (NA.meg) { if (ark().open) lukkArk(true); tegnSide(); }
+    if (NA.meg) { if (ark().open) lukkArk(true, {utenTilbake: true}); tegnSide(); }
   });
   let bredde = innerWidth;
-  window.addEventListener('resize', () => { clearTimeout(window._naRz); window._naRz = setTimeout(() => { if ((bredde <= 760) !== (innerWidth <= 760) && NA.meg) { bredde = innerWidth; tegnSide(); } bredde = innerWidth; }, 200); });
+  let varMobil = erMobil();
+  window.addEventListener('resize', () => { clearTimeout(window._naRz); window._naRz = setTimeout(() => { merkMobil(); if (varMobil !== erMobil() && NA.meg) { varMobil = erMobil(); tegnMeny(); tegnSide(); } bredde = innerWidth; }, 200); });
 
   /* ── start ───────────────────────────────────────────────────────────── */
   async function start() {

@@ -29,7 +29,7 @@
     const V = S.varer.filter(v => !q || [v.tittel, v.kategori, v.artikkelnr].some(x => String(x || '').toLowerCase().includes(q)));
     boks.innerHTML = V.map(v => `<button class="rad radknapp" data-var="${v.id}"><span class="tekst"><b>${esc(v.tittel)}</b>
         <small>${v.kategori ? esc(v.kategori) + ' · ' : ''}${kr(v.pris)} · ${hvor(v)}${v.status !== 'publisert' ? ' · skjult' : ''}</small></span>
-        ${lagerMerke(v)}<span class="knapp liten">Endre</span></button>`).join('') || '<p class="muted">Ingen treff.</p>';
+        ${lagerMerke(v)}</button>`).join('') || '<p class="muted">Ingen treff.</p>';
     const ey = document.getElementById('var-antall'); if (ey) ey.textContent = `${S.varer.length} varer`;
   }
 
@@ -38,14 +38,14 @@
     tegnListe();
   }
 
-  async function tegn(el) {
-    S.el = el;
+  // #varer?vare=ID (fra søket) åpner varen. Søket i topplinja filtrerer lista (ett søk per skjerm).
+  async function tegn(el, params) {
+    S.el = el; S.sok = '';
+    const vareId = Number(params?.get?.('vare')) || 0;
     el.innerHTML = `<div class="head"><div><div class="eyebrow" id="var-antall">Henter …</div><h1>Varer og lager</h1></div><button class="knapp hoved" data-var-ny="1">＋ Ny vare</button></div>
-      <div style="margin-bottom:16px"><input id="var-sok" type="search" placeholder="Søk i varer" aria-label="Søk i varer" value="${esc(S.sok)}"
-        style="width:100%;max-width:420px;min-height:48px;padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:var(--paper);font:inherit"></div>
       <section class="kort" id="var-liste"><p class="muted">Henter …</p></section>`;
-    el.querySelector('#var-sok').addEventListener('input', e => { S.sok = e.target.value; tegnListe(); });
     await hent();
+    if (vareId) { const v = S.varer.find(x => x.id === vareId); if (v) { A = { vare: { ...v }, lagerFoer: v.lager }; arkVare(); } }
     const hh = NA().hentHvert;
     if (typeof hh === 'function') hh(15000, () => { if (el.isConnected && S.el === el && !A) hent(); });
   }
@@ -88,16 +88,14 @@
     if (!/^\d+$/.test(v.prisRaa)) return vis('Skriv prisen i hele kroner.');
     S.opptatt = true; knapp.disabled = true;
     try {
-      let lager = v.lager;
-      // Solgt noe imens arket sto åpent? Da legges endringen på det som står nå, ikke over det.
-      if (v.id && lager !== null && A.lagerFoer !== null) {
-        const fersk = ((await kall('produkter.php')).varer || []).find(x => x.id === v.id);
-        if (fersk && fersk.lager !== null && fersk.lager !== A.lagerFoer) lager = Math.max(0, fersk.lager + (lager - A.lagerFoer));
-      }
+      const lager = v.lager;
+      // Lageret som differanse, lagt på det som står i basen i én UPDATE (produkter.php lagerEndring). Et salg
+      // imens arket sto åpent blir ikke overskrevet, og endres bare navnet, røres ikke lageret (Codex 08.10.2026).
+      const delta = v.id && lager !== null && A.lagerFoer !== null ? { lagerEndring: lager - A.lagerFoer } : {};
       const ja = b => (b ? 'ja' : 'nei');
       const d = await kall('produkter.php', {
         handling: 'lagre', id: v.id || 0, tittel: v.tittel, pris: Number(v.prisRaa), kategori: v.kategori,
-        lager: lager === null ? '' : String(lager), status: v.status, mva: v.mva ?? 25,
+        lager: lager === null ? '' : String(lager), ...delta, status: v.status, mva: v.mva ?? 25,
         beskrivelse: v.beskrivelse || '', bilde: v.bilde || '',
         kunMedlemmer: ja(v.kunMedlemmer), iNettbutikk: ja(v.iNettbutikk),
         artikkelnr: v.artikkelnr || '', leverandorId: v.leverandorId || 0, kanBestilles: ja(v.kanBestilles),
@@ -143,5 +141,5 @@
   // Arket lukket uten lagring (×, Esc, klikk utenfor): da er det ikke lenger noe «åpent ark» som stopper oppdateringen.
   document.addEventListener('close', e => { if (e.target.tagName === 'DIALOG') A = null; }, true);
 
-  registrer('varer', { tittel: 'Varer', ikon: '◇', tegn, mobil: false });
+  registrer('varer', { tittel: 'Varer', ikon: '◇', tegn, mobil: false, sok: q => { S.sok = q; tegnListe(); } });
 })();

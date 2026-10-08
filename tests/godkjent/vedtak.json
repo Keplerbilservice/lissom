@@ -7184,7 +7184,7 @@
                 {
                     "fil": "api/admin/pop-priser.php",
                     "finnes": [
-                        "Poppris::nivaer()"
+                        "PopPris::nivaer()"
                     ]
                 },
                 {
@@ -7214,7 +7214,7 @@
                     "finnes": [
                         "kall('gaver.php', {",
                         "handling: 'trekk', id",
-                        "til: 'medlemmer', tekst",
+                        "beskjed({ til: 'medlemmer' })",
                         "registrer('medlemmer'"
                     ]
                 },
@@ -7231,7 +7231,7 @@
                     "finnes": [
                         "handling: 'lagre', id: v.id || 0",
                         "beskrivelse: v.beskrivelse || '', bilde: v.bilde || ''",
-                        "lager = Math.max(0, fersk.lager + (lager - A.lagerFoer))"
+                        "lagerEndring: lager - A.lagerFoer"
                     ]
                 },
                 {
@@ -7260,7 +7260,7 @@
         {
             "id": "ny-admin-flettet-20261008",
             "dato": "2026-10-08",
-            "hva": "Ny admin (/ny-admin): del A, B og C flettet til én (eierens GO 08.10.2026). felles.js er felles skall under window.NA = window.nyAdmin = window.NyAdmin; api() tar både sti relativt til /api/admin/ og full sti som starter med /; kalender.js og kurs.js lastes som ES-moduler (<script type=\"module\" src>), de andre sidefilene som vanlige skript; gaTil/gaaTil og hash-ruting (#kurs?okt=ID&fra=kalender) gir «← Tilbake til kalenderen»; Medlemssiden har side-id semedlem; sidenes 15-sekunders henting stoppes når man bytter side og startes igjen når siden tegnes. Eierens tillegg samme kveld: Skisseverktøyet (personlig, lagres på eier_id som før) har tolv farger i Lissom-drakten og en egen fargevelger; Uttak leire viser leirevarene som ligger i internbutikken (produkter.php: leire, internt, med lager, ikke kladd) med valg av vare og antall og trekker med den eksisterende taUt per pose, uten faste leiretyper; Paint on Pots-prisene kommer bare fra Poppris (pop-priser.php), samme kilde som nettsiden og kassa, og ny-admin har ingen egne PoP-beløp.",
+            "hva": "Ny admin (/ny-admin): del A, B og C flettet til én (eierens GO 08.10.2026). felles.js er felles skall under window.NA = window.nyAdmin = window.NyAdmin; api() tar både sti relativt til /api/admin/ og full sti som starter med /; kalender.js og kurs.js lastes som ES-moduler (<script type=\"module\" src>), de andre sidefilene som vanlige skript; gaTil/gaaTil og hash-ruting (#kurs?okt=ID&fra=kalender) gir «← Tilbake til kalenderen»; Medlemssiden har side-id semedlem; sidenes 15-sekunders henting stoppes når man bytter side og startes igjen når siden tegnes. Eierens tillegg samme kveld: Skisseverktøyet (personlig, lagres på eier_id som før) har tolv farger i Lissom-drakten og en egen fargevelger; Uttak leire viser leirevarene som ligger i internbutikken (produkter.php: leire, internt, med lager, ikke kladd) med valg av vare og antall og trekker med den eksisterende taUt per pose, uten faste leiretyper; Paint on Pots-prisene kommer bare fra PopPris (pop-priser.php), samme kilde som nettsiden og kassa, og ny-admin har ingen egne PoP-beløp.",
             "hvor": "ny-admin/felles.js, ny-admin/kalender.js, ny-admin/ny-admin.css, skisser.js",
             "kode": [
                 {
@@ -7301,6 +7301,140 @@
                     "finnes": [
                         "'#FFCF38', '#2F6B3B', '#8FB08A', '#1F5A8A', '#7FA3C6', '#111111'];",
                         "type: 'color', value: farge"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "ny-admin-grundig-sjekk-20261008",
+            "dato": "2026-10-08",
+            "hva": "Ny admin (/ny-admin) etter den grundige sjekken eieren ba om 08.10.2026 (kontrolløren, Codex, testmesteren, designvokteren og brukertesten). Eierens faste regler og admin-ny-drakten går foran prototypen. (1) pop-priser.php bruker klassen PopPris og svarer aldri 500. (2) Utsending til en dato: mottakerne er de som står på lista (betalt + aktive reservasjoner, Booking::aktivSql) i okt-varsel.php og i beskjed.php med medReserverte=ja; antall og utsending er like, og «ikke nådd» listes. Påminnelse for hånd tar paaminnelse_sendt_at med én UPDATE … WHERE paaminnelse_sendt_at IS NULL før noe legges i kø (cron gjør det samme), andre gang gir 409 «Påminnelsen er alt sendt <tid>», og feltet slippes igjen når ingenting gikk ut. Varsel::mal() svarer hvor mange meldinger som ble lagt i kø, så bare faktisk køede telles; malens kanal følges; malen av gir 409 (påminnelse, «Ny dato på kurset», kursbevis med «Be om en anmeldelse»). Forhåndsvisningen viser det som faktisk sendes (e-postoppsettet når malen har det). «Bare SMS» uten telefon står i «ikke nådd». Innstillinger › Meldinger viser bare kanalene malen kan sendes på (meldinger.php «kanaler»), og en mal kan aldri stå uten kanal. (3) «Ta betalt»: dagens kurs og Paint on Pots åpner /kasse; andre datoer registreres med den eksisterende pamelding.php status=betalt og betalingsmåte (som «Status og betaling» i gammel admin), uten ny pengelogikk og uten egne PoP-beløp. (4) «Start dagens kurs» spør ikke kursstart3.php når Vis/kursstart3 er av (deltakerne fra kalender.php), og I dag spør ikke kursstart3 i oppdateringen. (5) Ingen forhåndsvalg: gave, oppmøte (Møtt/Ikke møtt per person), kanal, flytt (ny dato og om det skal varsles), legg til deltaker (betalingsmåte, gavekortkode), kopier til uka og ny serie (klokkeslett, gjentas, varighet, skoleferier); hovedknappen er låst til valget er gjort. «Er du sikker?» før Flytt til venteliste og Sperr kursbevis. (6) Søk og «Ikke betalt» åpner riktig medlem (person=), kurs (kurs= → neste dato, okt=&booking=) og vare (vare=); hele rader er trykkbare; ingen «Åpne»-ord eller pynte-piler; Rediger kurset / Legg til bilde sender kurs-id-en og sier «(gammel admin)». (7) Mobilvisningen bare på berøring + smal skjerm ((pointer:coarse) og ≤600 px); en PC med zoom får alle sidene, også i bunnmenyen. iPad: topplinja på én rad, uka før minikalenderen; mobil: tallene 2 × 2 uten avkutting, søket skjult. (8) Kalenderkortet: én knapp som åpner kurset, en ekte avkrysningsboks og «Valg» ved siden av; synlig «Valg» i hver dagsoverskrift; etiketter på feltene; fokus på arkets overskrift; ingen aria-live på main; kontrast uten opacity; brytere med hele raden som trykkflate og 44 px høye; orddeling (hyphens:auto); bakgrunnen ruller ikke bak arket; nettleserens Tilbake lukker arket og spør «Vil du forkaste?» når noe er skrevet. (9) Ett «Send beskjed»-ark (NA.arkBeskjed) for kurs, medlemmer og én person; ett søk per skjerm (topplinjesøket filtrerer Medlemmer og Varer); Min side-bryterne bare på Medlemssiden; plassene har én definisjon (kalender.php pameldt); toast på brytere; «Kursbevis til N som har betalt»; søkefeltet heter «Søk». Codex: lageret lagres som differanse (produkter.php lagerEndring), prisen i serien må være hele kroner, gavekort i «Legg til deltaker» sender koden, og en flyttet eller slettet økt fjernes fra kartet.",
+            "hvor": "api/admin/pop-priser.php, api/admin/okt-varsel.php, api/admin/beskjed.php, api/admin/meldinger.php, api/admin/pamelding.php, api/admin/produkter.php, api/admin/oversikt.php, app/lib/varsler.php, app/lib/booking.php, bin/cron.php, ny-admin/*, tests/ny-admin.php, tests/nyadmin-royk.mjs",
+            "kode": [
+                {
+                    "fil": "api/admin/pop-priser.php",
+                    "finnes": [
+                        "PopPris::nivaer()"
+                    ],
+                    "ikkeFinnes": [
+                        "Poppris::nivaer()"
+                    ]
+                },
+                {
+                    "fil": "api/admin/okt-varsel.php",
+                    "finnes": [
+                        "'UPDATE course_sessions SET paaminnelse_sendt_at = :t WHERE id = :i AND paaminnelse_sendt_at IS NULL'",
+                        "Booking::aktivSql('b')",
+                        "'ikkeNaadd'",
+                        "Svar::feil('Påminnelsen er alt sendt '"
+                    ]
+                },
+                {
+                    "fil": "bin/cron.php",
+                    "finnes": [
+                        "'UPDATE course_sessions SET paaminnelse_sendt_at = :t WHERE id = :i AND paaminnelse_sendt_at IS NULL'"
+                    ]
+                },
+                {
+                    "fil": "app/lib/varsler.php",
+                    "finnes": [
+                        "?string $refType = null, ?int $refId = null, ?string $egenHtml = null): int"
+                    ]
+                },
+                {
+                    "fil": "api/admin/beskjed.php",
+                    "finnes": [
+                        "$medReserverte = Foresporsel::tekst('medReserverte') === 'ja';",
+                        "'ikke_naadd' => $ikkeNaadd,"
+                    ]
+                },
+                {
+                    "fil": "api/admin/meldinger.php",
+                    "finnes": [
+                        "function kanalerMulig(string $navn): array",
+                        "'kanaler'  => (object) $kanaler,"
+                    ]
+                },
+                {
+                    "fil": "api/admin/pamelding.php",
+                    "finnes": [
+                        "Kursbeviset ble ikke sendt: meldingen «Be om en anmeldelse» er slått av under Maler."
+                    ]
+                },
+                {
+                    "fil": "api/admin/produkter.php",
+                    "finnes": [
+                        "UPDATE products SET lager = GREATEST(0, COALESCE(lager, 0) + :d) WHERE id = :i"
+                    ]
+                },
+                {
+                    "fil": "ny-admin/felles.js",
+                    "finnes": [
+                        "const MOBIL_MQ = '(pointer:coarse) and (max-width:600px)';",
+                        "history.pushState({naArk: 1}, '', location.href)",
+                        "placeholder=\"⌕ Søk\""
+                    ],
+                    "ikkeFinnes": [
+                        "Åpne medlemmet",
+                        "Åpne gammel admin"
+                    ]
+                },
+                {
+                    "fil": "ny-admin.html",
+                    "finnes": [
+                        "<main id=\"arbeid\" tabindex=\"-1\"></main>"
+                    ]
+                },
+                {
+                    "fil": "ny-admin/kalender.js",
+                    "finnes": [
+                        "const FL = {liste: [], avlys: false, til: '', dato: '', tid: '', varsle: '', kanal: ''};",
+                        "<input type=\"checkbox\" data-velg=",
+                        "data-k=\"dagValg\"",
+                        "medReserverte: 'ja'",
+                        "gjentas: enDato ? 1 : 0, varighet: enDato ? -1 : null, egen: '', ferier: new Set(), enDato});"
+                    ],
+                    "ikkeFinnes": [
+                        "role=\"checkbox\"",
+                        "Åpne kurset og deltakerne"
+                    ]
+                },
+                {
+                    "fil": "ny-admin/kurs.js",
+                    "finnes": [
+                        "handling: 'status', id: KS.delt.bookingId, status: 'betalt', maate",
+                        "'Ja, flytt til ventelista'",
+                        "'Ja, sperr kursbeviset'",
+                        "Kursbevis til ${bet} som har betalt"
+                    ]
+                },
+                {
+                    "fil": "ny-admin/idag.js",
+                    "finnes": [
+                        "if (k.brytere?.kursstart3) {",
+                        "data-igang disabled>Kurset er i gang</button>"
+                    ],
+                    "ikkeFinnes": [
+                        "hentKurs(d)"
+                    ]
+                },
+                {
+                    "fil": "ny-admin/medlemmer.js",
+                    "finnes": [
+                        "const GV = { type: '', til: '', medlemId: 0, timer: 0, belop: '', hilsen: '' };",
+                        "S.person = Number(params?.get?.('person')) || 0;"
+                    ]
+                },
+                {
+                    "fil": "ny-admin/innstillinger.js",
+                    "finnes": [
+                        "const mulig = S.telling?.kanaler?.[m.navn] || ['epost'];"
+                    ]
+                },
+                {
+                    "fil": "tests/nettleser/ruter.php",
+                    "finnes": [
+                        "if (preg_match('~^/ny-admin/?$~', $sti))"
                     ]
                 }
             ]

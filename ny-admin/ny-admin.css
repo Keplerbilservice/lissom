@@ -9,7 +9,10 @@
   color-scheme:light;
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--f-body);font-size:18px}
+[hidden]{display:none!important}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--f-body);font-size:18px;overflow-wrap:break-word}
+/* Bakgrunnen ruller ikke bak et åpent ark (brukertesten 08.10.2026). */
+html.ark-apent{overflow:hidden}
 button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
 button,a{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
@@ -84,6 +87,8 @@ small{font-size:15px;color:var(--muted)}
 .knapp.hoved:hover{filter:brightness(.97)}
 .knapp.liten{min-height:44px;padding:8px 14px;font-size:16px}
 .knapp.rod{color:var(--red)}
+/* Et valg som er gjort (ikke gult: det er bare én gul hovedknapp per kort). */
+.knapp.valgt-knapp,.valgknapper .knapp[aria-pressed=true]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
 .kort{background:var(--paper);border:1px solid var(--line);border-radius:20px;padding:22px;min-width:0}
 .kort-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}
@@ -105,12 +110,12 @@ small{font-size:15px;color:var(--muted)}
 .faner{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px}
 .faner button{border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:7px 14px;min-height:44px;font-weight:700}
 .faner button[aria-pressed=true]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
-.bryter{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid var(--line)}
+.bryter{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--line);cursor:pointer;min-height:56px}
 .bryter:last-child{border-bottom:0}
-.bryter .av{width:56px;height:34px;border-radius:999px;background:var(--line);position:relative;flex:none;border:0}
-.bryter .av::after{content:"";position:absolute;top:3px;left:3px;width:28px;height:28px;border-radius:50%;background:#fff;transition:left .15s}
+.bryter .av{width:64px;height:44px;border-radius:999px;background:var(--line);position:relative;flex:none;border:0}
+.bryter .av::after{content:"";position:absolute;top:4px;left:4px;width:36px;height:36px;border-radius:50%;background:#fff;transition:left .15s}
 .bryter .av[aria-pressed=true]{background:var(--green)}
-.bryter .av[aria-pressed=true]::after{left:25px}
+.bryter .av[aria-pressed=true]::after{left:24px}
 .felt{display:grid;gap:5px}
 .felt input,.felt select,.felt textarea,textarea.felt,input.felt{width:100%;padding:11px;border-radius:9px;border:1px solid #c6b1a0;background:var(--field);min-height:44px}
 .felt textarea,textarea.felt{min-height:110px}
@@ -128,12 +133,19 @@ small{font-size:15px;color:var(--muted)}
 .mott input{width:24px;height:24px;accent-color:var(--ink)}
 .velg-rad{display:flex;gap:10px;align-items:center;min-height:44px;cursor:pointer;flex:1 1 200px}
 .velg-rad input{width:24px;height:24px;accent-color:var(--ink);flex:none}
+.velg-rad>span{display:grid;gap:2px}
+.mott-valg{display:flex;gap:6px}
+.mott-valg button{min-height:44px;min-width:44px;padding:8px 14px;border-radius:11px;border:1px solid var(--line);background:var(--paper);font-weight:700}
+.mott-valg button[aria-pressed=true]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.mott-valg button.nei[aria-pressed=true]{background:var(--red);border-color:var(--red)}
 
 /* Ark (dialog) */
 dialog#ark{border:0;border-radius:22px;padding:0;width:min(720px,calc(100% - 32px));max-height:90dvh;color:var(--ink);background:var(--paper);box-shadow:0 24px 90px #0003}
 dialog#ark.bred{width:min(1100px,calc(100% - 32px))}
 dialog#ark::backdrop{background:#27110870}
-.ark{padding:26px;display:flex;flex-direction:column;gap:14px}
+.ark{padding:26px 26px calc(30px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px}
+.ark h2:focus{outline:0}
+.ark h2:focus-visible{outline:3px solid #a2502b;outline-offset:3px}
 .ark-head{display:flex;justify-content:space-between;align-items:center;gap:14px;position:sticky;top:-26px;background:var(--paper);padding:6px 0;z-index:2}
 .lukk{border:1px solid var(--line);background:transparent;border-radius:50%;width:46px;height:46px;font-size:22px;flex:none}
 .ark-fot{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;padding-top:6px}
@@ -148,21 +160,39 @@ dialog#ark::backdrop{background:#27110870}
 
 #mobil{display:none}
 .bare-mobil{display:none}
+.na-mobil .bare-stor{display:none!important}
+.na-mobil .bare-mobil{display:block}
+/* iPad (761–1180 px): topplinja på én rad. Smalere meny, kompakte tall, kort søk. */
+@media (min-width:761px) and (max-width:1180px){
+  #meny{width:206px;padding:22px 12px}
+  .ws{margin-left:206px}
+  #topp{gap:8px;padding:10px 14px;flex-wrap:nowrap}
+  .sok-wrap{flex:1 1 90px;min-width:90px;max-width:240px}
+  #topptall{flex-wrap:nowrap;gap:6px;min-width:0}
+  .tall-pille{padding:4px 9px}
+  .tall-pille b{font-size:16px}
+  .tall-pille small{font-size:11px}
+  .inne-pille{max-width:150px}
+  .stemple-topp{min-height:44px;padding:8px 12px}
+  .stemple-topp .lang{display:none}
+  .live span{display:none}
+  .topp-fyll{display:none}
+}
 @media (max-width:1100px){#topp{padding:12px 20px}#arbeid{padding:26px 24px 120px}}
 @media (max-width:900px){.grid{grid-template-columns:1fr}}
 @media (max-width:760px){
-  .bare-stor{display:none!important}
-  .bare-mobil{display:block}
   #meny{display:none}
   .ws{margin-left:0}
-  #topp{gap:8px;padding:10px 16px;padding-top:max(10px,env(safe-area-inset-top))}
+  /* Topplinja ruller bort på smal skjerm, og tallene står 2 × 2 uten å kuttes. Søket er skjult på mobil. */
+  #topp{gap:8px;padding:10px 16px;padding-top:max(10px,env(safe-area-inset-top));position:static}
   .sok-wrap{order:2;flex:1 1 100%;max-width:none}
-  #topptall{order:3;width:100%;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px;scrollbar-width:none}
-  #topptall::-webkit-scrollbar{display:none}
-  .tall-pille{flex:none;padding:4px 8px}
+  .na-mobil .sok-wrap{display:none}
+  #topptall{order:3;width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+  .tall-pille{width:100%;min-width:0;padding:5px 9px}
   .tall-pille b{font-size:15px}
-  .tall-pille small{font-size:10px}
-  .inne-pille{max-width:200px}
+  .tall-pille small{font-size:11px;white-space:normal}
+  .inne-pille{max-width:none}
+  .stemple-topp .lang{display:none}
   .topp-fyll{display:none}
   .stemple-topp{order:1;flex:1;min-height:44px;padding:6px 10px;font-size:15px}
   .live{order:1}
@@ -173,8 +203,10 @@ dialog#ark::backdrop{background:#27110870}
   .ovn-knapper button{min-height:52px;font-size:16px}
   #toast{bottom:96px;right:16px}
   #mobil{position:fixed;bottom:0;left:0;right:0;display:grid;grid-template-columns:repeat(3,1fr);background:var(--paper);border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));z-index:20}
-  #mobil button{border:0;background:none;display:grid;justify-items:center;gap:2px;font-size:13px;padding:6px;min-height:52px;border-radius:10px;font-weight:700}
+  #mobil button,#mobil a{border:0;background:none;display:grid;justify-items:center;gap:2px;font-size:13px;padding:6px;min-height:52px;border-radius:10px;font-weight:700}
   #mobil button[aria-current=page]{background:var(--yellow)}
+  #mobil.alle{display:flex;overflow-x:auto;gap:2px;scrollbar-width:thin}
+  #mobil.alle>*{flex:0 0 auto;min-width:84px}
   .ark{padding:18px}
   .ark-head{top:-18px}
 }
@@ -206,7 +238,7 @@ dialog#ark::backdrop{background:#27110870}
 .mer{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
 .mer button{text-align:left;padding:18px;min-height:44px;border:1px solid var(--line);border-radius:14px;background:var(--paper);color:var(--ink);font:inherit;cursor:pointer}
 .mer button b{display:block}
-.mer button:disabled{opacity:.55;cursor:default}
+.mer button:disabled{cursor:default;color:var(--muted)}
 .medlem-bånd{background:var(--yellow);padding:12px 18px;font-weight:800;display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center}
 .roller{display:flex;gap:6px;flex-wrap:wrap}
 .roller button{border:1px solid var(--ink);background:transparent;border-radius:999px;padding:4px 12px;min-height:44px;font-weight:700;font-size:15px}
@@ -215,16 +247,20 @@ dialog#ark::backdrop{background:#27110870}
 .meld-rad{display:grid;grid-template-columns:64px minmax(0,1fr) 110px 110px 130px;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
 .meld-rad:last-child{border-bottom:0}
 .meld-rad small{display:block}
-.meld-rad .av{width:56px;height:34px;border-radius:999px;background:var(--line);position:relative;border:0}
-.meld-rad .av::after{content:"";position:absolute;top:3px;left:3px;width:28px;height:28px;border-radius:50%;background:#fff;transition:left .15s}
+.meld-rad .av{width:64px;height:44px;border-radius:999px;background:var(--line);position:relative;border:0}
+.meld-rad .av::after{content:"";position:absolute;top:4px;left:4px;width:36px;height:36px;border-radius:50%;background:#fff;transition:left .15s}
 .meld-rad .av[aria-pressed=true]{background:var(--green)}
-.meld-rad .av[aria-pressed=true]::after{left:25px}
+.meld-rad .av[aria-pressed=true]::after{left:24px}
+.kanal-fast{display:inline-flex;align-items:center;justify-content:center;min-height:44px;border-radius:11px;background:var(--ground);color:var(--muted);font-weight:700}
+.kanal-fast.paa{background:var(--green-soft);color:var(--green)}
 .meld-topp{font-size:13px;letter-spacing:.08em;text-transform:uppercase;font-weight:800;color:var(--muted);padding-top:0}
 .av-rad b{color:var(--muted)}
 .kanal{min-height:44px;border-radius:11px;border:1px solid var(--line);background:var(--ground);color:var(--muted);font-weight:700}
 .kanal.paa{background:var(--green-soft);border-color:#b9d6c4;color:var(--green)}
-.kanal:disabled{opacity:.4;cursor:default}
-.radknapp{width:100%;border:0;border-bottom:1px solid var(--line);background:none;text-align:left;cursor:pointer;font:inherit;color:inherit}
+.kanal:disabled{cursor:default;color:var(--muted);background:var(--ground)}
+.radknapp{width:100%;border:0;border-bottom:1px solid var(--line);background:none;text-align:left;cursor:pointer;font:inherit;color:inherit;min-height:44px}
+.radknapp:hover{background:var(--ground)}
+.rad.markert{background:var(--yellow-soft);border-radius:10px;padding-left:10px;padding-right:10px}
 .ant.stor{display:flex;align-items:center;gap:12px}
 .ant.stor button{width:48px;height:48px;border-radius:12px;border:1px solid var(--line);background:var(--ground);font-size:22px;font-weight:800}
 .ms-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:20px;align-items:start}

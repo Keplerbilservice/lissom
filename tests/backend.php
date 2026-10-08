@@ -13094,7 +13094,7 @@ sjekk('… men teksten maa ogsaa vaere den samme',
 // maa sendes for haand: Nytt medlem» — samme beskjed, samme innboks, og en
 // oppfordring til verkstedet om aa sende SMS til seg selv.
 sjekk('en intern SMS som ikke kan gaa blir ikke en e-post til',
-    str_contains($vars, "if (str_starts_with(\$malNavn, 'intern_')) {\n            logg('Intern SMS kunne ikke sendes — e-posten er alt sendt', ['mal' => \$malNavn]);\n            return;\n        }"));
+    str_contains($vars, "if (str_starts_with(\$malNavn, 'intern_')) {\n            logg('Intern SMS kunne ikke sendes — e-posten er alt sendt', ['mal' => \$malNavn]);\n            return 0;\n        }"));
 // … og den stanses der den lages ogsaa. To sperrer for det samme: det er
 // «uansett aarsak».
 $bliApi2 = les_testfil(dirname(__DIR__) . '/api/bli-medlem.php');
@@ -18383,7 +18383,7 @@ sjekk('oekta lages forst naar noen booker, og bare paa et kvarter',
 
 // Regelen for hva som legger beslag paa en plass staar ett sted.
 sjekk('plassregelen staar ett sted, og brukes begge veier',
-    str_contains($bookFil, '    private static function aktivSql(string $alias): string')
+    str_contains($bookFil, '    public static function aktivSql(string $alias): string')
     && str_contains($bookFil, "        \$aktiv  = self::aktivSql('b');")
     && str_contains($bookFil, "        \$aktiv2 = self::aktivSql('b2');")
     && str_contains($bookFil, '    public static function ledigeIVindu(int $kursId, string $startUtc, string $sluttUtc): int'));

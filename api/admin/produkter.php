@@ -307,12 +307,24 @@ if (DB::harKolonne('products', 'leire')) {
 // Navnet avgjor ingenting. Tidligere ble en vare uten id slaatt sammen med
 // en som alt het det samme, og den forste ble stille overskrevet — to like
 // kopper kunne ikke ligge ute samtidig.
+// «lagerEndring» fra den nye adminen (/ny-admin › Varer, 8. oktober 2026):
+// differansen admin gjorde i arket legges paa det som staar i basen naa, i én
+// UPDATE, i stedet for aa skrive et tall som kan vaere lest foer et salg.
+// Endret hun ikke lageret, roeres det ikke. Uten feltet er alt som foer.
+$lagerEndring = array_key_exists('lagerEndring', Foresporsel::kropp()) ? Foresporsel::heltall('lagerEndring') : null;
+if ($id > 0 && $lagerEndring !== null) {
+    unset($data['lager']);
+}
+
 if ($id > 0) {
     $foer = DB::en('SELECT * FROM products WHERE id = :i', ['i' => $id]);
     if ($foer === null) {
         Svar::feil('Fant ikke varen.');
     }
     DB::oppdater('products', $data, ['id' => $id]);
+    if ($lagerEndring !== null && $lagerEndring !== 0) {
+        DB::kjor('UPDATE products SET lager = GREATEST(0, COALESCE(lager, 0) + :d) WHERE id = :i', ['d' => $lagerEndring, 'i' => $id]);
+    }
     revider('vare_endret', 'product', $id, ['tittel' => $tittel]);
     // Varsling ogsaa naar antall eller min endres for haand (eieren 04.10.2026).
     Lager::etterEndring($id,

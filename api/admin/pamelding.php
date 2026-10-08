@@ -899,7 +899,9 @@ if ($handling === 'kursbevis') {
         Svar::feil('Påmeldingen har ingen gyldig e-postadresse.');
     }
     $navn = (string) $b['navn'];
-    Varsel::mal('anmeldelse', ['epost' => $mottaker], [
+    // Er malen slaatt av, gaar ingenting ut — da skal skjermen ikke si «sendt»
+    // (testmesteren, ny admin 8. oktober 2026).
+    $lagt = Varsel::mal('anmeldelse', ['epost' => $mottaker], [
         'navn'      => $navn,
         'fornavn'   => explode(' ', trim($navn))[0],
         'kurs'      => (string) $b['tittel'],
@@ -909,6 +911,9 @@ if ($handling === 'kursbevis') {
     // Knappene (app/epost/anmeldelse.html). Eieren, 25. september 2026.
     Booking::anmeldelseHtml(explode(' ', trim($navn))[0], (string) $b['tittel'],
         trim((string) Config::hent('anmeldelse_lenke', '')), $url));
+    if ($lagt === 0) {
+        Svar::feil('Kursbeviset ble ikke sendt: meldingen «Be om en anmeldelse» er slått av under Maler.', 409);
+    }
     revider('kursbevis_sendt', 'booking', $id, ['til' => $mottaker]);
     Svar::ok(['beskjed' => 'Kursbeviset er sendt til ' . $mottaker . '.']);
 }

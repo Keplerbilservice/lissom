@@ -1,7 +1,9 @@
 /* Ny admin, del C: Medlemmer (eierens GO 08.10.2026, prototypen lissom-enklere-admin-2).
    Liste med status, «Gi gave» øverst og per medlem, «Gaver som gjelder nå» med Trekk, og
    «Send beskjed». Ekte data: api/admin/medlemmer.php (lista), gaver.php (gavene) og
-   beskjed.php (utsendingen). Ingen egne kopier av noe av det. */
+   beskjed.php (utsendingen, i det felles «Send beskjed»-arket fra kalender.js). Ingen egne kopier av noe av det.
+   #medlemmer?person=ID (søket, «Ikke betalt», «Må gjøres») markerer og åpner medlemmet. Søket i topplinja
+   filtrerer lista her (ett søk per skjerm). */
 (() => {
   'use strict';
   const NA = () => window.NyAdmin || window;
@@ -10,9 +12,9 @@
   const toast = h => NA().toast(h);
   const registrer = (id, opp) => { const f = NA().registrerSide; if (typeof f === 'function') f(id, opp); else document.addEventListener('DOMContentLoaded', () => registrer(id, opp), { once: true }); };
 
-  const S = { medlemmer: [], gaver: [], sok: '', el: null, tikk: 0, opptatt: false };
-  // Gaveskjemaet. «belop» er tomt til Monica skriver det: ingen ferdige beløp (ingen hardkodede priser).
-  const GV = { type: 'timer', til: 'alle', medlemId: 0, timer: 2, belop: '', hilsen: '' };
+  const S = { medlemmer: [], gaver: [], sok: '', el: null, tikk: 0, opptatt: false, person: 0 };
+  // Gaveskjemaet. Ingenting er valgt på forhånd (eierens regel), og «belop» er tomt til Monica skriver det.
+  const GV = { type: '', til: '', medlemId: 0, timer: 0, belop: '', hilsen: '' };
 
   /** Bare medlemmene: aktive og på prøve, uten admin-brukerne (samme utvalg som «Send beskjed» når). */
   const erMedlem = m => !m.rolleAdmin && (m.status === 'aktiv' || m.status === 'prove');
@@ -45,13 +47,38 @@
     if (!boks) return;
     const q = S.sok.trim().toLowerCase();
     const L = liste().filter(m => !q || [m.navn, m.epost, m.telefon, m.medlemskap].some(v => String(v || '').toLowerCase().includes(q)));
-    boks.innerHTML = L.length ? L.map(m => `<div class="rad"><div class="tekst"><b>${esc(m.navn)}</b>
-        <small>${esc(m.medlemskap || '')}${m.timerIgjen ? ` · ${esc(m.timerIgjen)} igjen denne måneden` : ''}${m.erInne ? ' · i verkstedet nå' : ''}</small></div>
-        ${merke(m)}<button class="knapp liten" data-mlm="gave" data-id="${m.id}">🎁 Gi gave</button></div>`).join('')
+    // Hele raden er trykkbar og åpner medlemmet (gave, beskjed, betaling).
+    boks.innerHTML = L.length ? L.map(m => `<button type="button" class="rad radknapp ${m.id === S.person ? 'markert' : ''}" data-mlm="medlem" data-id="${m.id}"><span class="tekst"><b>${esc(m.navn)}</b>
+        <small>${esc(m.medlemskap || '')}${m.timerIgjen ? ` · ${esc(m.timerIgjen)} igjen denne måneden` : ''}${m.erInne ? ' · i verkstedet nå' : ''}</small></span>
+        ${merke(m)}</button>`).join('')
       : '<p class="muted">Ingen treff.</p>';
     const n = liste().length;
     const ey = document.getElementById('mlm-antall'); if (ey) ey.textContent = `${n} medlemmer`;
-    const bk = document.getElementById('mlm-beskjedknapp'); if (bk) bk.textContent = `✉ Send beskjed til ${n}`;
+  }
+  // Medlemmet fra adressen (person=): markeres i lista og åpnes. Er det ikke aktivt medlem, finnes det i gammel admin.
+  function visPerson() {
+    if (!S.person || !S.medlemmer.length) return;
+    const id = S.person;
+    const r = document.querySelector(`[data-mlm="medlem"][data-id="${id}"]`);
+    if (r) r.scrollIntoView({ block: 'center' });
+    arkMedlem(id);
+    S.person = 0;
+  }
+  function arkMedlem(id) {
+    const m = S.medlemmer.find(x => x.id === id);
+    if (!m) {
+      NA().apneArk(`<div class="ark-head"><h2>Medlemmet</h2><button class="lukk" data-mlm="lukk" aria-label="Lukk">×</button></div>
+        <p class="muted">Står ikke blant de aktive medlemmene. Betaling og historikk finnes i gammel admin.</p>
+        <div class="ark-fot"><a class="knapp hoved" href="/admin-ny#folk?person=${id}">Til personen i gammel admin</a></div>`);
+      return;
+    }
+    NA().apneArk(`<div class="ark-head"><h2>${esc(m.navn)}</h2><button class="lukk" data-mlm="lukk" aria-label="Lukk">×</button></div>
+      <p>${merke(m)} <span class="muted">${esc(m.medlemskap || '')}${m.timerIgjen ? ` · ${esc(m.timerIgjen)} igjen denne måneden` : ''}</span></p>
+      <p class="muted">${esc([m.epost, m.telefon].filter(Boolean).join(' · ') || 'Ingen kontaktinfo')}</p>
+      ${m.betalingUte ? `<p class="feil">${esc(m.betalingTekst || 'Ikke betalt')}</p>` : ''}
+      <div class="valgknapper"><button class="knapp" data-mlm="gave" data-id="${m.id}">🎁 Gi gave</button>
+        <button class="knapp" data-mlm="beskjeden" data-id="${m.id}" ${m.epost || m.telefon ? '' : 'disabled'}>✉ Send beskjed</button>
+        <a class="knapp" href="/admin-ny#folk?person=${m.id}">Betaling og detaljer (gammel admin)</a></div>`);
   }
 
   async function hentGaver() {
@@ -63,18 +90,18 @@
     tegnListe();
   }
 
-  async function tegn(el) {
+  async function tegn(el, params) {
     S.el = el;
+    S.person = Number(params?.get?.('person')) || 0;
+    S.sok = '';
     el.innerHTML = `<div class="head"><div><div class="eyebrow" id="mlm-antall">Henter …</div><h1>Medlemmer</h1></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="knapp" data-mlm="gave">🎁 Gi gave</button>
       <button class="knapp hoved" data-mlm="beskjed" id="mlm-beskjedknapp">✉ Send beskjed</button></div></div>
       <section class="kort" style="margin-bottom:20px"><div class="kort-head"><h2>Gaver som gjelder nå</h2><small>Medlemmene ser dem på Min side</small></div>
       <div id="mlm-gaver"><p class="muted">Henter …</p></div></section>
-      <div style="margin-bottom:16px"><input id="mlm-sok" type="search" placeholder="Søk i medlemmer" aria-label="Søk i medlemmer" value="${esc(S.sok)}"
-        style="width:100%;max-width:420px;min-height:48px;padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:var(--paper);font:inherit"></div>
       <section class="kort" id="mlm-liste"><p class="muted">Henter …</p></section>`;
-    el.querySelector('#mlm-sok').addEventListener('input', e => { S.sok = e.target.value; tegnListe(); });
     await Promise.all([hentGaver(), hentMedlemmer()]);
+    visPerson();
     // Fortløpende: gavene hvert 15. sekund, den tunge medlemslista hvert minutt.
     const hh = NA().hentHvert;
     if (typeof hh === 'function') hh(15000, () => {
@@ -90,25 +117,33 @@
     const forh = { type: GV.type, timer: GV.timer, belop: GV.belop };
     NA().apneArk(`<div class="ark-head"><h2>🎁 Gi gave</h2><button class="lukk" data-mlm="lukk" aria-label="Lukk">×</button></div>
       <div><small>Hva</small><div class="valgknapper" style="margin-top:6px">${[['timer', 'Ekstra timer'], ['gavekort', 'Gavekort'], ['venn', 'Ta med en venn']]
-        .map(([k, t]) => `<button class="knapp ${GV.type === k ? 'hoved' : ''}" data-mlm="gvtype" data-v="${k}">${t}</button>`).join('')}</div></div>
+        .map(([k, t]) => `<button class="knapp" data-mlm="gvtype" data-v="${k}" aria-pressed="${GV.type === k}">${t}</button>`).join('')}</div></div>
       ${GV.type === 'timer' ? `<div><small>Antall timer</small><div class="valgknapper" style="margin-top:6px">${[1, 2, 3, 5]
-        .map(n => `<button class="knapp ${GV.timer === n ? 'hoved' : ''}" data-mlm="gvtimer" data-v="${n}">${n}</button>`).join('')}</div></div>` : ''}
+        .map(n => `<button class="knapp" data-mlm="gvtimer" data-v="${n}" aria-pressed="${GV.timer === n}">${n}</button>`).join('')}</div></div>` : ''}
       ${GV.type === 'gavekort' ? `<label style="display:grid;gap:5px"><small>Beløp i kroner</small><input id="mlm-gv-belop" inputmode="numeric" value="${esc(GV.belop)}"
         style="padding:11px;border-radius:9px;border:1px solid #c6b1a0;background:var(--field);font:inherit;max-width:200px"></label>` : ''}
       <div><small>Til</small><div class="valgknapper" style="margin-top:6px">
-        <button class="knapp ${GV.til === 'alle' ? 'hoved' : ''}" data-mlm="gvtil" data-v="alle">Alle medlemmer</button>
-        <button class="knapp ${GV.til === 'en' ? 'hoved' : ''}" data-mlm="gvtil" data-v="en">${GV.til === 'en' && valgt ? esc(valgt.navn) : 'Ett medlem …'}</button></div>
+        <button class="knapp" data-mlm="gvtil" data-v="alle" aria-pressed="${GV.til === 'alle'}">Alle medlemmer</button>
+        <button class="knapp" data-mlm="gvtil" data-v="en" aria-pressed="${GV.til === 'en'}">${GV.til === 'en' && valgt ? esc(valgt.navn) : 'Ett medlem …'}</button></div>
         ${GV.til === 'en' ? `<select id="mlm-gv-medlem" aria-label="Velg medlem" style="margin-top:8px;padding:11px;border-radius:9px;border:1px solid #c6b1a0;background:var(--field);font:inherit;width:100%">
           <option value="">Velg medlem</option>${liste().map(m => `<option value="${m.id}" ${m.id === GV.medlemId ? 'selected' : ''}>${esc(m.navn)}</option>`).join('')}</select>` : ''}
         <small>«Alle medlemmer» gjelder også dem som blir medlem senere, til du trekker gaven.</small></div>
       <label style="display:grid;gap:5px"><small>Hilsen (valgfritt)</small><input id="mlm-gv-hilsen" value="${esc(GV.hilsen)}" maxlength="255"
         style="padding:11px;border-radius:9px;border:1px solid #c6b1a0;background:var(--field);font:inherit"></label>
-      <div class="sms"><b>Slik ser medlemmet det på Min side:</b><br><span id="mlm-gv-forh">🎁 ${esc(gaveTittel(forh))}${GV.hilsen ? ` – «${esc(GV.hilsen)}»` : ''}</span></div>
+      ${GV.type ? `<div class="sms"><b>Slik ser medlemmet det på Min side:</b><br><span id="mlm-gv-forh">🎁 ${esc(gaveTittel(forh))}${GV.hilsen ? ` – «${esc(GV.hilsen)}»` : ''}</span></div>` : ''}
       <p class="feil" id="mlm-gv-feil" role="alert" hidden style="color:var(--red)"></p>
-      <div class="ark-fot"><button class="knapp" data-mlm="lukk">Avbryt</button><button class="knapp hoved" data-mlm="lagregave">Gi gaven</button></div>`);
+      <div class="ark-fot"><button class="knapp" data-mlm="lukk">Avbryt</button><button class="knapp hoved" id="mlm-gv-ok" data-mlm="lagregave" ${gaveKlar() ? '' : 'disabled'}>Gi gaven</button></div>`);
   }
+  // «Gi gaven» er låst til hva og hvem er valgt.
+  function gaveKlar() {
+    if (!GV.type || !GV.til) return false;
+    if (GV.type === 'timer' && !GV.timer) return false;
+    if (GV.type === 'gavekort' && !(/^\d+$/.test(GV.belop) && Number(GV.belop) > 0)) return false;
+    return GV.til !== 'en' || !!GV.medlemId;
+  }
+  const sjekkGave = () => { lesGaveFelter(); const b = document.getElementById('mlm-gv-ok'); if (b) b.disabled = !gaveKlar(); };
   function lesGaveFelter() {
-    const b = document.getElementById('mlm-gv-belop'); if (b) GV.belop = b.value.replace(/\D+/g, '');
+    const b = document.getElementById('mlm-gv-belop'); if (b) GV.belop = b.value.trim();
     const h = document.getElementById('mlm-gv-hilsen'); if (h) GV.hilsen = h.value;
     const m = document.getElementById('mlm-gv-medlem'); if (m) GV.medlemId = Number(m.value) || 0;
   }
@@ -122,7 +157,8 @@
     lesGaveFelter();
     const feil = document.getElementById('mlm-gv-feil');
     const vis = t => { if (feil) { feil.textContent = t; feil.hidden = false; } };
-    if (GV.type === 'gavekort' && !(Number(GV.belop) > 0)) return vis('Skriv beløpet.');
+    if (!gaveKlar()) return vis('Velg hva og hvem gaven gjelder.');
+    if (GV.type === 'gavekort' && !/^\d+$/.test(GV.belop)) return vis('Skriv beløpet i hele kroner.');
     if (GV.til === 'en' && !GV.medlemId) return vis('Velg hvem gaven skal gå til.');
     S.opptatt = true; knapp.disabled = true;
     try {
@@ -144,45 +180,19 @@
     const g = S.gaver.find(x => x.id === id); if (!g) return;
     NA().apneArk(`<div class="ark-head"><h2>Trekk gaven?</h2><button class="lukk" data-mlm="lukk" aria-label="Lukk">×</button></div>
       <p><b>${esc(g.tittel)}</b> til ${esc(g.mottaker)}. Den forsvinner fra Min side. ${g.brukt} har løst den inn, og det står igjen.</p>
-      <div class="ark-fot"><button class="knapp" data-mlm="lukk">Avbryt</button><button class="knapp hoved rod" data-mlm="bekrefttrekk" data-id="${g.id}">Trekk gaven</button></div>`);
+      <div class="ark-fot"><button class="knapp" data-mlm="lukk">Avbryt</button><button class="knapp rod" data-mlm="bekrefttrekk" data-id="${g.id}">Trekk gaven</button></div>`);
   }
 
-  // ── Send beskjed ───────────────────────────────────────────────────────
-  let kanal = 'epost';
-  function arkBeskjed() {
-    const n = liste().length;
-    NA().apneArk(`<div class="ark-head"><h2>✉ Send beskjed til ${n}</h2><button class="lukk" data-mlm="lukk" aria-label="Lukk">×</button></div>
-      <div><small>Send som</small><div class="valgknapper" style="margin-top:6px">
-        <button class="knapp ${kanal === 'epost' ? 'hoved' : ''}" data-mlm="kanal" data-v="epost">E-post</button>
-        <button class="knapp ${kanal === 'begge' ? 'hoved' : ''}" data-mlm="kanal" data-v="begge">E-post og SMS</button></div></div>
-      <p class="muted">Beskjeden legges også ut på Min side.</p>
-      <label style="display:grid;gap:5px"><small>Overskrift (valgfritt)</small><input id="mlm-b-emne" maxlength="191" placeholder="Beskjed fra Lissom"
-        style="padding:11px;border-radius:9px;border:1px solid #c6b1a0;background:var(--field);font:inherit"></label>
-      <label style="display:grid;gap:5px"><small>Tekst</small><textarea id="mlm-b-tekst" style="width:100%;min-height:120px;padding:12px;border-radius:9px;border:1px solid #c6b1a0;background:var(--field);font:inherit"></textarea></label>
-      <p class="feil" id="mlm-b-feil" role="alert" hidden style="color:var(--red)"></p>
-      <div class="ark-fot"><button class="knapp" data-mlm="lukk">Avbryt</button><button class="knapp hoved" data-mlm="sendbeskjed">Send til ${n}</button></div>`);
-    setTimeout(() => document.getElementById('mlm-b-tekst')?.focus(), 0);
-  }
-  async function sendBeskjed(knapp) {
-    if (S.opptatt) return;
-    const tekst = (document.getElementById('mlm-b-tekst')?.value || '').trim();
-    const emne = (document.getElementById('mlm-b-emne')?.value || '').trim();
-    const feil = document.getElementById('mlm-b-feil');
-    if (tekst.length < 3) { feil.textContent = 'Skriv en melding først.'; feil.hidden = false; return; }
-    S.opptatt = true; knapp.disabled = true;
-    try {
-      const d = await kall('beskjed.php', { til: 'medlemmer', tekst, ...(emne ? { emne } : {}), ogsaaSms: kanal === 'begge' ? 'ja' : 'nei' });
-      NA().lukkArk(true);
-      toast(esc(d.beskjed || 'Sendt.'));
-    } catch (e) { feil.textContent = e.message; feil.hidden = false; } finally { S.opptatt = false; knapp.disabled = false; }
-  }
+  // ── Send beskjed: det felles arket (kalender.js, NA.arkBeskjed) ───────
+  const beskjed = mal => { const f = NA().arkBeskjed; if (typeof f === 'function') f(mal); else toast('Fikk ikke åpnet beskjeden. Last siden på nytt.'); };
 
   // Én lytter for hele siden og arkene (arket tegnes av skallet, utenfor sideelementet).
   document.addEventListener('click', async e => {
     const b = e.target.closest('[data-mlm]'); if (!b) return;
     const h = b.dataset.mlm, id = Number(b.dataset.id) || 0;
     if (h === 'lukk') return NA().lukkArk();
-    if (h === 'gave') { Object.assign(GV, { type: 'timer', timer: 2, belop: '', hilsen: '', til: id ? 'en' : 'alle', medlemId: id }); return arkGave(); }
+    if (h === 'medlem') return arkMedlem(id);
+    if (h === 'gave') { Object.assign(GV, { type: '', timer: 0, belop: '', hilsen: '', til: id ? 'en' : '', medlemId: id }); return arkGave(); }
     if (h === 'gvtype') { lesGaveFelter(); GV.type = b.dataset.v; return arkGave(); }
     if (h === 'gvtimer') { lesGaveFelter(); GV.timer = Number(b.dataset.v); return arkGave(); }
     if (h === 'gvtil') { lesGaveFelter(); GV.til = b.dataset.v; return arkGave(); }
@@ -194,12 +204,11 @@
       catch (err) { toast(esc(err.message)); } finally { S.opptatt = false; b.disabled = false; }
       return;
     }
-    if (h === 'beskjed') return arkBeskjed();
-    if (h === 'kanal') { kanal = b.dataset.v; document.querySelectorAll('[data-mlm="kanal"]').forEach(x => x.classList.toggle('hoved', x === b)); return; }
-    if (h === 'sendbeskjed') return sendBeskjed(b);
+    if (h === 'beskjed') return beskjed({ til: 'medlemmer' });
+    if (h === 'beskjeden') { const m = S.medlemmer.find(x => x.id === id); if (m) beskjed({ til: 'en', navn: m.navn, epost: m.epost || '', telefon: m.telefon || '' }); }
   });
-  document.addEventListener('input', e => { if (e.target.id === 'mlm-gv-belop' || e.target.id === 'mlm-gv-hilsen') oppdaterForh(); });
-  document.addEventListener('change', e => { if (e.target.id === 'mlm-gv-medlem') lesGaveFelter(); });
+  document.addEventListener('input', e => { if (e.target.id === 'mlm-gv-belop' || e.target.id === 'mlm-gv-hilsen') { oppdaterForh(); sjekkGave(); } });
+  document.addEventListener('change', e => { if (e.target.id === 'mlm-gv-medlem') sjekkGave(); });
 
-  registrer('medlemmer', { tittel: 'Medlemmer', ikon: '☺', tegn, mobil: false });
+  registrer('medlemmer', { tittel: 'Medlemmer', ikon: '☺', tegn, mobil: false, sok: q => { S.sok = q; tegnListe(); } });
 })();

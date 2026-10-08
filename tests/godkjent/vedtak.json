@@ -6826,6 +6826,20 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "kalender-uten-pop-stripe-20261008",
+            "dato": "2026-10-08",
+            "hva": "Eieren, 8. oktober 2026: Paint on Pots-notatet over kalenderen på lissom.no/kalender («Paint on Pots er fullt i dag. Neste dag med ledig plass …» / «Paint on Pots i dag.») fjernes. PoP-flisen i rutenettet blir.",
+            "hvor": "lissom.no/kalender",
+            "kode": [
+                {
+                    "fil": "app/nett/sider/kalender.php",
+                    "finnes": [
+                        "'popHarStripe' => false,"
+                    ]
+                }
+            ]
         }
     ]
 }

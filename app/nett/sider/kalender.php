@@ -341,7 +341,9 @@ return [
         // Stripa over rutenettet. Gul naar det er plass i dag, dempet ellers.
         'popTittel'    => $popTittel,
         'popTekst'     => $popTekst,
-        'popHarStripe' => $popTittel !== '',
+        // Fjernet (eieren, 8. oktober 2026: «fjern denne»). PoP-flisen i
+        // rutenettet viser torsdagene.
+        'popHarStripe' => false,
         'popLenke'     => 'Se hvordan det foregår',
         // Adressen staar blant VERDIENE og ikke blant lenkene: malen bruker
         // «href» her, og Mal::tegn() leter etter href-verdier i den forste

@@ -300,7 +300,9 @@
   function tegnTopp(d) {
     if (!$('#topptall')) return;
     const o = d.omsetning || {};
-    const idag = Number(o.idagOre) || 0, mnd = Number(o.manedOre) || 0, forr = Number(o.forrigeMndOre) || 0, uke = Number(o.forrigeUkedagOre) || 0;
+    // Omsetningen er UTEN mva (vedtak «omsetning-uten-mva», eieren 30.09.2026), som på Oversikt i gammel admin.
+    const eks = (e, b) => Number(o[e] ?? o[b]) || 0;
+    const idag = eks('idagEksOre', 'idagOre'), mnd = eks('manedEksOre', 'manedOre'), forr = eks('forrigeMndEksOre', 'forrigeMndOre'), uke = eks('forrigeUkedagEksOre', 'forrigeUkedagOre');
     const diff = forr > 0 ? Math.round((mnd / forr - 1) * 100) : null;
     const ub = d.ubetalte || [];
     const ubSum = ub.reduce((s, r) => s + (Number(r.belopOre) || 0), 0);
@@ -336,11 +338,13 @@
 
   function arkOmsetning() {
     const o = NA.sist?.omsetning || {};
-    const linjer = l => (l || []).map(x => `<div class="rad"><div class="tekst"><b>${esc(x.navn)}</b></div><span>${esc(x.verdi)}</span></div>`).join('') || '<p class="tom">Ingenting ennå.</p>';
-    const mnd = Number(o.manedOre) || 0, forr = Number(o.forrigeMndOre) || 0;
+    // Uten mva, som topplinja (vedtak «omsetning-uten-mva»). Linjene har eksOre fra Omsetning::mvaFor.
+    const eks = (e, b) => Number(o[e] ?? o[b]) || 0;
+    const linjer = l => (l || []).map(x => `<div class="rad"><div class="tekst"><b>${esc(x.navn)}</b></div><span>${typeof x.eksOre === 'number' ? kr(x.eksOre) : esc(x.verdi)}</span></div>`).join('') || '<p class="tom">Ingenting ennå.</p>';
+    const mnd = eks('manedEksOre', 'manedOre'), forr = eks('forrigeMndEksOre', 'forrigeMndOre');
     const diff = forr > 0 ? Math.round((mnd / forr - 1) * 100) : null;
     apneArk(`${arkHode('Omsetning')}
-      <div class="grid"><div class="kort"><div class="type">I dag</div><div class="ovnstatus">${kr(o.idagOre)}</div><small>Samme ukedag forrige uke: ${kr(o.forrigeUkedagOre)}</small></div>
+      <div class="grid"><div class="kort"><div class="type">I dag</div><div class="ovnstatus">${kr(eks('idagEksOre', 'idagOre'))}</div><small>Samme ukedag forrige uke: ${kr(eks('forrigeUkedagEksOre', 'forrigeUkedagOre'))}</small></div>
       <div class="kort"><div class="type">Denne måneden</div><div class="ovnstatus">${kr(mnd)}</div><small>Forrige måned til samme dato: ${kr(forr)}${diff === null ? '' : ' · ' + (diff >= 0 ? '+' : '') + diff + ' %'}</small></div></div>
       <div><h3>I dag</h3>${linjer(o.linjerIdag)}</div>
       <div><h3>Denne måneden</h3>${linjer(o.linjerMnd)}</div>`);

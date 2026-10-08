@@ -250,6 +250,9 @@ H.dRedigerOk = async () => {
   if (ant !== d.antall) body.antall = ant;
   if (rab !== String(d.rabatt || '')) body.rabatt = rab || '0';
   else if (bel !== String(Math.round((d.belopOre || 0) / 100))) body.belop = bel;
+  // Nytt antall uten nytt beløp: pamelding.php regner pris × antall på nytt og bruker bare rabatten som sendes
+  // med. Uten den falt en lagret rabatt bort fra beløpet (betalingseksperten 09.10.2026).
+  else if (body.antall !== undefined && rab) body.rabatt = rab;
   const r = await api('pamelding.php', body);
   toast(esc(r.beskjed || 'Påmeldingen er endret.')); await oppfrisk(); KS.delt = finnDelt(d.bookingId) || d; H.deltaker({dataset: {booking: d.bookingId}});
 };

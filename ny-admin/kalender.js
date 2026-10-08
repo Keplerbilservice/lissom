@@ -829,9 +829,11 @@ H.seOk = async b => {
     // Gjentakelse er slått av (Vis/kalendergjenta): én og én, med samme regler.
     for (const d of datoer) { try { lagtInn.push(await api('kurs.php', {handling: 'nydato', ...felles, ...d})); } catch { hoppet++; } }
   }
-  if (!erPop(k.id) && pris !== '' && +pris !== Math.round(k.pris)) for (const o of lagtInn) { try { await api('kurs.php', {handling: 'dato', oktId: o.oktId, pris}); } catch {} }
+  // En pris som ikke ble lagret skal sies fra om: ellers ligger datoen ute med kursets pris uten at noen vet det.
+  let utenPris = 0;
+  if (!erPop(k.id) && pris !== '' && +pris !== Math.round(k.pris)) for (const o of lagtInn) { try { await api('kurs.php', {handling: 'dato', oktId: o.oktId, pris}); } catch { utenPris++; } }
   lukk(true);
-  toast(`<b>${lagtInn.length} ${lagtInn.length === 1 ? 'dato' : 'datoer'} publisert</b> for ${esc(k.tittel)}.${hoppet ? ` ${hoppet} hoppet over (finnes fra før eller stengt).` : ''}`);
+  toast(`<b>${lagtInn.length} ${lagtInn.length === 1 ? 'dato' : 'datoer'} publisert</b> for ${esc(k.tittel)}.${hoppet ? ` ${hoppet} hoppet over (finnes fra før eller stengt).` : ''}${utenPris ? ` <b>Prisen ble ikke lagret på ${utenPris} ${utenPris === 1 ? 'dato' : 'datoer'}</b> — de har kursets pris. Rett den på datoen.` : ''}`);
   KURS = null; await oppfrisk();
 };
 

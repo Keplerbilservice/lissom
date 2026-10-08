@@ -1,13 +1,14 @@
 /* Kampanjer (eieren, 8. oktober 2026): én side med «På lissom.no» og «Til medlemmer». Hver kampanje er et kort med av/på-bryter og «Rediger» rett på kortet; redigeringen åpnes på samme sted. Bryteren på et lissom.no-kort velger kampanjen OG slår på Vis/salgsuke, så ingen må lete i Synlighet. Medlemskampanjen vises på Min side for medlemmer (Medlemskampanje/*, Vis/medlemskampanje). Se api/admin/kampanjer.php. */
 import {chooseImage} from './bilder.js';
 import {el,api,button,badge,confirm,toast,sheet,ny} from './ui.js';
+import {MEDLEM_FORHANDSVIS} from './forhandsvis.js';
 
 const STED={nett:'På lissom.no',medlemmer:'Til medlemmer'};
 const MAAL=[['butikk','Nettbutikken'],['medlemsbutikk','Medlemmenes keramikk'],['kurs','Kurs'],['events','Arrangementer'],['medlemskap','Medlemskap'],['gavekort','Gavekort']];
 const head=(name,text,actions=[])=>el('div',{class:'page-head'},el('div',{},el('p',{class:'eyebrow',text:'Lissom · Arbeidsrom'}),el('h1',{text:name}),el('p',{class:'muted',text})),el('div',{class:'actions'},actions));
 
 /* «Se som medlem»: samme forhåndsvisning som Min side for medlemmer, i et ark (ingen iframe på selve siden). */
-export function memberPreview(){const frame=el('iframe',{title:'Min side slik et medlem ser den',src:'/admin?apne=fhmedlem',style:'width:100%;height:78dvh;border:1px solid #decdbc;border-radius:18px;background:#fff'});sheet('Se som medlem',el('div',{},el('p',{class:'muted',text:'Viser oppsettet med dine egne navn og tall, ikke opplysningene til et ekte medlem.'}),frame));}
+export function memberPreview(){const frame=el('iframe',{title:'Min side slik et medlem ser den',src:MEDLEM_FORHANDSVIS,style:'width:100%;height:78dvh;border:1px solid #decdbc;border-radius:18px;background:#fff'});sheet('Se som medlem',el('div',{},el('p',{class:'muted',text:'Viser oppsettet med dine egne navn og tall, ikke opplysningene til et ekte medlem.'}),frame));}
 
 /* Av/på-bryteren på kortet. */
 export function campaignSwitch(r,done){const hvor=r.publikum==='medlemmer'?'på Min side for medlemmer':'på lissom.no';return el('button',{type:'button',class:'bryter',role:'switch','aria-checked':String(Boolean(r.paa)),'aria-label':`${r.navn}: ${r.paa?'på':'av'}`,onclick:async ev=>{ev.stopPropagation();const paa=!r.paa;const tekst=paa?`Vis «${r.navn}» ${hvor}. ${r.publikum==='medlemmer'?'Kampanjen som vises for medlemmene nå, tas ned.':'Kampanjen som står på forsiden nå, tas ned.'} Endringen gjelder straks.`:`Ta «${r.navn}» ned ${hvor}. Kampanjen blir liggende lagret.`;if(!await confirm(paa?'Slå på kampanjen?':'Slå av kampanjen?',tekst,paa?'Slå på':'Slå av'))return;try{const d=await api('kampanjer.php',{handling:'bryter',id:r.id,paa});toast(d.beskjed||'Oppdatert.');done();}catch(e){toast(e.message);}}});}

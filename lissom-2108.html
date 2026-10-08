@@ -5521,10 +5521,12 @@ window.__resources = {
                    «synAapne» som pilla i stripa bruker. Bryterne blir liggende
                    ett sted, slik eieren bestemte 19. september — «alt styres
                    kun fra Synlighet». Dette er bare en vei inn dit herfra. -->
+              <sc-if value="{{ fhKnapper }}" hint-placeholder-val="{{ false }}">
               <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" on-click="{{ fhSynlighet }}" hint-size="auto,38px">⊙ Synlighet</x-import>
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" on-click="{{ fhTilbake }}" hint-size="auto,38px">Tilbake til admin</x-import>
               </div>
+              </sc-if>
             </div>
           </sc-if>
 
@@ -34633,6 +34635,35 @@ class Component extends DCLogic {
     setTimeout(prov, 0);
   }
 
+  // ── «Se som medlem» fra admin-ny ─────────────────────────────────
+  //
+  // Eieren, 8. oktober 2026: det gamle admin skal pensjoneres. Admin-ny
+  // viste Min side i en ramme via /admin?apne=fhmedlem — den veien stenges
+  // naar /admin sendes videre. Derfor en egen adresse:
+  //
+  //   /min-side?forhandsvis=medlem    (eller =deltaker)
+  //
+  // Samme forhaandsvisning som foer: den ekte skjermen med rollen satt for
+  // haand, adminbrukerens egne navn og tall (se fhBandTekst). Bare for den
+  // som er innlogget som admin — for alle andre er adressen vanlig Min side.
+  // /min-side faar alltid kundeutgaven (side.php), og denne koden staar
+  // utenfor adminskjermene, saa den virker uten det gamle admin.
+  forhandsvisFraAdresse() {
+    let rolle = '';
+    try { rolle = new URLSearchParams(window.location.search).get('forhandsvis') || ''; } catch (e) { return; }
+    if (rolle !== 'medlem' && rolle !== 'deltaker') return;
+    if ((window.location.pathname.replace(/\/+$/, '') || '/') !== '/min-side') return;
+    let forsok = 0;
+    const prov = () => {
+      if (this.state.innloggingSjekket) {
+        if (this.state.erAdminBruker) this.setState({ side: 'minside', fhRolle: rolle, fhFra: 'admin-ny' });
+        return;
+      }
+      if (++forsok < 60) setTimeout(prov, 250);
+    };
+    setTimeout(prov, 0);
+  }
+
   ruteFraAdresse() {
     let sti = window.location.pathname.replace(/\/+$/, '') || '/';
 
@@ -43809,6 +43840,8 @@ class Component extends DCLogic {
     // Dyplenker fra det nye admin (/admin2): «?apne=» aapner noyaktig den
     // funksjonen knappen der heter. Se apneFraAdresse().
     this.apneFraAdresse();
+    // «Se som medlem» fra admin-ny: /min-side?forhandsvis=medlem.
+    this.forhandsvisFraAdresse();
     // Serversidene (app/nett/) sender «Send forespoersel» hit som
     // /kontakt?skjema=1 og /bedrift?skjema=1: ruta med skjemaet aapnes med
     // det samme, som om man hadde trykket paa knappen.
@@ -76659,6 +76692,9 @@ class Component extends DCLogic {
       // deltakers Min side hit ville lagt medlemschat, dorkode og
       // kjopshistorikk aapen for den som ser paa.
       fhBand: !!this.state.fhRolle,
+      // Fra admin-ny staar forhaandsvisninga i en ramme der. Knappene i
+      // baandet gaar til det gamle admin, saa de vises ikke da.
+      fhKnapper: !!this.state.fhRolle && this.state.fhFra !== 'admin-ny',
       fhBandTekst: this.state.fhRolle === 'medlem'
         ? 'Slik ser Min side ut for et medlem. Navn og tall er dine egne — det er oppsettet som vises her, ikke opplysningene til en annen person.'
         : 'Slik ser Min side ut for en kursdeltaker uten medlemskap. Navn og tall er dine egne — det er oppsettet som vises her, ikke opplysningene til en annen person.',

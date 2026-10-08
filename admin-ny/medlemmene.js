@@ -1,6 +1,6 @@
 /* Medlemmene (eieren, 8. oktober 2026, fasit: skjermen «Medlemmene» i enklere-admin-visning.html).
    Én side for alt medlemmene ser: «Legg ut til medlemmene» (Beskjed, Internt kurs, Vare, Kampanje),
-   «Dette ser medlemmene» (samme forhåndsvisning som Min side: /admin?apne=fhmedlem) og «Slå av og på»
+   «Dette ser medlemmene» (samme forhåndsvisning som Min side: /min-side?forhandsvis=medlem, se forhandsvis.js) og «Slå av og på»
    (de samme Vis/*-bryterne som Min side, MINSIDE_MODULER i innhold-og-kurs.js). Forhåndsvisningen lastes
    på nytt med en gang en bryter endres. Gamle #minside peker hit.
    Gjenbruk: beskjed.php (handling=tavle = bare Min side; til=medlemmer + ogsaaSms = den vanlige utsendingen),
@@ -8,6 +8,7 @@
    (kunMedlemmer=ja, ikke i nettbutikken), campaignEditor fra kampanjer.js (publikum=medlemmer).
    .mm-flis er midlertidig: slås sammen med felles .flis når den finnes i design.css. */
 import {campaignEditor} from './kampanjer.js';
+import {MEDLEM_FORHANDSVIS} from './forhandsvis.js';
 import {MINSIDE_MODULER} from './innhold-og-kurs.js';
 import {newDate} from './kalender.js';
 import {el,api,button,link,card,sheet,form,field,confirm,toast} from './ui.js';
@@ -36,7 +37,7 @@ function nyKampanje(harMedlemmer,refresh){const s=sheet('Kampanje til medlemmer'
 export function medlemmeneScreens(refresh){
  async function medlemmene(){stil();const [d,km]=await Promise.all([api('innhold.php'),api('kampanjer.php').catch(()=>null)]);const harMedlemmer=km?.harMedlemmer!==false;const mk=(km?.kampanjer||[]).find(k=>k.publikum==='medlemmer'&&k.ute);
   const rows=MINSIDE_MODULER.map(([name,key,fallback=true,note=''])=>({name,key,fallback,note:key==='Vis/medlemskampanje'?(mk?'Kampanjen: '+mk.navn:'Ingen kampanje valgt ennå. Lag og velg den under Kampanjer.'):note,on:d.innhold[key]===undefined?fallback:fallback?d.innhold[key]!=='nei':d.innhold[key]==='ja'}));
-  const frame=el('iframe',{title:'Min side slik et medlem ser den',src:'/admin?apne=fhmedlem',style:'width:390px;max-width:100%;height:820px;border:1px solid #decdbc;border-radius:24px;background:#fff;display:block;margin:auto'});
+  const frame=el('iframe',{title:'Min side slik et medlem ser den',src:MEDLEM_FORHANDSVIS,style:'width:390px;max-width:100%;height:820px;border:1px solid #decdbc;border-radius:24px;background:#fff;display:block;margin:auto'});
   const size=w=>()=>{frame.style.width=w;};/* Ny lasting av samme adresse: src settes på nytt (reload() før første lasting kunne stoppe den). */const oppdater=()=>{frame.src=frame.getAttribute('src');};
   const bryter=r=>{const b=el('button',{type:'button',class:'bryter',role:'switch','aria-checked':String(r.on),'aria-label':`${r.name}: ${r.on?'på':'av'}`,onclick:async()=>{if(b.disabled)return;b.disabled=true;const paa=!r.on;try{await api('innhold.php',{endringer:{[r.key]:paa?'ja':'nei'}});r.on=paa;b.setAttribute('aria-checked',String(paa));b.setAttribute('aria-label',`${r.name}: ${paa?'på':'av'}`);oppdater();}catch(e){toast(e.message);}finally{b.disabled=false;}}});return b;};
   const rad=r=>{const node=el('div',{class:'mm-rad','data-modul':r.key},el('div',{},el('strong',{text:r.name}),r.note?el('p',{class:'muted',text:r.note}):null),el('div',{class:'actions'},r.key==='Vis/medlemskampanje'?(mk?button('Rediger',()=>{const s=sheet('Kampanje til medlemmer',el('div',{}));s.dlg.querySelector('.sheet-inner').append(campaignEditor(mk,{harMedlemmer,done:()=>{s.close();refresh();},cancel:()=>s.close()}));}):link('Kampanjer','#kampanjer')):null,bryter(r)));return node;};

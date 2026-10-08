@@ -6639,6 +6639,21 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "folk-brukere-skjul-admin",
+            "dato": "2026-10-08",
+            "hva": "Eieren, 8. oktober 2026: «på folk har vi ikke lenger brukere» — Folk har lenken «Brukere» øverst igjen. Og: «jeg vil ikke at joakim skal vises over medlemmer» — valgte «Skjul administratorer i lista»: administratorer vises ikke under Medlemmer (aktive, mangler betaling, tidligere), men beholder medlemskapet.",
+            "hvor": "admin-ny › Folk",
+            "kode": [
+                {
+                    "fil": "admin-ny/app.js",
+                    "finnes": [
+                        "utvalg=p=>!p.erAdmin&&finn(p)",
+                        "link('Brukere',href('brukere'))])"
+                    ]
+                }
+            ]
         }
     ]
 }

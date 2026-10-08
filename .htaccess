@@ -27,6 +27,9 @@ RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L,NE]
 # Denne sideruten deler navn med ressursmappen. Omskriv den eksakte
 # adressen før mappesperren, uten å åpne kataloglisting eller andre mapper.
 RewriteRule ^admin-ny/?$ /admin-ny.html [L]
+# Ny admin ved siden av /admin-ny (eieren 8. oktober 2026). Samme grunn: siden
+# deler navn med ressursmappen ny-admin/.
+RewriteRule ^ny-admin/?$ /ny-admin.html [L]
 
 # Kassa på iPaden i verkstedet (eieren 8. oktober 2026). Egen innlogging
 # (rollen «kasse») og PIN; siden selv er bare skallet, alt bak den krever

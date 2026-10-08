@@ -1,0 +1,8 @@
+# Ny admin (ny-admin.html, eieren 8. oktober 2026). Samme regel som admin-ny/:
+# skript og stilark har ingen versjon i adressen, saa «spør først» (no-cache),
+# ellers viser nettleseren en uke gammel utgave etter publisering.
+<IfModule mod_headers.c>
+    <FilesMatch "\.(js|css)$">
+        Header set Cache-Control "no-cache, must-revalidate"
+    </FilesMatch>
+</IfModule>

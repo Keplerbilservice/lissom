@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="nb"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#fbf6ee"><title>Lissom · Admin</title><link rel="icon" href="/favicon.svg"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="stylesheet" href="/ds-fonts.css"><link rel="stylesheet" href="/ny-admin/ny-admin.css"></head>
+<body>
+<!-- Ny admin (eieren 08.10.2026, GO på «samlet forslag»). Ved siden av /admin-ny, som ikke endres.
+     Skallet (meny, topplinje, ark, toast, polling, ruting) er ny-admin/felles.js. Sidene ligger i hver sin fil
+     i ny-admin/ og registrerer seg med registrerSide(); felles.js laster dem og tåler at en fil mangler. -->
+<a class="na-hopp" href="#arbeid">Hopp til innhold</a>
+<aside id="meny" aria-label="Hovedmeny"></aside>
+<div class="ws">
+  <header id="topp"></header>
+  <main id="arbeid" tabindex="-1" aria-live="polite"></main>
+</div>
+<nav id="mobil" aria-label="Meny"></nav>
+<div id="toast" aria-live="polite"></div>
+<dialog id="ark" aria-label="Ark"><div class="ark" id="ark-inn"></div></dialog>
+<script src="/ny-admin/felles.js" defer></script>
+</body></html>

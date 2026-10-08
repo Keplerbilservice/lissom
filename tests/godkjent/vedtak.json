@@ -7104,6 +7104,40 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "ny-admin-a-skall-idag",
+            "dato": "2026-10-08",
+            "hva": "Ny admin på /ny-admin ved siden av /admin-ny (del A): venstremeny I dag · Kalender · Kurs · Medlemmer · Varer · Kasse · Mer med Hurtig (Skisseverktøy, Uttak leire, Tilpass), topplinje med søk, I dag kr, Denne måneden mot forrige måned til samme dato, Ikke betalt, I verkstedet nå, Stemple inn/ut og live-prikk; I dag med ovnkortet (tre knapper, «Ovn er tømt» = ferdigbrent med valg av kursdatoer og eksisterende «Klar til henting»), Dagens kurs med Start dagens kurs (ikke betalt øverst, Møtt), Må gjøres og Til info; alt oppdateres hvert 15. sekund når fanen er synlig; mobil har bunnmeny I dag · Kalender · Kurs",
+            "hvor": "/ny-admin (ny-admin.html, ny-admin/felles.js, ny-admin/idag.js, ny-admin/ny-admin.css, .htaccess)",
+            "kode": [
+                {
+                    "fil": ".htaccess",
+                    "finnes": [
+                        "RewriteRule ^ny-admin/?$ /ny-admin.html [L]"
+                    ]
+                },
+                {
+                    "fil": "ny-admin/felles.js",
+                    "finnes": [
+                        "const MOBIL = ['idag', 'kalender', 'kurs'];",
+                        "Forrige måned til samme dato: ",
+                        "toppPoll = hentHvert(15000, () => NA.oversikt(), {global: true});",
+                        "Object.assign(window, {registrerSide, api, apneArk, lukkArk, toast, hentHvert});",
+                        "Vil du forkaste det du har skrevet?",
+                        "Brukes på iPad eller PC"
+                    ]
+                },
+                {
+                    "fil": "ny-admin/idag.js",
+                    "finnes": [
+                        "const OVN = {raabrann: 'Råbrann satt', glasurbrann: 'Glasurbrann satt', tomt: 'Ovn er tømt'};",
+                        "NA.api('ferdigbrent.php', {data: {handling: 'meld-alle', oktId}})",
+                        "NA.api('kursstart3.php?okt=' + oktId)",
+                        "hentHvert(15000, () => oppdater());"
+                    ]
+                }
+            ]
         }
     ]
 }

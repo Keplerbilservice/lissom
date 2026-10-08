@@ -14,7 +14,8 @@ try{
  await p.goto(URL+'#idag');await p.getByRole('heading',{name:'Kjøpt i dag',exact:true}).waitFor();
  await p.locator('#meny').getByRole('link',{name:/Butikk/}).click();await p.getByRole('heading',{name:'Butikk',exact:true}).waitFor();
  assert.equal(await p.locator('#meny a[aria-current="page"]').innerText().then(t=>t.includes('Butikk')),true,'Butikk lyser i menyen');
- assert.deepEqual((await p.locator('.butikk-piller button').allTextContents()).map(t=>t.replace(/ \d+$/,'')),['Alle','Nettbutikk','Internt','Lite på lager']);
+ // 08.10.2026: Nettbutikk og Internt som faner (pluss Alle), «Lite på lager» filtrerer fanen med antall, og «Terskel» for varer uten egen grense.
+ assert.deepEqual((await p.locator('.butikk-piller button').allTextContents()).map(t=>t.replace(/ \d+$/,'')),['Nettbutikk','Internt','Alle','Lite på lager','Terskel']);
  // Ny vare: begge bryterne, 2 på lager, min 5, maks 20.
  await p.getByRole('button',{name:'Ny vare',exact:true}).click();await p.getByText('Hvor skal varen vises?',{exact:true}).waitFor();
  assert.equal(await p.getByLabel('Nettbutikken',{exact:true}).isChecked(),true,'ny vare: Nettbutikken er krysset av');
@@ -35,6 +36,7 @@ try{
  await kort.getByText('2 igjen · min 5 · fyll til 20',{exact:true}).waitFor();
  await p.getByRole('searchbox',{name:'Søk vare eller kategori'}).fill(navn);const rad=p.locator('main').getByText(/149.*2 på lager \(min 5 \/ maks 20\)/).first();await rad.waitFor();
  for(const [k,med] of [['nett',true],['intern',true],['lite',true]]){await p.locator(`.butikk-piller [data-vis="${k}"]`).click();await p.getByRole('searchbox',{name:'Søk vare eller kategori'}).fill(navn);assert.equal(await p.locator('main').getByText(navn,{exact:true}).count()>0,med,'filter '+k);}
+ assert.ok(Number((await p.locator('.butikk-piller [data-vis="lite"]').innerText()).replace(/\D+/g,''))>=1,'Lite på lager viser antallet');assert.equal(await p.locator('.butikk-piller [data-vis="lite"]').getAttribute('aria-pressed'),'true');
  // I dag: Lite på lager med Åpne butikken.
  await p.goto(URL+'#idag');const idag=p.locator('section.card').filter({has:p.getByRole('heading',{name:'Lite på lager',exact:true})});await idag.getByText(navn,{exact:true}).waitFor();
  await idag.getByRole('link',{name:'Åpne butikken',exact:true}).waitFor();

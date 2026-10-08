@@ -4322,13 +4322,13 @@
         {
             "id": "folk-aktive-medlemmer",
             "dato": "2026-10-03",
-            "hva": "Eieren, 3. oktober 2026: Folk viser aktive medlemmer (status aktiv/prove) som standard, med filteret «Aktive medlemmer / Ikke medlemmer». «Har tilgang» gjelder bare medlemmer som ikke mangler betaling — ikke-medlemmer står aldri under «Har tilgang».",
+            "hva": "Eieren, 3. oktober 2026: Folk viser aktive medlemmer (status aktiv/prove) som standard, med filteret «Aktive medlemmer / Ikke medlemmer». «Har tilgang» gjelder bare medlemmer som ikke mangler betaling — ikke-medlemmer står aldri under «Har tilgang». Endret 8. oktober 2026: filteret er erstattet av fanene Medlemmer/Deltakere med Aktive/Tidligere (se adminny-lukk-tilbake-folk-butikk); Aktive medlemmer er fortsatt status aktiv/prove og standardvisningen.",
             "hvor": "admin-ny › Folk",
             "kode": [
                 {
                     "fil": "admin-ny/app.js",
                     "finnes": [
-                        "options:[['aktiv','Aktive medlemmer'],['ikke','Ikke medlemmer']]",
+                        "const erMedlem=p=>['aktiv','prove'].includes(p.status);",
                         "(['aktiv','prove'].includes(p.status)&&!p.betalingMangler)"
                     ]
                 }
@@ -5719,6 +5719,44 @@
                     "finnes": [
                         ".row>.actions:last-child,.row>div:last-child:has(>.actions){flex:0 1 auto;min-width:0}",
                         ".button{white-space:nowrap}"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "adminny-lukk-tilbake-folk-butikk",
+            "dato": "2026-10-08",
+            "hva": "Eieren, 8. oktober 2026: «inne på brukere, jeg har ingen lukke eller tilbake, denne må globalt fikses». Alle ark i admin-ny har × i hodet som blir stående når arket rulles; Esc og nettleserens tilbake-knapp lukker det øverste arket; undersider (ikke hovedmenyens sider) har «Tilbake» øverst. Folk: fanene Medlemmer og Deltakere, hver med Aktive og Tidligere. Butikk: fanene Nettbutikk, Internt og Alle; «Lite på lager» filtrerer fanen og viser antallet (varens egen grense, ellers terskel 3 som kan endres).",
+            "hvor": "admin-ny › alle ark, undersider, Folk og Butikk",
+            "kode": [
+                {
+                    "fil": "admin-ny/ui.js",
+                    "finnes": [
+                        "window.addEventListener('popstate',()=>{if(arkHopp){arkHopp--;arkVakt();return;}",
+                        "dlg.showModal();arkVakt();return{dlg,close};"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/design.css",
+                    "finnes": [
+                        ".sheet-head{position:sticky;top:0;z-index:3;background:var(--paper)"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/app.js",
+                    "finnes": [
+                        "const tilbakeKnapp=()=>button('Tilbake',",
+                        "main.replaceChildren(...(!accountant&&RENDERERS[current]&&!NAV.some(n=>n[0]===current)?[tilbakeKnapp()]:[]),node);",
+                        "pille('Medlemmer '+GRUPPER.medlemmer.aktive.length",
+                        "pille('Deltakere '+delt.aktive.length",
+                        "pille('Aktive '+g.aktive.length",
+                        "pille('Tidligere '+g.tidligere.length",
+                        "const VIS=[['nett','Nettbutikk',p=>p.iNettbutikk],['intern','Internt',p=>p.kunMedlemmer],['alle','Alle',()=>true]];let vis='nett';",
+                        "const erLite=p=>p.lager!=null&&p.status!=='kladd'&&p.lager<=(p.lagerMin??terskel);",
+                        "text:'Lite på lager '+antLite"
+                    ],
+                    "ikkeFinnes": [
+                        "options:[['aktiv','Aktive medlemmer'],['ikke','Ikke medlemmer']]"
                     ]
                 }
             ]

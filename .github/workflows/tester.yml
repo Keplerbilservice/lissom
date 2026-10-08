@@ -106,13 +106,11 @@ jobs:
           # Nettlesertestene (tests/nettleser) klikker seg gjennom i Chromium.
           npx playwright install --with-deps chromium
 
-      # Eieren, 27. september 2026: «jeg får eposter fra github hele tiden». Hver
-      # rød kjøring på en arbeidsgren ga en e-post til kontoen hans. Paa
-      # grenene leses resultatet av den som jobber («Gikk/Feilet» i loggen),
-      # saa der stopper ikke en feil kjoringen. Foer publisering (workflow_call
-      # fra «Publiser til lissom.no») stopper den som foer — og varsler.
+      # Eieren, 8. oktober 2026: feil slapp gjennom til main fordi grenene
+      # aldri ble roede, og hver stoppet publisering kostet eieren tid. Naa
+      # feiler kjoringen paa grenene ogsaa, og det legges ikke ut foer grenen
+      # er groenn. E-postvarsel for Actions er slaatt av paa eierens konto.
       - name: Kjor testene i gruppen ${{ matrix.gruppe }}
-        continue-on-error: ${{ github.ref != 'refs/heads/main' }}
         env:
           ALLE_GRUPPE: ${{ matrix.gruppe }}
         run: |

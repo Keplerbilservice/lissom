@@ -74,6 +74,9 @@ de ble sagt i.
 ## Publisering
 
 - «Publiser» betyr: merge til `main`. Deployen går av seg selv.
+- **Bare grønn gren til `main`.** Push til en gren først, vent til «Tester»
+  er grønn der, og merge først da. Aldri push rett til `main`. (Eieren,
+  8. oktober 2026: røde utlegginger stoppet alt og kostet eieren tid.)
 - Migrasjoner kjøres ikke automatisk — eieren trykker **⚙ Kjør oppdateringer**
   i admin etterpå.
 - Claude har **ikke** tilgang til produksjonsdatabasen og kan ikke rette

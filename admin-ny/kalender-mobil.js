@@ -4,7 +4,7 @@
 // Hele kortet åpner hendelsesarket som finnes fra før (eventDetails i kalender.js).
 // Ingen piler, ingen «Åpne»-knapper, ingenting valgt på forhånd i filteret.
 import {el,api,badge,today,date,iso,shift} from './ui.js';
-import {settBrytere,arkPaa,menyPaa,skjultInnsjekk,typeKnapper,synligType,filterEndret,slaaSammen,typeKlasse,merker,initialer,tidene,tiderTekst,dagSum} from './kalender-ark.js';
+import {settBrytere,arkPaa,menyPaa,skjultInnsjekk,typeKnapper,synligType,filterEndret,slaaSammen,typeKlasse,merker,initialer,tidene,tiderTekst,dagSum,visTittel,settPopDager} from './kalender-ark.js';
 
 export const SMAL='(max-width:760px)';
 export const erSmal=()=>matchMedia(SMAL).matches;
@@ -37,7 +37,7 @@ const dagNavn=(d,o)=>date(d).toLocaleDateString('nb-NO',o);
 const stor=t=>t.charAt(0).toLocaleUpperCase('nb-NO')+t.slice(1);
 
 // Én måned av gangen, som PC-kalenderen. Lagres til neste oppfriskning.
-function hentMnd(ym){if(!maaneder.has(ym))maaneder.set(ym,api(`kalender.php?fra=${ym}-01&til=${sisteIMnd(ym)}`).then(d=>(settBrytere(d.brytere,d.kursholdere),{hendelser:(d.hendelser||[]).filter(e=>String(e.dato).startsWith(ym)),stengte:d.stengte||{}})).catch(e=>{maaneder.delete(ym);throw e;}));return maaneder.get(ym);}
+function hentMnd(ym){if(!maaneder.has(ym))maaneder.set(ym,api(`kalender.php?fra=${ym}-01&til=${sisteIMnd(ym)}`).then(d=>(settPopDager(d.popDager),settBrytere(d.brytere,d.kursholdere),{hendelser:(d.hendelser||[]).filter(e=>String(e.dato).startsWith(ym)),stengte:d.stengte||{}})).catch(e=>{maaneder.delete(ym);throw e;}));return maaneder.get(ym);}
 async function sikre(dager){const yms=[...new Set(dager.map(mnd))];await Promise.all(yms.map(hentMnd));}
 async function lastet(ym){return maaneder.has(ym)?await maaneder.get(ym):{hendelser:[],stengte:{}};}
 async function alleLastet(){const ut=[],stengt={};for(const ym of maaneder.keys()){const d=await lastet(ym);ut.push(...d.hendelser);Object.assign(stengt,d.stengte);}return{hendelser:ut,stengte:stengt};}
@@ -109,11 +109,11 @@ export async function kalenderMobil({title,eventDetails,handlinger,varselkort}){
 
   // Bryteren på: fargen etter typen og merkene til høyre; Paint on Pots-tidene samme dag på én linje med «Vis tidene».
   const timekort=e=>{if(!arkPaa())return timekortGrunn(e);
-   if(e.sammen)return el('div',{class:'kalm-kort kal-t-pop kal-sammen',role:'group','aria-label':`${e.tittel} · ${tiderTekst(e)}`},el('span',{class:'kalm-tid'},el('b',{text:e.tid||''}),e.slutt?el('small',{text:e.slutt}):null),el('span',{class:'kalm-hva'},el('strong',{text:e.tittel}),el('small',{text:tiderTekst(e)}),tidene(e,eventDetails)));
+   if(e.sammen)return el('div',{class:'kalm-kort kal-t-pop kal-sammen',role:'group','aria-label':`${e.tittel} · ${tiderTekst(e)}`},el('span',{class:'kalm-tid'},el('b',{text:e.tid||''}),e.slutt?el('small',{text:e.slutt}):null),el('span',{class:'kalm-hva'},el('strong',{text:visTittel(e)}),el('small',{text:tiderTekst(e)}),tidene(e,eventDetails)));
    const k=timekortGrunn(e);k.classList.add(typeKlasse(e));
    if(e.kap){k.querySelector('.kalm-hva small').textContent=[e.holder,e.samling].filter(Boolean).join(' · ');k.append(el('span',{class:'kal-merker kalm-merker'},merker(e),initialer(e)));}
    return k;};
-  const timekortGrunn=e=>el('button',{type:'button',class:`kalm-kort ${e.avlyst?'avlyst':''}`,onclick:()=>eventDetails(e)},el('span',{class:'kalm-tid'},el('b',{text:e.tid||''}),e.slutt?el('small',{text:e.slutt}):null),el('span',{class:'kalm-hva'},el('strong',{text:e.tittel}),el('small',{text:[e.holder,e.avlyst?'Avlyst':null,e.kap?plass(e):e.type].filter(Boolean).join(' · ')})));
+  const timekortGrunn=e=>el('button',{type:'button',class:`kalm-kort ${e.avlyst?'avlyst':''}`,onclick:()=>eventDetails(e)},el('span',{class:'kalm-tid'},el('b',{text:e.tid||''}),e.slutt?el('small',{text:e.slutt}):null),el('span',{class:'kalm-hva'},el('strong',{text:visTittel(e)}),el('small',{text:[e.holder,e.avlyst?'Avlyst':null,e.kap?plass(e):e.type].filter(Boolean).join(' · ')})));
   const dagListe=(d,overskrift)=>{const l=paaDag(d);return el('section',{class:'kalm-dag'},el(overskrift,{text:stor(dagNavn(d,{weekday:'long',day:'numeric',month:'long'}))}),arkPaa()?el('small',{class:'kal-sum',text:dagSum(l)}):null,Object.hasOwn(stengte,d)?badge('Stengt','warn'):null,l.length?l.map(timekort):el('p',{class:'muted',text:'Ingen hendelser'}));};
   const dagKnapp=(d,klasse)=>el('button',{type:'button',class:`${klasse} ${d===today()?'idag':''}`,'aria-pressed':String(d===valgt),'aria-current':d===today()?'date':null,'aria-label':dagNavn(d,{weekday:'long',day:'numeric',month:'long'})+(paaDag(d).length?`, ${paaDag(d).length} hendelser`:''),onclick:()=>{valgt=d;if(modus==='uke')modus='dag';tegn();}},el('i',{text:dagNavn(d,{weekday:'short'}).replace('.','')}),el('b',{text:String(date(d).getDate())}),el('span',{class:paaDag(d).length?'kalm-prikk':'kalm-prikk tom','aria-hidden':true}));
 

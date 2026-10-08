@@ -5585,7 +5585,7 @@
                 {
                     "fil": "lissom-2108.html",
                     "finnes": [
-                        "bVisMelding: !!this.katalogKurs().utenPlassgrense,",
+                        "bVisMelding: !!this.katalogKurs().utenPlassgrense || this.folgerApningstid(),",
                         "Noe vi bør vite?",
                         "melding: (this.state.bMelding || '').trim(),"
                     ]
@@ -5773,6 +5773,104 @@
                         "$tilOslo = (int) $naaOslo->format('G') >= 12 ? $iDag->modify('+2 days') : $iDag->modify('+1 day');",
                         "'dato'    => norsk_ukedag_dato((string) $okt['start_tid']),",
                         "'sted'    => $sted,"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "pop-malebordet",
+            "dato": "2026-10-08",
+            "hva": "Paint on Pots, «totalt nytt opplegg» (eieren 07.10 «ok, bygg det» paa forslaget UyB4gVkQ…, og spesifikasjonen 08.10): kunden velger dag, antall og ankomsttid som knapper hvert kvarter innenfor tidene satt i admin; ingen faste 2-timersbolker og ingen «Ta den tiden»; besoekslengden fra admin (plass_minutter) og start–slutt vises foer bestilling; oppsummering foer og kvittering etter lagring med dag, tid start–slutt og antall; «Plassen er din» vises ikke foer noe er lagret; antallet kuttes aldri i stillhet (book.php/tider.php avviser over 50). Plassgrensen er ressursen «Paint on Pots» under Ressurser (migrasjon 258, 20 plasser; slått av = ingen plassgrense), og teller personer til stede samtidig gjennom besoeket — adskilt fra verkstedet begge veier. Unntak per dato (pop_dager): Fullt (fra et klokkeslett / hele dagen), Ingen PoP, Andre tider; «Fullt resten av dagen» paa Oversikt. Admin: alt samlet under Paint on Pots (aapningstid, besoekslengde, plassgrense, pris/betaling, uke, dagsliste; reservasjon med kontakt, kommentar, Ta betalt/betalinger, endre tid/antall sjekket mot tilgjengeligheten, avbestill, oppmoete). Adminkalenderen viser hver reservasjon for seg (ingen sammenslaatt brikke). Kundekalenderen leser tidene fra de samme innstillingene. Bookinger og oektene deres roeres aldri av unntak, faerre plasser eller utleggingen.",
+            "hvor": "lissom.no › Paint on Pots (bestilling, kalender), admin-ny › I dag, Kurs › Paint on Pots, Kalender",
+            "kode": [
+                {
+                    "fil": "app/lib/malebord.php",
+                    "finnes": [
+                        "public static function topp(array $besok, int $a, int $b): int",
+                        "return !$r['aktiv'] || $r['antall'] <= 0;",
+                        "public static function kvarter(int $kursId, string $dato, int $antall = 1, int $utenBooking = 0): array"
+                    ]
+                },
+                {
+                    "fil": "app/lib/apent.php",
+                    "finnes": [
+                        "$mineVinduer = [];",
+                        "return Malebord::kvarter($kursId, $dato, $antall);"
+                    ]
+                },
+                {
+                    "fil": "app/lib/booking.php",
+                    "finnes": [
+                        "return self::medVisFullt(self::medMalebord(self::ledigeRegnet($oktIder)));",
+                        "AND COALESCE(c2.folger_apningstid, 0) = 0"
+                    ]
+                },
+                {
+                    "fil": "api/book.php",
+                    "finnes": [
+                        "if ($antall < 1 || $antall > Malebord::MAKS_ANTALL) {"
+                    ],
+                    "ikkeFinnes": [
+                        "$antall = max(1, min(10, Foresporsel::heltall('antall', 1)));"
+                    ]
+                },
+                {
+                    "fil": "db/migrations/258_pop_malebordet.sql",
+                    "finnes": [
+                        "CREATE TABLE IF NOT EXISTS pop_dager (",
+                        "WHERE NOT EXISTS (SELECT 1 FROM ressurser WHERE navn = 'Paint on Pots');"
+                    ]
+                },
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "<sc-for list=\"{{ bTidKnapper }}\" as=\"t\" hint-placeholder-count=\"8\">",
+                        "bPopOppsummering: this.folgerApningstid() && !this.state.bookKvittert && !!this.popSammendrag(),",
+                        "oppmoteHjelp: 'Du betaler ' + this.bookSum()"
+                    ],
+                    "ikkeFinnes": [
+                        "<input type=\"time\" step=\"900\"",
+                        "{{ bTidForslagKnapp }}",
+                        "oppmoteHjelp: 'Plassen er din nå."
+                    ]
+                },
+                {
+                    "fil": "app/nett/sider/paintonpots.php",
+                    "finnes": [
+                        "Book tid på forhånd. Du velger dag og tid i bestillingen."
+                    ],
+                    "ikkeFinnes": [
+                        "Ingen booking nødvendig"
+                    ]
+                },
+                {
+                    "fil": "app/nett/sider/kalender.php",
+                    "finnes": [
+                        "Malebord::kvarter((int) $popKurs['id'], $idag, 1)"
+                    ],
+                    "ikkeFinnes": [
+                        "'Paint on Pots går onsdag og torsdag, 10–13 og 17–20.'",
+                        "' Ingen booking nødvendig.'"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kalender-ark.js",
+                    "finnes": [
+                        "export function slaaSammen(hendelser){return hendelser;}"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/malebord.js",
+                    "finnes": [
+                        "text:'Fullt resten av dagen'",
+                        "handling:'restenAvDagen'",
+                        "link('Ressurser','#ressurser')"
+                    ]
+                },
+                {
+                    "fil": "tests/malebord.php",
+                    "finnes": [
+                        "13:00 har 1 ledig: 2 samtidig, ikke 2 + 2 = 4"
                     ]
                 }
             ]

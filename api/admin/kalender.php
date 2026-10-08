@@ -698,8 +698,39 @@ if (DB::harTabell('kurs_ukeplan')) {
     }
 }
 
+// ── Malebordet (Paint on Pots) ─────────────────────────────────────────
+//
+// Eieren, 7. oktober 2026: brikka viser «Paint on Pots · 9/12», og dagen kan
+// merkes full eller aapnes igjen fra den. popStoler/popBooket per oekt,
+// popDager = dato => «fullt»/«stengt» for dagene som er merket.
+$popDager = [];
+if (Malebord::klar()) {
+    foreach ($hendelser as $i => $h) {
+        if (($h['type'] ?? '') !== 'pop' || (int) ($h['oktId'] ?? 0) <= 0 || !Malebord::gjelder((int) $h['kursId'])) {
+            continue;
+        }
+        $kid = (int) $h['kursId'];
+        $s = (new DateTimeImmutable($h['dato'] . ' ' . $h['tid'], $oslo))->setTimezone(new DateTimeZone('UTC'));
+        $e = $h['slutt'] !== ''
+            ? (new DateTimeImmutable($h['dato'] . ' ' . $h['slutt'], $oslo))->setTimezone(new DateTimeZone('UTC'))
+            : $s->modify('+' . Apent::plassMinutter($kid) . ' minutes');
+        $hendelser[$i]['popStoler'] = Malebord::utenGrense($kid) ? 0 : Malebord::stoler($kid);
+        $hendelser[$i]['popBooket'] = Malebord::opptatt($kid, $s->format('Y-m-d H:i:s'), $e->format('Y-m-d H:i:s'));
+    }
+    foreach (DB::alle(
+        'SELECT dato, status, fra_tid FROM pop_dager WHERE dato >= :fra AND dato <= :til',
+        ['fra' => $iOslo($fra, 'Y-m-d'), 'til' => $iOslo($til, 'Y-m-d')]
+    ) as $r) {
+        $popDager[(string) $r['dato']] = [
+            'status' => (string) $r['status'],
+            'fra'    => $r['fra_tid'] !== null ? substr((string) $r['fra_tid'], 0, 5) : null,
+        ];
+    }
+}
+
 Svar::json([
     'hendelser' => array_merge($hendelser, $verksted, $apneDager, $brenninger, $notater),
+    'popDager'  => (object) $popDager,
     'stengte'   => $stengt,
     // Kursholderne, saa kolonnene i dagsvisningen kan settes opp uten et
     // kall til. «standard» er den som vanligvis holder kursene — den staar

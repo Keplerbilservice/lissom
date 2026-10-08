@@ -284,7 +284,11 @@ final class Katalog
                         'folgerApningstid' => true,
                         // Ingen plassgrense: skjermen spoer om antall og en melding
                         // i stedet for aa telle plasser. Eieren, 4. oktober 2026.
-                        'utenPlassgrense'  => (int) ($k['uten_plassgrense'] ?? 0) === 1,
+                        // Malebordet (eieren 8. oktober 2026): plassgrensen er
+                        // ressursen «Paint on Pots»; slått av = ingen grense.
+                        'utenPlassgrense'  => Malebord::utenGrense((int) $k['id']),
+                        // Flest personer i én bestilling. Brukes av antallsvelgeren.
+                        'maksAntall'       => Malebord::maksAntall((int) $k['id']),
                         'plassMinutter'    => $min,
                         // Hvor langt fram det kan bookes, saa kalenderen kan si
                         // hvorfor en dag lenger fram ikke kan velges.
@@ -446,6 +450,15 @@ final class Katalog
             ];
         }
 
+
+        // Malebordet (eieren 8. oktober 2026): ingen faste bolker. Én «dato»
+        // per aapen dag, med aapningstida; kunden velger ankomsttid etterpaa.
+        foreach ($ut as $i => $rad) {
+            if (!empty($rad['folgerApningstid'])) {
+                $ut[$i]['datoer'] = Malebord::katalogDager((int) $rad['id'], Malebord::stoler((int) $rad['id']));
+                $ut[$i]['plasser'] = Malebord::stoler((int) $rad['id']);
+            }
+        }
 
         // Fokuspunktene: hvilken del av hvert bilde ramma skal sentreres paa.
 

@@ -184,6 +184,8 @@ if (Foresporsel::metode() === 'GET') {
             'plassMinutter'   => isset($k['plass_minutter']) && $k['plass_minutter'] !== null
                                    ? (int) $k['plass_minutter'] : 0,
             'utenPlassgrense' => (bool) ($k['uten_plassgrense'] ?? 0),
+            // Malebordet (eieren 07.10): kurs som foelger aapningstidene faar «Malestoler og dager».
+            'folgerApningstid' => (bool) ($k['folger_apningstid'] ?? 0),
             'mal'             => Kursmal::forKurs($k),
             // Varigheten regnet av oektene, slik kunden faktisk ser den.
             'varighetVist'    => Kursmal::varighetFor($k, array_map(static fn($o) => [

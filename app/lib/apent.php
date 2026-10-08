@@ -369,6 +369,11 @@ final class Apent
         if (!self::folgerApningstid($kursId)) {
             return $tomt;
         }
+        // Malebordet (eieren 8. oktober 2026): ankomst hvert kvarter, og
+        // plassene telles som personer til stede samtidig.
+        if (Malebord::gjelder($kursId)) {
+            return Malebord::kvarter($kursId, $dato, $antall);
+        }
 
         $oslo = new DateTimeZone('Europe/Oslo');
         $utc  = new DateTimeZone('UTC');
@@ -399,6 +404,13 @@ final class Apent
                 $til = $start->modify('+' . self::plassMinutter($kursId) . ' minutes');
                 if ($til > $slutt) {
                     break;
+                }
+                // Merket fullt (hele dagen, eller fra et klokkeslett): ingen
+                // nye tider. ledigeIVindu() sier det samme; dette sparer
+                // spoerringene.
+                if (Malebord::klar() && Malebord::sperret($dato, $start->format('H:i'))) {
+                    $start = $start->modify('+15 minutes');
+                    continue;
                 }
                 $ledige = Booking::ledigeIVindu(
                     $kursId,
@@ -503,6 +515,11 @@ final class Apent
         if (!$passer) {
             throw new RuntimeException('Verkstedet er ikke åpent så lenge da. Velg et annet tidspunkt.');
         }
+        // Malebordet merket fullt fra dette klokkeslettet: samme beskjed som
+        // naar stolene er tatt.
+        if (Malebord::klar() && Malebord::sperret($dato, $start->format('H:i'))) {
+            throw new RuntimeException('Det er ikke nok ledige plasser igjen.');
+        }
 
         $startUtc = $start->setTimezone($utc)->format('Y-m-d H:i:s');
         $sluttUtc = $slutt->setTimezone($utc)->format('Y-m-d H:i:s');
@@ -540,7 +557,7 @@ final class Apent
      * Neste kvarter. Ingen booker et kvarter som begynte for fem minutter
      * siden.
      */
-    private static function nesteKvarter(DateTimeImmutable $t): DateTimeImmutable
+    public static function nesteKvarter(DateTimeImmutable $t): DateTimeImmutable
     {
         $min = (int) $t->format('i');
         $opp = (int) (ceil(($min + 1) / 15) * 15);
@@ -616,6 +633,62 @@ final class Apent
      * @return array<string, list<array{fra:string,til:string}>>
      */
     private static function vinduer(DateTimeImmutable $naa, int $kursId = 0): array
+    {
+        // Malebordet (eieren 7. oktober 2026): en dag merket «Ingen PoP» har
+        // ingen vinduer for kurs som foelger aapningstidene. Oekter som alt
+        // har bookinger roeres ikke av dette — se leggUtPaaApneTider().
+        $vinduer = self::raaVinduer($naa, $kursId);
+        if ($kursId > 0 && Malebord::klar()) {
+            // Unntakene per dato (eieren 8. oktober 2026): «Ingen PoP» tar
+            // dagen bort, «andre tider» setter dagens vindu.
+            $oslo = new DateTimeZone('Europe/Oslo');
+            $fraDato = $naa->setTimezone($oslo)->format('Y-m-d');
+            $tilDato = $naa->setTimezone($oslo)->modify('+' . self::BOOK_DAGER_FRAM . ' days')->format('Y-m-d');
+            foreach (Malebord::merker($fraDato, $tilDato) as $dato => $m) {
+                if ($m['status'] === 'stengt') {
+                    unset($vinduer[$dato]);
+                } elseif ($m['status'] === 'tider' && $m['fra'] !== null && $m['til'] !== null && $m['til'] > $m['fra']) {
+                    $vinduer[$dato] = [['fra' => $m['fra'], 'til' => $m['til']]];
+                }
+            }
+            ksort($vinduer);
+        }
+        return $vinduer;
+    }
+
+    /** @var array<int, array<string, list<array{fra:string,til:string}>>> */
+    private static array $apneCache = [];
+
+    /**
+     * Vinduene kunden kan booke i, med unntakene per dato. Mellomlagret per
+     * foresporsel: katalogen og «neste ledige» spoer mange ganger.
+     *
+     * @return array<string, list<array{fra:string,til:string}>>
+     */
+    public static function apneVinduer(int $kursId): array
+    {
+        return self::$apneCache[$kursId] ??= self::vinduer(new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')), $kursId);
+    }
+
+    /** Glem mellomlagrede vinduer (etter en endring i admin). */
+    public static function glemMalebord(): void
+    {
+        self::$apneCache = [];
+    }
+
+    /**
+     * Vinduene uten malebordets dagsmerker. Admin bruker dem for aa vise
+     * hvilke dager som kunne vaert aapne.
+     *
+     * @return array<string, list<array{fra:string,til:string}>>
+     */
+    public static function vinduerForKurs(int $kursId): array
+    {
+        return self::raaVinduer(new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')), $kursId);
+    }
+
+    /** @return array<string, list<array{fra:string,til:string}>> */
+    private static function raaVinduer(DateTimeImmutable $naa, int $kursId = 0): array
     {
         $oslo = new DateTimeZone('Europe/Oslo');
         $naa  = $naa->setTimezone($oslo);
@@ -819,6 +892,13 @@ final class Apent
             // aapningstidene. Sto utenfor loekka da alle kurs delte dem.
             $mineVinduer = self::vinduer($naa, $kursId);
             $takPerDag = self::PLASSER_PER_DAG;
+            // Malebordet (eieren 8. oktober 2026): ingen faste bolker. Kunden
+            // velger ankomsttid, og oekta lages naar bestillingen gaar
+            // gjennom (oktForTid). Ubookede bolker som ligger ute ryddes
+            // under; oekter med bookinger blir staaende.
+            if (Malebord::gjelder($kursId)) {
+                $mineVinduer = [];
+            }
 
             // Kursets egne oekter, lagt inn for haand eller av ukereglene.
             // De gaar foran: det lages ingen plass oppi en tid kurset alt
@@ -921,8 +1001,12 @@ final class Apent
                 }
 
                 // Har noen booket, staar den uansett. Plassen er noen sin, og
-                // den skal ikke forsvinne under foettene paa dem.
-                if ((int) $rad['booket'] === 1) {
+                // den skal ikke forsvinne under foettene paa dem. Paa
+                // malebordet staar ogsaa en oekt med bare avbestilte bookinger,
+                // saa sporet etter dem ikke blir borte (eieren 8. oktober 2026).
+                if ((int) $rad['booket'] === 1
+                    || ($mineVinduer === [] && Malebord::gjelder($kursId)
+                        && DB::verdi('SELECT 1 FROM bookings WHERE course_session_id = :i LIMIT 1', ['i' => (int) $rad['id']]) !== null)) {
                     unset($skalLages[$s]);
                     continue;
                 }

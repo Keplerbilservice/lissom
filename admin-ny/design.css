@@ -41,3 +41,21 @@
 .button{white-space:nowrap}
 /* Vipps-oppsettet (07.10.2026): verdiene der er adresser og lange tekster, ikke beloep. De faar brekke, ellers ruller siden sidelengs paa 390 px. */
 .row.vipps-felt>:last-child{flex:0 1 auto;min-width:0;overflow-wrap:anywhere;text-align:right}
+/* Paint on Pots: malebordet (eieren 07.10.2026). Stor rød «Fullt resten av dagen», og ukekortet med sju dager som får plass på 390 px. */
+.button.pop-fullt{background:var(--red);border-color:var(--red);color:#fff;width:100%;min-height:54px;font-size:17px}
+.button.pop-bred{width:100%}
+.pop-knapper{display:grid;gap:10px;margin-top:16px}
+.pop-ukehode{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:14px 0 8px}
+.pop-uke{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.pop-dag{display:flex;flex-direction:column;align-items:center;gap:1px;min-height:74px;padding:6px 1px;border:1px solid var(--line);border-radius:9px;background:var(--paper);color:var(--ink);font:inherit;font-size:12px;line-height:1.25;cursor:pointer;min-width:0;overflow-wrap:anywhere;text-align:center}
+.pop-dag b{font-size:16px}
+.pop-dag small{font-size:11px}
+.pop-dag.pop-apen{background:#28654818;border-color:var(--green)}
+.pop-dag.pop-fullt{background:#ad342515;border-color:var(--red)}
+.pop-dag.pop-stengt,.pop-dag.pop-ingen{color:var(--muted)}
+.pop-dag:disabled{opacity:.45;cursor:default}
+.pop-dag.pop-tider{background:#28654818;border-color:var(--green);border-style:dashed}
+.pop-dag.pop-valgt{outline:3px solid var(--ink);outline-offset:1px}
+.pop-status{margin:10px 0 14px}
+.pop-res{width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);background:none;font:inherit;color:inherit;cursor:pointer;display:flex}
+.pop-malebord h3{margin:18px 0 6px}

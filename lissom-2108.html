@@ -3864,17 +3864,22 @@ window.__resources = {
                     <div style="font-size: var(--text-sm); font-weight: 700; color: var(--lissom-brown); margin-bottom: var(--space-4);">{{ bVinduTekst }}</div>
                   </sc-if>
                   <sc-if value="{{ bVelgerTid }}" hint-placeholder-val="{{ false }}">
-                    <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-3);">
-                      <input type="time" step="900" min="{{ bTidMin }}" max="{{ bTidMaks }}" value="{{ bTidVerdi }}" onChange="{{ bTidSett }}" aria-label="Når vil du komme?" style="appearance: none; font: inherit; font-weight: 700; padding: 11px 14px; min-height: 44px; border: 2px solid var(--lissom-brown); border-radius: var(--radius-pill); background: var(--surface); color: var(--text-heading);" />
+                    <!-- Ankomsttid som knapper, hvert kvarter (eieren 8. oktober 2026:
+                         «kunden skal ikke skrive minutter selv»). Bare tider som
+                         faktisk kan bookes for antallet som er valgt. -->
+                    <div role="group" aria-label="Velg ankomsttid" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: var(--space-3);">
+                      <sc-for list="{{ bTidKnapper }}" as="t" hint-placeholder-count="8">
+                        <button type="button" onClick="{{ t.velg }}" style="{{ t.stil }}">{{ t.tid }}</button>
+                      </sc-for>
                     </div>
+                    <sc-if value="{{ bTidSpenn }}" hint-placeholder-val="{{ '' }}">
+                      <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); font-weight: 700; color: var(--lissom-brown);">{{ bTidSpenn }}</p>
+                    </sc-if>
                     <sc-if value="{{ bTidUtenfor }}" hint-placeholder-val="{{ false }}">
                       <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); font-weight: 700; color: var(--terracotta-500);">{{ bTidUtenforTekst }}</p>
                     </sc-if>
                     <sc-if value="{{ bTidFull }}" hint-placeholder-val="{{ false }}">
                       <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); font-weight: 700; color: var(--terracotta-500);">{{ bTidForslagTekst }}</p>
-                      <sc-if value="{{ bTidHarForslag }}" hint-placeholder-val="{{ true }}">
-                        <button type="button" onClick="{{ bTidTaForslag }}" style="appearance: none; cursor: pointer; font: inherit; font-weight: 700; padding: 9px 16px; min-height: 40px; border: 2px solid var(--lissom-brown); border-radius: var(--radius-pill); background: var(--surface); color: var(--lissom-brown); margin-bottom: var(--space-4);">{{ bTidForslagKnapp }}</button>
-                      </sc-if>
                     </sc-if>
                     <p style="margin: 0 0 var(--space-6); font-size: var(--text-xs); color: var(--text-muted);">{{ bTidHjelp }}</p>
                   </sc-if>
@@ -3984,6 +3989,16 @@ window.__resources = {
                        skal staa for man bestiller, ikke etterpaa. -->
                   <sc-if value="{{ gkBeskjed }}" hint-placeholder-val="{{ false }}">
                     <p style="{{ gkStil }}">{{ gkBeskjed }}</p>
+                  </sc-if>
+                  <!-- Oppsummering foer bestilling (eieren 8. oktober 2026): dag,
+                       tid start–slutt, antall og hva som betales. -->
+                  <sc-if value="{{ bPopOppsummering }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin-top: var(--space-5); background: var(--clay-100); border-radius: var(--radius-md); padding: 12px 14px; font-size: var(--text-sm); color: var(--text-heading); line-height: 1.6;">
+                      <div style="font-weight: 700;">Oppsummering</div>
+                      <div>{{ bPopOppsDag }}</div>
+                      <div>{{ bPopOppsAntall }}</div>
+                      <div>{{ bPopOppsBetaling }}</div>
+                    </div>
                   </sc-if>
                   <div style="height: var(--space-5);"></div>
                   <!-- Vipps sin egen knapp, med logoen. Er skriptet ikke kommet fram
@@ -35212,6 +35227,10 @@ class Component extends DCLogic {
     if (!this.folgerApningstid()) return this.state.bDato || '';
     const dag = this.norskDag(this.state.bTidDato || '');
     if (!dag) return '';
+    // Med sluttiden naar den er kjent (eieren 8. oktober 2026: «vis start–slutt
+    // tydelig»). Tida kommer fra lista serveren ga for dagen.
+    const t = (this.state.bTidListe || []).find(x => x.tid === this.state.bTid);
+    if (t && t.slutt) return dag + ', ' + t.tid + '\u2013' + t.slutt;
     return this.state.bTid ? dag + ', ' + this.state.bTid : dag;
   }
 
@@ -35239,7 +35258,7 @@ class Component extends DCLogic {
           bTid: (this.state.bTidOnsket && this.state.bTidOnsket.dato === dato
                  && tider.some(t => t.tid === this.state.bTidOnsket.tid))
             ? this.state.bTidOnsket.tid
-            : (tider.length ? tider[0].tid : ''),
+            : '',
           bTidOnsket: null,
         });
       })
@@ -37484,15 +37503,34 @@ class Component extends DCLogic {
   valgtAntall() {
     const k = this.state.valgtKurs || {};
     if ((k.tema || '') === 'Medlemskap') return 1;
+    return Math.max(1, Math.min(this.state.bAntallN || 1, this.maksAntall()));
+  }
+
+  /**
+   * Flest personer i én bestilling. Paint on Pots: fra serveren (ressursen
+   * «Paint on Pots»; ingen plassgrense = 50). Eieren, 8. oktober 2026:
+   * antallet skal brukes likt overalt, og ikke kuttes uten at det sies.
+   */
+  maksAntall() {
+    const k = this.state.valgtKurs || {};
+    if (this.folgerApningstid()) return parseInt(this.katalogKurs().maksAntall, 10) || 12;
     const erDreiing = (k.tema === 'Dreiing') || ((k.title || '').toLowerCase().indexOf('dreie') >= 0);
-    return Math.max(1, Math.min(this.state.bAntallN || 1, erDreiing ? 8 : 12));
+    return erDreiing ? 8 : 12;
+  }
+
+  /** «onsdag 14. oktober, 17:00–19:00 · 2 personer» — det som blir booket. */
+  popSammendrag() {
+    const dag = this.norskDag(this.state.bTidDato || '');
+    const t = (this.state.bTidListe || []).find(x => x.tid === this.state.bTid);
+    if (!dag || !t) return '';
+    const n = this.valgtAntall();
+    return dag + ', ' + t.tid + '\u2013' + (t.slutt || '') + ' · ' + n + (n === 1 ? ' person' : ' personer');
   }
 
   bookSum() {
     const k = this.state.valgtKurs || {};
     if (k.price === 'Gratis') return 'Gratis';
-    const erDreiing = (k.tema === 'Dreiing') || ((k.title || '').toLowerCase().indexOf('dreie') >= 0);
-    const antall = Math.min(this.state.bAntallN || 1, erDreiing ? 8 : 12);
+    const antall = this.valgtAntall();
     // Prisen fra katalogen forst. Finner vi den ikke, bruker vi den
     // som staar paa kortet — «kr. 0,-» paa et kurs til 2 800 er verre
     // enn ingen sum i det hele tatt.
@@ -59850,7 +59888,7 @@ class Component extends DCLogic {
       // Kurs uten plassgrense teller folk, ikke plasser. Eieren, 4. oktober
       // 2026: «de kan jo skrive antall personer og litt tekst».
       bAntallEtikett: this.katalogKurs().utenPlassgrense ? 'Hvor mange kommer dere?' : 'Antall plasser',
-      bVisMelding: !!this.katalogKurs().utenPlassgrense,
+      bVisMelding: !!this.katalogKurs().utenPlassgrense || this.folgerApningstid(),
       bMelding: this.state.bMelding || '',
       settBMelding: e => this.setState({ bMelding: e.target.value }),
       visIdentitet: (this.state.valgtKurs && (this.state.valgtKurs.price === 'Gratis' || this.state.valgtKurs.level === 'Kun for medlemmer')),
@@ -59858,7 +59896,10 @@ class Component extends DCLogic {
       erBookKvittert: !!this.state.bookKvittert,
       bookOrdreTittel: (this.state.valgtKurs && (this.state.valgtKurs.title || this.state.valgtKurs.tittel)) || 'Nybegynner dreiekurs',
       bookOrdreDato: (this.visningsDato()) || (this.state.valgtKurs && this.state.valgtKurs.datoer && this.state.valgtKurs.datoer[0] && this.state.valgtKurs.datoer[0].dato) || (this.state.valgtKurs && this.state.valgtKurs.date) || 'Onsdag 2. september, 17:30',
-      bookOrdreSum: ((this.state.valgtKurs && this.state.valgtKurs.price) || 'Fra kr. 2 800,-').replace('Fra ', ''),
+      // Paint on Pots: antallet staar med (eieren 8. oktober 2026).
+      bookOrdreSum: this.folgerApningstid()
+        ? this.valgtAntall() + (this.valgtAntall() === 1 ? ' person' : ' personer') + ' · ' + this.bookSum()
+        : ((this.state.valgtKurs && this.state.valgtKurs.price) || 'Fra kr. 2 800,-').replace('Fra ', ''),
       // «bookTilKurv» sto her: den la kursnavnet med datoen i handlekurven.
       // Ingen knapp pekte paa den, og godt var det — kassa slaar hver linje
       // opp blant butikkvarene, og et kurs staar ikke der. Den ville gitt
@@ -59919,8 +59960,18 @@ class Component extends DCLogic {
       // maa ogsaa vaere det.
       visOppmote: !!(this.state.valgtKurs || {}).utenForskudd
         && (this.state.valgtKurs || {}).tema !== 'Medlemskap',
-      oppmoteHjelp: 'Plassen er din nå. Du betaler ' + this.bookSum()
+      // «Plassen er din» sto her, foer noe var lagret (eieren 8. oktober 2026).
+      oppmoteHjelp: 'Du betaler ' + this.bookSum()
         + ' når du kommer — kontant eller Vipps.',
+      // Oppsummering foer bestilling (eieren 8. oktober 2026).
+      bPopOppsummering: this.folgerApningstid() && !this.state.bookKvittert && !!this.popSammendrag(),
+      bPopOppsDag: (() => {
+        const t = (this.state.bTidListe || []).find(x => x.tid === this.state.bTid);
+        return t ? (this.norskDag(this.state.bTidDato || '') + ', ' + t.tid + '\u2013' + (t.slutt || '')) : '';
+      })(),
+      bPopOppsAntall: this.valgtAntall() + (this.valgtAntall() === 1 ? ' person' : ' personer'),
+      bPopOppsBetaling: 'Å betale: ' + this.bookSum()
+        + ((this.state.valgtKurs || {}).utenForskudd ? ' — med Vipps nå, eller ved besøket.' : ' — med Vipps nå.'),
       bookBetalLinje: !this.state.innlogget
         ? 'Du logger inn med Vipps først — så betaler du ' + this.bookSum()
         : 'Du betaler ' + this.bookSum(),
@@ -60322,13 +60373,13 @@ class Component extends DCLogic {
       visAntallPlasser: ((this.state.valgtKurs || {}).tema || '') !== 'Medlemskap',
       visRefusjonNote: !this.state.bookKvittert && ((this.state.valgtKurs || {}).tema || '') !== 'Medlemskap',
       ...(() => {
-        const k = this.state.valgtKurs || {};
-        const erDreiing = (k.tema === 'Dreiing') || ((k.title || '').toLowerCase().indexOf('dreie') >= 0);
-        const maks = erDreiing ? 8 : 12;
+        const maks = this.maksAntall();
         const n = Math.min(this.state.bAntallN || 1, maks);
+        const pop = this.folgerApningstid();
         return {
-          bAntTekst: n + (n === 1 ? ' plass' : ' plasser'),
-          bAntMaksTekst: 'Maks ' + maks + ' plasser på dette kurset',
+          bAntTekst: n + (pop ? (n === 1 ? ' person' : ' personer') : (n === 1 ? ' plass' : ' plasser')),
+          bAntMaksTekst: pop ? (this.katalogKurs().utenPlassgrense ? '' : 'Maks ' + maks + ' personer samtidig')
+            : 'Maks ' + maks + ' plasser på dette kurset',
           bAntMinus: () => this.byttAntall(Math.max(1, n - 1)),
           bAntPlus: () => this.byttAntall(Math.min(maks, n + 1)),
         };
@@ -61010,6 +61061,24 @@ class Component extends DCLogic {
           // ganger, med hvert sitt svar.
           bVisTidsknapper: !this.folgerApningstid(),
           bTidVerdi: String(this.state.bTid || ''),
+          bTidKnapper: (this.state.bTidListe || []).map(t => {
+            const valgt = t.tid === this.state.bTid;
+            return {
+              tid: t.tid,
+              velg: () => this.setState({ bTid: t.tid }),
+              stil: {
+                appearance: 'none', cursor: 'pointer', font: 'inherit', fontWeight: 700,
+                minWidth: 72, minHeight: 44, padding: '8px 12px', borderRadius: 'var(--radius-pill)',
+                border: '2px solid var(--lissom-brown)',
+                background: valgt ? 'var(--lissom-brown)' : 'var(--surface)',
+                color: valgt ? 'var(--clay-50)' : 'var(--lissom-brown)',
+              },
+            };
+          }),
+          bTidSpenn: (() => {
+            const t = (this.state.bTidListe || []).find(x => x.tid === this.state.bTid);
+            return t && t.slutt ? 'Du er her ' + t.tid + '\u2013' + t.slutt + '.' : '';
+          })(),
           bTidSett: (e) => this.setState({ bTid: String((e && e.target && e.target.value) || '') }),
           // ── Bare i tida hun faktisk er der ──────────────────────────
           //

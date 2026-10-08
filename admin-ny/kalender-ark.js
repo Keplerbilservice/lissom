@@ -6,11 +6,16 @@ import {el,api,button,link,badge,date,sheet,form,field,confirm,toast,courseMutat
 import {bookingPayments,courseStart} from './kursstart-og-betaling.js';
 import {startKurs} from './kursstart3.js';
 import {dupliser} from './kalender-gjenta.js';
+import {popDagKnapp,popBrikkeTekst} from './malebord.js';
 
 // ── Bryteren ─────────────────────────────────────────────────────────
 let brytere={},holdere=[];
 // Fra hvert svar fra kalender.php: bryterne, og kursholderne til «Rediger» i arket.
 export const settBrytere=(b,kh)=>{if(b&&typeof b==='object')brytere=b;if(Array.isArray(kh))holdere=kh;};
+export const settPopDager=pd=>{if(pd&&typeof pd==='object')Object.assign(popDager,pd);};
+// Malebordet (eieren 07.10): dagene merket «fullt»/«stengt» (kalender.php popDager), og «Paint on Pots · 9/12» på brikka.
+const popDager={};
+export const visTittel=e=>{const t=e.type==='pop'?popBrikkeTekst(e):'';return t?`${e.popNavn||e.tittel} · ${t}`:e.tittel;};
 export const arkPaa=()=>brytere.kalenderark===true;
 // «Vis/kursstart3» (bølge 2): «Start kurset» i tre steg med Vipps-krav. Av = kursstarten som før.
 export const kursstartPaa=()=>brytere.kursstart3===true;
@@ -59,21 +64,9 @@ export function dagSum(hendelser){
  return `${k.length} ${k.length===1?'økt':'økter'} · ${p} påmeldt`;
 }
 
-// ── Paint on Pots: tidene en dag slås sammen til én linje ───────────
-// Bare tider laget av åpningstida (auto). Tider ingen har booket, kommer ikke fra kalender.php (Apent::skjulUtenBooking).
-// En tid som står alene, vises som før.
-export function slaaSammen(hendelser){
- const grupper=new Map();
- for(const e of hendelser){if(e.type==='pop'&&e.auto&&!e.avlyst){const n=`${e.dato}|${e.kursId}`;if(!grupper.has(n))grupper.set(n,[]);grupper.get(n).push(e);}}
- const samlet=new Map();
- for(const [n,l] of grupper){if(l.length<2)continue;const s=[...l].sort((a,b)=>String(a.tid).localeCompare(String(b.tid)));
-  // Gruppens siste sluttid gjelder både «slutt» og «dagSlutt» (PC-tegningen bruker dagSlutt først).
-  const sist=s.reduce((m,x)=>String(x.dagSlutt||x.slutt||x.tid)>m?String(x.dagSlutt||x.slutt||x.tid):m,'');
-  samlet.set(n,{...s[0],id:`pop-${s[0].dato}-${s[0].kursId}`,oktId:0,tid:s[0].tid,slutt:sist,dagSlutt:sist,pameldt:s.reduce((a,x)=>a+(Number(x.pameldt)||0),0),kap:0,deltakere:s.flatMap(x=>x.deltakere||[]),venteliste:[],nye:s.reduce((a,x)=>a+(Number(x.nye)||0),0),sammen:s});}
- const ut=[],brukt=new Set();
- for(const e of hendelser){const n=`${e.dato}|${e.kursId}`;if(e.type==='pop'&&e.auto&&!e.avlyst&&samlet.has(n)){if(!brukt.has(n)){brukt.add(n);ut.push(samlet.get(n));}continue;}ut.push(e);}
- return ut;
-}
+// ── Paint on Pots: slås ikke sammen (eieren 08.10) ───────────
+// Adminkalenderen viser hver reservasjon med start, slutt og antall. Funksjonen står så kallene er de samme.
+export function slaaSammen(hendelser){return hendelser;}
 export const tiderTekst=e=>`${e.sammen.length} tider booket`;
 // «Vis tidene»: lista under linja. Hver tid åpner sitt eget ark.
 export function tidene(e,apne){
@@ -109,7 +102,9 @@ const tall=t=>String(Math.round(t*100)/100).replace('.',',');
 let arkFane='deltakere';
 
 // Paint on Pots-linja i måneden: ett ark med tidene, hver åpner sitt eget.
-export function tiderArk(e,apne){const s=sheet(`${e.tittel} · ${tiderTekst(e)}`,el('div',{class:'kal-tider'},e.sammen.map(t=>el('button',{type:'button',class:'kal-tid',onclick:()=>{s.close();apne(t);}},`${t.tid} · ${t.pameldt||0} pers.`))));}
+export function tiderArk(e,apne){const s=sheet(`${visTittel(e)} · ${tiderTekst(e)}`,el('div',{},el('div',{class:'kal-tider'},e.sammen.map(t=>el('button',{type:'button',class:'kal-tid',onclick:()=>{s.close();apne(t);}},`${t.tid} · ${t.popStoler?`${t.popBooket||0}/${t.popStoler}`:`${t.pameldt||0} pers.`}`))),el('div',{class:'actions',style:'margin-top:16px'},popDagKnapp(e.dato,popDager,()=>{s.close();delete popDager[e.dato];location.reload();}))));}
+// Fra én Paint on Pots-tid: merk dagen full eller åpne den igjen.
+export const popKnapp=(e,etter)=>e.type==='pop'&&e.popStoler?popDagKnapp(e.dato,popDager,()=>{delete popDager[e.dato];etter&&etter();}):null;
 
 // «Legg til deltaker» (pamelding.php legg-til). Brukes av økt-arket og av «+ Noen kom uten påmelding» i «Start kurset».
 export function leggTilDeltaker(id,ferdig){form('Legg til deltaker',[field('navn','Navn','text',{required:true}),field('telefon','Mobil','tel'),field('epost','E-post','email'),field('antall','Antall','number',{min:1,required:true}),field('betaltMaate','Betaling','text',{velg:true,options:['Ikke betalt','Betaler ved oppmøte','Kontant','Vipps','Gavekort','Faktura','Gratis']}),field('kode','Gavekortkode'),field('varsle','Send bekreftelse','checkbox')],{antall:1},async v=>{await ferdig(await api('pamelding.php',{handling:'legg-til',oktId:id,...v,varsle:v.varsle?'ja':'nei'}));},{submitLabel:'Legg til',successText:false});}
@@ -128,9 +123,10 @@ export function oktArk(e,o){
   el('span',{class:`kal-m kal-type-pille ${typeKlasse(e)}`,text:typeNavn(e.type)}),
   el('p',{class:'muted',text:[naar(e),e.samling,e.holder||'Ikke tildelt'].filter(Boolean).join(' · ')}),
   e.kap?el('div',{class:'kal-merker'},merker(e)):null,
+  popKnapp(e,()=>{s.close();o.refresh();}),
   e.kap&&!e.avlyst?button('▶ Start kurset',()=>{s.close();kursstartPaa()?startKurs(e,{...o,naar:naar(e),leggTil:etter=>leggTilDeltaker(id,etter)}):courseStart(id,o.refresh);},'primary'):null,
   faneRad);
- const s=sheet(e.tittel,el('div',{},hode,panel));s.dlg.classList.add('kal-ark');
+ const s=sheet(visTittel(e),el('div',{},hode,panel));s.dlg.classList.add('kal-ark');
  // Etter en handling: lukk arket, hent kalenderen på nytt og si hva som skjedde.
  const ferdig=async r=>{toast(r?.beskjed||'Lagret.');s.close();await o.refresh();};
  const kjor=async(ep,body)=>{try{await ferdig(await api(ep,body));}catch(err){toast(err.message);}};

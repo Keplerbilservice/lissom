@@ -133,95 +133,29 @@ $popTittel = '';
 $popTekst  = '';
 $popFull = false;
 if ($popKurs !== null) {
-    $klokke = static function (int $min): string {
-        $t = intdiv($min, 60);
-        return $min % 60 === 0 ? (string) $t : $t . '.' . str_pad((string) ($min % 60), 2, '0', STR_PAD_LEFT);
-    };
-    /** Sittingene paa én dag, slaatt sammen til tidsrom. */
-    $tidsrom = static function (array $okter) use ($klokke): array {
-        usort($okter, static fn(array $a, array $b): int => $a['m'] <=> $b['m']);
-        $ut = [];
-        foreach ($okter as $o) {
-            $slutt = $o['m'] + 90;
-            $siste = $ut === [] ? null : $ut[count($ut) - 1];
-            if ($siste !== null && $o['m'] <= $siste['slutt']) {
-                $ut[count($ut) - 1]['slutt'] = max($siste['slutt'], $slutt);
-                $ut[count($ut) - 1]['ledig'] = $siste['ledig'] || $o['ledig'];
-                continue;
-            }
-            $ut[] = ['start' => $o['m'], 'slutt' => $slutt, 'ledig' => $o['ledig']];
-        }
-        return array_map(static fn(array $v): array => [
-            'tekst' => $klokke($v['start']) . '–' . $klokke($v['slutt']),
-            'ledig' => $v['ledig'],
-        ], $ut);
-    };
-
-    // Dagene framover, hver med sine sittinger. Det som er passert i dag
-    // teller ikke — en stripe som byr paa klokka ti klokka tolv er feil.
-    $perDag = [];
-    foreach ($popKurs['datoer'] ?? [] as $o) {
-        if (empty($o['startUtc'])) {
-            continue;
-        }
-        $d = (new DateTimeImmutable((string) $o['startUtc'], new DateTimeZone('UTC')))->setTimezone($oslo);
-        if ($d <= $naa) {
-            continue;
-        }
-        $dag = $d->format('Y-m-d');
-        $perDag[$dag][] = [
-            'm'     => (int) $d->format('G') * 60 + (int) $d->format('i'),
-            'ledig' => (int) ($o['ledige'] ?? 0) > 0,
-            'd'     => $d,
-        ];
-    }
-    ksort($perDag);
-
-    $liste = static function (array $rom): string {
-        $t = array_map(static fn(array $v): string => $v['tekst'], $rom);
-        $sist = array_pop($t);
-        return $t === [] ? $sist : implode(', ', $t) . ' eller ' . $sist;
-    };
+    // Eieren, 8. oktober 2026: tidene hentes fra de samme innstillingene som
+    // bestillingen (Malebord / Apent). Her sto «onsdag og torsdag, 10–13 og
+    // 17–20» og «Ingen booking nødvendig» skrevet inn for haand.
+    $MND = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember'];
     $DAGNAVN = ['mandag', 'tirsdag', 'onsdag', 'torsdag', 'fredag', 'lørdag', 'søndag'];
-
     $idag = $naa->format('Y-m-d');
-    if (isset($perDag[$idag])) {
-        $rom    = $tidsrom($perDag[$idag]);
-        $ledige = array_values(array_filter($rom, static fn(array $v): bool => $v['ledig']));
-        $fulle  = array_values(array_filter($rom, static fn(array $v): bool => !$v['ledig']));
-        if ($ledige !== []) {
-            $popTittel = 'Paint on Pots i dag.';
-            $popTekst  = 'Stikk innom mellom ' . $liste($ledige) . '.'
-                . ($fulle !== []
-                    ? ' (' . $liste($fulle) . ' er fullt.)'
-                    : ' Ingen booking nødvendig.');
-        }
-    }
-
-    if ($popTittel === '') {
-        // Ikke i dag, eller utsolgt: si rytmen, og naar det er plass igjen.
-        //
-        // Het «$neste», det samme som neste uke over, og skrev over den: pilen
-        // til neste uke ble /kalender?uke=torsdag 1. oktober … og viste samme
-        // uke igjen. Eieren, 25. september 2026: «forsøker å bla med pilen til
-        // høyre, men det fungerer heller ikke».
+    $iDag = Malebord::kvarter((int) $popKurs['id'], $idag, 1);
+    if ($iDag['tider'] !== []) {
+        $popTittel = 'Paint on Pots i dag.';
+        $popTekst  = 'Åpent ' . $iDag['vindu'] . '. Book tid på forhånd.';
+    } else {
         $popNeste = '';
-        foreach ($perDag as $dag => $okter) {
-            if ($dag === $idag) {
+        foreach ($popKurs['datoer'] ?? [] as $o) {
+            if (($o['dagIso'] ?? '') === $idag || (int) ($o['ledige'] ?? 0) <= 0) {
                 continue;
             }
-            $rom = array_values(array_filter($tidsrom($okter), static fn(array $v): bool => $v['ledig']));
-            if ($rom !== []) {
-                $d = $okter[0]['d'];
-                $popNeste = $DAGNAVN[(int) $d->format('N') - 1] . ' ' . $d->format('j') . '. '
-                       . $MND[(int) $d->format('n') - 1] . ', ' . $liste($rom);
-                break;
-            }
+            $d = new DateTimeImmutable((string) $o['dagIso'], $oslo);
+            $popNeste = $DAGNAVN[(int) $d->format('N') - 1] . ' ' . $d->format('j') . '. '
+                . $MND[(int) $d->format('n') - 1] . ', ' . (string) ($o['klokke'] ?? '');
+            break;
         }
         $popFull = true;
-        $popTittel = isset($perDag[$idag])
-            ? 'Paint on Pots er fullt i dag.'
-            : 'Paint on Pots går onsdag og torsdag, 10–13 og 17–20.';
+        $popTittel = $iDag['vindu'] !== '' ? 'Paint on Pots er fullt i dag.' : 'Paint on Pots.';
         $popTekst = $popNeste !== '' ? 'Neste dag med ledig plass er ' . $popNeste . '.' : '';
     }
 }

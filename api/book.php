@@ -24,7 +24,13 @@ $oktId  = Foresporsel::heltall('oktId');
 $kursId  = Foresporsel::heltall('kursId');
 $tidOslo = trim(Foresporsel::tekst('tid'));
 $laget   = 0;
-$antall = max(1, min(10, Foresporsel::heltall('antall', 1)));
+// Antallet brukes slik kunden valgte det. Her sto min(10, …): tolv valgt
+// paa skjermen ble stille til ti (eieren, 8. oktober 2026: «serveren skal
+// aldri redusere antallet uten aa si fra»).
+$antall = Foresporsel::heltall('antall', 1);
+if ($antall < 1 || $antall > Malebord::MAKS_ANTALL) {
+    Svar::feil('Velg mellom 1 og ' . Malebord::MAKS_ANTALL . ' personer.');
+}
 $navn   = mb_substr(Foresporsel::tekst('navn'), 0, 191);
 $epost  = mb_substr(Foresporsel::tekst('epost'), 0, 191);
 $telefon= Foresporsel::tekst('telefon');

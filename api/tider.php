@@ -37,7 +37,13 @@ Rate::sjekk('tider', maks: 120, vindu: 600);
 
 $kursId = Foresporsel::heltall('kursId');
 $dato   = trim(Foresporsel::tekst('dato'));
-$antall = max(1, min(10, Foresporsel::heltall('antall', 1)));
+// Antallet brukes slik kunden valgte det. Her sto min(10, …): tolv valgt
+// paa skjermen ble stille til ti (eieren, 8. oktober 2026: «serveren skal
+// aldri redusere antallet uten aa si fra»).
+$antall = Foresporsel::heltall('antall', 1);
+if ($antall < 1 || $antall > Malebord::MAKS_ANTALL) {
+    Svar::feil('Velg mellom 1 og ' . Malebord::MAKS_ANTALL . ' personer.');
+}
 
 if ($kursId <= 0) {
     Svar::feil('Mangler kurset.');

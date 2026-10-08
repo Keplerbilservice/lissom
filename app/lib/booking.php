@@ -291,7 +291,49 @@ final class Booking
         // hver sitt — og den ene som ble glemt er reserveveien, som bare
         // kjorer paa en base uten ressurstabellen. Da hadde feilen vaert
         // usynlig helt til den dagen den ikke var det.
-        return self::medVisFullt(self::ledigeRegnet($oktIder));
+        return self::medVisFullt(self::medMalebord(self::ledigeRegnet($oktIder)));
+    }
+
+    /**
+     * Malebordet (eieren, 7. og 8. oktober 2026): kurs som foelger
+     * aapningstidene (Paint on Pots) regnes mot sin egen ressurs, ikke
+     * verkstedtaket. Ledige = grensen minus flest personer til stede samtidig
+     * i oektas tidsrom. En dag merket fullt fra et klokkeslett, eller «Ingen
+     * PoP», gir null ledige. Ingen plassgrense: UTEN_GRENSE.
+     *
+     * Bookinger som alt er gjort roeres ikke: faerre stoler enn booket gir
+     * bare null ledige, aldri et negativt tall.
+     *
+     * @param  array<int, int> $ledige
+     * @return array<int, int>
+     */
+    private static function medMalebord(array $ledige): array
+    {
+        if ($ledige === [] || !DB::harKolonne('courses', 'folger_apningstid')) {
+            return $ledige;
+        }
+        $inn = implode(',', array_map('intval', array_keys($ledige)));
+        foreach (DB::alle(
+            "SELECT cs.id, cs.course_id, cs.start_tid, cs.slutt_tid
+               FROM course_sessions cs
+               JOIN courses c ON c.id = cs.course_id
+              WHERE cs.status = 'planlagt' AND c.folger_apningstid = 1 AND cs.id IN ({$inn})"
+        ) as $r) {
+            $id = (int) $r['id'];
+            self::$sperret[$id] = false;
+            if (Malebord::klar() && Malebord::sperretUtc((string) $r['start_tid'])) {
+                $ledige[$id] = 0;
+                continue;
+            }
+            $kursId = (int) $r['course_id'];
+            $start  = (string) $r['start_tid'];
+            $slutt  = $r['slutt_tid'] !== null
+                ? (string) $r['slutt_tid']
+                : (new DateTimeImmutable($start, new DateTimeZone('UTC')))
+                    ->modify('+' . Apent::plassMinutter($kursId) . ' minutes')->format('Y-m-d H:i:s');
+            $ledige[$id] = Malebord::ledige($kursId, $start, $slutt);
+        }
+        return $ledige;
     }
 
     /**
@@ -354,6 +396,19 @@ final class Booking
         // Paint on Pots» paa en planlagt oekt, gjelder tallet paa den pilla.
         // Da er det et kurs i huset samtidig, og eieren satte selv hvor
         // mange som faar komme i tillegg.
+        // Malebordet: en dag merket fullt eller «Ingen PoP» gir null.
+        $malebord = (int) ($kurs['folger_apningstid'] ?? 0) === 1;
+        if ($malebord && Malebord::klar() && Malebord::sperretUtc($startUtc)) {
+            return 0;
+        }
+
+        // Malebordet (eieren, 7. og 8. oktober 2026): egen ressurs, personer
+        // til stede samtidig, utenfor verkstedtaket. Kurs og medlemmer
+        // trekker ikke fra den.
+        if ($malebord) {
+            return Malebord::ledige($kursId, $startUtc, $sluttUtc);
+        }
+
         if (self::utenPlassgrense($kursId)) {
             return self::apenPlassTak($kursId, $startUtc, $sluttUtc);
         }
@@ -378,6 +433,10 @@ final class Booking
 
         $ressurs = $kurs['ressurs_id'] === null ? 0 : (int) $kurs['ressurs_id'];
         $tak = self::verkstedTak();
+        // Malebordets bookinger tar ikke verkstedplasser (eieren, 7. oktober 2026).
+        $ikkeMalebord = DB::harKolonne('courses', 'folger_apningstid')
+            ? "
+                AND COALESCE(c2.folger_apningstid, 0) = 0" : '';
 
         if (!isset($tak[$ressurs])) {
             // Uten ressurs: kursets eget plasstall, minus det som er booket
@@ -414,7 +473,7 @@ final class Booking
                JOIN courses c2 ON c2.id = cs2.course_id
               WHERE cs2.status = 'planlagt'
                 AND c2.status <> 'avlyst'
-                AND c2.ressurs_id = :r
+                AND c2.ressurs_id = :r{$ikkeMalebord}
                 AND ({$iVeien})",
             $par + ['r' => $ressurs]
         );
@@ -549,6 +608,11 @@ final class Booking
         // svarer alle kurs som foer — samme vakt som ressurstabellen har.
         $grenseKol = DB::harKolonne('courses', 'uten_plassgrense')
             ? 'COALESCE(c.uten_plassgrense, 0)' : '0';
+        // Malebordets bookinger (Paint on Pots) tar ikke verkstedplasser.
+        // Eieren, 7. oktober 2026. PoP selv regnes i medMalebord().
+        $ikkeMalebord = DB::harKolonne('courses', 'folger_apningstid')
+            ? "
+                           AND COALESCE(c2.folger_apningstid, 0) = 0" : '';
 
         $ut = [];
         foreach (DB::alle(
@@ -601,7 +665,7 @@ final class Booking
                          WHERE cs2.status = 'planlagt'
                            AND c2.status <> 'avlyst'
                            AND cs2.id <> cs.id
-                           AND c2.ressurs_id = c.ressurs_id
+                           AND c2.ressurs_id = c.ressurs_id{$ikkeMalebord}
                            AND ({$iVeien})
                     ), 0) AS brukt_ressurs,
                     -- Det oekta selv legger beslag paa. Her teller bare det

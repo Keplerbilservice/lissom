@@ -61,10 +61,10 @@ try{
   await ark(p).locator('.close').tap();
   // Paint on Pots dagen etter: tidene på én linje, tiden uten booking vises ikke.
   await p.getByLabel('Velg dato').fill(s.d2);
-  const pop=p.locator('.kalm-kort.kal-sammen');await pop.waitFor();
-  assert.match(await pop.innerText(),/2 tider booket/,'390: Paint on Pots slått sammen');
-  await pop.getByRole('button',{name:'Vis tidene'}).tap();
-  assert.deepEqual(await pop.locator('.kal-tid').allInnerTexts(),['12:00 · 2 pers.','13:00 · 1 pers.'],'390: de bookede tidene');
+  // Eieren 08.10: hver reservasjon for seg med start og slutt, ingen sammenslått brikke.
+  const pop=p.locator('.kalm-kort.kal-t-pop');await pop.first().waitFor();
+  assert.equal(await pop.count(),2,'390: Paint on Pots: hver reservasjon for seg');
+  assert.equal(await p.locator('.kal-sammen').count(),0,'390: ingen sammenslått brikke');
   assert.deepEqual(feil,[],'390: ingen feil i siden');assert.deepEqual(fanget,[],'390: ingenting sendt');
   await c.close();
  }
@@ -94,13 +94,10 @@ try{
   assert.match(await sv.innerText(),/Ingrid Berg[\s\S]*Betalt[\s\S]*Marte Sol[\s\S]*Ubetalt/,'svevekortet viser deltakere og betaling');
   await p.mouse.move(5,5);await sv.waitFor({state:'hidden'});
   // Paint on Pots: slått sammen, ubookede skjult.
-  await p.getByLabel('Velg dato').fill(s.d2);const pop=p.locator('.kp-brikke.kal-sammen');await pop.waitFor();
-  assert.equal(await pop.count(),1,'én linje for Paint on Pots');assert.match(await pop.innerText(),/2 tider booket/);
-  await pop.getByRole('button',{name:'Vis tidene'}).click();
-  assert.deepEqual(await pop.locator('.kal-tid').allInnerTexts(),['12:00 · 2 pers.','13:00 · 1 pers.'],'tidene');
-  assert.equal(await pop.getByRole('button',{name:'Skjul tidene'}).count(),1);
-  await pop.locator('.kal-tid').first().click();await ark(p).waitFor();
-  assert.match(await ark(p).innerText(),/Pop En/,'en tid åpner sitt eget ark');await ark(p).locator('.close').click();
+  await p.getByLabel('Velg dato').fill(s.d2);const pop=p.locator('.kp-brikke.kal-t-pop');await pop.first().waitFor();
+  assert.equal(await pop.count(),2,'hver reservasjon for seg');assert.equal(await p.locator('.kal-sammen').count(),0,'ingen sammenslått brikke');
+  await pop.first().click();await ark(p).waitFor();
+  assert.match(await ark(p).innerText(),/Pop En/,'reservasjonen åpner sitt eget ark');await ark(p).locator('.close').click();
   // Økt-arket.
   await p.getByLabel('Velg dato').fill(s.d);await A.waitFor();
   await A.click();await ark(p).waitFor();
@@ -252,11 +249,11 @@ try{
   db=fixture('inspect',s);assert.equal(db.status.marte,'ikke_mott');assert.equal(Number(finn(db,'Marte Sol').antall),2);assert.equal(Number(finn(db,'Marte Sol').belop_ore),50000,'Møtte ikke + nytt antall: beløpet står');
   // Varsler scenariet la i kø (avbestilling, ny dato): bare e-post, ingenting sendt (testmiljøet holder dem tilbake).
   assert.ok(db.varselRader.every(v=>v.kanal==='epost'&&['ko','sendt'].includes(v.status)),'ingen SMS, bare e-post (testmiljøet holder tilbake; ko eller sendt) '+JSON.stringify(db.varselRader));
-  // Regresjon: Paint on Pots 12:00–13:30 + 13:30–15:00 slås sammen; dagSlutt (som PC-tegningen bruker først) følger gruppens siste sluttid.
+  // Eieren 08.10: Paint on Pots slås ikke sammen lenger — hver reservasjon vises med start og slutt.
   const pot=await p.evaluate(async()=>{const {slaaSammen}=await import('/admin-ny/kalender-ark.js');
    const t=(tid,slutt)=>({type:'pop',auto:true,dato:'2026-10-10',kursId:7,tid,slutt,dagSlutt:slutt,pameldt:1});
-   const [e]=slaaSammen([t('12:00','13:30'),t('13:30','15:00')]);return {n:e.sammen?.length,tid:e.tid,slutt:e.slutt,dagSlutt:e.dagSlutt};});
-  assert.deepEqual(pot,{n:2,tid:'12:00',slutt:'15:00',dagSlutt:'15:00'},'Paint on Pots slått sammen: brikka går til siste tids slutt');
+   return slaaSammen([t('12:00','13:30'),t('13:30','15:00')]).map(e=>`${e.tid}-${e.slutt}`);});
+  assert.deepEqual(pot,['12:00-13:30','13:30-15:00'],'Paint on Pots: hver reservasjon for seg');
   assert.deepEqual(feil,[],'1280: ingen feil i siden');
   // Bryteren av: kalenderen er som før.
   fixture('bryter',s,'nei');await p.reload();await p.getByRole('heading',{name:'Kalender',exact:true}).waitFor();

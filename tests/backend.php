@@ -307,7 +307,9 @@ if (DB::harKolonne('course_sessions', 'fra_apningstid')
     DB::kjor('DELETE FROM course_sessions WHERE fra_apningstid = 1');
 
     $r1 = Apent::leggUtPaaApneTider();
-    sjekk('plasser legges ut paa de aapne dagene', $r1['laget'] > 0, $r1['laget'] . ' laget');
+    // Eieren, 8. oktober 2026: ingen faste 2-timersbolker for Paint on Pots
+    // (malebordet). Kunden velger ankomsttid, og oekta lages naar noen booker.
+    sjekk('malebordet legger ikke ut faste bolker', $r1['laget'] === 0, $r1['laget'] . ' laget');
 
     $r2 = Apent::leggUtPaaApneTider();
     sjekk('en ny kjoring lager ingenting nytt',
@@ -13921,8 +13923,10 @@ sjekk('… men ikke i kassa, som alt viser «Å betale»',
 sjekk('summen regnes ett sted',
     str_contains($sidaB, '  bookSum() {')
     && str_contains($sidaB, "        : ((this.state.valgtKurs || {}).tema === 'Medlemskap')")
-    // Den fjerde kom med «Bestille uten aa betale i forkant» (804be43).
-    && substr_count($sidaB, 'this.bookSum()') === 4);
+    // Den fjerde kom med «Bestille uten aa betale i forkant» (804be43). Den
+    // femte og sjette er Paint on Pots: oppsummeringen foer bestilling og
+    // kvitteringen (eieren 8. oktober 2026).
+    && substr_count($sidaB, 'this.bookSum()') === 6);
 
 echo "\n== PHP-en lar seg lese ==\n";
 $rot = dirname(__DIR__);
@@ -18419,10 +18423,13 @@ sjekk('bookingen tar imot et klokkeslett, og rydder opp om den svikter',
     && str_contains($bookApi, 'register_shutdown_function(static function () use ($laget): void {')
     && str_contains($bookApi, '                        AND NOT EXISTS (SELECT 1 FROM bookings b WHERE b.course_session_id = :i2)'));
 
-// Ikke et nedtrekk: <sc-for> inne i <select> kastes av Safari.
-sjekk('skjermen har ett tidsfelt, ikke en vegg av knapper',
-    // min/max holder tida innenfor aapningstida (330266d).
-    str_contains($skjerm, '<input type="time" step="900" min="{{ bTidMin }}" max="{{ bTidMaks }}" value="{{ bTidVerdi }}" onChange="{{ bTidSett }}"')
+// Eieren, 8. oktober 2026: ankomsttid som knapper hvert kvarter, «kunden skal
+// ikke skrive minutter selv». Tidsfeltet (step=900) lot telefonen velge
+// minutter utenfor kvarterene. Ikke et nedtrekk: <sc-for> inne i <select>
+// kastes av Safari.
+sjekk('Paint on Pots: ankomsttid som knapper, ikke et tidsfelt',
+    str_contains($skjerm, '<sc-for list="{{ bTidKnapper }}" as="t" hint-placeholder-count="8">')
+    && !str_contains($skjerm, '<input type="time" step="900"')
     && str_contains($skjerm, '          bVisTidsknapper: !this.folgerApningstid(),')
     && str_contains($skjerm, '<sc-if value="{{ bVisTidsknapper }}" hint-placeholder-val="{{ true }}">'));
 
@@ -18529,8 +18536,9 @@ if (DB::harTabell('courses') && DB::harKolonne('courses', 'folger_apningstid')) 
 // valgte feil.
 $tidFil = (string) les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 
-sjekk('feltet er sperret til vinduet',
-    str_contains($tidFil, '<input type="time" step="900" min="{{ bTidMin }}" max="{{ bTidMaks }}"')
+// Eieren, 8. oktober 2026: bare tider som faktisk kan bookes, som knapper.
+sjekk('bare tider som kan bookes vises',
+    str_contains($tidFil, '          bTidKnapper: (this.state.bTidListe || []).map(t => {')
     && str_contains($tidFil, "          bTidMin: ((this.state.bTidListe || [])[0] || {}).tid || '',"));
 
 // Et tidsfelt kan skrives i for haand, og et hjul paa telefon foelger ikke

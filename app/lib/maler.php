@@ -343,7 +343,7 @@ final class Maler
         'soknad_godkjent_sms' => [
             'tittel' => 'Søknad godkjent (SMS)',
             'hvor'   => 'Sendes som SMS sammen med e-posten over, når søkeren har oppgitt nummer.',
-            'felter' => ['navn' => 'Navnet på søkeren'],
+            'felter' => ['navn' => 'Navnet på søkeren', 'fornavn' => 'Fornavnet til søkeren'],
         ],
         'soknad_avslatt' => [
             'tittel' => 'Søknad avslått',

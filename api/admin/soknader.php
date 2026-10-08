@@ -150,7 +150,9 @@ if ($vedtak === 'godkjent') {
     ], 'membership_application', (int) $soknad['id']);
     if ($soknad['telefon']) {
         Varsel::mal('soknad_godkjent_sms', ['telefon' => (string) $soknad['telefon']], [
-            'navn' => $navn,
+            'navn'    => $navn,
+            // Velkomst-SMS-en (eieren, 8. oktober 2026) bruker fornavnet.
+            'fornavn' => Medlemsforslag::fornavn($navn),
         ], 'membership_application', (int) $soknad['id']);
     }
 } else {

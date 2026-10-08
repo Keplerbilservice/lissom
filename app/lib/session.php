@@ -22,8 +22,47 @@ final class Sesjon
     // Klokka nullstilles ved bruk: er du aktiv, blir du sittende.
     private const VARIGHET_TIMER = 3;
 
+    /**
+     * Kassa på iPaden (eieren, 8. oktober 2026): logges inn én gang og holder
+     * seg innlogget i 30 dager. Den som står i kassa låser opp med PIN, og
+     * kassa låser seg selv etter 5 minutter uten bruk (Kasse::ulast()). Den
+     * lange økta gir ingen tilgang til noe annet enn api/kasse/ — se
+     * kasseSti() under.
+     */
+    public const KASSE_VARIGHET_TIMER = 720;
+
     /** @var array<string,mixed>|null|false false = ikke slått opp ennå */
     private static array|null|false $medlem = false;
+
+    /** Timene en sesjon varer for denne rollen. */
+    private static function varighetFor(string $rolle): int
+    {
+        return $rolle === 'kasse' ? self::KASSE_VARIGHET_TIMER : self::VARIGHET_TIMER;
+    }
+
+    /**
+     * Får kassebrukeren lov til å være innlogget i dette skriptet?
+     *
+     * Kassebrukeren er en rad i members, og ville ellers vært «innlogget» i
+     * alle endepunktene som spør Sesjon::medlem() — Min side, booking,
+     * kjøp. Her er den bare synlig i api/kasse/ og i inn- og utloggingen.
+     * Overalt ellers er den ingen, og får 401 eller 404 som en fremmed.
+     */
+    private static function kasseSti(): bool
+    {
+        $fil = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_FILENAME'] ?? ''));
+        $navn = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+        foreach ([$fil, $navn] as $s) {
+            if ($s === '') {
+                continue;
+            }
+            if (preg_match('~/api/kasse/[a-z-]+\.php$~', $s) === 1
+                || preg_match('~/api/logg-(inn|ut)\.php$~', $s) === 1) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     /**
      * Oppretter sesjon og setter cookien. Returnerer tokenet.
@@ -34,7 +73,8 @@ final class Sesjon
     public static function opprett(int $medlemId, string $maate = 'vipps'): string
     {
         $token = bin2hex(random_bytes(32));
-        $utloper = new DateTimeImmutable('+' . self::VARIGHET_TIMER . ' hours', new DateTimeZone('UTC'));
+        $timer = self::varighetFor((string) (DB::verdi('SELECT rolle FROM members WHERE id = :i', ['i' => $medlemId]) ?? ''));
+        $utloper = new DateTimeImmutable('+' . $timer . ' hours', new DateTimeZone('UTC'));
 
         $rad = [
             'token_hash' => hash('sha256', $token),
@@ -89,6 +129,13 @@ final class Sesjon
             return self::$medlem = null;
         }
 
+        // Kassebrukeren finnes bare i kassa (se kasseSti()).
+        $rolle = (string) ($rad['rolle'] ?? '');
+        if ($rolle === 'kasse' && !self::kasseSti()) {
+            return self::$medlem = null;
+        }
+        $timer = self::varighetFor($rolle);
+
         // Skyv utløpet framover, men høyst hvert femte minutt — ellers skriver
         // vi til databasen ved hvert eneste sidevisning. Fem minutter er kort
         // nok til at en aktiv bruker aldri faller ut av en tretimersfrist.
@@ -98,7 +145,7 @@ final class Sesjon
                     expires_at = DATE_ADD(UTC_TIMESTAMP(), INTERVAL :t HOUR)
               WHERE token_hash = :h
                 AND siste_bruk < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 5 MINUTE)',
-            ['t' => self::VARIGHET_TIMER, 'h' => $rad['token_hash']]
+            ['t' => $timer, 'h' => $rad['token_hash']]
         );
 
         // ── Cookien maa skyves med ────────────────────────────────────
@@ -119,7 +166,7 @@ final class Sesjon
         // «headers_sent»: kallet kommer tidlig i alle endepunktene, men det
         // skal ikke koste en advarsel midt i et svar om noen kaller det sent.
         if ($skjovet->rowCount() > 0 && !headers_sent()) {
-            self::settCookie($token, time() + self::VARIGHET_TIMER * 3600);
+            self::settCookie($token, time() + $timer * 3600);
         }
 
         unset($rad['token_hash']);
@@ -190,6 +237,28 @@ final class Sesjon
         // Uten migrasjon 030 vet vi ikke hvordan sesjonen ble til. Da er det
         // riktigere aa si nei enn aa slippe inn paa et ukjent grunnlag.
         return ($m['innlogging_maate'] ?? '') === 'passord';
+    }
+
+    /**
+     * Kassa på iPaden (rollen «kasse», migrasjon 263).
+     *
+     * Samme krav som regnskapet: rollen gjelder bare når man kom inn med
+     * brukernavn og passord. Kassebrukeren er aldri admin og aldri
+     * regnskap — den slipper bare inn i api/kasse/.
+     */
+    public static function erKasse(): bool
+    {
+        $m = self::medlem();
+        return $m !== null
+            && ($m['rolle'] ?? '') === 'kasse'
+            && ($m['innlogging_maate'] ?? '') === 'passord';
+    }
+
+    /** SHA-256 av tokenet i cookien, eller null. Det sesjonsraden er lagret på. */
+    public static function tokenHash(): ?string
+    {
+        $token = $_COOKIE[self::COOKIE] ?? '';
+        return is_string($token) && strlen($token) === 64 ? hash('sha256', $token) : null;
     }
 
     /** Er dette en konto som *kan* vaere admin, uavhengig av innloggingsmaate? */

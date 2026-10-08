@@ -6494,6 +6494,151 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "kasse-ipad-20261008",
+            "dato": "2026-10-08",
+            "hva": "Lissom Kasse på iPad (skissen Rm1Casf4CpVv8i5zwyfecX, «ok, bygg det»): egen kasse på /kasse med rollen «kasse» (kommer bare til api/kasse/, innlogget i 30 dager), 4-sifret PIN per person (settes under Brukere, lagres som hash), låser seg etter 5 minutter uten bruk, bryteren «Vis/kasse» (av til eieren slår den på). I dag: dagens påmeldte med hva de skylder og medlemmer som er inne; varer med fast pris, Paint on Pots uten booking, gavekort, timepakke og «Skriv beløp». Paint on Pots: gjenstander per nivå, betalt ved booking trekkes fra, «Endre» → «Betalte ikke» annullerer beløpet ved booking (slettes ikke). Betaling: hvem betaler (personen eller Kontantkunde), Vipps-QR, Kontant, Del betalingen, Betalt på annen måte (Vipps-nummer, faktura). Beløpene regnes på serveren, idempotensnøkkel per del. Kvittering den vanlige veien, Dagens oppgjør fra samme rader som Penger.",
+            "hvor": "/kasse (kasse.html, admin-ny/kasse.js, admin-ny/kasse.css), api/kasse/, app/lib/kasse.php, Brukere og Synlighet i admin-ny",
+            "kode": [
+                {
+                    "fil": "app/lib/session.php",
+                    "finnes": [
+                        "public const KASSE_VARIGHET_TIMER = 720;",
+                        "if ($rolle === 'kasse' && !self::kasseSti()) {"
+                    ]
+                },
+                {
+                    "fil": "app/lib/kassetilgang.php",
+                    "finnes": [
+                        "public const LAAS_MINUTTER = 5;",
+                        "['n' => 'Vis/kasse']",
+                        "Svar::feil('Kassa er låst.', 423, ['laast' => true]);",
+                        "password_hash($pin, PASSWORD_DEFAULT)"
+                    ]
+                },
+                {
+                    "fil": "app/lib/kasse.php",
+                    "finnes": [
+                        "'Beløpet er endret til ' . KasseKurv::kr($sum) . '. Se over kurven og prøv igjen.'",
+                        "' · Annullert: betalte ikke ved booking (kassa)'"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kasse.js",
+                    "finnes": [
+                        "'Hvem står i kassa?'",
+                        "'🎨 Paint on Pots uten booking'",
+                        "'Endre: betalte de ved booking?'",
+                        "'Betalte ikke'",
+                        "'👤 Kontantkunde'",
+                        "maate('Vipps','Kunden skanner QR'",
+                        "maate('Kontant','Registreres med en gang'",
+                        "maate('Del betalingen','To eller flere betaler'",
+                        "maate('Betalt på annen måte','Vipps-nummer, faktura'",
+                        "'Telles ved stenging'"
+                    ]
+                },
+                {
+                    "fil": "api/admin/brukere.php",
+                    "finnes": [
+                        "if ($handling === 'kassepin') {"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/innhold-og-kurs.js",
+                    "finnes": [
+                        "['Vis/kasse','Kassa på iPad (/kasse)',false]"
+                    ]
+                },
+                {
+                    "fil": ".htaccess",
+                    "finnes": [
+                        "RewriteRule ^kasse/?$ /kasse.html [L]"
+                    ]
+                },
+                {
+                    "fil": "db/migrations/263_kasse_ipad.sql",
+                    "finnes": [
+                        "MODIFY rolle ENUM('medlem', 'admin', 'regnskap', 'kasse')",
+                        "ADD COLUMN IF NOT EXISTS kasse_pin_hash"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "kasse-ipad-kontroll-sms-20261008",
+            "dato": "2026-10-08",
+            "hva": "Kontrolløren (STOPP 267a748) og eierens SMS-kvittering: nøklene per del beholdes så lenge kurven er den samme, og alle QR-koder fra iPaden som venter stoppes hos Vipps før kontant/annen måte og før en ny QR (ingen dobbel betaling etter «Tilbake»); delene har faste id-er, så en påmelding betalt med QR ikke stopper varene; lås per nøkkel mellom qr() og betal(); «Fjern tilgang» fjerner kasse-PIN og låser kassa, og bare personer under Brukere kan bruke PIN; kassa delt i KasseTilgang, KasseKurv og Kasse. SMS-kvittering fra kassa (godkjent tekst): «Takk for handelen hos Lissom! Betalt {belop} med {maate} {dato}. Hilsen oss i Lissom», mal kassekvittering_sms (migrasjon 264), vises som «Kvittering på SMS» når kunden har mobil og SMS er satt opp; den fulle kvitteringen går på e-post.",
+            "hvor": "app/lib/kasse.php, app/lib/kassekurv.php, app/lib/kassetilgang.php, api/kasse/kasse.php, api/admin/brukere.php, admin-ny/kasse.js, app/lib/maler.php, db/migrations/264_kassekvittering_sms.sql",
+            "kode": [
+                {
+                    "fil": "app/lib/kasse.php",
+                    "finnes": [
+                        "private static function stoppOktensQr(array $unntatt): void",
+                        "'kasse:' . strtolower($nokkel)",
+                        "Varsel::mal('kassekvittering_sms', ['telefon' => $tlf], [",
+                        "if ($d['type'] === 'booking' && (int) $d['sumOre'] === 0) {"
+                    ]
+                },
+                {
+                    "fil": "app/lib/kassekurv.php",
+                    "finnes": [
+                        "'id' => 'booking:' . $bid",
+                        "['id' => 'ordre'] + self::ordreDel("
+                    ]
+                },
+                {
+                    "fil": "app/lib/kassetilgang.php",
+                    "finnes": [
+                        "public static function fjernFor(int $medlemId): void",
+                        "public static function harTilgang(array $m): bool"
+                    ]
+                },
+                {
+                    "fil": "api/admin/brukere.php",
+                    "finnes": [
+                        "KasseTilgang::fjernFor((int) $id);"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kasse.js",
+                    "finnes": [
+                        "if(salg.noklerSig!==sig){salg.nokler={};salg.noklerSig=sig;}",
+                        "'Kvittering på SMS'"
+                    ]
+                },
+                {
+                    "fil": "app/lib/maler.php",
+                    "finnes": [
+                        "'kassekvittering_sms' => ["
+                    ]
+                },
+                {
+                    "fil": "db/migrations/264_kassekvittering_sms.sql",
+                    "finnes": [
+                        "'Takk for handelen hos Lissom! Betalt {belop} med {maate} {dato}. Hilsen oss i Lissom'",
+                        "-- godkjent av eieren: 2026-10-08"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "kasse-ipad-oktlaas-sms-eier-20261008",
+            "dato": "2026-10-08",
+            "hva": "Kontrolløren (opus) på 1312d1d: én lås per iPad-økt (GET_LOCK kasse-okt:<økt>) rundt opprettelse og stopp av QR-koder, så en QR under opprettelse aldri merkes avbrutt før den er laget hos Vipps; SMS-kvitteringen sendes bare når betalingene hører til betaleren (samme påmelding, medlem, eller ordre for medlemmet/mobilnummeret), og høyst én gang per betaling («Kvittering på SMS er alt sendt for dette kjøpet.»).",
+            "hvor": "app/lib/kasse.php, tests/kasse.php",
+            "kode": [
+                {
+                    "fil": "app/lib/kasse.php",
+                    "finnes": [
+                        "'kasse-okt:' . self::oktId()",
+                        "throw new RuntimeException('Kvitteringen hører ikke til denne kunden.', 409);",
+                        "throw new RuntimeException('Kvittering på SMS er alt sendt for dette kjøpet.', 409);",
+                        "revider('kassekvittering_sms', 'payment', (int) $r['id']);"
+                    ]
+                }
+            ]
         }
     ]
 }

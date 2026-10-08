@@ -67,4 +67,6 @@ Svar::ok([
     'erAdmin' => Sesjon::erAdmin(),
     // Regnskapsfoereren ser OEkonomi og betalingene, ikke resten.
     'erRegnskap' => Sesjon::erRegnskap(),
+    // Kassa på iPaden (rollen «kasse», migrasjon 263): bare /kasse.
+    'erKasse' => Sesjon::erKasse(),
 ]);

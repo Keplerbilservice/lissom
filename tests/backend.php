@@ -8559,7 +8559,7 @@ sjekk('en ny bruker kan faa hvilken som helst av de tre rollene',
     && !str_contains($sida2, "rolle: this.state.brNyAdmin === false ? 'medlem' : 'admin',"));
 sjekk('… og serveren tar imot alle tre',
     str_contains(les_testfil(dirname(__DIR__) . '/api/admin/brukere.php'),
-                 "in_array(Foresporsel::tekst('rolle'), ['admin', 'regnskap'], true)"));
+                 "in_array(Foresporsel::tekst('rolle'), ['admin', 'regnskap', 'kasse'], true)"));
 
 // ── Ruter som aapner seg utenfor skjermen ──────────────────────────────
 //
@@ -13058,7 +13058,10 @@ $sesj = les_testfil(dirname(__DIR__) . '/app/lib/session.php');
 sjekk('cookien skyves sammen med sesjonen',
     str_contains($sesj, '$skjovet = DB::kjor(')
     && str_contains($sesj, 'if ($skjovet->rowCount() > 0 && !headers_sent()) {')
-    && str_contains($sesj, 'self::settCookie($token, time() + self::VARIGHET_TIMER * 3600);'));
+    // Kassa på iPaden (08.10.2026): varigheten følger rollen (varighetFor),
+    // 3 timer for alle andre og 30 dager for kassekontoen.
+    && str_contains($sesj, 'self::settCookie($token, time() + $timer * 3600);')
+    && str_contains($sesj, "return \$rolle === 'kasse' ? self::KASSE_VARIGHET_TIMER : self::VARIGHET_TIMER;"));
 // Bare naar raden faktisk ble skjovet — ellers skriver vi en header ved hvert
 // eneste sidevisning.
 sjekk('… men bare naar den faktisk ble skjovet',

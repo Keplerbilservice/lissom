@@ -31,4 +31,5 @@ if (preg_match('~^/avmelding/?$~', $sti)) { return $skript('/api/avmelding.php')
 if (preg_match('~^/nyttig-info/([a-z0-9-]+)/?$~', $sti, $m)) { return $skript('/guide.php', ['slug' => $m[1]]); }
 if ($sti === '/sitemap.xml') { return $skript('/api/sitemap.php'); }
 if (preg_match('~^/admin-ny/?$~', $sti)) { header('Content-Type: text/html; charset=UTF-8'); readfile($rot . '/admin-ny.html'); return true; }
+if (preg_match('~^/kasse/?$~', $sti)) { header('Content-Type: text/html; charset=UTF-8'); readfile($rot . '/kasse.html'); return true; }
 require $rot . '/side.php';

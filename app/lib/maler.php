@@ -340,6 +340,16 @@ final class Maler
                 'lenke'   => 'Lenken til kursbeviset',
             ],
         ],
+        // Kassa på iPaden (eieren, 8. oktober 2026, migrasjon 264).
+        'kassekvittering_sms' => [
+            'tittel' => 'Kvittering fra kassa (SMS)',
+            'hvor'   => 'Sendes når du trykker «Kvittering på SMS» i kassa på iPaden, til kunden som har mobil. Den fulle kvitteringen går på e-post.',
+            'felter' => [
+                'belop' => 'Beløpet som ble betalt, for eksempel 1 150 kr',
+                'maate' => 'Hvordan det ble betalt: Vipps, kontant, faktura, gavekort eller delt betaling',
+                'dato'  => 'Datoen, for eksempel 8. oktober',
+            ],
+        ],
         'soknad_godkjent_sms' => [
             'tittel' => 'Søknad godkjent (SMS)',
             'hvor'   => 'Sendes som SMS sammen med e-posten over, når søkeren har oppgitt nummer.',

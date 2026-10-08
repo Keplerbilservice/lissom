@@ -201,3 +201,34 @@ dialog#ark::backdrop{background:#27110870}
   .ark-fot .knapp{flex:1 1 auto}
   #mobil button span{font-size:18px}
 }
+
+/* Del C (Medlemmer, Medlemssiden, Varer, Innstillinger, Mer): klassene fra prototypen lissom-enklere-admin-2.html. */
+.mer{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.mer button{text-align:left;padding:18px;min-height:44px;border:1px solid var(--line);border-radius:14px;background:var(--paper);color:var(--ink);font:inherit;cursor:pointer}
+.mer button b{display:block}
+.mer button:disabled{opacity:.55;cursor:default}
+.medlem-bånd{background:var(--yellow);padding:12px 18px;font-weight:800;display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center}
+.roller{display:flex;gap:6px;flex-wrap:wrap}
+.roller button{border:1px solid var(--ink);background:transparent;border-radius:999px;padding:4px 12px;min-height:44px;font-weight:700;font-size:15px}
+.roller button[aria-pressed=true]{background:var(--ink);color:var(--yellow)}
+.meld-tabell{display:grid}
+.meld-rad{display:grid;grid-template-columns:64px minmax(0,1fr) 110px 110px 130px;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.meld-rad:last-child{border-bottom:0}
+.meld-rad small{display:block}
+.meld-rad .av{width:56px;height:34px;border-radius:999px;background:var(--line);position:relative;border:0}
+.meld-rad .av::after{content:"";position:absolute;top:3px;left:3px;width:28px;height:28px;border-radius:50%;background:#fff;transition:left .15s}
+.meld-rad .av[aria-pressed=true]{background:var(--green)}
+.meld-rad .av[aria-pressed=true]::after{left:25px}
+.meld-topp{font-size:13px;letter-spacing:.08em;text-transform:uppercase;font-weight:800;color:var(--muted);padding-top:0}
+.av-rad b{color:var(--muted)}
+.kanal{min-height:44px;border-radius:11px;border:1px solid var(--line);background:var(--ground);color:var(--muted);font-weight:700}
+.kanal.paa{background:var(--green-soft);border-color:#b9d6c4;color:var(--green)}
+.kanal:disabled{opacity:.4;cursor:default}
+.radknapp{width:100%;border:0;border-bottom:1px solid var(--line);background:none;text-align:left;cursor:pointer;font:inherit;color:inherit}
+.ant.stor{display:flex;align-items:center;gap:12px}
+.ant.stor button{width:48px;height:48px;border-radius:12px;border:1px solid var(--line);background:var(--ground);font-size:22px;font-weight:800}
+.ms-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:20px;align-items:start}
+.ms-forhånd{position:sticky;top:96px}
+@media (max-width:1000px){.ms-grid{grid-template-columns:1fr}.ms-forhånd{position:static}}
+@media (max-width:900px){.mer{grid-template-columns:1fr 1fr}.meld-rad{grid-template-columns:64px minmax(0,1fr) 1fr 1fr}.meld-rad>.knapp{grid-column:1/-1}.meld-topp{display:none}}
+@media (max-width:600px){.mer{grid-template-columns:1fr}}

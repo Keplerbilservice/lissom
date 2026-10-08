@@ -15,7 +15,9 @@
   const F = window.fabric;
   const app = document.getElementById('app');
 
-  const FARGER = ['#4D1D12', '#A2502B', '#2F6B3B', '#1F5A8A', '#E0A800', '#111111'];
+  // Tolv farger i Lissom-drakten (eieren 08.10.2026: «flere farger»), og en egen fargevelger etter dem.
+  const FARGER = ['#4D1D12', '#765C50', '#A2502B', '#D9A47E', '#AD3425', '#E0A800',
+                  '#FFCF38', '#2F6B3B', '#8FB08A', '#1F5A8A', '#7FA3C6', '#111111'];
   const TYKKELSER = [2, 5, 12];
   const NOTATFARGE = '#FFF3B8';
 
@@ -174,6 +176,9 @@
         knapp('flytt', '✥ Flytt'),
         el('span', { class: 'skille' }),
         FARGER.map(f => el('button', { class: 'farge', type: 'button', style: 'background:' + f, 'aria-label': 'Farge', 'aria-pressed': f === farge ? 'true' : 'false', onclick: () => { farge = f; oppdaterPensel(); merk(); } })),
+        el('input', { class: 'farge-egen', type: 'color', value: farge, 'aria-label': 'Velg egen farge', title: 'Velg egen farge',
+          style: 'width:34px;height:34px;padding:0;border:0;background:none;cursor:pointer;flex:none',
+          oninput: (e) => { farge = e.target.value; oppdaterPensel(); merk(); } }),
         el('span', { class: 'skille' }),
         TYKKELSER.map(t => el('button', { class: 'tykk', type: 'button', 'aria-label': 'Tykkelse', 'aria-pressed': t === tykkelse ? 'true' : 'false', onclick: () => { tykkelse = t; oppdaterPensel(); merk(); } },
           el('span', { style: `width:${Math.min(22, t + 3)}px;height:${Math.min(22, t + 3)}px` }))),

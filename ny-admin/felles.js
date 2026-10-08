@@ -2,8 +2,8 @@
  *
  * FELLES-API (globale funksjoner, også under window.NA). Sidefilene i ny-admin/ er vanlige skript (ikke moduler):
  *
- *   registrerSide(id, {tittel, ikon, tegn(el, params), mobil})
- *       id: idag | kalender | kurs | medlemmer | varer | mer | medlemssiden | innstillinger (eller en ny).
+ *   registrerSide(id, {tittel, ikon, tegn(el, params), mobil})   (kalender.js og kurs.js er ES-moduler, se MODULER)
+ *       id: idag | kalender | kurs | medlemmer | varer | mer | semedlem (Medlemssiden) | innstillinger (eller en ny). «kasse» åpner /kasse.
  *       tegn(el, params): fyll el (tom <div>). params = URLSearchParams fra adressen (#kurs?okt=12 → params.get('okt')).
  *       Kan være async. Kalles hver gang siden åpnes. mobil:true = siden brukes også på mobil (≤760 px).
  *   api(sti, {metode, data})
@@ -16,7 +16,7 @@
  *   hentHvert(ms, fn)  kjører fn nå, hvert ms når fanen er synlig, og når fanen får fokus igjen.
  *       Stoppes av seg selv når man bytter side. Returnerer stopp().
  *
- *   NA.gaTil(id, params) · NA.params() · NA.tilbakeKnapp(standardId) · NA.esc(t) · NA.kr(ore) · NA.erMobil()
+ *   NA.gaTil(id, params) (= NA.gaaTil, også global; skriver #id?params, og ruteren tegner siden) · NA.params() · NA.tilbakeKnapp(standardId) · NA.esc(t) · NA.kr(ore) · NA.erMobil()
  *   NA.meg ({navn, id}) · NA.oversikt(tving) (api/admin/oversikt.php, delt mellom topplinja og sidene, 5 s mellomlager)
  *   NA.oppdaterTopp() · NA.arkApen() · NA.arkEndret(bool) · NA.arkHode(tittelHtml) · NA.bekreft(tittel, tekst, ja) → Promise<bool>
  *   NA.maGjores(d) · NA.antallMaa(d) · NA.uttakLeire() · NA.skisse() · NA.hurtig()
@@ -32,11 +32,13 @@
   const kr = ore => Math.round((Number(ore) || 0) / 100).toLocaleString('nb-NO') + ' kr';
   const erMobil = () => innerWidth <= 760;
 
-  /* Sidefilene (del A, B og C). Lastes etter tur; mangler en fil, står siden som «ikke bygd ennå». */
-  const SIDEFILER = ['idag', 'kalender', 'kurs', 'medlemmer', 'medlemssiden', 'varer', 'innstillinger', 'mer'];
+  /* Sidefilene (del A, B og C). Lastes etter tur; mangler en fil, står siden som «ikke bygd ennå».
+     MODULER lastes som <script type="module" src> (kurs.js importerer fra kalender.js, så begge må ha samme adresse). */
+  const SIDEFILER = ['idag', 'medlemmer', 'medlemssiden', 'varer', 'innstillinger', 'mer'];
+  const MODULER = ['kalender', 'kurs'];
   const MYNT = '<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-5px"><ellipse cx="12" cy="16" rx="8" ry="3.5" fill="#e0a800" stroke="currentColor" stroke-width="1.4"/><rect x="4" y="11" width="16" height="5" fill="#e0a800"/><path d="M4 11v5M20 11v5" stroke="currentColor" stroke-width="1.4"/><ellipse cx="12" cy="11" rx="8" ry="3.5" fill="#ffcf38" stroke="currentColor" stroke-width="1.4"/><ellipse cx="12" cy="11" rx="4.5" ry="1.8" fill="none" stroke="currentColor" stroke-width="1" opacity=".5"/></svg>';
   const MENY = [['idag', 'I dag', '☀'], ['kalender', 'Kalender', '▦'], ['kurs', 'Kurs', '◍'], ['medlemmer', 'Medlemmer', '☺'], ['varer', 'Varer', '◇'], ['kasse', 'Kasse', MYNT], ['mer', 'Mer', '…']];
-  const BUNN = [['medlemssiden', 'Medlemssiden', '👁'], ['innstillinger', 'Innstillinger', '⚙']];
+  const BUNN = [['semedlem', 'Medlemssiden', '👁'], ['innstillinger', 'Innstillinger', '⚙']];
   const MOBIL = ['idag', 'kalender', 'kurs'];
   const HURTIG = [['skisse', 'Skisseverktøy', '✎'], ['uttak', 'Uttak leire', '◼']];
   const HURTIG_NOKKEL = 'na-hurtig';
@@ -47,7 +49,8 @@
   let forrige = null;
   let sidePollere = [];
   let tegnTeller = 0;
-  const NA = window.NA = {esc, kr, erMobil, meg: null, sist: null};
+  /* Samme objekt under alle tre navnene sidefilene slår opp (A: NA, B: nyAdmin, C: NyAdmin). */
+  const NA = window.NA = window.nyAdmin = window.NyAdmin = {esc, kr, erMobil, meg: null, sist: null};
 
   /* ── api ─────────────────────────────────────────────────────────────── */
   async function api(sti, {metode, data} = {}) {
@@ -170,7 +173,7 @@
     const h = '#' + id + (q ? '?' + q : '');
     if (location.hash === h) tegnSide(); else location.hash = h;
   }
-  NA.gaTil = gaTil;
+  NA.gaTil = NA.gaaTil = gaTil;
   NA.params = () => rute.params;
   NA.tilbakeKnapp = standardId => {
     const mal = forrige && (forrige.id !== rute.id || forrige.params.toString() !== rute.params.toString()) ? forrige : {id: standardId || 'idag', params: new URLSearchParams()};
@@ -358,22 +361,41 @@
   }
 
   /* ── hurtig: uttak leire, skisseverktøy, tilpass ─────────────────────── */
-  /* Uttak leire = «Ta ut leire» som finnes (produkter.php handling=taUt): én pose fra lageret, uten betaling. */
+  /* Uttak leire (eieren 08.10.2026): det som faktisk ligger i internbutikken. Leirevarene fra produkter.php
+     (merket leire, i internbutikken, med lager, ikke kladd). Velg vare og antall; hver pose trekkes med den
+     eksisterende «Ta ut» (produkter.php handling=taUt, én om gangen, uten betaling). Ingen faste leiretyper her. */
+  const leireVarer = d => (d.varer || []).filter(v => v.leire && v.kunMedlemmer && v.lager !== null && v.status !== 'kladd');
   NA.uttakLeire = async function () {
     apneArk(arkHode('Uttak leire') + '<p class="laster">Henter leira …</p>');
-    let d;
-    try { d = await api('produkter.php'); } catch (e) { apneArk(arkHode('Uttak leire') + `<p class="feil">${esc(e.message)}</p>`); return; }
-    const tegn = rader => apneArk(`${arkHode('Uttak leire')}
-      ${rader.length ? rader.map(r => `<div class="rad"><div class="tekst"><b>${esc(r.vare)}</b><small>${Number(r.antall)} på lager</small></div><button class="knapp liten hoved" type="button" data-taut="${Number(r.id)}" ${r.antall > 0 ? '' : 'disabled'}>Ta ut 1</button></div>`).join('') : '<p class="tom">Ingen leire er merket som leire i varelista.</p>'}
-      <small>Én pose fra lageret, uten betaling. Lageret oppdateres med en gang.</small>
-      <div class="ark-fot"><button class="knapp" type="button" data-lukk>Lukk</button></div>`);
-    tegn(d.taUtLeire || []);
-    $('#ark-inn').onclick = async e => {
-      const b = e.target.closest('[data-taut]'); if (!b) return;
-      b.disabled = true;
-      try { const x = await api('produkter.php', {data: {handling: 'taUt', id: Number(b.dataset.taut)}}); toast(esc(x.beskjed || 'Tatt ut.')); const ny = await api('produkter.php'); tegn(ny.taUtLeire || []); }
-      catch (err) { toast(esc(err.message)); b.disabled = false; }
+    let varer;
+    try { varer = leireVarer(await api('produkter.php')); } catch (e) { apneArk(arkHode('Uttak leire') + `<p class="feil">${esc(e.message)}</p>`); return; }
+    let valgt = 0, antall = 1;
+    const tegn = () => {
+      const v = varer.find(x => x.id === valgt);
+      if (v && antall > v.lager) antall = Math.max(1, v.lager);
+      const inn = apneArk(`${arkHode('Uttak leire')}
+      ${varer.length ? `<div class="hgruppe"><div class="type">Velg leire</div><div class="valgknapper">${varer.map(x => `<button class="knapp ${x.id === valgt ? 'hoved' : ''}" type="button" data-leire="${Number(x.id)}" aria-pressed="${x.id === valgt}" ${x.lager > 0 ? '' : 'disabled'}>${esc(x.tittel)} · ${Number(x.lager)} på lager</button>`).join('')}</div></div>
+        <div class="hgruppe"><div class="type">Antall</div><div class="ant stor"><button type="button" data-ant="-1" aria-label="Færre" ${!v || antall <= 1 ? 'disabled' : ''}>−</button><b id="leire-ant" style="font-size:24px;min-width:2ch;text-align:center">${antall}</b><button type="button" data-ant="1" aria-label="Flere" ${!v || antall >= v.lager ? 'disabled' : ''}>+</button></div></div>`
+        : '<p class="tom">Ingen leire i internbutikken. Merk varen som leire og internt under Varer.</p>'}
+      <small>Fra lageret, uten betaling. Lageret oppdateres med en gang.</small>
+      <div class="ark-fot"><button class="knapp" type="button" data-lukk>Lukk</button>${varer.length ? `<button class="knapp hoved" type="button" data-taut ${v ? '' : 'disabled'}>Ta ut ${antall}</button>` : ''}</div>`);
+      inn.onclick = async e => {
+        const b = e.target.closest('button'); if (!b) return;
+        if (b.dataset.leire) { valgt = Number(b.dataset.leire); antall = 1; return tegn(); }
+        if (b.dataset.ant) { antall = Math.max(1, antall + Number(b.dataset.ant)); return tegn(); }
+        if (b.dataset.taut === undefined || !v) return;
+        b.disabled = true;
+        let tatt = 0, feil = '';
+        for (let i = 0; i < antall; i++) {
+          try { await api('produkter.php', {data: {handling: 'taUt', id: v.id}}); tatt++; } catch (err) { feil = err.message; break; }
+        }
+        try { varer = leireVarer(await api('produkter.php')); } catch {}
+        const naa = varer.find(x => x.id === v.id);
+        toast(tatt ? `<b>Tatt ut ${tatt} × ${esc(v.tittel)}.</b>${naa ? ' Lageret er nå ' + Number(naa.lager) + '.' : ''}${feil ? ' ' + esc(feil) : ''}` : esc(feil || 'Fikk ikke tatt ut.'));
+        antall = 1; tegn();
+      };
     };
+    tegn();
   };
   /* Skisseverktøyet finnes (skisser.html, egen modul) og åpnes i arket. */
   NA.skisse = function () {
@@ -430,6 +452,12 @@
   async function lastSidefiler() {
     if (lastet) return;
     lastet = true;
+    const moduler = Promise.all(MODULER.map(f => new Promise(ferdig => {
+      const s = document.createElement('script');
+      s.type = 'module'; s.src = '/ny-admin/' + f + '.js';
+      s.onload = ferdig; s.onerror = () => { console.error('ny-admin: ' + f + '.js lastet ikke'); ferdig(); };
+      document.body.append(s);
+    })));
     const tekster = await Promise.all(SIDEFILER.map(async f => {
       try {
         const r = await fetch('/ny-admin/' + f + '.js', {credentials: 'same-origin', cache: 'no-cache'});
@@ -445,6 +473,7 @@
         document.body.append(s);
       } catch (e) { console.error('ny-admin: ' + t[0] + '.js', e); }
     }
+    await moduler;
   }
 
   /* ── klikk ───────────────────────────────────────────────────────────── */
@@ -500,6 +529,7 @@
   }
 
   Object.assign(window, {registrerSide, api, apneArk, lukkArk, toast, hentHvert});
+  Object.assign(window, {gaTil, gaaTil: gaTil});
   Object.assign(NA, {registrerSide, api, apneArk, lukkArk, toast, hentHvert});
   document.addEventListener('DOMContentLoaded', () => { settOppArk(); start(); });
 })();

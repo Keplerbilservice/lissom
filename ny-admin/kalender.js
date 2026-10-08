@@ -28,14 +28,15 @@ export function registrer(id, opp) {
   const prov = () => { if (typeof F().registrerSide === 'function') { F().registrerSide(id, opp); return true; } return false; };
   if (!prov()) document.addEventListener('DOMContentLoaded', () => { if (!prov()) setTimeout(prov, 0); }, {once: true});
 }
-// Henting hvert 15. sekund (skallet stopper naar fanen er skjult). Én per side.
+// Henting hvert 15. sekund. Skallet (hentHvert) stopper tidtakeren naar man bytter side eller fanen er skjult,
+// saa den startes paa nytt hver gang siden tegnes. Reserven uten skall: én per side.
 const pollere = new Map();
 export function poll(id, fn) {
+  const f = F();
+  if (typeof f.hentHvert === 'function') return f.hentHvert(15000, fn);
   if (pollere.has(id)) return;
   pollere.set(id, true);
-  const f = F();
-  if (typeof f.hentHvert === 'function') f.hentHvert(15000, fn);
-  else { setInterval(() => { if (!document.hidden) fn(); }, 15000); window.addEventListener('focus', fn); }
+  setInterval(() => { if (!document.hidden) fn(); }, 15000); window.addEventListener('focus', fn);
 }
 // Til en annen side (Kurs fra Kalender). Skallet ruter paa #side?parametre.
 export function gaaTil(side, param = {}) {

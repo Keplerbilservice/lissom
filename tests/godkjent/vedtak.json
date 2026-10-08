@@ -7256,6 +7256,54 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "ny-admin-flettet-20261008",
+            "dato": "2026-10-08",
+            "hva": "Ny admin (/ny-admin): del A, B og C flettet til én (eierens GO 08.10.2026). felles.js er felles skall under window.NA = window.nyAdmin = window.NyAdmin; api() tar både sti relativt til /api/admin/ og full sti som starter med /; kalender.js og kurs.js lastes som ES-moduler (<script type=\"module\" src>), de andre sidefilene som vanlige skript; gaTil/gaaTil og hash-ruting (#kurs?okt=ID&fra=kalender) gir «← Tilbake til kalenderen»; Medlemssiden har side-id semedlem; sidenes 15-sekunders henting stoppes når man bytter side og startes igjen når siden tegnes. Eierens tillegg samme kveld: Skisseverktøyet (personlig, lagres på eier_id som før) har tolv farger i Lissom-drakten og en egen fargevelger; Uttak leire viser leirevarene som ligger i internbutikken (produkter.php: leire, internt, med lager, ikke kladd) med valg av vare og antall og trekker med den eksisterende taUt per pose, uten faste leiretyper; Paint on Pots-prisene kommer bare fra Poppris (pop-priser.php), samme kilde som nettsiden og kassa, og ny-admin har ingen egne PoP-beløp.",
+            "hvor": "ny-admin/felles.js, ny-admin/kalender.js, ny-admin/ny-admin.css, skisser.js",
+            "kode": [
+                {
+                    "fil": "ny-admin/felles.js",
+                    "finnes": [
+                        "const NA = window.NA = window.nyAdmin = window.NyAdmin = {esc, kr, erMobil, meg: null, sist: null};",
+                        "? sti : '/api/admin/' + sti;",
+                        "const MODULER = ['kalender', 'kurs'];",
+                        "s.type = 'module'; s.src = '/ny-admin/' + f + '.js';",
+                        "NA.gaTil = NA.gaaTil = gaTil;",
+                        "const BUNN = [['semedlem', 'Medlemssiden'",
+                        "const leireVarer = d => (d.varer || []).filter(v => v.leire && v.kunMedlemmer && v.lager !== null && v.status !== 'kladd');",
+                        "api('produkter.php', {data: {handling: 'taUt', id: v.id}})"
+                    ],
+                    "ikkeFinnes": [
+                        "taUtLeire"
+                    ]
+                },
+                {
+                    "fil": "ny-admin/kalender.js",
+                    "finnes": [
+                        "if (typeof f.hentHvert === 'function') return f.hentHvert(15000, fn);",
+                        "api('pop-priser.php')"
+                    ]
+                },
+                {
+                    "fil": "ny-admin/ny-admin.css",
+                    "finnes": [
+                        ".meld-rad{",
+                        ".kanal.paa{",
+                        ".ms-grid{",
+                        ".mer{",
+                        ".ant.stor{"
+                    ]
+                },
+                {
+                    "fil": "skisser.js",
+                    "finnes": [
+                        "'#FFCF38', '#2F6B3B', '#8FB08A', '#1F5A8A', '#7FA3C6', '#111111'];",
+                        "type: 'color', value: farge"
+                    ]
+                }
+            ]
         }
     ]
 }

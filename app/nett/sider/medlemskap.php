@@ -99,9 +99,9 @@ foreach ([$innh('Medlemskap/6/Punkt 1'), $innh('Medlemskap/6/Punkt 2')] as $pk) 
     }
 }
 // Tre bilder fra verkstedet (eieren, 8. oktober 2026: «du har jo bilder av
-// verkstedet på mine bilder»).
-$h .= '</div><div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: var(--space-5);">';
-foreach ([['uploads_verksted-1.jpg', 'Langbordet og hyllene i verkstedet på Lissom'], ['uploads_verksted-2.jpg', 'Dreiing på dreieskiva'], ['uploads_verksted-3.jpg', 'Verktøy til leire i verkstedet']] as [$src, $alt]) {
+// verkstedet på mine bilder»). Ovnen fra bildene i admin (samme kveld).
+$h .= '</div><div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: var(--space-5);">';
+foreach ([['uploads_verksted-1.jpg', 'Langbordet og hyllene i verkstedet på Lissom'], ['uploads_verksted-2.jpg', 'Dreiing på dreieskiva'], ['uploads_verksted-3.jpg', 'Verktøy til leire i verkstedet'], ['uploads_verksted-4.jpg', 'Den store ovnen i verkstedet']] as [$src, $alt]) {
     $h .= '<img src="' . $src . '" alt="' . $e($alt) . '" width="800" height="600" loading="lazy" decoding="async" style="width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; border-radius: var(--radius-md); display: block;">';
 }
 $h .= '</div></div></div></section>' . "

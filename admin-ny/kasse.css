@@ -50,6 +50,7 @@ body.kasse{background:var(--ground);min-height:100vh;min-height:100dvh;overscrol
 .k-stepper span{min-width:22px;text-align:center}
 .k-prisknapp{font:inherit;font-weight:800;color:inherit;background:transparent;border:1px dashed var(--line);border-radius:12px;min-height:56px;padding:0 10px;white-space:nowrap;flex-shrink:0}
 .k-rabattknapp{min-height:64px;width:100%}
+.k-regel{font-size:14px;margin:0}
 .k-sum{display:flex;justify-content:space-between;font-size:26px;font-weight:800}
 .k-betal2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .k-betal2 .k-k{height:84px;align-items:center;text-align:center;background:#fff}

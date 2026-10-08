@@ -5,22 +5,23 @@
  * kjøpet» i prosent eller kroner, med valgfritt «hvorfor».
  *
  * Regnestykket står i KasseKurv::deler() (fra basen, aldri fra nettleseren).
- * Her lagres det, i migrasjon 269:
+ * Her lagres det (migrasjon 269, kasse_justeringer), i tre steg:
  *
- *   kasse_justeringer   én rad per del (påmeldingen eller ordren): beløpet
- *                       før og etter, prisendringen, rabatten, hvem som sto
- *                       i kassa og hvorfor. Nøkkelen er delens
- *                       idempotensnøkkel, så et nytt forsøk lager ikke to.
- *   bookings.kasse_rabatt_ore  det kassa har trukket fra på påmeldingen.
+ *   1. låst     Første gang det tas betalt for en kurv (kontant eller QR),
+ *               lages én rad per del med delens nøkkel: prisendringen og
+ *               rabattandelen. Da beholder delene som står igjen sin andel
+ *               når en annen del er betalt med QR (kontrolløren 8. oktober
+ *               2026). Raden rører ingen påmelding eller ordre.
+ *   2. koblet   Vipps-QR: raden får betalingen (payment_id) før Vipps spørres.
+ *   3. gjort    Kontant / annen måte / delt: i samme transaksjon som
+ *               betalingen. Vipps-QR: når betalingen er bekreftet betalt
+ *               (Booking::markerBetalt). Først da settes beløpet på
+ *               påmeldingen ned (bookings.belop_ore, kasse_rabatt_ore). En QR
+ *               som ikke blir betalt, en feil fra Vipps eller en kasse som
+ *               blir forlatt, etterlater ingen rabatt.
  *
- * En påmelding: beløpet (bookings.belop_ore) settes ned med justeringen, så
- * «skyldig» og Vipps-QR er riktige, og det står som betalt i admin. En
- * justering som ble laget for en QR-kode som aldri ble betalt, «venter»: den
- * erstattes når kurven tas betalt på nytt, så rabatten aldri trekkes to
- * ganger. Den er gjort når det er betalt noe på påmeldingen etter at den ble
- * laget.
- *
- * En ordre: varelinjene har den nye prisen, og ordresummen er etter rabatt.
+ * En ordre: varelinjene har den nye prisen og summen er etter rabatt (ordren
+ * er det som betales); raden er loggen, og «gjort» når ordren er betalt.
  *
  * Uten migrasjon 269 virker kassa som før; bare endret pris og rabatt sier
  * fra om oppdateringen.
@@ -34,131 +35,161 @@ final class KasseJustering
 
     public static function klar(): bool
     {
-        return DB::harTabell('kasse_justeringer') && DB::harKolonne('bookings', 'kasse_rabatt_ore');
+        return DB::harTabell('kasse_justeringer') && DB::harKolonne('kasse_justeringer', 'gjort_at')
+            && DB::harKolonne('bookings', 'kasse_rabatt_ore');
     }
 
     /**
-     * Det kassa har trukket fra på påmeldingen: gjort (betalt etterpå) og
-     * ventende (en QR-kode som ikke ble betalt).
+     * Rabattandelene som er låst for delene i kurven (del-id => øre), fra
+     * radene med delenes nøkler. Tom når ingenting er låst ennå.
      *
-     * @return array{gjort:int, venter:int, ventende:list<int>}
+     * @param array<string,mixed> $nokler del-id => nøkkel
+     * @return array<string,int>
      */
-    public static function paaBooking(int $bookingId, bool $laas = false): array
+    public static function laaste(array $nokler): array
     {
-        $ut = ['gjort' => 0, 'venter' => 0, 'ventende' => []];
-        if (!self::klar()) {
+        $ut = [];
+        if ($nokler === [] || !self::klar()) {
             return $ut;
         }
-        $rader = DB::alle(
-            'SELECT id, pris_ore, rabatt_ore, ny_ore, siste_betaling_id FROM kasse_justeringer
-              WHERE booking_id = :b AND erstattet_at IS NULL ORDER BY id' . ($laas ? ' FOR UPDATE' : ''),
-            ['b' => $bookingId]
-        );
-        if ($rader === []) {
-            return $ut;
-        }
-        $betalinger = Booking::betalingerFor($bookingId)['rader'];
-        foreach ($rader as $r) {
-            $belop = (int) $r['pris_ore'] + (int) $r['rabatt_ore'];
-            // Gjort: betalt etterpå, eller ingenting igjen å betale.
-            if ((int) $r['ny_ore'] === 0 || self::betaltEtter($betalinger, (int) $r['siste_betaling_id'])) {
-                $ut['gjort'] += $belop;
-            } else {
-                $ut['venter'] += $belop;
-                $ut['ventende'][] = (int) $r['id'];
+        $perNokkel = [];
+        foreach ($nokler as $id => $n) {
+            if (is_string($n) && Kasse::gyldigNokkel($n)) {
+                $perNokkel[strtolower($n)] = (string) $id;
             }
+        }
+        if ($perNokkel === []) {
+            return $ut;
+        }
+        $param = [];
+        foreach (array_keys($perNokkel) as $i => $n) {
+            $param['n' . $i] = $n;
+        }
+        foreach (DB::alle('SELECT nokkel, rabatt_ore FROM kasse_justeringer WHERE nokkel IN (:' . implode(', :', array_keys($param)) . ')', $param) as $r) {
+            $ut[$perNokkel[(string) $r['nokkel']]] = (int) $r['rabatt_ore'];
         }
         return $ut;
     }
 
-    /** @param list<array<string,mixed>> $betalinger Booking::betalingerFor()['rader'] */
-    private static function betaltEtter(array $betalinger, int $etter): bool
+    /**
+     * Steg 1: låser prisendringen og rabattandelen for hver del med en
+     * endring (INSERT IGNORE: finnes raden, står den).
+     *
+     * @param list<array<string,mixed>> $deler fra Kasse::sjekkKurv (med «nokkel»)
+     * @param array{id:int,navn:string} $person
+     */
+    public static function laas(array $deler, array $person): void
     {
-        foreach ($betalinger as $p) {
-            if ((int) $p['id'] > $etter && $p['annullert_at'] === null
-                && in_array((string) $p['status'], ['betalt', 'autorisert', 'delvis_refundert'], true)) {
-                return true;
-            }
+        $med = array_values(array_filter($deler, static fn(array $d): bool => isset($d['justering'])));
+        if ($med === []) {
+            return;
         }
-        return false;
+        if (!self::klar()) {
+            throw new RuntimeException(self::MANGLER, 503);
+        }
+        foreach ($med as $d) {
+            $felt = self::rad($d['justering'], $d, (string) $d['nokkel'], $person)
+                + ['booking_id' => $d['type'] === 'booking' ? (int) $d['bookingId'] : null];
+            $kol = array_keys($felt);
+            DB::kjor('INSERT IGNORE INTO kasse_justeringer (' . implode(', ', $kol) . ') VALUES (:' . implode(', :', $kol) . ')', $felt);
+        }
     }
 
-    /** Vil settBooking() endre beløpet på påmeldingen? (Da stoppes en QR-kode som venter, først.) */
-    public static function endrerBooking(array $d, string $nokkel): bool
+    /** Det som trekkes fra påmeldingen for delen (pris + rabatt), når det ikke alt er gjort. */
+    public static function trekkFor(string $nokkel): int
     {
         if (!self::klar()) {
-            return ($d['justering'] ?? null) !== null;
+            return 0;
         }
-        if (DB::verdi('SELECT id FROM kasse_justeringer WHERE nokkel = :k', ['k' => strtolower($nokkel)]) !== null) {
-            return false;
-        }
-        $j = $d['justering'] ?? null;
-        $ny = $j === null ? 0 : (int) $j['pris'] + (int) $j['rabatt'];
-        return $ny !== 0 || self::paaBooking((int) $d['bookingId'])['venter'] !== 0;
+        $r = DB::en('SELECT pris_ore, rabatt_ore FROM kasse_justeringer WHERE nokkel = :k AND gjort_at IS NULL AND booking_id IS NOT NULL',
+            ['k' => strtolower($nokkel)]);
+        return $r === null ? 0 : (int) $r['pris_ore'] + (int) $r['rabatt_ore'];
     }
 
     /**
-     * Påmeldingen: justeringen fra kurven settes på (eller en ventende tas
-     * bort når kurven ikke har noen). Kalles med KursstartKrav::laas() holdt,
-     * etter stoppVentende(), og før PopPris::kassa().
-     *
-     * @param array<string,mixed> $d delen fra KasseKurv::deler()
-     * @param array{id:int,navn:string} $person
+     * Steg 3 for en påmelding betalt kontant / annen måte / delt: kalles inne
+     * i transaksjonen som lager betalingen. Beløpet settes ned og raden er
+     * gjort. Gir tilbake det som ble trukket.
      */
-    public static function settBooking(array $d, string $nokkel, array $person): void
+    public static function brukBooking(int $bookingId, string $nokkel, ?int $betalingId): int
     {
-        $j = $d['justering'] ?? null;
         if (!self::klar()) {
-            if ($j !== null) {
-                throw new RuntimeException(self::MANGLER, 503);
+            return 0;
+        }
+        $r = DB::en('SELECT id, pris_ore, rabatt_ore FROM kasse_justeringer
+                      WHERE nokkel = :k AND booking_id = :b AND gjort_at IS NULL FOR UPDATE',
+            ['k' => strtolower($nokkel), 'b' => $bookingId]);
+        if ($r === null) {
+            return 0;
+        }
+        return self::settPaa($bookingId, $r, $betalingId);
+    }
+
+    /** @param array<string,mixed> $r raden (id, pris_ore, rabatt_ore) */
+    private static function settPaa(int $bookingId, array $r, ?int $betalingId): int
+    {
+        $trekk = (int) $r['pris_ore'] + (int) $r['rabatt_ore'];
+        $b = DB::en('SELECT belop_ore, kasse_rabatt_ore FROM bookings WHERE id = :i FOR UPDATE', ['i' => $bookingId]);
+        if ($b === null) {
+            throw new RuntimeException('Fant ikke påmeldingen.', 404);
+        }
+        DB::oppdater('bookings', [
+            'belop_ore'        => max(0, (int) $b['belop_ore'] - $trekk),
+            'kasse_rabatt_ore' => (int) $b['kasse_rabatt_ore'] + $trekk,
+        ], ['id' => $bookingId]);
+        DB::kjor('UPDATE kasse_justeringer SET gjort_at = UTC_TIMESTAMP(), payment_id = COALESCE(:p, payment_id) WHERE id = :i',
+            ['p' => $betalingId, 'i' => (int) $r['id']]);
+        revider('kasse_justering', 'booking', $bookingId, ['fra' => (int) $b['belop_ore'], 'til' => max(0, (int) $b['belop_ore'] - $trekk),
+            'trukket_ore' => $trekk, 'betaling' => $betalingId]);
+        return $trekk;
+    }
+
+    /**
+     * Steg 2 for en påmelding med Vipps-QR: raden får betalingen før Vipps
+     * spørres. Andre rader for påmeldingen som venter på en QR, kobles fra
+     * (den QR-en er stoppet eller gjenbrukes nå), så en rabatt aldri trekkes
+     * to ganger.
+     */
+    public static function kobleQr(string $nokkel, int $bookingId, int $betalingId): void
+    {
+        DB::kjor('UPDATE kasse_justeringer SET payment_id = NULL
+                   WHERE booking_id = :b AND gjort_at IS NULL AND nokkel <> :k AND payment_id IS NOT NULL',
+            ['b' => $bookingId, 'k' => strtolower($nokkel)]);
+        DB::kjor('UPDATE kasse_justeringer SET payment_id = :p WHERE nokkel = :k AND booking_id = :b AND gjort_at IS NULL',
+            ['p' => $betalingId, 'k' => strtolower($nokkel), 'b' => $bookingId]);
+    }
+
+    /**
+     * Steg 3 for Vipps-QR: betalingen er bekreftet betalt. Kalles fra
+     * Booking::markerBetalt() i samme transaksjon, med påmeldingen låst.
+     */
+    public static function vedBetaling(int $betalingId, ?int $bookingId): void
+    {
+        if (!self::klar()) {
+            return;
+        }
+        if ($bookingId !== null) {
+            foreach (DB::alle('SELECT id, pris_ore, rabatt_ore FROM kasse_justeringer
+                                WHERE payment_id = :p AND booking_id = :b AND gjort_at IS NULL FOR UPDATE',
+                ['p' => $betalingId, 'b' => $bookingId]) as $r) {
+                self::settPaa($bookingId, $r, $betalingId);
             }
             return;
         }
-        $bid = (int) $d['bookingId'];
-        $nokkel = strtolower($nokkel);
-        if (DB::verdi('SELECT id FROM kasse_justeringer WHERE nokkel = :k', ['k' => $nokkel]) !== null) {
-            return;   // samme kurv, nytt forsøk: alt satt
-        }
-        $ny = $j === null ? 0 : (int) $j['pris'] + (int) $j['rabatt'];
-        $endret = DB::iTransaksjon(static function () use ($bid, $nokkel, $ny, $j, $d, $person): ?array {
-            $b = DB::en('SELECT belop_ore, kasse_rabatt_ore FROM bookings WHERE id = :i FOR UPDATE', ['i' => $bid]);
-            if ($b === null) {
-                throw new RuntimeException('Fant ikke påmeldingen.', 404);
-            }
-            $naa = self::paaBooking($bid, true);
-            if ($naa['venter'] === 0 && $ny === 0) {
-                return null;
-            }
-            if ($naa['ventende'] !== []) {
-                DB::kjor('UPDATE kasse_justeringer SET erstattet_at = UTC_TIMESTAMP() WHERE id IN ('
-                    . implode(',', $naa['ventende']) . ')');
-            }
-            if ($ny !== 0) {
-                DB::settInn('kasse_justeringer', self::rad($j, $d, $nokkel, $person) + ['booking_id' => $bid]);
-            }
-            $belop = max(0, (int) $b['belop_ore'] + $naa['venter'] - $ny);
-            DB::oppdater('bookings', [
-                'belop_ore'        => $belop,
-                'kasse_rabatt_ore' => (int) $b['kasse_rabatt_ore'] - $naa['venter'] + $ny,
-            ], ['id' => $bid]);
-            return ['fra' => (int) $b['belop_ore'], 'til' => $belop];
-        });
-        if ($endret !== null) {
-            Booking::settBetaltStatus($bid);
-            revider('kasse_justering', 'booking', $bid, $endret + ['trukket_ore' => $ny, 'kasse' => $person['id'],
-                'rabatt' => $j['rabattTekst'] ?? null, 'hvorfor' => $j['hvorfor'] ?? null]);
-        }
+        DB::kjor('UPDATE kasse_justeringer SET gjort_at = UTC_TIMESTAMP() WHERE payment_id = :p AND booking_id IS NULL AND gjort_at IS NULL',
+            ['p' => $betalingId]);
     }
 
     /**
-     * Ordren: raden lagres i samme transaksjon som ordren. En QR-kode som ble
-     * stoppet og så tatt kontant, har samme nøkkel: raden flyttes til den nye
-     * ordren.
+     * Ordren: raden (låst i steg 1) får ordren, i samme transaksjon som
+     * ordren. Kontant: gjort med en gang. Vipps-QR: betalingen kobles på, og
+     * raden er gjort når den er betalt. En QR som ble stoppet og så tatt
+     * kontant, har samme nøkkel: raden flyttes til den nye ordren.
      *
      * @param array<string,mixed> $d delen fra KasseKurv::deler()
      * @param array{id:int,navn:string} $person
      */
-    public static function settOrdre(array $d, string $nokkel, int $ordreId, array $person): void
+    public static function settOrdre(array $d, string $nokkel, int $ordreId, array $person, ?int $betalingId, bool $gjort): void
     {
         $j = $d['justering'] ?? null;
         if ($j === null) {
@@ -167,20 +198,22 @@ final class KasseJustering
         if (!self::klar()) {
             throw new RuntimeException(self::MANGLER, 503);
         }
-        $felt = self::rad($j, $d, strtolower($nokkel), $person) + ['order_id' => $ordreId];
+        $felt = self::rad($j, $d, strtolower($nokkel), $person) + ['order_id' => $ordreId, 'payment_id' => $betalingId];
         $kol = array_keys($felt);
         DB::kjor(
-            'INSERT INTO kasse_justeringer (' . implode(', ', $kol) . ') VALUES (:' . implode(', :', $kol) . ')
-             ON DUPLICATE KEY UPDATE order_id = VALUES(order_id), erstattet_at = NULL',
+            'INSERT INTO kasse_justeringer (' . implode(', ', $kol) . ', gjort_at) VALUES (:' . implode(', :', $kol) . ', '
+                . ($gjort ? 'UTC_TIMESTAMP()' : 'NULL') . ')
+             ON DUPLICATE KEY UPDATE order_id = VALUES(order_id), payment_id = VALUES(payment_id), gjort_at = VALUES(gjort_at)',
             $felt
         );
     }
 
-    /** QR-koden ble avvist av Vipps: raden for ordren fjernes sammen med den. */
-    public static function fjern(string $nokkel): void
+    /** Vipps sa nei til QR-koden for ordren: raden mister ordren og betalingen (låsen står). */
+    public static function fjernQr(string $nokkel): void
     {
         if (self::klar()) {
-            DB::kjor('DELETE FROM kasse_justeringer WHERE nokkel = :k AND booking_id IS NULL', ['k' => strtolower($nokkel)]);
+            DB::kjor('UPDATE kasse_justeringer SET order_id = NULL, payment_id = NULL WHERE nokkel = :k AND booking_id IS NULL AND gjort_at IS NULL',
+                ['k' => strtolower($nokkel)]);
         }
     }
 
@@ -188,17 +221,16 @@ final class KasseJustering
     private static function rad(array $j, array $d, string $nokkel, array $person): array
     {
         return [
-            'nokkel'            => $nokkel,
-            'del_type'          => $d['type'] === 'booking' ? 'booking' : 'ordre',
-            'opprinnelig_ore'   => (int) $j['fra'],
-            'ny_ore'            => (int) $d['sumOre'],
-            'pris_ore'          => (int) $j['pris'],
-            'rabatt_ore'        => (int) $j['rabatt'],
-            'rabatt_tekst'      => $j['rabattTekst'] !== '' ? $j['rabattTekst'] : null,
-            'hvorfor'           => $j['hvorfor'] !== '' ? $j['hvorfor'] : null,
-            'linjer'            => $j['linjer'] !== [] ? json_encode($j['linjer'], JSON_UNESCAPED_UNICODE) : null,
-            'registrert_av'     => (int) $person['id'] ?: null,
-            'siste_betaling_id' => (int) DB::verdi('SELECT COALESCE(MAX(id), 0) FROM payments'),
+            'nokkel'          => strtolower($nokkel),
+            'del_type'        => $d['type'] === 'booking' ? 'booking' : 'ordre',
+            'opprinnelig_ore' => (int) $j['fra'],
+            'ny_ore'          => (int) $d['sumOre'],
+            'pris_ore'        => (int) $j['pris'],
+            'rabatt_ore'      => (int) $j['rabatt'],
+            'rabatt_tekst'    => $j['rabattTekst'] !== '' ? $j['rabattTekst'] : null,
+            'hvorfor'         => $j['hvorfor'] !== '' ? $j['hvorfor'] : null,
+            'linjer'          => $j['linjer'] !== [] ? json_encode($j['linjer'], JSON_UNESCAPED_UNICODE) : null,
+            'registrert_av'   => (int) $person['id'] ?: null,
         ];
     }
 
@@ -214,8 +246,7 @@ final class KasseJustering
             return [];
         }
         $ut = [];
-        foreach (DB::alle('SELECT linjer, rabatt_ore, rabatt_tekst FROM kasse_justeringer WHERE order_id = :o AND erstattet_at IS NULL',
-            ['o' => $ordreId]) as $r) {
+        foreach (DB::alle('SELECT linjer, rabatt_ore, rabatt_tekst FROM kasse_justeringer WHERE order_id = :o', ['o' => $ordreId]) as $r) {
             $ut = array_merge($ut, self::tekster($r));
         }
         return $ut;
@@ -254,8 +285,8 @@ final class KasseJustering
     }
 
     /**
-     * Dagens endringer til Dagens oppgjør: bare det som er betalt (en QR-kode
-     * som aldri ble betalt, teller ikke).
+     * Dagens endringer til Dagens oppgjør: bare det som er gjort (betalt i
+     * dag). En QR-kode som aldri ble betalt, teller ikke.
      *
      * @return array{rader:list<array<string,mixed>>, trukketOre:int}
      */
@@ -269,42 +300,29 @@ final class KasseJustering
         $sum = 0;
         $oslo = new DateTimeZone('Europe/Oslo');
         foreach (DB::alle(
-            "SELECT j.*, m.navn AS hvem, o.status AS ordrestatus, o.kunde_navn, o.ordrenr,
-                    COALESCE(bm.navn, b.gjest_navn) AS deltaker
+            "SELECT j.*, m.navn AS hvem, o.kunde_navn, COALESCE(bm.navn, b.gjest_navn) AS deltaker
                FROM kasse_justeringer j
           LEFT JOIN members m ON m.id = j.registrert_av
           LEFT JOIN orders o ON o.id = j.order_id
           LEFT JOIN bookings b ON b.id = j.booking_id
           LEFT JOIN members bm ON bm.id = b.member_id
-              WHERE j.created_at >= :fra AND j.created_at < :til AND j.erstattet_at IS NULL
-           ORDER BY j.id",
+              WHERE j.gjort_at >= :fra AND j.gjort_at < :til
+           ORDER BY j.gjort_at, j.id",
             ['fra' => $fra, 'til' => $til]
         ) as $r) {
-            if ($r['booking_id'] !== null) {
-                if (!self::betaltEtter(Booking::betalingerFor((int) $r['booking_id'])['rader'], (int) $r['siste_betaling_id'])
-                    && (int) $r['ny_ore'] > 0) {
-                    continue;
-                }
-                $kunde = (string) $r['deltaker'];
-            } else {
-                if (!in_array((string) $r['ordrestatus'], ['betalt', 'klar', 'hentet'], true)) {
-                    continue;
-                }
-                $kunde = trim((string) $r['kunde_navn']);
-            }
             $trukket = (int) $r['pris_ore'] + (int) $r['rabatt_ore'];
             $sum += $trukket;
             $ut[] = [
-                'kl'          => (new DateTimeImmutable((string) $r['created_at'], new DateTimeZone('UTC')))->setTimezone($oslo)->format('H:i'),
-                'hvem'        => (string) ($r['hvem'] ?? ''),
-                'kunde'       => $kunde,
-                'fraOre'      => (int) $r['opprinnelig_ore'],
-                'fra'         => KasseKurv::kr((int) $r['opprinnelig_ore']),
-                'tilOre'      => (int) $r['ny_ore'],
-                'til'         => KasseKurv::kr((int) $r['ny_ore']),
-                'trukketOre'  => $trukket,
-                'endringer'   => self::tekster($r),
-                'hvorfor'     => (string) ($r['hvorfor'] ?? ''),
+                'kl'         => (new DateTimeImmutable((string) $r['gjort_at'], new DateTimeZone('UTC')))->setTimezone($oslo)->format('H:i'),
+                'hvem'       => (string) ($r['hvem'] ?? ''),
+                'kunde'      => $r['booking_id'] !== null ? (string) $r['deltaker'] : trim((string) $r['kunde_navn']),
+                'fraOre'     => (int) $r['opprinnelig_ore'],
+                'fra'        => KasseKurv::kr((int) $r['opprinnelig_ore']),
+                'tilOre'     => (int) $r['ny_ore'],
+                'til'        => KasseKurv::kr((int) $r['ny_ore']),
+                'trukketOre' => $trukket,
+                'endringer'  => self::tekster($r),
+                'hvorfor'    => (string) ($r['hvorfor'] ?? ''),
             ];
         }
         return ['rader' => $ut, 'trukketOre' => $sum];

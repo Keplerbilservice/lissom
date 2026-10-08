@@ -221,13 +221,19 @@ final class KursstartKrav
      *
      * @return array{beskjed:string, status:string, ny:bool, qr?:string, belop?:string}
      */
-    public static function visQr(int $bookingId): array
+    public static function visQr(int $bookingId, ?int $belopOre = null, ?callable $koble = null): array
     {
-        return self::opprett($bookingId, true);
+        return self::opprett($bookingId, true, $belopOre, $koble);
     }
 
     /** @return array{beskjed:string, status:string, ny:bool, qr?:string, belop?:string} */
-    private static function opprett(int $bookingId, bool $qr): array
+    /**
+     * $belopOre: iPad-kassa med endret pris eller rabatt ber om et lavere
+     * beløp enn det som står igjen (aldri høyere). $koble får betalingsraden
+     * før Vipps spørres, så endringen kan settes på når QR-en er betalt
+     * (KasseJustering). Ellers: det som står igjen, som før.
+     */
+    private static function opprett(int $bookingId, bool $qr, ?int $belopOre = null, ?callable $koble = null): array
     {
         if (!DB::harKolonne('payments', 'booking_id')) {
             throw new RuntimeException('Dette krever en oppdatering av databasen. Ta kontant inntil videre.', 503);
@@ -289,8 +295,11 @@ final class KursstartKrav
                         // Samme QR-kode igjen, så lenge beløpet stemmer og
                         // Vipps oppgir adressen til bildet (GET: redirectUrl).
                         $url = self::qrAdresse($ref);
-                        $rest = self::skyldig($bookingId, (int) $b['belop_ore'], (string) $b['status']);
+                        $rest = $belopOre ?? self::skyldig($bookingId, (int) $b['belop_ore'], (string) $b['status']);
                         if ($url !== '' && (int) $v['belop_ore'] === $rest) {
+                            if ($koble !== null) {
+                                $koble((int) $v['id']);
+                            }
                             return self::qrSvar($url, (int) $v['belop_ore'], $navn, false);
                         }
                     }
@@ -313,6 +322,12 @@ final class KursstartKrav
             if ($skyldig === 0) {
                 throw new RuntimeException('Denne er alt gjort opp.', 409);
             }
+            if ($belopOre !== null) {
+                if ($belopOre > $skyldig || $belopOre < 0) {
+                    throw new RuntimeException('Beløpet er endret. Se over kurven og prøv igjen.', 409);
+                }
+                $skyldig = $belopOre;
+            }
             // Unntak: Paint on Pots der beløpet ved booking kom med Vipps og
             // gjenstandene er slått inn — resten skal betales i verkstedet.
             // Samme unntak som «Ta betalt» (kursbetaling.php, PopPris::harRest).
@@ -334,10 +349,11 @@ final class KursstartKrav
             if ($gjenbruk !== null) {
                 $referanse = (string) $gjenbruk['vipps_reference'];
                 $nokkel = (string) $gjenbruk['idempotency_key'];
+                $betalingId = (int) $gjenbruk['id'];
             } else {
                 $referanse = Vipps::nyReferanse($qr ? self::PREFIKS_QR : self::PREFIKS);
                 $nokkel = Vipps::uuid();
-                DB::settInn('payments', [
+                $betalingId = DB::settInn('payments', [
                     'vipps_reference' => $referanse,
                     'type'            => 'epayment',
                     'formal'          => 'booking',
@@ -347,6 +363,10 @@ final class KursstartKrav
                     'status'          => 'opprettet',
                     'idempotency_key' => $nokkel,
                 ]);
+            }
+
+            if ($koble !== null) {
+                $koble((int) $betalingId);
             }
 
             $hendelse = $qr ? 'kursstart_qr' : 'kursstart_krav';

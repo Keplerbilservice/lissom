@@ -17,6 +17,9 @@ declare(strict_types=1);
 final class KasseKurv
 {
     public const MAKS_ORE = 10000000;
+    /** Eierens regler for rabatt (8. oktober 2026). */
+    public const PROSENT_BETALT = 'Prosent kan bare gis når hele beløpet betales nå.';
+    public const PRIS_OG_RABATT = 'Prisen er endret – rabatt kan ikke gis i tillegg.';
     private const MAKS_LINJER = 50;
 
     // ── I dag ──────────────────────────────────────────────────────────
@@ -40,8 +43,9 @@ final class KasseKurv
     public static function dagensBooking(int $bookingId): ?array
     {
         [$fra, $til] = self::dagen();
-        $pop = DB::harKolonne('bookings', 'depositum_ore')
-            ? 'b.depositum_ore, b.gjenstander_ore' : 'NULL AS depositum_ore, NULL AS gjenstander_ore';
+        $pop = (DB::harKolonne('bookings', 'depositum_ore')
+            ? 'b.depositum_ore, b.gjenstander_ore' : 'NULL AS depositum_ore, NULL AS gjenstander_ore')
+            . (DB::harKolonne('bookings', 'kasse_rabatt_ore') ? ', b.kasse_rabatt_ore' : ', 0 AS kasse_rabatt_ore');
         return DB::en(
             "SELECT b.id, b.status, b.belop_ore, b.antall, b.member_id, b.course_id, {$pop},
                     COALESCE(m.navn, b.gjest_navn) AS navn,
@@ -277,7 +281,7 @@ final class KasseKurv
         [$fra, $til] = self::dagen();
         $prisKol = DB::harKolonne('course_sessions', 'pris_ore') ? 'COALESCE(cs.pris_ore, c.pris_ore)' : 'c.pris_ore';
         $okt = DB::en(
-            "SELECT cs.id, cs.course_id, cs.start_tid, c.tittel, {$prisKol} AS pris_ore
+            "SELECT cs.id, cs.course_id, cs.start_tid, cs.slutt_tid, c.tittel, {$prisKol} AS pris_ore
                FROM course_sessions cs
                JOIN courses c ON c.id = cs.course_id
               WHERE cs.id = :i AND cs.status <> 'avlyst' AND cs.start_tid >= :fra AND cs.start_tid < :til",
@@ -292,14 +296,21 @@ final class KasseKurv
         $popPer = PopPris::depositumPerPerson((int) $okt['course_id']);
         $belop = ($popPer ?? (int) $okt['pris_ore']) * $antall;
         $popFelt = PopPris::bookingFelt((int) $okt['course_id'], $belop);
+        // Ikke betalt: plassen holdes til økta er slutt (eller dagen er
+        // slutt), så den ikke blir hengende.
+        $holdTil = trim((string) ($okt['slutt_tid'] ?? '')) !== '' ? (string) $okt['slutt_tid'] : $til;
         try {
-            $bookingId = DB::iTransaksjon(static function () use ($okt, $oktId, $navn, $telefon, $antall, $belop, $popFelt, $person): int {
+            $bookingId = DB::iTransaksjon(static function () use ($okt, $oktId, $navn, $telefon, $antall, $belop, $popFelt, $person, $holdTil): int {
                 if (Booking::ledigePlasser($oktId, true) < $antall) {
                     throw new RuntimeException('Det er ikke nok ledige plasser på ' . $okt['tittel'] . '.', 409);
                 }
-                // Et dobbelttrykk lager ikke to plasser (samme sjekk som admin).
-                if (DB::en("SELECT id FROM bookings WHERE course_session_id = :o AND gjest_navn = :n AND status <> 'avbestilt'",
-                    ['o' => $oktId, 'n' => $navn]) !== null) {
+                // Et dobbelttrykk lager ikke to plasser: samme navn og telefon
+                // på samme økt, lagt inn de siste 2 minuttene.
+                if (DB::en("SELECT id FROM bookings
+                              WHERE course_session_id = :o AND gjest_navn = :n AND status <> 'avbestilt'
+                                AND (gjest_telefon = :t OR (:t2 = '' AND gjest_telefon IS NULL))
+                                AND created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 2 MINUTE)",
+                    ['o' => $oktId, 'n' => $navn, 't' => $telefon, 't2' => $telefon]) !== null) {
                     throw new RuntimeException($navn . ' står alt på dette kurset.', 409);
                 }
                 return DB::settInn('bookings', [
@@ -314,7 +325,7 @@ final class KasseKurv
                     'status'            => 'reservert',
                     'betalt_maate'      => 'Ikke betalt',
                     'lagt_inn_av'       => (int) $person['id'],
-                    'reservert_til'     => null,
+                    'reservert_til'     => $holdTil,
                 ] + $popFelt);
             });
         } catch (PDOException $e) {
@@ -489,7 +500,7 @@ final class KasseKurv
      * @param array<string,mixed> $betaler fra betaler()
      * @return list<array<string,mixed>>
      */
-    public static function deler(array $kurv, array $betaler): array
+    public static function deler(array $kurv, array $betaler, array $nokler = []): array
     {
         $deler = [];
         // Endret pris per linje (linjens nøkkel => ny pris i øre). Linjer som
@@ -508,32 +519,35 @@ final class KasseKurv
             $delId = 'booking:' . $bid;
             $endringer[$delId] = [];
             $prisTrekk[$delId] = 0;
-            // Det kassa har trukket fra før: det som er betalt etterpå står,
-            // en justering for en QR-kode som ikke ble betalt regnes bort
-            // (den erstattes av denne kurven).
-            $just = KasseJustering::paaBooking($bid);
             $pop = is_array($kurv['pop'] ?? null) ? array_values(array_filter($kurv['pop'], 'is_array')) : [];
             $pop = array_values(array_filter($pop, static fn(array $v): bool => (int) ($v['antall'] ?? 0) !== 0));
             $linjer = [];
             if (self::erPop($b) && $pop !== []) {
                 $f = PopPris::forhandsvis($bid, $pop);
                 // Én linje per gjenstand (nivå og gjenstand), med nøkkelen
-                // prisendringen peker på.
+                // prisendringen peker på. Har enhetene ulik pris (noen slått
+                // inn før med en annen nivåpris), gjelder prisendringen
+                // linjesummen, ikke en avrundet stykkpris.
                 $gruppe = [];
                 foreach ($f['linjer'] as $l) {
                     $k = (int) $l['nivaa_id'] . '|' . (string) ($l['gjenstand'] ?? '');
-                    $gruppe[$k] ??= ['navn' => (string) $l['navn'], 'gjenstand' => (string) ($l['gjenstand'] ?? ''), 'antall' => 0, 'ore' => 0];
+                    $gruppe[$k] ??= ['navn' => (string) $l['navn'], 'gjenstand' => (string) ($l['gjenstand'] ?? ''), 'antall' => 0, 'ore' => 0, 'priser' => []];
                     $gruppe[$k]['antall'] += (int) $l['antall'];
                     $gruppe[$k]['ore'] += (int) $l['pris_ore'] * (int) $l['antall'];
+                    $gruppe[$k]['priser'][(int) $l['pris_ore']] = true;
                 }
+                $full = 0;
                 foreach ($gruppe as $k => $g) {
                     $tekst = $g['navn'] . ($g['gjenstand'] !== '' ? ' · ' . $g['gjenstand'] : '');
-                    $linjer[] = self::prisLinje($delId . ':' . $k, $tekst . ' × ' . $g['antall'], $tekst, $g['antall'], $g['ore'],
-                        $priser, $endringer[$delId], $prisTrekk[$delId], true);
+                    $l = self::prisLinje($delId . ':' . $k, $tekst . ' × ' . $g['antall'], $tekst, $g['antall'], $g['ore'],
+                        $priser, $endringer[$delId], $prisTrekk[$delId], count($g['priser']) === 1);
+                    $full += $l['ore'];
+                    $linjer[] = $l;
                 }
-                // Rabatt gitt i kassa tidligere (og betalt) står.
-                if ($just['gjort'] !== 0) {
-                    $linjer[] = ['tekst' => 'Rabatt', 'ore' => -$just['gjort']];
+                // Rabatt gitt i kassa tidligere (betalt) står.
+                $tidligere = (int) ($b['kasse_rabatt_ore'] ?? 0);
+                if ($tidligere !== 0) {
+                    $linjer[] = ['tekst' => 'Rabatt', 'ore' => -$tidligere];
                 }
                 // Betalt ved booking (aldri mer enn beløpet ved booking), og det
                 // som alt er tatt i kassa for seg.
@@ -544,31 +558,38 @@ final class KasseKurv
                 if ($f['betaltOre'] > $vedBooking) {
                     $linjer[] = ['tekst' => 'Betalt', 'ore' => -($f['betaltOre'] - $vedBooking)];
                 }
-                $skyldig = max(0, $f['sumOre'] - $just['gjort'] - $f['betaltOre']);
+                $skyldig = max(0, $f['sumOre'] - $tidligere - $f['betaltOre']);
+                $betalt = (int) $f['betaltOre'];
             } else {
                 $pop = [];
                 $betalt = (int) Booking::betalingerFor($bid)['sum'];
-                $belop = (int) $b['belop_ore'] + $just['venter'];
+                $belop = (int) $b['belop_ore'];
                 $skyldig = KursstartKrav::skyldig($bid, $belop, (string) $b['status']);
                 $antall = (int) $b['antall'];
                 $tekst = (string) $b['tittel'] . ' · ' . $antall . ' '
                     . (self::erPop($b) ? ($antall === 1 ? 'person' : 'personer') : ($antall === 1 ? 'plass' : 'plasser'));
-                // Prisen på kurslinja: det linja viser (beløpet, eller det som står igjen).
+                // Prisen på kurslinja: det linja viser (hele beløpet, eller det som står igjen).
                 if ($skyldig > 0 && $betalt > 0 && $belop - $betalt === $skyldig) {
-                    $linjer[] = self::prisLinje($delId, $tekst, (string) $b['tittel'], 1, $belop, $priser, $endringer[$delId], $prisTrekk[$delId], false);
+                    $l = self::prisLinje($delId, $tekst, (string) $b['tittel'], 1, $belop, $priser, $endringer[$delId], $prisTrekk[$delId], false);
+                    $linjer[] = $l;
                     $linjer[] = ['tekst' => 'Betalt ved booking', 'ore' => -$betalt];
                 } else {
-                    $linjer[] = self::prisLinje($delId, $tekst, (string) $b['tittel'], 1, $skyldig, $priser, $endringer[$delId], $prisTrekk[$delId], false);
+                    $l = self::prisLinje($delId, $tekst, (string) $b['tittel'], 1, $skyldig, $priser, $endringer[$delId], $prisTrekk[$delId], false);
+                    $linjer[] = $l;
                 }
+                $full = $l['ore'];
             }
             if ($skyldig > 0 || $pop !== []) {
                 $etter = $skyldig - $prisTrekk[$delId];
                 if ($etter < 0) {
                     throw new RuntimeException('Prisen kan ikke bli lavere enn det som alt er betalt. Penger tilbake er en refusjon.');
                 }
+                // fullOre: hele prisen for delen (etter endret pris, før
+                // depositum og det som alt er betalt). Prosentrabatt regnes av den.
                 $deler[] = ['id' => 'booking:' . $bid, 'type' => 'booking', 'bookingId' => $bid, 'pop' => $pop, 'sumOre' => $etter,
                             'medlemId' => $b['member_id'] !== null ? (int) $b['member_id'] : null,
-                            'tittel' => (string) $b['navn'], 'linjer' => $linjer, 'fraOre' => $skyldig, 'endret' => $endringer[$delId]];
+                            'tittel' => (string) $b['navn'], 'linjer' => $linjer, 'fraOre' => $skyldig, 'fullOre' => max(0, $full), 'betaltOre' => $betalt,
+                            'endret' => $endringer[$delId]];
             }
         }
 
@@ -692,12 +713,13 @@ final class KasseKurv
             // En pris på en linje som ikke er i kurven (lenger).
             throw new RuntimeException('Kurven er endret. Se over den og prøv igjen.', 409);
         }
-        // Beløpet før endret pris (påmeldingen har det alt).
+        // Beløpet før endret pris, og hele prisen (påmeldingen har dem alt).
         foreach ($deler as &$d) {
             $d['fraOre'] ??= $d['sumOre'] + array_sum(array_map(static fn(array $l): int => ($l['fraOre'] ?? $l['ore']) - $l['ore'], $d['linjer']));
+            $d['fullOre'] ??= $d['sumOre'];
         }
         unset($d);
-        $deler = self::medRabatt($deler, $kurv['rabatt'] ?? null);
+        $deler = self::medRabatt($deler, $kurv['rabatt'] ?? null, KasseJustering::laaste($nokler));
         if (!KasseJustering::klar()) {
             foreach ($deler as $d) {
                 if (isset($d['justering'])) {
@@ -728,7 +750,7 @@ final class KasseKurv
             $n = $l['nokkel'] ?? null;
             $linje = ['tekst' => $l['tittel'] . ($l['antall'] > 1 ? ' × ' . $l['antall'] : ''), 'ore' => $l['prisOre'] * $l['antall']];
             if ($n !== null) {
-                $linje += ['nokkel' => $n, 'antall' => $l['antall'], 'enhetOre' => $l['prisOre']];
+                $linje += ['nokkel' => $n, 'antall' => $l['antall'], 'enhetOre' => $l['prisOre'], 'perStk' => true];
                 if (array_key_exists($n, $priser)) {
                     $ny = $priser[$n];
                     unset($priser[$n]);
@@ -753,8 +775,9 @@ final class KasseKurv
 
     /**
      * En linje i påmeldingen som kan få endret pris. $perStk: prisen som
-     * tastes er stykkprisen (gjenstander); ellers er den linjas beløp
-     * (kurset).
+     * tastes er stykkprisen (gjenstander med samme pris); ellers er den
+     * linjas beløp (kurset, eller gjenstander der enhetene har ulik pris —
+     * da brukes aldri en avrundet stykkpris).
      *
      * @param array<string,int> $priser det som brukes, tas ut
      * @param list<array<string,mixed>> $endringer
@@ -763,21 +786,21 @@ final class KasseKurv
     private static function prisLinje(string $nokkel, string $tekst, string $navn, int $antall, int $ore, array &$priser,
                                       array &$endringer, int &$trekk, bool $perStk): array
     {
-        $l = ['tekst' => $tekst, 'ore' => $ore, 'nokkel' => $nokkel, 'antall' => $antall];
-        $enhet = $perStk && $antall > 0 ? (int) round($ore / $antall) : $ore;
-        $l['enhetOre'] = $enhet;
+        $perStk = $perStk && $antall > 0 && $ore % $antall === 0;
+        $enhet = $perStk ? intdiv($ore, $antall) : $ore;
+        $l = ['tekst' => $tekst, 'ore' => $ore, 'nokkel' => $nokkel, 'antall' => $antall, 'enhetOre' => $enhet, 'perStk' => $perStk];
         if (!array_key_exists($nokkel, $priser)) {
             return $l;
         }
-        $nyEnhet = $priser[$nokkel];
+        $nyPris = $priser[$nokkel];
         unset($priser[$nokkel]);
-        $ny = $perStk ? $nyEnhet * $antall : $nyEnhet;
+        $ny = $perStk ? $nyPris * $antall : $nyPris;
         if ($ny === $ore) {
             return $l;
         }
-        $endringer[] = ['tekst' => $navn, 'antall' => $antall, 'fraOre' => $enhet, 'tilOre' => $nyEnhet];
+        $endringer[] = ['tekst' => $navn, 'antall' => $antall, 'fraOre' => $enhet, 'tilOre' => $nyPris];
         $trekk += $ore - $ny;
-        return ['fraOre' => $ore, 'fraEnhetOre' => $enhet, 'ore' => $ny, 'enhetOre' => $nyEnhet] + $l;
+        return ['fraOre' => $ore, 'fraEnhetOre' => $enhet, 'ore' => $ny, 'enhetOre' => $nyPris] + $l;
     }
 
     /**
@@ -813,52 +836,89 @@ final class KasseKurv
     }
 
     /**
-     * Rabatt på hele kjøpet, i prosent eller kroner, fordelt på påmeldingen,
-     * varene og Paint on Pots etter hvor mye hver av dem er (gavekort og
-     * timepakke får ikke rabatt). Rabatten kan ikke være større enn summen.
-     * Hver del får sin andel som en egen linje («Rabatt 10 %») og en
-     * «justering» som lagres når delen betales (KasseJustering).
+     * Rabatt på hele kjøpet, i prosent eller kroner (gavekort og timepakke får
+     * ikke rabatt). Hver del får sin andel som en egen linje («Rabatt 10 %»)
+     * og en «justering» som lagres når delen betales (KasseJustering).
+     *
+     *   prosent  av hele prisen for delen (fullOre: før depositum og det som
+     *            alt er betalt), men aldri mer enn det som står igjen å betale
+     *   kroner   fordelt etter hele prisen, aldri mer enn det som står igjen
+     *            per del; kan ikke være større enn det som står igjen i alt
+     *   låst     er det tatt betalt for kurven før (en del betalt med QR),
+     *            beholder hver del andelen den fikk da ($laaste, del-id => øre)
      *
      * @param list<array<string,mixed>> $deler
+     * @param array<string,int> $laaste
      * @return list<array<string,mixed>>
      */
-    private static function medRabatt(array $deler, mixed $raa): array
+    private static function medRabatt(array $deler, mixed $raa, array $laaste = []): array
     {
         $r = self::lesRabatt($raa);
         $kan = static fn(array $d): bool => in_array($d['type'], ['booking', 'ordre'], true);
-        $base = 0;
-        foreach ($deler as $d) {
-            if ($kan($d)) {
-                $base += max(0, (int) $d['sumOre']);
-            }
-        }
-        $total = 0;
-        if ($r !== null) {
-            if ($base <= 0) {
-                throw new RuntimeException('Det er ingenting å gi rabatt på.');
-            }
-            $total = $r['prosent'] !== null ? (int) round($base * $r['prosent'] / 100) : (int) $r['ore'];
-            if ($total > $base) {
-                throw new RuntimeException('Rabatten kan ikke være større enn ' . self::kr($base) . '.');
-            }
-        }
-        // Andelene: etter størrelse, avrundet ned; øret som blir igjen går
-        // til de første delene som har plass.
         $andel = [];
-        $fordelt = 0;
-        foreach ($deler as $i => $d) {
-            if ($kan($d) && $total > 0 && $base > 0) {
-                $andel[$i] = intdiv($total * max(0, (int) $d['sumOre']), $base);
-                $fordelt += $andel[$i];
+        if ($r !== null && $laaste === []) {
+            // Eierens regler (8. oktober 2026), sjekket her, ikke bare på skjermen:
+            //   B  endret pris og rabatt kan ikke brukes på samme kjøp
+            //   A  prosent bare når hele beløpet betales nå (ingenting betalt:
+            //      ikke depositum, delbetaling eller en QR som er betalt)
+            foreach ($deler as $d) {
+                if ($kan($d) && ($d['endret'] ?? []) !== []) {
+                    throw new RuntimeException(self::PRIS_OG_RABATT);
+                }
+            }
+            if ($r['prosent'] !== null) {
+                foreach ($deler as $d) {
+                    if ($kan($d) && (int) ($d['betaltOre'] ?? 0) > 0) {
+                        throw new RuntimeException(self::PROSENT_BETALT);
+                    }
+                }
             }
         }
-        foreach ($andel as $i => $a) {
-            if ($fordelt >= $total) {
-                break;
+        if ($r !== null) {
+            $tak = [];
+            $full = [];
+            foreach ($deler as $i => $d) {
+                if ($kan($d)) {
+                    $tak[$i] = max(0, (int) $d['sumOre']);
+                    $full[$i] = max(0, (int) $d['fullOre']);
+                }
             }
-            if ($a < (int) $deler[$i]['sumOre']) {
-                $andel[$i]++;
-                $fordelt++;
+            $sumTak = array_sum($tak);
+            if ($laaste !== []) {
+                foreach ($tak as $i => $t) {
+                    $a = $laaste[(string) $deler[$i]['id']] ?? 0;
+                    if ($a < 0 || $a > $t) {
+                        throw new RuntimeException('Kurven er endret. Se over den og prøv igjen.', 409);
+                    }
+                    $andel[$i] = $a;
+                }
+            } elseif ($sumTak <= 0) {
+                throw new RuntimeException('Det er ingenting å gi rabatt på.');
+            } elseif ($r['prosent'] !== null) {
+                foreach ($tak as $i => $t) {
+                    $andel[$i] = min((int) round($full[$i] * $r['prosent'] / 100), $t);
+                }
+            } else {
+                $total = (int) $r['ore'];
+                if ($total > $sumTak) {
+                    throw new RuntimeException('Rabatten kan ikke være større enn ' . self::kr($sumTak) . '.');
+                }
+                $vekt = array_sum($full) > 0 ? $full : $tak;
+                $sumVekt = array_sum($vekt);
+                $fordelt = 0;
+                foreach ($tak as $i => $t) {
+                    $andel[$i] = min(intdiv($total * $vekt[$i], $sumVekt), $t);
+                    $fordelt += $andel[$i];
+                }
+                // Øret som blir igjen (og det en del ikke hadde plass til) går
+                // til de første delene som har plass.
+                foreach ($tak as $i => $t) {
+                    $mer = min($total - $fordelt, $t - $andel[$i]);
+                    if ($mer > 0) {
+                        $andel[$i] += $mer;
+                        $fordelt += $mer;
+                    }
+                }
             }
         }
         foreach ($deler as $i => &$d) {
@@ -943,6 +1003,10 @@ final class KasseKurv
             'sumOre' => $sum,
             'sum'    => self::kr($sum),
             'rabatt' => $rabatt === null ? null : $rabatt + ['kr' => '−' . self::kr($rabatt['ore'])],
+            // Eierens regler: prosent bare når ingenting er betalt; endret
+            // pris og rabatt ikke på samme kjøp (skjermen gjør knappene grå).
+            'prosentKan' => array_filter($deler, static fn(array $d): bool => (int) ($d['betaltOre'] ?? 0) > 0) === [],
+            'prisEndret' => array_filter($deler, static fn(array $d): bool => ($d['justering']['linjer'] ?? []) !== []) !== [],
         ];
     }
 

@@ -2077,6 +2077,9 @@ final class Booking
             self::trekkGavekort((int) $betaling['id']);
 
             if ($booking !== null && $erKrav) {
+                // Endret pris og rabatt fra iPad-kassa gjelder først nå, når
+                // QR-en er betalt (KasseJustering, i samme transaksjon).
+                KasseJustering::vedBetaling((int) $betaling['id'], (int) $booking['id']);
                 self::settBetaltStatus((int) $booking['id']);
                 return true;
             }
@@ -2096,6 +2099,7 @@ final class Booking
             $ordre = DB::en('SELECT id, ordrenr FROM orders WHERE payment_id = :p', ['p' => $betaling['id']]);
             if ($ordre !== null) {
                 DB::oppdater('orders', ['status' => 'betalt'], ['id' => $ordre['id']]);
+                KasseJustering::vedBetaling((int) $betaling['id'], null);
                 // Lageret trekkes naar pengene er i havn — en forlatt kurv i
                 // Vipps skal ikke ta varer fra hylla. Betalingen er laast over
                 // (FOR UPDATE), saa dette skjer én gang. Bare nettbutikken

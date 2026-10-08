@@ -124,6 +124,7 @@ function vareArk(){
  ark('Varer',lukk=>[el('div',{class:'k-g3 k-ark-rull'},data.varer.map(p=>kort({disabled:p.utsolgt,onclick:()=>{endreKurv(()=>{const n=salg.varer.get(p.id)||0;if(p.lager!==null&&n>=p.lager){melding('Ikke flere på lager.');return;}salg.varer.set(p.id,n+1);});melding(p.tittel);}},el('b',{text:p.tittel}),el('small',{text:p.pris})))),el('div',{class:'k-rad-knapper'},pille('Lukk',lukk,'fylt'))]);
 }
 function nyKundeArk(){
+ if(ikkeNaa())return;
  const navn=el('input',{name:'navn',autocomplete:'off',autocapitalize:'words',required:true});
  const tlf=el('input',{name:'telefon',type:'tel',inputmode:'tel',autocomplete:'off'});
  const f=el('p',{class:'k-feil',role:'alert',hidden:true});
@@ -144,62 +145,72 @@ function nyKundeArk(){
 // ── Salget ───────────────────────────────────────────────────────────
 function tomtSalg(){return{betaler:null,navn:null,bookingId:null,oktId:null,person:null,pop:new Map(),popUten:new Map(),popGjester:0,varer:new Map(),fritt:[],gavekort:[],timepakke:false,priser:new Map(),rabatt:null,regnet:null,feil:'',kontantkunde:false,nokler:{},noklerSig:null,forventet:null,betalt:new Set(),betalinger:[],koder:[]};}
 function start0(){if(!salg){salg=tomtSalg();salg.kontantkunde=true;tegnVenstre();}}
-function kontantkunde(){if(salg&&salg.betalt.size){melding('Gjør ferdig betalingen først.');return;}const g=salg;salg=tomtSalg();salg.kontantkunde=true;if(g)beholdVarer(g);tegnVenstre();visSalg();}
+// Mens det registreres, eller en QR-kode venter, kan verken kurven eller kunden byttes (kontrolløren 08.10.2026).
+const laast=()=>!!salg&&(salg.vent||salg.betalt.size>0);
+const ikkeNaa=()=>{if(laast()){melding('Gjør ferdig betalingen først.');return true;}return false;};
+function kontantkunde(){if(ikkeNaa())return;const g=salg;salg=tomtSalg();salg.kontantkunde=true;if(g)beholdVarer(g);tegnVenstre();visSalg();}
 // Varene som alt er i kurven, blir med når kunden velges etterpå.
-function beholdVarer(g){salg.varer=g.varer;salg.fritt=g.fritt;salg.gavekort=g.gavekort;salg.popUten=g.popUten;salg.popGjester=g.popGjester;for(const [k,v] of g.priser)if(!k.startsWith('booking:'))salg.priser.set(k,v);}
+function beholdVarer(g){salg.varer=g.varer;salg.fritt=g.fritt;salg.gavekort=g.gavekort;salg.popUten=g.popUten;salg.popGjester=g.popGjester;for(const [k,v] of g.priser)if(!k.startsWith('booking:'))salg.priser.set(k,v);salg.rabatt=g.rabatt;}
 async function nyttSalg(fra){
- if(salg&&salg.betalt.size){melding('Gjør ferdig betalingen først.');return;}
+ if(ikkeNaa())return;
  const g=salg;salg=tomtSalg();if(g)beholdVarer(g);salg.navn=fra.navn;salg.oktId=fra.oktId||null;
  if(fra.betaler){salg.betaler=fra.betaler;tegnVenstre();await visSalg();return;}
  salg.betaler={bookingId:fra.bookingId};salg.bookingId=fra.bookingId;
- try{await hentPerson();}catch(e){feil(e);salg=null;}
+ const s=salg;
+ try{await hentPerson(s);}catch(e){feil(e);if(salg===s)salg=null;}
  tegnVenstre();await visSalg();
 }
-async function hentPerson(){
- const p=await kall('kasse.php',{handling:'person',bookingId:salg.bookingId});salg.person=p;salg.navn=p.navn;
- if(p.pop){salg.pop=new Map();for(const l of p.lagret||[])salg.pop.set(l.nokkel,{nivaaId:l.nivaaId,gjenstand:l.gjenstand,antall:l.antall});if(salg.popUten.size){for(const [id,n] of salg.popUten){const k=id+'|';const q=salg.pop.get(k)||{nivaaId:id,gjenstand:'',antall:0};q.antall+=n;salg.pop.set(k,q);}salg.popUten=new Map();salg.popGjester=0;}}
+async function hentPerson(s=salg){
+ const p=await kall('kasse.php',{handling:'person',bookingId:s.bookingId});s.person=p;s.navn=p.navn;
+ if(p.pop){s.pop=new Map();for(const l of p.lagret||[])s.pop.set(l.nokkel,{nivaaId:l.nivaaId,gjenstand:l.gjenstand,antall:l.antall});if(s.popUten.size){for(const [id,n] of s.popUten){const k=id+'|';const q=s.pop.get(k)||{nivaaId:id,gjenstand:'',antall:0};q.antall+=n;s.pop.set(k,q);}s.popUten=new Map();s.popGjester=0;}}
 }
-const kurvTilServer=()=>({bookingId:salg.bookingId||undefined,pop:[...salg.pop.values()].filter(p=>p.antall>0).map(p=>({nivaaId:p.nivaaId,gjenstand:p.gjenstand,antall:p.antall})),popGjester:salg.popUten.size?salg.popGjester:undefined,popUten:[...salg.popUten].map(([nivaaId,antall])=>({nivaaId,antall})),varer:[...salg.varer].map(([id,antall])=>({id,antall})),fritt:salg.fritt,gavekort:salg.gavekort,timepakke:salg.timepakke||undefined,priser:salg.priser.size?Object.fromEntries(salg.priser):undefined,rabatt:salg.rabatt||undefined});
-const betalerTilServer=()=>salg.kontantkunde||!salg.betaler?{}:salg.betaler;
-const tomKurv=()=>!salg.bookingId&&!salg.popUten.size&&!salg.varer.size&&!salg.fritt.length&&!salg.gavekort.length&&!salg.timepakke;
+const kurvTilServer=(s=salg)=>({bookingId:s.bookingId||undefined,pop:[...s.pop.values()].filter(p=>p.antall>0).map(p=>({nivaaId:p.nivaaId,gjenstand:p.gjenstand,antall:p.antall})),popGjester:s.popUten.size?s.popGjester:undefined,popUten:[...s.popUten].map(([nivaaId,antall])=>({nivaaId,antall})),varer:[...s.varer].map(([id,antall])=>({id,antall})),fritt:s.fritt,gavekort:s.gavekort,timepakke:s.timepakke||undefined,priser:s.priser.size?Object.fromEntries(s.priser):undefined,rabatt:s.rabatt||undefined});
+const betalerTilServer=(s=salg)=>s.kontantkunde||!s.betaler?{}:s.betaler;
+const tomKurv=(s=salg)=>!s.bookingId&&!s.popUten.size&&!s.varer.size&&!s.fritt.length&&!s.gavekort.length&&!s.timepakke;
 
 let regnNr=0;
-async function regn(){
+async function regn(s=salg){
  const nr=++regnNr;
- if(tomKurv()){salg.regnet=null;salg.feil='';return;}
- try{const d=await kall('kasse.php',{handling:'regn',kurv:kurvTilServer(),betaler:betalerTilServer()});if(nr!==regnNr)return;salg.regnet=d;salg.feil='';}
- catch(e){if(nr!==regnNr||e.stille)return;salg.regnet=null;salg.feil=e.message;}
+ if(tomKurv(s)){s.regnet=null;s.feil='';return;}
+ try{const d=await kall('kasse.php',{handling:'regn',kurv:kurvTilServer(s),betaler:betalerTilServer(s)});if(nr!==regnNr)return;s.regnet=d;s.feil='';}
+ catch(e){if(nr!==regnNr||e.stille)return;s.regnet=null;s.feil=e.message;}
 }
-// Alt som endrer kurven går hit. Er en del alt betalt med Vipps, gjøres ingenting før betalingen er ferdig.
+// Alt som endrer kurven går hit. Er betalingen i gang (registrerer, QR venter, en del er betalt), gjøres ingenting.
 // Sier serveren nei til endringen (for eksempel timepakke uten medlem, rabatt over summen), går kurven tilbake og feilen vises.
 const bilde=s=>({pop:new Map([...s.pop].map(([k,v])=>[k,{...v}])),popUten:new Map(s.popUten),popGjester:s.popGjester,varer:new Map(s.varer),fritt:[...s.fritt],gavekort:[...s.gavekort],timepakke:s.timepakke,priser:new Map(s.priser),rabatt:s.rabatt});
 async function endreKurv(fn){
- if(salg&&salg.betalt.size){melding('Gjør ferdig betalingen først.');return;}
- start0();const s=salg;const for0=bilde(s);fn();stopPoll();await regn();
- if(s===salg&&s.feil&&s.regnet===null&&!tomKurv()){const f=s.feil;Object.assign(s,for0);await regn();if(!s.feil)melding(f);}
+ if(ikkeNaa())return;
+ start0();const s=salg;const for0=bilde(s);fn();stopPoll();await regn(s);
+ if(s===salg&&s.feil&&s.regnet===null&&!tomKurv(s)){const f=s.feil;Object.assign(s,for0);await regn(s);if(!s.feil)melding(f);}
  tegnKurv();
 }
 function leggTilNivaa(n){endreKurv(()=>{if(salg.person&&salg.person.pop){const k=n.id+'|';const p=salg.pop.get(k)||{nivaaId:n.id,gjenstand:'',antall:0};p.antall++;salg.pop.set(k,p);}else{salg.popUten.set(n.id,(salg.popUten.get(n.id)||0)+1);salg.popGjester=Math.max(1,salg.popGjester);}});}
-function endreAntall(nokkel,d){endreKurv(()=>{
+function endreAntall(l,d){const nokkel=l.nokkel;endreKurv(()=>{
  const [slag,id,k]=nokkel.split(':');const tom=()=>salg.priser.delete(nokkel);
+ // En pris som gjelder linjesummen (enhetene har ulik pris), gjelder ikke lenger når antallet endres.
+ if(!l.perStk)tom();
  if(slag==='vare'){const v=data.varer.find(x=>x.id===+id);const n=(salg.varer.get(+id)||0)+d;if(d>0&&v&&v.lager!==null&&n>v.lager){melding('Ikke flere på lager.');return;}if(n>0)salg.varer.set(+id,n);else{salg.varer.delete(+id);tom();}}
  else if(slag==='pop'){const n=(salg.popUten.get(+id)||0)+d;if(n>0)salg.popUten.set(+id,n);else{salg.popUten.delete(+id);tom();if(!salg.popUten.size)salg.popGjester=0;}}
  else if(slag==='booking'&&k!==undefined){const p=salg.pop.get(k);if(p){p.antall=Math.max(0,p.antall+d);if(!p.antall)tom();}}
 });}
 async function visSalg(){
  stopPoll();
- if(salg)await regn();
+ if(salg)await regn(salg);
  tegnKurv();
 }
 
 // ── Kurven (alltid synlig til høyre) ─────────────────────────────────
+// Eierens regler (08.10.2026): endret pris og rabatt kan ikke brukes på samme kjøp, og prosent bare når ingenting er betalt.
+const RABATT_GITT='Rabatt er gitt – fjern den for å endre pris.';
+const PRIS_ENDRET='Prisen er endret – rabatt kan ikke gis i tillegg.';
+const PROSENT_BETALT='Prosent kan bare gis når hele beløpet betales nå.';
 function kurvLinje(d,l,fri){
  const tekst=l.antall!==undefined&&!/^booking:\d+$/.test(l.nokkel||'')?utenAntall(l.tekst):l.tekst;
- const venstre=el('span',{class:'k-ltekst'},tekst,l.fraOre!==undefined?el('small',{class:'k-endret',text:'Pris endret fra '+kr(l.fraEnhetOre??l.fraOre)}):null);
+ const venstre=el('span',{class:'k-ltekst'},tekst,l.fraOre!==undefined?el('small',{class:'k-endret',text:'Pris endret fra '+kr(l.perStk?l.fraEnhetOre:l.fraOre)}):null);
  if(l.rabatt)return el('div',{class:'k-linje rabatt'},venstre,el('button',{type:'button',class:'k-prisknapp',onclick:rabattArk,text:l.kr}));
  if(l.nokkel){
-  const stepper=/^booking:\d+$/.test(l.nokkel)?null:el('span',{class:'k-stepper'},el('button',{type:'button','aria-label':'Færre '+tekst,text:'−',onclick:()=>endreAntall(l.nokkel,-1)}),el('span',{text:String(l.antall)}),el('button',{type:'button','aria-label':'Flere '+tekst,text:'+',onclick:()=>endreAntall(l.nokkel,1)}));
-  return el('div',{class:'k-linje'},venstre,stepper,el('button',{type:'button',class:'k-prisknapp','aria-label':'Endre prisen på '+tekst,onclick:()=>prisArk(l,tekst),text:l.kr}));
+  const stepper=/^booking:\d+$/.test(l.nokkel)?null:el('span',{class:'k-stepper'},el('button',{type:'button','aria-label':'Færre '+tekst,text:'−',onclick:()=>endreAntall(l,-1)}),el('span',{text:String(l.antall)}),el('button',{type:'button','aria-label':'Flere '+tekst,text:'+',onclick:()=>endreAntall(l,1)}));
+  return el('div',{class:'k-linje'},venstre,stepper,el('button',{type:'button',class:'k-prisknapp','aria-label':'Endre prisen på '+tekst,disabled:!!salg.rabatt,title:salg.rabatt?RABATT_GITT:undefined,onclick:()=>prisArk(l,tekst),text:l.kr}));
  }
  let fjern=null;
  if(d.type==='gavekort')fjern=()=>salg.gavekort.splice(+d.id.split(':')[1],1);
@@ -213,12 +224,14 @@ function tegnKurv(){
  if(!salg){kurvEl.replaceChildren(el('p',{class:'k-tom',text:'Velg fra listen.'}));return;}
  const r=salg.regnet;const linjer=[];
  if(r)for(const d of r.deler){let fri=0;for(const l of d.linjer)linjer.push(kurvLinje(d,l,l.nokkel?0:(d.id==='ordre'?fri++:0)));}
- const kan=!!r&&r.deler.length>0&&!salg.feil&&!opptatt;
+ const kan=!!r&&r.deler.length>0&&!salg.feil&&!laast();
  const hvem=salg.navn?salg.navn+(salg.person?' · '+salg.person.tittel:''):'Kontantkunde';
+ const prisEndret=!!r&&r.prisEndret&&!salg.rabatt;
  sett(kurvEl,
   el('div',{class:'k-hvem'},el('span',{text:hvem}),pille('Avbryt',avbrytSalg)),
   el('div',{class:'k-linjer'},linjer.length?linjer:el('p',{class:'k-tom',text:'Velg fra listen.'})),
-  el('button',{type:'button',class:'k-pille k-rabattknapp'+(salg.rabatt?' v':''),disabled:!r||!r.deler.length,onclick:rabattArk,text:'Rabatt på kjøpet'}),
+  el('button',{type:'button',class:'k-pille k-rabattknapp'+(salg.rabatt?' v':''),disabled:!r||!r.deler.length||prisEndret,onclick:rabattArk,text:'Rabatt på kjøpet'}),
+  prisEndret?el('p',{class:'k-tom k-regel',text:PRIS_ENDRET}):salg.rabatt?el('p',{class:'k-tom k-regel',text:RABATT_GITT}):null,
   el('div',{class:'k-sum'},el('span',{text:'Totalt'}),el('span',{text:r?r.sum:kr(0)})),
   salg.feil?el('p',{class:'k-feil',role:'alert',text:salg.feil}):null,
   el('div',{class:'k-betal2'},
@@ -226,13 +239,14 @@ function tegnKurv(){
    kort({disabled:!kan,onclick:()=>registrer('Kontant','kontant')},el('b',{text:'Kontant'}))),
   el('button',{type:'button',class:'k-pille k-flere',disabled:!kan,onclick:flereValg,text:'Flere valg'}));
 }
-function avbrytSalg(){if(salg&&salg.betalt.size){melding('Gjør ferdig betalingen først.');return;}stopPoll();salg=null;tegnVenstre();tegnKurv();}
+function avbrytSalg(){if(ikkeNaa())return;stopPoll();salg=null;tegnVenstre();tegnKurv();}
 function endreDepositum(){
- const p=salg.person;
- ark('Endre: betalte de ved booking?',lukk=>[el('p',{class:'k-tom',text:'Når du har lagt inn bookingen selv, eller den ikke ble betalt'}),el('div',{class:'k-rad-knapper'},pille('Ja, '+kr(p.vedBookingOre),lukk,'valgt'),pille('Betalte ikke',async ev=>{const k=ev.currentTarget;k.disabled=true;try{await kall('kasse.php',{handling:'betalteIkke',bookingId:salg.bookingId});lukk();await hentPerson();visSalg();}catch(e){feil(e);k.disabled=false;}},'fylt'))]);
+ if(ikkeNaa())return;const s=salg;const p=s.person;
+ ark('Endre: betalte de ved booking?',lukk=>[el('p',{class:'k-tom',text:'Når du har lagt inn bookingen selv, eller den ikke ble betalt'}),el('div',{class:'k-rad-knapper'},pille('Ja, '+kr(p.vedBookingOre),lukk,'valgt'),pille('Betalte ikke',async ev=>{const k=ev.currentTarget;k.disabled=true;try{await kall('kasse.php',{handling:'betalteIkke',bookingId:s.bookingId});lukk();await hentPerson(s);if(salg===s)visSalg();}catch(e){feil(e);k.disabled=false;}},'fylt'))]);
 }
 function prisArk(l,tekst){
- const perStk=!/^booking:\d+$/.test(l.nokkel);
+ if(ikkeNaa())return;if(salg.rabatt){melding(RABATT_GITT);return;}
+ const perStk=!!l.perStk;
  const inn=el('input',{type:'text',inputmode:'decimal',autocomplete:'off'});
  const f=el('p',{class:'k-feil',role:'alert',hidden:true});
  ark(tekst,lukk=>[el('form',{class:'k-skjema',onsubmit:ev=>{ev.preventDefault();const t=inn.value.replace(/\s|kr|,-/g,'').replace(',','.');if(t===''||!isFinite(Number(t))||Number(t)<0){f.textContent='Prisen må være 0 kroner eller mer.';f.hidden=false;return;}lukk();endreKurv(()=>salg.priser.set(l.nokkel,t));}},
@@ -241,19 +255,22 @@ function prisArk(l,tekst){
   el('div',{class:'k-rad-knapper'},pille('Avbryt',lukk),salg.priser.has(l.nokkel)?pille('Opprinnelig pris',()=>{lukk();endreKurv(()=>salg.priser.delete(l.nokkel));}):null,el('button',{type:'submit',class:'k-pille fylt',text:'Endre pris'})))]);
  inn.focus();
 }
-// «Rabatt på kjøpet»: prosent eller kroner, valgfritt hvorfor. Serveren sjekker at rabatten ikke er større enn summen.
+// «Rabatt på kjøpet»: prosent eller kroner, valgfritt hvorfor. Serveren sjekker reglene og at rabatten ikke er større enn summen.
 function rabattArk(){
- const r=salg.rabatt;let type=r?(r.prosent!==undefined?'prosent':'kr'):null;
+ if(ikkeNaa())return;
+ const rg=salg.regnet;if(rg&&rg.prisEndret&&!salg.rabatt){melding(PRIS_ENDRET);return;}
+ const prosentKan=!rg||rg.prosentKan!==false;
+ const r=salg.rabatt;let type=r?(r.prosent!==undefined?'prosent':'kr'):(prosentKan?null:'kr');
  const inn=el('input',{type:'text',inputmode:'decimal',autocomplete:'off',value:r?String(r.prosent??r.kr):''});
  const hvorfor=el('input',{type:'text',autocomplete:'off',maxlength:'191',value:r?r.hvorfor||'':''});
  const f=el('p',{class:'k-feil',role:'alert',hidden:true});
- const typeEl=el('div',{class:'k-valg-rad'});const tegnType=()=>typeEl.replaceChildren(...[['prosent','Prosent'],['kr','Kroner']].map(([v,t])=>el('button',{type:'button',class:'k-pille'+(type===v?' v':''),'aria-pressed':type===v?'true':'false',text:t,onclick:()=>{type=v;tegnType();}})));tegnType();
+ const typeEl=el('div',{class:'k-valg-rad'});const tegnType=()=>typeEl.replaceChildren(...[['prosent','Prosent'],['kr','Kroner']].map(([v,t])=>el('button',{type:'button',class:'k-pille'+(type===v?' v':''),disabled:v==='prosent'&&!prosentKan,'aria-pressed':type===v?'true':'false',text:t,onclick:()=>{type=v;tegnType();}})));tegnType();
  ark('Rabatt på hele kjøpet',lukk=>[el('form',{class:'k-skjema',onsubmit:ev=>{ev.preventDefault();const t=inn.value.replace(/\s|kr|%|,-/g,'').replace(',','.');
    if(!type){f.textContent='Velg prosent eller kroner.';f.hidden=false;return;}
    if(!t||!isFinite(Number(t))||Number(t)<=0||(type==='prosent'&&Number(t)>100)){f.textContent=type==='prosent'?'Rabatten må være mellom 0 og 100 %.':'Skriv inn en rabatt over null.';f.hidden=false;return;}
    lukk();endreKurv(()=>{salg.rabatt=type==='prosent'?{prosent:t,hvorfor:hvorfor.value.trim()}:{kr:t,hvorfor:hvorfor.value.trim()};});}},
-  typeEl,el('label',{class:'k-felt'},el('span',{text:'Rabatt'}),inn),
-  el('div',{class:'k-valg-rad'},[10,20,50].map(p=>el('button',{type:'button',class:'k-pille',text:p+' %',onclick:()=>{type='prosent';tegnType();inn.value=String(p);}}))),
+  typeEl,prosentKan?null:el('p',{class:'k-tom k-regel',text:PROSENT_BETALT}),el('label',{class:'k-felt'},el('span',{text:'Rabatt'}),inn),
+  el('div',{class:'k-valg-rad'},[10,20,50].map(p=>el('button',{type:'button',class:'k-pille',disabled:!prosentKan,text:p+' %',onclick:()=>{type='prosent';tegnType();inn.value=String(p);}}))),
   el('label',{class:'k-felt'},el('span',{text:'Hvorfor (valgfritt)'}),hvorfor),f,
   el('div',{class:'k-rad-knapper'},pille('Avbryt',lukk),r?pille('Fjern rabatt',()=>{lukk();endreKurv(()=>{salg.rabatt=null;});}):null,el('button',{type:'submit',class:'k-pille fylt',text:'Legg til rabatt'})))]);
 }
@@ -261,20 +278,22 @@ function rabattArk(){
 // ── Betaling ─────────────────────────────────────────────────────────
 // Nøklene (én per del, med delens faste id) beholdes så lenge kurven og betaleren er de samme — også etter «Tilbake».
 // Da kjenner serveren igjen en QR-kode som venter, og stopper den før kontanten tas (kontrolløren 08.10.2026).
-function forbered(){
- const sig=JSON.stringify([kurvTilServer(),betalerTilServer()]);
- if(salg.noklerSig!==sig){salg.nokler={};salg.noklerSig=sig;}
- for(const d of salg.regnet.deler)if(!salg.nokler[d.id])salg.nokler[d.id]=uuid();
- if(!salg.betalt.size)salg.forventet=Object.fromEntries(salg.regnet.deler.map(d=>[d.id,d.sumOre]));
+// Alt under er knyttet til salget det gjelder (s), ikke til det som står i kassa når svaret kommer.
+function forbered(s){
+ const sig=JSON.stringify([kurvTilServer(s),betalerTilServer(s)]);
+ if(s.noklerSig!==sig){s.nokler={};s.noklerSig=sig;}
+ for(const d of s.regnet.deler)if(!s.nokler[d.id])s.nokler[d.id]=uuid();
+ if(!s.betalt.size)s.forventet=Object.fromEntries(s.regnet.deler.map(d=>[d.id,d.sumOre]));
 }
-const body=()=>({kurv:kurvTilServer(),betaler:betalerTilServer(),nokler:salg.nokler,forventet:salg.forventet});
+const body=s=>({kurv:kurvTilServer(s),betaler:betalerTilServer(s),nokler:s.nokler,forventet:s.forventet});
 async function registrer(maate,tekst,deler){
- if(opptatt||!salg||!salg.regnet)return;forbered();stopPoll();opptatt=true;
+ const s=salg;if(!s||!s.regnet||s.vent)return;forbered(s);stopPoll();s.vent=true;
  kurvEl.replaceChildren(el('p',{class:'k-tom',text:'Registrerer …'}));
- try{const d=await kall('kasse.php',deler?{handling:'delt',deler,...body()}:{handling:'betal',maate,...body()});opptatt=false;visFerdig({sum:salg.regnet.sum,tekst,valg:d.kvitteringValg,koder:(d.gavekort||[]).concat(salg.koder),endringer:d.endringer||[]});}
- catch(e){opptatt=false;if(e.stille)return;tegnKurv();melding(e.message);}
+ try{const d=await kall('kasse.php',deler?{handling:'delt',deler,...body(s)}:{handling:'betal',maate,...body(s)});s.vent=false;visFerdig(s,{sum:s.regnet.sum,tekst,valg:d.kvitteringValg,koder:(d.gavekort||[]).concat(s.koder),endringer:d.endringer||[]});}
+ catch(e){s.vent=false;if(e.stille)return;if(salg===s)tegnKurv();melding(e.message);}
 }
 function flereValg(){
+ if(ikkeNaa())return;
  ark('Flere valg',lukk=>[el('div',{class:'k-g2'},
   kort({onclick:()=>{lukk();deltArk();}},el('b',{text:'Del betalingen'}),el('small',{text:'To eller flere betaler'})),
   kort({onclick:()=>{lukk();registrer('Faktura','med faktura');}},el('b',{text:'Faktura'})),
@@ -290,46 +309,51 @@ function deltArk(){
   el('label',{class:'k-felt'},el('span',{text:'Kontant i kroner'}),k),el('label',{class:'k-felt'},el('span',{text:'Mottatt Vipps i kroner'}),v),el('label',{class:'k-felt'},el('span',{text:'Gavekort i kroner'}),g),el('label',{class:'k-felt'},el('span',{text:'Gavekortkode'}),kode),
   el('div',{class:'k-rad-knapper'},pille('Avbryt',lukk),el('button',{type:'submit',class:'k-pille fylt',text:'Registrer'})))]);
 }
-// Vipps-QR i kurven: én QR per del, neste når den forrige er betalt.
-function qrStart(){if(!salg||!salg.regnet)return;forbered();const deler=salg.regnet.deler.map(d=>d.id);qr(Math.max(0,deler.findIndex(id=>!salg.betalt.has(id))),deler);}
-async function qr(i,deler){
- stopPoll();const id=deler[i];const n=deler.length;
+// Vipps-QR i kurven: én QR per del, neste når den forrige er betalt. Mens QR-en vises, er kurven låst («Tilbake» låser opp).
+function qrStart(){const s=salg;if(!s||!s.regnet||s.vent)return;forbered(s);const deler=s.regnet.deler.map(d=>d.id);qr(s,Math.max(0,deler.findIndex(id=>!s.betalt.has(id))),deler);}
+async function qr(s,i,deler){
+ stopPoll();const id=deler[i];const n=deler.length;s.vent=true;
  const omraade=el('div',{class:'k-qrsone'},el('p',{text:'Henter QR-kode …'}));
- sett(kurvEl,el('div',{class:'k-hvem'},el('span',{text:salg.navn||'Kontantkunde'})),el('div',{class:'k-sum'},el('span',{text:'Totalt'}),el('span',{text:salg.regnet.sum})),omraade,salg.betalt.size?null:pille('Tilbake',()=>{stopPoll();tegnKurv();}));
+ sett(kurvEl,el('div',{class:'k-hvem'},el('span',{text:s.navn||'Kontantkunde'})),el('div',{class:'k-sum'},el('span',{text:'Totalt'}),el('span',{text:s.regnet.sum})),omraade,s.betalt.size?null:pille('Tilbake',()=>{stopPoll();s.vent=false;if(salg===s)tegnKurv();}));
  let d;
- try{d=await kall('kasse.php',{handling:'qr',del:id,...body()});}
- catch(e){if(e.stille)return;if(e.status===410)salg.nokler[id]=uuid();omraade.replaceChildren(el('p',{class:'k-feil',role:'alert',text:e.message}));return;}
- if(d.betalt){if(d.betalingId)salg.betalinger.push(d.betalingId);await delBetalt(i,deler);return;}
+ try{d=await kall('kasse.php',{handling:'qr',del:id,...body(s)});}
+ catch(e){if(e.stille)return;if(e.status===410)s.nokler[id]=uuid();omraade.replaceChildren(el('p',{class:'k-feil',role:'alert',text:e.message}));return;}
+ if(d.betalt){if(d.betalingId)s.betalinger.push(d.betalingId);await delBetalt(s,i,deler);return;}
+ if(!omraade.isConnected)return;
  const status=el('p',{style:'font-weight:700',text:'Venter på Vipps …'});
  omraade.replaceChildren(...[n>1?el('p',{class:'k-tom',text:`Vipps ${i+1} av ${n} · ${d.belop}`}):null,el('img',{class:'k-qr',src:d.qr,alt:'QR-kode for betaling med Vipps'}),status].filter(Boolean));
  let runder=0;
- const sjekk=async()=>{pollTimer=null;if(!omraade.isConnected)return;try{const s=await kall('kasse.php',{handling:'status',poll:d.poll});if(s.betalt){if(s.kode)salg.koder.push({kode:s.kode,belop:d.belop});if(s.betalingId)salg.betalinger.push(s.betalingId);await delBetalt(i,deler);return;}if(['avbrutt','feilet'].includes(s.status)){salg.nokler[id]=uuid();status.textContent='Betalingen ble avbrutt i Vipps. Trykk «Vipps» for en ny QR-kode.';return;}}catch(e){if(e.stille)return;status.textContent=e.message;}
+ const sjekk=async()=>{pollTimer=null;if(!omraade.isConnected||salg!==s)return;try{const st=await kall('kasse.php',{handling:'status',poll:d.poll});if(st.betalt){if(st.kode)s.koder.push({kode:st.kode,belop:d.belop});if(st.betalingId)s.betalinger.push(st.betalingId);await delBetalt(s,i,deler);return;}if(['avbrutt','feilet'].includes(st.status)){s.nokler[id]=uuid();status.textContent='Betalingen ble avbrutt i Vipps. Trykk «Vipps» for en ny QR-kode.';return;}}catch(e){if(e.stille)return;status.textContent=e.message;}
   if(++runder<220)pollTimer=setTimeout(sjekk,3000);else status.textContent='Ingen bekreftelse ennå. Sjekk Penger i admin før du tar betalt på nytt.';};
  pollTimer=setTimeout(sjekk,3000);
 }
-async function delBetalt(i,deler){
- salg.betalt.add(deler[i]);
- const neste=deler.findIndex(id=>!salg.betalt.has(id));
- if(neste>=0){await qr(neste,deler);return;}
- let valg={epost:false,sms:false,betalinger:salg.betalinger};
- try{valg=await kall('kasse.php',{handling:'kvitteringValg',betaler:betalerTilServer(),betalinger:salg.betalinger});}catch(e){}
- visFerdig({sum:salg.regnet.sum,tekst:'med Vipps',valg,koder:salg.koder,endringer:[]});
+async function delBetalt(s,i,deler){
+ s.betalt.add(deler[i]);
+ const neste=deler.findIndex(id=>!s.betalt.has(id));
+ if(neste>=0){await qr(s,neste,deler);return;}
+ let valg={epost:false,sms:false,betalinger:s.betalinger};
+ try{valg=await kall('kasse.php',{handling:'kvitteringValg',betaler:betalerTilServer(s),betalinger:s.betalinger});}catch(e){}
+ s.vent=false;
+ visFerdig(s,{sum:s.regnet.sum,tekst:'med Vipps',valg,koder:s.koder,endringer:[]});
 }
 
 // ── Ferdig ───────────────────────────────────────────────────────────
-function visFerdig({sum,tekst,valg,koder,endringer}){
+function visFerdig(s,{sum,tekst,valg,koder,endringer}){
  stopPoll();
- const betalinger=(valg&&valg.betalinger)||[];const betaler=salg?betalerTilServer():{};
+ const betalinger=(valg&&valg.betalinger)||[];const betaler=betalerTilServer(s);
  const kvittering=async(kanal,knapp)=>{knapp.disabled=true;try{const d=await kall('kasse.php',{handling:'kvittering',kanal,betalinger,betaler});melding(d.beskjed);}catch(e){feil(e);knapp.disabled=false;}};
  const knapper=[];
  if(valg&&valg.sms)knapper.push(kort({onclick:ev=>kvittering('sms',ev.currentTarget)},el('b',{text:'Kvittering på SMS'})));
  if(valg&&valg.epost)knapper.push(kort({onclick:ev=>kvittering('epost',ev.currentTarget)},el('b',{text:'Kvittering på e-post'})));
- kurvEl.replaceChildren(el('div',{class:'k-ferdig'},el('div',{class:'k-hake','aria-hidden':'true',text:'✓'}),el('div',{style:'font-size:24px;font-weight:800',text:`Betalt ${sum} ${tekst}`}),
-  (koder||[]).map(k=>el('p',{style:'font-size:20px;margin:0'},'Gavekort '+k.belop+': ',el('b',{text:k.kode}))),
-  (endringer||[]).map(t=>el('p',{class:'k-tom',text:t})),
-  knapper.length?el('div',{class:'k-g2'},knapper):null,
-  el('button',{type:'button',class:'k-stor',text:'I dag',onclick:()=>{tegnKurv();}})));
- salg=null;oppdaterListe();
+ if(salg===s){
+  kurvEl.replaceChildren(el('div',{class:'k-ferdig'},el('div',{class:'k-hake','aria-hidden':'true',text:'✓'}),el('div',{style:'font-size:24px;font-weight:800',text:`Betalt ${sum} ${tekst}`}),
+   (koder||[]).map(k=>el('p',{style:'font-size:20px;margin:0'},'Gavekort '+k.belop+': ',el('b',{text:k.kode}))),
+   (endringer||[]).map(t=>el('p',{class:'k-tom',text:t})),
+   knapper.length?el('div',{class:'k-g2'},knapper):null,
+   el('button',{type:'button',class:'k-stor',text:'I dag',onclick:()=>{tegnKurv();}})));
+  salg=null;
+ }else melding(`Betalt ${sum} ${tekst}`);
+ oppdaterListe();
 }
 function oppgjorTabell(o){
  const e=o.endringer||[];

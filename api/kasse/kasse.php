@@ -2,9 +2,15 @@
 /**
  * Kassa på iPaden (Lissom Kasse, eieren 8. oktober 2026).
  *
- *   GET                                   «I dag»: påmeldte, medlemmer inne,
- *                                         varer, prisnivåer, dagens oppgjør
+ *   GET                                   «I dag»: dagens kurs (kurs, ledigeKurs),
+ *                                         påmeldte, varer, prisnivåer, oppgjøret
+ *   GET ?okt=<id>                         ett av dagens kurs: de som ikke har betalt
  *   POST handling=person   { bookingId }  én person fra lista (Paint on Pots)
+ *   POST handling=nyKunde  { navn, telefon, oktId?, antall? }  ny kunde, eventuelt
+ *                                         med en plass på et av dagens kurs
+ *
+ * Kurven kan ha «priser» { linjens nøkkel: kroner } og «rabatt» { prosent | kr,
+ * hvorfor } (KasseKurv::deler, KasseJustering).
  *   POST handling=regn     { kurv, betaler }               kurven, regnet her
  *   POST handling=betal    { kurv, betaler, maate, nokler, forventet }
  *   POST handling=delt     { kurv, betaler, deler, nokler, forventet }
@@ -28,6 +34,14 @@ require __DIR__ . '/../_boot.php';
 $person = KasseTilgang::krevUlast();
 
 if (Foresporsel::metode() === 'GET') {
+    // Ett av dagens kurs: de som ikke har betalt (iPaden spør hvert 15. sekund).
+    if (isset($_GET['okt'])) {
+        try {
+            Svar::json(KasseKurv::kurs((int) $_GET['okt']));
+        } catch (RuntimeException $e) {
+            Svar::feil($e->getMessage(), (int) $e->getCode() === 404 ? 404 : 400);
+        }
+    }
     Svar::json(KasseKurv::idag() + ['person' => ['navn' => $person['navn']], 'laasMinutter' => KasseTilgang::LAAS_MINUTTER]);
 }
 
@@ -42,6 +56,10 @@ try {
     switch ($handling) {
         case 'person':
             Svar::ok(KasseKurv::person(Foresporsel::heltall('bookingId')));
+
+        case 'nyKunde':
+            Svar::ok(KasseKurv::nyKunde(Foresporsel::tekst('navn'), Foresporsel::tekst('telefon'),
+                Foresporsel::heltall('oktId'), Foresporsel::heltall('antall', 1), $person));
 
         case 'regn':
             $betaler = KasseKurv::betaler($liste('betaler'));

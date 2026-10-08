@@ -279,6 +279,7 @@ final class Kasse
         revider('kassesalg_ipad', null, null, ['person' => $person['id'], 'sum' => $sum, 'maate' => $maateTekst, 'deler' => $resultat['deler']]);
         $ider = self::betalingIder($deler);
         return $resultat + ['sumOre' => $sum, 'sum' => KasseKurv::kr($sum), 'betalinger' => $ider,
+            'endringer' => KasseJustering::kvitteringFor($deler),
             'kvitteringValg' => self::kvitteringValg($betaler, $ider)];
     }
 
@@ -494,6 +495,9 @@ final class Kasse
             if ($stopp !== null) {
                 throw new RuntimeException($stopp, 409);
             }
+            // Endret pris og rabatt fra kurven (eller ingen): beløpet på
+            // påmeldingen settes ned før det som står igjen regnes.
+            KasseJustering::settBooking($d, $nokkel, $person);
             if ($d['pop'] !== []) {
                 PopPris::kassa($bid, $d['pop'], $person['id']);
             }
@@ -511,7 +515,8 @@ final class Kasse
             );
             $skyldig = KursstartKrav::skyldig($bid, (int) $b['belop_ore'], (string) $b['status']);
             if ($skyldig === 0) {
-                return;   // gjenstandene er slått inn, og ingenting står igjen
+                Booking::settBetaltStatus($bid);
+                return;   // gjenstandene er slått inn (eller rabatten dekker alt), og ingenting står igjen
             }
             if ($viaVipps !== null && !PopPris::harRest($bid)) {
                 throw new RuntimeException('Denne er betalt gjennom Vipps. Bruk refusjon under Økonomi hvis noe skal rettes.', 409);
@@ -673,6 +678,7 @@ final class Kasse
                 if ($gaveRad !== null) {
                     Booking::trekkGavekortEllerAvbryt((int) $gaveRad);
                 }
+                KasseJustering::settOrdre($d, $nokkel, $ordreId, $person);
                 revider('kassesalg_registrert', 'ordre', $ordreId, ['ordrenr' => $ordrenr, 'sum' => (int) $d['sumOre'],
                     'maate' => $maateTekst, 'kasse' => $person['id']]);
                 return $ordreId;
@@ -967,8 +973,10 @@ final class Kasse
                         'tittel' => mb_substr((string) $v['tittel'], 0, 191), 'antall' => (int) $v['antall'], 'pris_ore' => (int) $v['prisOre'],
                     ]);
                 }
+                KasseJustering::settOrdre($d, $nokkel, $ordreId, $person);
                 revider('vippsqr_laget', 'order', $ordreId, ['belop' => (int) $d['sumOre'], 'kasse' => $person['id']]);
-                return static function () use ($ordreId, $betalingId): void {
+                return static function () use ($ordreId, $betalingId, $nokkel): void {
+                    KasseJustering::fjern($nokkel);
                     DB::kjor('DELETE FROM order_lines WHERE order_id = :o', ['o' => $ordreId]);
                     DB::kjor('DELETE FROM orders WHERE id = :o', ['o' => $ordreId]);
                     DB::kjor("DELETE FROM payments WHERE id = :p AND status = 'opprettet'", ['p' => $betalingId]);
@@ -1050,6 +1058,21 @@ final class Kasse
     private static function qrBooking(array $d, array $person): array
     {
         $bid = (int) $d['bookingId'];
+        // Endret pris og rabatt settes på før QR-koden lages, så Vipps får
+        // beløpet etter rabatt. En QR-kode som venter med et annet beløp,
+        // stoppes først (statusen hentes fra Vipps).
+        if (KasseJustering::endrerBooking($d, (string) $d['nokkel'])) {
+            KursstartKrav::laas($bid);
+            try {
+                $stopp = KursstartKrav::stoppVentende($bid);
+                if ($stopp !== null) {
+                    throw new RuntimeException($stopp, 409);
+                }
+                KasseJustering::settBooking($d, (string) $d['nokkel'], $person);
+            } finally {
+                KursstartKrav::slipp($bid);
+            }
+        }
         if ($d['pop'] !== []) {
             $naa = DB::verdi('SELECT gjenstander_ore FROM bookings WHERE id = :i', ['i' => $bid]);
             // Er gjenstandene alt slått inn med samme sum, er det et nytt

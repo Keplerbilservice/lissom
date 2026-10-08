@@ -584,10 +584,14 @@ final class PopPris
                 DB::settInn('pop_kasselinjer', $l + ['booking_id' => $bookingId, 'registrert_av' => $adminId]);
             }
             $betalt = (int) Booking::betalingerFor($bookingId)['sum'];
+            // Endret pris og rabatt gitt i iPad-kassa (migrasjon 269) står
+            // også når gjenstandene slås inn på nytt (KasseJustering).
+            $rabatt = DB::harKolonne('bookings', 'kasse_rabatt_ore')
+                ? (int) DB::verdi('SELECT kasse_rabatt_ore FROM bookings WHERE id = :i', ['i' => $bookingId]) : 0;
             // reservert_til toemmes: en plass som er gjort opp i kassa skal
             // ikke slippes av cron fordi en Vipps-frist en gang sto paa den.
             DB::oppdater('bookings', [
-                'belop_ore'       => max($sum, $betalt),
+                'belop_ore'       => max($sum - $rabatt, $betalt),
                 'gjenstander_ore' => $sum,
                 'reservert_til'   => null,
             ], ['id' => $bookingId]);

@@ -140,6 +140,7 @@ kjor "AI-kommentarsvar" php tests/autosvar.php
 kjor "galleri"       php tests/galleri.php
 kjor "lager"         php tests/lager.php
 kjor "må gjøres: ovn, tregt, ikke innom, mandag" php tests/ma-gjores-mer.php
+kjor "ny admin (/ny-admin): tilgang, PopPris, utsending, påminnelse-sperre, kursbevis, kanaler, lager" php tests/ny-admin.php
 kjor "malebord (Paint on Pots)" php tests/malebord.php
 kjor "Paint on Pots: prisnivåer, 100 kr ved booking og kassa" php tests/pop-pris.php
 kjor "skisser"       php tests/skisser.php

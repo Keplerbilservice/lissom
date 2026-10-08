@@ -8,7 +8,11 @@ const { chromium } = createRequire(import.meta.url)('playwright');
 const fixture = (mode, data = {}) => JSON.parse(execFileSync('php', ['tests/nettleser/varsler-fixture.php', mode, JSON.stringify(data)], { encoding: 'utf8' }));
 const checks = [];
 const check = (name, ok) => { checks.push({ name, ok }); console.log(`${ok ? 'OK' : 'FEIL'} ${name}`); };
-const cron = job => execFileSync('php', ['bin/cron.php', job], { encoding: 'utf8', timeout: 90000 });
+// Paaminnelsen gaar dagen foer kl. 12 (eieren 08.10.2026). Klokka settes til kl. 13
+// dagen foer «tomorrow»-okta (+20 t i fixturen), saa testen ikke avhenger av naar den kjores.
+const oktDato = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Oslo' }).format(new Date(Date.now() + 20 * 3600e3));
+const testtid = new Date(Date.parse(oktDato + 'T12:00:00Z') - 864e5).toISOString().slice(0, 10) + ' 13:00';
+const cron = job => execFileSync('php', ['bin/cron.php', job], { encoding: 'utf8', timeout: 90000, env: { ...process.env, LISSOM_TESTTID: testtid } });
 const s = fixture('seed'); let browser, receiver;
 try {
   cron('paaminnelser'); cron('anmeldelser');

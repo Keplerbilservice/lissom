@@ -7,7 +7,7 @@
 //   0 1 * * *     php ~/lissom-app/bin/cron.php vedlikehold >/dev/null
 //   30 2 * * *    php ~/lissom-app/bin/cron.php sikkerhetskopi >/dev/null
 //   0 * * * *     php ~/lissom-app/bin/cron.php medlemstrekk >/dev/null
-//   0 12 * * *    php ~/lissom-app/bin/cron.php paaminnelser >/dev/null   (eieren 08.10.2026: dagen før kl 12)
+//   0 12 * * *    php ~/lissom-app/bin/cron.php paaminnelser >/dev/null
 //   0 8 * * *     php ~/lissom-app/bin/cron.php fortsett >/dev/null
 //
 // «>/dev/null» bakerst, og bare stdout: CGI-utgaven av PHP skriver alltid den
@@ -355,7 +355,9 @@ switch ($jobb) {
         // gaar paaminnelsen for alt som starter i morgen. Det som starter i
         // dag og ikke har faatt sin (kjoringen falt ut), tas med ogsaa.
         $oslo = new DateTimeZone('Europe/Oslo');
-        $naaOslo = new DateTimeImmutable('now', $oslo);
+        // LISSOM_TESTTID: bare i testmiljoet (tests/nettleser/varsler.mjs).
+        $testtid = Config::hent('miljo', '') === 'test' ? (string) getenv('LISSOM_TESTTID') : '';
+        $naaOslo = new DateTimeImmutable($testtid !== '' ? $testtid : 'now', $oslo);
         $iDag = $naaOslo->setTime(0, 0);
         $tilOslo = (int) $naaOslo->format('G') >= 12 ? $iDag->modify('+2 days') : $iDag->modify('+1 day');
         $okter = DB::alle(

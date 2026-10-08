@@ -837,7 +837,7 @@ $blandNye = static function (array $kursRader, array $raa) use ($nyeMedlemskap):
 // {gruppe, type, id, tittel, under, rute}. «teller» = false betyr at saken
 // står i arket, men ikke gir rødt merke (Ta ut leire er en snarvei, ikke noe
 // som venter). Kilder som ikke finnes (migrasjon ikke kjørt) hoppes over.
-// Uleste i medlemschatten er IKKE med: chatten har ingen lest-status.
+// Uleste i medlemschatten telles fra chat_lest (migrasjon 265, idé 1 08.10).
 $maGjores = (static function () use ($medlemsstatus, $nyeste): array {
     $ut = [];
     $kort = static function (?string $t, int $n = 90): string {
@@ -856,7 +856,32 @@ $maGjores = (static function () use ($medlemsstatus, $nyeste): array {
         }
     };
 
-    // Meldinger: henvendelser, innboksen (Instagram/Facebook) og feilmeldinger.
+    // Meldinger: medlemschatten (uleste for denne admin), henvendelser,
+    // innboksen (Instagram/Facebook) og feilmeldinger.
+    $trygt('medlemschat', static function () use ($sak, $kort): void {
+        // Idé 1 (eieren 08.10.2026): uten migrasjon 265 finnes ingen
+        // lest-status, og da er chatten ikke med, som foer.
+        if (!DB::harTabell('chat_lest') || !DB::harTabell('chat_meldinger')) {
+            return;
+        }
+        $meg = (int) (Sesjon::medlem()['id'] ?? 0);
+        $lest = DB::verdi('SELECT sist_lest_id FROM chat_lest WHERE member_id = :m', ['m' => $meg]);
+        // Aldri aapnet: bare de tre siste dagene teller, ikke hele historikken.
+        $vilkar = $lest === null ? 'c.created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 3 DAY)' : 'c.id > :l';
+        $param = ['m' => $meg] + ($lest === null ? [] : ['l' => (int) $lest]);
+        $fra = "FROM chat_meldinger c JOIN members m ON m.id = c.member_id
+                 WHERE {$vilkar} AND c.member_id <> :m AND c.slettet_at IS NULL";
+        $n = (int) (DB::verdi("SELECT COUNT(*) {$fra}", $param) ?? 0);
+        if ($n === 0) {
+            return;
+        }
+        $siste = DB::en("SELECT c.id, c.tekst, c.created_at, m.navn {$fra} ORDER BY c.id DESC LIMIT 1", $param);
+        $tid = (new DateTimeImmutable((string) $siste['created_at'], new DateTimeZone('UTC')))
+            ->setTimezone(new DateTimeZone('Europe/Oslo'))->format('H:i');
+        $sak('Meldinger', 'chat', 0, 'Medlemschat: ' . $n . ' uleste',
+            (string) $siste['navn'] . ', ' . $tid . ': «' . $kort((string) $siste['tekst'], 70) . '»', 'chat',
+            ['siste' => (int) DB::verdi('SELECT COALESCE(MAX(id), 0) FROM chat_meldinger'), 'antall' => $n]);
+    });
     $trygt('henvendelser', static function () use ($sak, $kort): void {
         foreach (DB::alle("SELECT id, navn, melding FROM enquiries WHERE status = 'ubesvart' ORDER BY id DESC LIMIT 20") as $r) {
             $sak('Meldinger', 'henvendelse', (int) $r['id'], 'Henvendelse fra ' . ((string) $r['navn'] ?: 'nettsiden'),
@@ -928,9 +953,22 @@ $maGjores = (static function () use ($medlemsstatus, $nyeste): array {
             implode(' · ', array_filter([(string) $m['plan'], (string) $m['hvorfor']])), 'folk?person=' . (int) $m['id']);
     }
 
-    // Kurs: nye påmeldinger (siste tre dager; «sett» huskes i nettleseren) og
-    // ledig plass med folk på venteliste.
+    // Kurs: nye påmeldinger (siste tre dager) og ledig plass med folk på
+    // venteliste. «Sett» ligger på serveren fra migrasjon 265 (idé 2, 08.10);
+    // uten den huskes det i nettleseren som før (settPaaServer=false).
+    $settId = [];
+    $trygt('sett', static function () use (&$settId, $nyeste): void {
+        $ider = array_map(static fn(array $b): int => (int) $b['id'], $nyeste);
+        if ($ider !== [] && DB::harTabell('pamelding_sett')) {
+            $settId = array_flip(array_map('intval', array_column(DB::alle(
+                'SELECT booking_id FROM pamelding_sett WHERE booking_id IN (' . implode(',', $ider) . ')'
+            ), 'booking_id')));
+        }
+    });
     foreach ($nyeste as $b) {
+        if (isset($settId[(int) $b['id']])) {
+            continue;
+        }
         $sak('Kurs', 'pamelding', (int) $b['id'], 'Ny påmelding: ' . (string) $b['navn'],
             implode(' · ', array_filter([(string) $b['tittel'],
                 $b['start_tid'] ? Booking::norskDato((string) $b['start_tid']) : '',
@@ -1036,6 +1074,8 @@ $maGjores = (static function () use ($medlemsstatus, $nyeste): array {
 Svar::json([
     // Må gjøres på I dag: én samlet liste (se $maGjores over).
     'maGjores' => $maGjores,
+    // «Sett» paa paameldinger lagres paa serveren (migrasjon 265, idé 2).
+    'settPaaServer' => DB::harTabell('pamelding_sett'),
     'dagensBestillinger' => $dagensBestillinger,
     // Hva som faktisk er skrudd paa.
     //

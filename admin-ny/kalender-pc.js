@@ -3,7 +3,7 @@
 // Cellene har data-dato, data-akse (HH:MM) og data-kol (kursholder-id i dag, tom i uke = kursholderen beholdes): slippmål for dra og slipp i K5.
 // Samling 2 og 3 har data-låst på brikka: dagene flyttes fra kursets dato, ikke hver for seg (se kalender.php).
 import {el,badge,today,date,shift} from './ui.js';
-import {arkPaa,typeKlasse,merker,initialer,svevekort,skjulSveve,tidene,tiderTekst,dagSum,visTittel} from './kalender-ark.js';
+import {arkPaa,typeKlasse,merker,initialer,svevekort,skjulSveve,tidene,tiderTekst,dagSum,visTittel,antPameldt} from './kalender-ark.js';
 
 export const PC_BRED='(min-width:761px)';
 export const erBred=()=>typeof matchMedia==='function'&&matchMedia(PC_BRED).matches;
@@ -51,7 +51,7 @@ function brikkeGrunn(e,apne,plass){
  if(plass?.baand)attr.class+=' kp-baand';
  // Lav brikke (under LAV_PX): bare tid og tittel på én linje, med ellipse.
  if(plass&&plass.hoyde<LAV_PX){attr.class+=' kp-lav';return el('button',attr,el('small',{text:e.tid||''}),el('strong',{text:e.tittel}));}
- return el('button',attr,el('small',{text:`${e.tid||''}${e.slutt?'–'+e.slutt:''}`}),el('strong',{text:visTittel(e)}),el('span',{text:[e.holder,e.samling,e.avlyst?'Avlyst':null,e.kap?`${e.pameldt||0}/${e.kap} påmeldt`:e.type].filter(Boolean).join(' · ')}));
+ return el('button',attr,el('small',{text:`${e.tid||''}${e.slutt?'–'+e.slutt:''}`}),el('strong',{text:visTittel(e)}),el('span',{text:[e.holder,e.samling,e.avlyst?'Avlyst':null,e.kap?antPameldt(e.pameldt):e.type].filter(Boolean).join(' · ')}));
 }
 
 // Plassen en brikke tegnes på (px fra toppen). Høyden er minst MIN_PX, og banene regnes fra det som tegnes,

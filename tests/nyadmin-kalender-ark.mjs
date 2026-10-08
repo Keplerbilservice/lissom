@@ -40,9 +40,9 @@ try{
   await p.getByLabel('Velg dato').fill(s.d);
   const alfa=p.locator('button.kalm-kort',{hasText:`${s.tag} Alfa`});await alfa.waitFor();
   assert.ok(await alfa.evaluate(b=>b.classList.contains('kal-t-kurs')),'390: kurset har kursfargen');
-  assert.deepEqual(await alfa.locator('.kal-m').allInnerTexts(),['2/6','1 ubetalt','+1 nye','✎ merknad'],'390: merkene på kortet, som på PC');
+  assert.deepEqual(await alfa.locator('.kal-m').allInnerTexts(),['2 påmeldte','1 ubetalt','+1 nye','✎ merknad'],'390: merkene på kortet, som på PC');
   assert.deepEqual(await alfa.locator('.kal-bilder span').allInnerTexts(),['I','M'],'390: initialene på kortet');
-  const bravo=p.locator('button.kalm-kort',{hasText:`${s.tag} Bravo`});assert.deepEqual(await bravo.locator('.kal-m').allInnerTexts(),['0/10'],'390: tomt kurs har bare plassene');
+  const bravo=p.locator('button.kalm-kort',{hasText:`${s.tag} Bravo`});assert.deepEqual(await bravo.locator('.kal-m').allInnerTexts(),['0 påmeldte'],'390: tomt kurs har bare plassene');
   assert.equal(await p.locator('.kalm-kort',{hasText:'ovn'}).count(),0,'390: brenningen er skjult');
   assert.match(await p.locator('.kalm-dag .kal-sum').first().innerText(),/^2 økter · 2 påmeldt$/,'390: dagsoppsummering');
   await alfa.tap();await ark(p).waitFor();
@@ -86,7 +86,7 @@ try{
   const farge=async l=>l.evaluate(b=>getComputedStyle(b).backgroundColor);
   assert.equal(await farge(A),'rgb(255, 207, 56)','kurs er gult');
   assert.ok(await uke.locator('.kp-brikke',{hasText:`${s.tag} Bravo`}).evaluate(b=>b.classList.contains('kal-t-event')),'event har eventfargen');
-  assert.deepEqual(await A.locator('.kal-m').allInnerTexts(),['2/6','1 ubetalt','+1 nye','✎ merknad'],'merkene på brikka');
+  assert.deepEqual(await A.locator('.kal-m').allInnerTexts(),['2 påmeldte','1 ubetalt','+1 nye','✎ merknad'],'merkene på brikka');
   assert.deepEqual(await A.locator('.kal-bilder span').allInnerTexts(),['I','M'],'deltakerinitialene');
   assert.equal(await uke.locator(`.kp-kolhode[data-dato="${s.d}"] .kal-sum`).innerText(),'2 økter · 2 påmeldt','dagsoppsummering i kolonnehodet');
   // Svevekort med deltakerne og betalingen.

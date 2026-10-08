@@ -4,7 +4,7 @@
 // Hele kortet åpner hendelsesarket som finnes fra før (eventDetails i kalender.js).
 // Ingen piler, ingen «Åpne»-knapper, ingenting valgt på forhånd i filteret.
 import {el,api,badge,today,date,iso,shift} from './ui.js';
-import {settBrytere,arkPaa,menyPaa,skjultInnsjekk,typeKnapper,synligType,filterEndret,slaaSammen,typeKlasse,merker,initialer,tidene,tiderTekst,dagSum,visTittel,settPopDager} from './kalender-ark.js';
+import {settBrytere,arkPaa,menyPaa,skjultInnsjekk,typeKnapper,synligType,filterEndret,slaaSammen,typeKlasse,merker,initialer,tidene,tiderTekst,dagSum,visTittel,settPopDager,antPameldt} from './kalender-ark.js';
 
 export const SMAL='(max-width:760px)';
 export const erSmal=()=>matchMedia(SMAL).matches;
@@ -31,7 +31,7 @@ const SOK_MND=6;
 let naTimer=0;
 // Det «Går nå» og «Neste» viser: kurs, Paint on Pots og eventer. Ikke vakter, brenning, notater eller innsjekk (som gamle admin).
 const erKurs=e=>!e.avlyst&&['kurs','pop','event'].includes(e.type);
-const plass=e=>e.kap?`${e.pameldt||0}/${e.kap} påmeldt`:'';
+const plass=e=>e.kap?antPameldt(e.pameldt):'';
 const tidsrom=e=>`${e.tid||''}${e.slutt?'–'+e.slutt:''}`;
 const dagNavn=(d,o)=>date(d).toLocaleDateString('nb-NO',o);
 const stor=t=>t.charAt(0).toLocaleUpperCase('nb-NO')+t.slice(1);

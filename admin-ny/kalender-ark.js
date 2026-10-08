@@ -41,11 +41,13 @@ export const filterEndret=()=>!(skjulte.size===1&&skjulte.has('brenning'));
 
 // ── Merkene på kortene ──────────────────────────────────────────────
 const erOkt=e=>Number(e.oktId)>0&&['kurs','event','pop'].includes(e.type);
+/* «4 påmeldte» i stedet for «4/8» (eieren 08.10.2026). Plassene vises i økt-arket. */
+export const antPameldt=n=>`${n||0} påmeldt${(n||0)===1?'':'e'}`;
 export const ubetalte=e=>(e.deltakere||[]).filter(p=>p.status==='Ikke betalt').length;
 export function merker(e,{kort=false}={}){
  if(e.avlyst)return [el('span',{class:'kal-m kal-m-skylder',text:'Avlyst'})];
  if(!e.kap)return [];
- const ut=[el('span',{class:'kal-m kal-m-plass',text:`${e.pameldt||0}/${e.kap}`})];
+ const ut=[el('span',{class:'kal-m kal-m-plass',text:antPameldt(e.pameldt)})];
  const n=ubetalte(e);
  if(n)ut.push(el('span',{class:'kal-m kal-m-skylder',text:`${n} ubetalt`}));else if(e.pameldt)ut.push(el('span',{class:'kal-m kal-m-ok',text:'Alle betalt'}));
  if(e.nye)ut.push(el('span',{class:'kal-m kal-m-ny',text:kort?`+${e.nye}`:`+${e.nye} nye`}));

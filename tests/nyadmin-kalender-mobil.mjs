@@ -45,11 +45,11 @@ try{
 
   // Går nå og Neste øverst, før styringen.
   const gaar=p.locator('.kalm-na.gaar');await gaar.waitFor();
-  const gt=await gaar.innerText();assert.match(gt,/Går nå/i);assert.ok(gt.includes(`${s.tag} Dreiekurs`),'Går nå viser kurset');assert.match(gt,/1\/8 påmeldt/);assert.match(gt,/17:00/);
+  const gt=await gaar.innerText();assert.match(gt,/Går nå/i);assert.ok(gt.includes(`${s.tag} Dreiekurs`),'Går nå viser kurset');assert.match(gt,/1 påmeldt(?!e)/);assert.match(gt,/17:00/);
   const nt=await p.locator('.kalm-na.neste').innerText();assert.match(nt,/Neste/i);assert.ok(nt.includes(s.tag),'Neste viser neste kursdag');assert.match(nt,/17:00/);
   const rekke=await p.evaluate(()=>['.kalm-na.gaar','.kalm-na.neste','.kalm-styr','.kalm-uke'].map(q=>document.querySelector(q).getBoundingClientRect().top));
   assert.deepEqual([...rekke].sort((a,b)=>a-b),rekke,'rekkefølge: Går nå, Neste, styring, ukestripe');
-  console.log('390 px: «Går nå» og «Neste» øverst med kurs, 1/8 påmeldt og tid');
+  console.log('390 px: «Går nå» og «Neste» øverst med kurs, 1 påmeldt og tid');
 
   // Regler: 44 px, ingen piler, ingen «Åpne», ingenting forhåndsvalgt i filteret.
   const smaa=await p.locator('.kalm button, .kalm input').evaluateAll(l=>l.filter(n=>n.offsetParent).map(n=>{const r=n.getBoundingClientRect();return{t:n.textContent.trim()||n.getAttribute('aria-label'),h:r.height,w:r.width};}).filter(r=>r.h<44||r.w<44));

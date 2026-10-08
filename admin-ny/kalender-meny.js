@@ -156,7 +156,7 @@ export async function leggTilVelg(){
  let l;try{const fra=today();l=((await api(`kalender.php?fra=${fra}&til=${shift(fra,30)}`)).hendelser||[]).filter(e=>erOkt(e)&&e.kap&&!e.avlyst&&e.dato>=fra&&!String(e.id).startsWith('saml-'));}catch(err){toast(err.message);return;}
  l.sort((a,b)=>`${a.dato}T${a.tid}`.localeCompare(`${b.dato}T${b.tid}`));
  if(!l.length){toast('Ingen kommende økter med påmelding.');return;}
- form('Legg til deltaker',[field('oktId','Økt','number',{velg:true,options:l.map(e=>[e.oktId,`${e.tittel} · ${kortDato(e.dato)} ${e.tid} (${e.pameldt||0}/${e.kap})`])})],{},async v=>{setTimeout(()=>leggTilDeltaker(v.oktId,ferdig));},{submitLabel:'Videre',successText:false});
+ form('Legg til deltaker',[field('oktId','Økt','number',{velg:true,options:l.map(e=>[e.oktId,`${e.tittel} · ${kortDato(e.dato)} ${e.tid} (${e.pameldt||0} påmeldt${(e.pameldt||0)===1?'':'e'})`])})],{},async v=>{setTimeout(()=>leggTilDeltaker(v.oktId,ferdig));},{submitLabel:'Videre',successText:false});
 }
 async function hentVente(){try{vente=(await api('venteliste.php')).venteliste||[];}catch{vente=[];}return vente;}
 async function velgVente(){const l=await hentVente();if(!l.length){toast('Ingen står på venteliste.');return;}valgArk('Fra ventelista',l.map(w=>[`${w.navn} · ${w.kurs}`,()=>giPlass(w)]));}
@@ -292,7 +292,7 @@ export async function dagsrapport(dag){
  };
  let s;
  s=sheet(`Dagsrapport · ${kortDato(dag)}`,el('div',{class:'kal-rapport'},
-  l.length?l.map(e=>el('section',{},el('h3',{},`${e.tid} ${e.tittel} `,el('small',{text:[`${e.pameldt||0}/${e.kap}`,e.holder||'Ikke tildelt',e.avlyst?'Avlyst':null].filter(Boolean).join(' · ')})),
+  l.length?l.map(e=>el('section',{},el('h3',{},`${e.tid} ${e.tittel} `,el('small',{text:[`${e.pameldt||0} påmeldt${(e.pameldt||0)===1?'':'e'}`,e.holder||'Ikke tildelt',e.avlyst?'Avlyst':null].filter(Boolean).join(' · ')})),
    (e.deltakere||[]).length?el('ul',{},e.deltakere.map(p=>el('li',{},el('span',{text:p.navn+(p.antall>1?` (${p.antall})`:'')}),p.status==='Ikke betalt'?el('span',{class:'kal-m kal-m-skylder',text:'ubetalt'}):null,p.merknad?el('i',{class:'muted',text:`(${p.merknad})`}):null))):el('p',{class:'muted',text:'Ingen påmeldte'}))):el('p',{class:'muted',text:'Ingen økter.'}),
   el('div',{class:'sheet-footer'},button('Lukk',()=>s.close()),button('Last ned dagsrapport',lastNed,'primary'))));
  s.dlg.classList.add('kal-rapport-ark');

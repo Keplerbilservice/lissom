@@ -470,7 +470,10 @@ foreach ($okter as $o) {
     $rader = [];
     $nye = 0;
     foreach ($mine as $b) {
-        $pameldt += (int) $b['antall'];
+        // Refundert = ikke påmeldt lenger (eieren 08.10.2026: «det er jo 4 påmeldte»).
+        if ((string) $b['status'] !== 'refundert') {
+            $pameldt += (int) $b['antall'];
+        }
         $erNy = (string) $b['created_at'] >= $nyGrense;
         if ($erNy) {
             $nye++;

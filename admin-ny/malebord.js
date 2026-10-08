@@ -50,7 +50,8 @@ function reservasjonArk(r,etter,maks){
    r.melding?el('div',{class:'row'},el('span',{text:'Kommentar'}),el('p',{text:r.melding})):null,
    r.allergier?el('div',{class:'row'},el('span',{text:'Allergier'}),el('p',{text:r.allergier})):null),
   el('div',{class:'actions',style:'margin-top:16px'},
-   button('Ta betalt og betalinger',()=>{s.close();bookingPayments(r.bookingId,etter);},'primary'),
+   r.kanKassa?button('Slå inn gjenstander',()=>{s.close();popKassa(r.bookingId,etter);},'primary'):null,
+   button('Ta betalt og betalinger',()=>{s.close();bookingPayments(r.bookingId,etter);},r.kanKassa?'':'primary'),
    button('Endre tid',()=>form('Ny ankomsttid',[field('dato','Dag','date',{required:true}),field('tid','Ankomst','time',{required:true,step:900})],{dato:r.dato,tid:r.fra},async v=>{await api('malebord.php',{handling:'flytt',bookingId:r.bookingId,dato:v.dato,tid:v.tid});toast('Flyttet.');s.close();etter&&etter();})),
    button('Endre antall',()=>form('Antall personer',[field('antall','Antall','number',{min:1,max:maks,required:true,help:'Sjekkes mot ledige plasser før det lagres. Beløpet regnes på nytt etter de vanlige reglene.'})],{antall:r.antall},async v=>{await api('malebord.php',{handling:'sjekk',bookingId:r.bookingId,antall:v.antall});await api('pamelding.php',{handling:'endre',id:r.bookingId,antall:v.antall});toast('Antallet er endret.');s.close();etter&&etter();})),
    button(r.mott?'Møtte ikke opp':'Møtte likevel',async()=>{try{await api('pamelding.php',{handling:'status',id:r.bookingId,status:r.mott?'ikke_mott':r.forStatus});toast('Lagret.');s.close();etter&&etter();}catch(e){toast(e.message);}}),
@@ -70,7 +71,13 @@ export function popUkeKort(start){
     button('Endre',()=>{const navn=['Mandag','Tirsdag','Onsdag','Torsdag','Fredag','Lørdag','Søndag'];const init={fra:forst.fra||'17:00',til:forst.til||'20:00',plassMinutter:k.lengde};for(const [n] of plan)init['dag'+n]=true;
      form('Åpningstid og besøkslengde',[...navn.map((n,i)=>field('dag'+(i+1),n,'checkbox')),field('fra','Fra','time'),field('til','Til','time'),field('plassMinutter','Besøkslengde (minutter)','number',{min:15,max:1440,step:15})],init,async v=>{const dager=navn.map((_,i)=>v['dag'+(i+1)]?i+1:0).filter(Boolean).join(',');const r=await api('kurs.php',{handling:'ukeplan',kursId:k.id,dager,fra:v.fra,til:v.til,plassMinutter:v.plassMinutter||0,utenPlassgrense:'nei'});toast(r.beskjed||'Lagret.');last();});})),
    el('div',{class:'row'},el('div',{},el('small',{text:'Plassgrense (ressursen «Paint on Pots»)'}),el('strong',{text:grenseTekst(k)}),el('small',{text:'Personer til stede samtidig. Endres under Ressurser; slått av = ingen plassgrense.'})),link('Ressurser','#ressurser')),
-   el('div',{class:'row'},el('div',{},el('small',{text:'Pris og betaling'}),el('strong',{text:`${money(k.prisOre)} per person`}),el('small',{text:k.oppmote?'Kunden velger Vipps nå eller betal ved besøket':'Kunden betaler i Vipps ved bestilling'})),link('Kurs','#kurs')));
+   k.depositum
+    ?el('div',{class:'row'},el('div',{},el('small',{text:'Betales ved booking'}),el('strong',{text:`${money(k.prisOre)} per person med Vipps`}),el('small',{text:`Trekkes fra i verkstedet. Avbestilling med refusjon senest ${k.avbestillingTimer??48} timer før.`})),
+     button('Endre',()=>form('Betaling ved booking',[field('belop','Beløp per person (kr)','number',{min:1,max:5000,step:1,required:true}),field('frist','Avbestilling med refusjon senest (timer før)','number',{min:0,max:720,step:1,required:true,help:'Gjelder nye bookinger. Bookinger som er gjort beholder beløpet sitt.'})],{belop:Math.round(k.prisOre/100),frist:k.avbestillingTimer??24},async v=>{await last({handling:'betaling',belop:v.belop,frist:v.frist});})))
+    :el('div',{class:'row'},el('div',{},el('small',{text:'Pris og betaling'}),el('strong',{text:`${money(k.prisOre)} per person`}),el('small',{text:k.oppmote?'Kunden velger Vipps nå eller betal ved besøket':'Kunden betaler i Vipps ved bestilling'})),link('Kurs','#kurs')),
+   k.prisKlar?el('div',{class:'row'},el('div',{},el('small',{text:'Prisnivåer (vises på nettsiden)'}),...(k.nivaer||[]).map(n=>el('strong',{text:`${n.navn} · ${money(n.prisOre)}`,title:n.gjenstander})),el('small',{text:'Glasur og brenning er med i prisen.'})),
+    button('Endre',()=>{const rader=[...(k.nivaer||[]),{},{}];const felter=[];const init={};rader.forEach((n,i)=>{felter.push(field('navn'+i,`Nivå ${i+1} · navn`,'text'),field('pris'+i,`Nivå ${i+1} · pris (kr)`,'number',{min:1,max:100000,step:1}),field('gjenstander'+i,`Nivå ${i+1} · gjenstander`,'textarea',{help:'Skilt med komma, slik de vises på nettsiden. Tomt navn og pris fjerner nivået.'}));init['navn'+i]=n.navn||'';init['pris'+i]=n.prisOre?Math.round(n.prisOre/100):null;init['gjenstander'+i]=n.gjenstander||'';});
+     form('Prisnivåer',felter,init,async v=>{const nivaer=rader.map((n,i)=>({id:n.id||0,navn:v['navn'+i]||'',pris:v['pris'+i]??'',gjenstander:v['gjenstander'+i]||''})).filter(n=>n.navn||n.pris!=='');if(!await confirm('Lagre prisnivåene?','Prisene vises på nettsiden og brukes i kassa fra nå. Gjenstander som alt er slått inn beholder prisen sin.','Lagre'))throw Error('Avbrutt.');await last({handling:'nivaer',nivaer});});})):null);
  }
  function dagsliste(d){
   const x=d.dag;const s=x.status||'apen';
@@ -118,6 +125,32 @@ export async function popIdagRad(){
 export async function popIdagArk(d){
  const topp=await popIdagKort(d,true);
  sheet('Paint on Pots i dag',el('div',{},topp?el('div',{style:'margin-bottom:22px'},topp):null,popUkeKort()));
+}
+
+// Kassa: gjenstandene slås inn på bookingen (eieren 8. oktober 2026, «ok, bygg det»). Prisen er nivåets pris
+// fra serveren; det som er betalt ved booking trekkes fra. Selve pengene registreres i «Ta betalt» etterpå.
+export async function popKassa(bookingId,etter){
+ let d;try{d=await api('malebord.php?kassa='+bookingId);}catch(e){toast(e.message);return;}
+ const valg=new Map();for(const l of d.linjer)if(l.nivaaId)valg.set(l.nivaaId,(valg.get(l.nivaaId)||0)+l.antall);
+ const boks=el('div',{});let s;
+ const tegn=()=>{
+  const sum=d.nivaer.reduce((a,n)=>a+n.prisOre*(valg.get(n.id)||0),0);const rest=Math.max(0,sum-d.betaltOre);
+  boks.replaceChildren(
+   el('p',{class:'muted',text:`${d.naar} · ${d.antall} ${d.antall===1?'person':'personer'}`}),
+   el('div',{class:'list'},d.nivaer.map(n=>{const x=valg.get(n.id)||0;return el('div',{class:'row'},el('div',{},el('strong',{text:`${n.navn} · ${money(n.prisOre)}`}),el('small',{text:n.gjenstander})),
+    el('div',{class:'actions'},button('−',()=>{x>1?valg.set(n.id,x-1):valg.delete(n.id);tegn();}),el('strong',{text:String(x),'aria-live':'polite'}),button('+',()=>{if(x>=50)return;valg.set(n.id,x+1);tegn();})));})),
+   el('div',{class:'list',style:'margin-top:16px'},
+    el('div',{class:'row'},el('span',{text:'Gjenstander'}),el('strong',{text:money(sum)})),
+    el('div',{class:'row'},el('span',{text:'Betalt ved booking'}),el('strong',{text:'−'+money(d.betaltOre)})),
+    el('div',{class:'row'},el('span',{text:'Å betale'}),el('strong',{class:'stat',text:money(rest)}))),
+   el('div',{class:'actions',style:'margin-top:16px'},button('Lagre og ta betalt',async ev=>{
+    const nivaer=Object.fromEntries([...valg.entries()].filter(([,n])=>n>0));
+    if(!Object.keys(nivaer).length){toast('Velg minst én gjenstand.');return;}
+    ev.target.disabled=true;
+    try{const r=await api('malebord.php',{handling:'kassa',bookingId,nivaer});toast(r.skyldigOre>0?`Lagret. Å betale: ${money(r.skyldigOre)}.`:'Lagret. Ingenting mer å betale.');s.close();etter&&etter();bookingPayments(bookingId,etter);}
+    catch(e){toast(e.message);ev.target.disabled=false;}},'primary')));
+ };
+ tegn();s=sheet(`Kassa · ${d.navn}`,boks);
 }
 
 // c) Fra kalenderbrikka: merk dagen full eller åpne den igjen.

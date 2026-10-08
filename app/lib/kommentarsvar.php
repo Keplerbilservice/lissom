@@ -449,8 +449,11 @@ final class Kommentarsvar
     {
         $linjer = [];
         foreach ($kurs as $k) {
-            $linjer[] = '- ' . $k['tittel'] . ': ' . (!empty($k['fra_pris']) ? 'fra ' : '')
-                . Robottekst::kroner((int) $k['pris_ore'])
+            $linjer[] = '- ' . $k['tittel'] . ': '
+                // Paint on Pots: prisnivaaene (migrasjon 260), ikke beloepet ved booking.
+                . (($k['prisliste'] ?? '') !== ''
+                    ? 'per gjenstand: ' . $k['prisliste'] . ', glasur og brenning er med i prisen'
+                    : (!empty($k['fra_pris']) ? 'fra ' : '') . Robottekst::kroner((int) $k['pris_ore']))
                 . ($k['neste'] !== null ? ', neste dato ' . Robottekst::dato((string) $k['neste']) : '')
                 . ((string) $k['kort'] !== '' ? '. ' . $k['kort'] : '');
         }
@@ -478,6 +481,11 @@ final class Kommentarsvar
         foreach (array_merge($kurs, $planer) as $r) {
             $belop[intdiv((int) $r['pris_ore'], 100)] = true;
             $ore[(int) $r['pris_ore'] % 100] = true;
+            // Prisnivaaene paa Paint on Pots er ogsaa fakta (migrasjon 260).
+            foreach ((array) ($r['nivaaPriser'] ?? []) as $p) {
+                $belop[intdiv((int) $p, 100)] = true;
+                $ore[(int) $p % 100] = true;
+            }
         }
         $datoer = [];
         $aar = [];

@@ -79,6 +79,7 @@ final class Robottekst
         $utenDato = DB::harKolonne('courses', 'vis_uten_dato') ? 'c.vis_uten_dato' : '0 AS vis_uten_dato';
         $kort     = DB::harKolonne('courses', 'kort_beskrivelse') ? 'c.kort_beskrivelse' : 'NULL AS kort_beskrivelse';
         $fraPris  = DB::harKolonne('courses', 'fra_pris') ? 'c.fra_pris' : '0 AS fra_pris';
+        $fraPris .= DB::harKolonne('courses', 'depositum') ? ', c.depositum' : ', 0 AS depositum';
         $rader = DB::alle(
             "SELECT c.slug, c.tittel, c.pris_ore, c.beskrivelse, c.tema, c.bilde, {$utenDato}, {$kort}, {$fraPris},
                     (SELECT MIN(cs.start_tid) FROM course_sessions cs
@@ -98,7 +99,7 @@ final class Robottekst
             if ((int) $k['kommende'] === 0 && (int) ($k['vis_uten_dato'] ?? 0) === 0) {
                 continue;
             }
-            $ut[] = [
+            $ut[] = self::popPris($k) + [
                 'slug'        => (string) $k['slug'],
                 'tittel'      => (string) $k['tittel'],
                 'pris_ore'    => (int) $k['pris_ore'],
@@ -149,14 +150,15 @@ final class Robottekst
                 $felt[$navn] = $v;
             }
         }
-        return [
+        return self::popPris($k) + [
             'slug'        => (string) $k['slug'],
             'tittel'      => (string) $k['tittel'],
             'pris_ore'    => (int) $k['pris_ore'],
             'fra_pris'    => (int) ($k['fra_pris'] ?? 0) === 1,
             'beskrivelse' => trim(strip_tags((string) ($k['beskrivelse'] ?? ''))),
             'kort'        => trim((string) ($k['kort_beskrivelse'] ?? '')),
-            'seo_meta'    => self::medPris(trim((string) ($k['seo_meta'] ?? '')), (int) $k['pris_ore']),
+            'seo_meta'    => self::medPris(trim((string) ($k['seo_meta'] ?? '')),
+                (int) ($k['depositum'] ?? 0) === 1 ? 0 : (int) $k['pris_ore']),
             // Overskriften paa kurssida naar den er en annen enn navnet
             // (migrasjon 254). Tom foer migrasjonen er kjoert.
             'seo_h1'      => trim((string) ($k['seo_h1'] ?? '')),
@@ -164,6 +166,27 @@ final class Robottekst
             'bilde'       => trim((string) ($k['bilde'] ?? '')),
             'datoer'      => $datoer,
             'felt'        => $felt,
+        ];
+    }
+
+    /**
+     * Paint on Pots med prisnivaaer (migrasjon 260, eieren 8. oktober 2026):
+     * kursprisen er beloepet ved booking, ikke prisen. Da staar pris_ore som
+     * 0 her (ingen enkeltpris aa si fram), og prislista og nivaaprisene i
+     * stedet. popPris() legges FORAN resten, saa pris_ore herfra vinner.
+     *
+     * @param array<string,mixed> $k kursraden
+     * @return array{pris_ore?:int, prisliste:string, nivaaPriser:list<int>}
+     */
+    private static function popPris(array $k): array
+    {
+        if ((int) ($k['depositum'] ?? 0) !== 1 || PopPris::nivaer() === []) {
+            return ['prisliste' => '', 'nivaaPriser' => []];
+        }
+        return [
+            'pris_ore'    => 0,
+            'prisliste'   => PopPris::prisliste(),
+            'nivaaPriser' => array_map(static fn(array $n): int => $n['prisOre'], PopPris::nivaer()),
         ];
     }
 
@@ -488,6 +511,8 @@ final class Robottekst
         $bit = [];
         if ($k['pris_ore'] > 0) {
             $bit[] = self::kroner($k['pris_ore']);
+        } elseif (($k['prisliste'] ?? '') !== '') {
+            $bit[] = 'per gjenstand: ' . $k['prisliste'];
         }
         if ($k['neste'] !== null) {
             $bit[] = 'neste ' . self::dato($k['neste']);
@@ -516,6 +541,8 @@ final class Robottekst
         $ut = '';
         if ($k['pris_ore'] > 0) {
             $ut .= '<p><strong>Pris:</strong> ' . self::e(self::kroner($k['pris_ore'])) . ' per person. Leire, verktøy og brenning er inkludert.</p>';
+        } elseif (($k['prisliste'] ?? '') !== '') {
+            $ut .= '<p><strong>Pris per gjenstand:</strong> ' . self::e($k['prisliste']) . '. Glasur og brenning er med i prisen.</p>';
         }
         if ($k['beskrivelse'] !== '') {
             $ut .= '<h2>Om kurset</h2>';
@@ -698,6 +725,25 @@ final class Robottekst
         return $o;
     }
 
+    /**
+     * Prisnivaaene som ett samlet tilbud: laveste og hoeyeste pris, og hvor
+     * mange nivaaer. Ingen «fra»-pris — alle nivaaene staar.
+     *
+     * @param list<int> $priser oere
+     */
+    private static function nivaaTilbud(array $priser, string $url): array
+    {
+        return [
+            '@type'         => 'AggregateOffer',
+            'lowPrice'      => number_format(min($priser) / 100, 2, '.', ''),
+            'highPrice'     => number_format(max($priser) / 100, 2, '.', ''),
+            'offerCount'    => count($priser),
+            'priceCurrency' => 'NOK',
+            'url'           => $url,
+            'availability'  => 'https://schema.org/InStock',
+        ];
+    }
+
     private static function kursLdKort(array $k): array
     {
         $url = self::ROT . '/kurs/' . rawurlencode($k['slug']);
@@ -717,6 +763,8 @@ final class Robottekst
         }
         if ($k['pris_ore'] > 0) {
             $c['offers'] = self::tilbud($k['pris_ore'], $url, true, !empty($k['fra_pris']));
+        } elseif (($k['nivaaPriser'] ?? []) !== []) {
+            $c['offers'] = self::nivaaTilbud($k['nivaaPriser'], $url);
         }
         return $c;
     }
@@ -765,6 +813,8 @@ final class Robottekst
             }
             if ($k['pris_ore'] > 0) {
                 $h['offers'] = self::tilbud($k['pris_ore'], $canon, true, !empty($k['fra_pris']));
+            } elseif (($k['nivaaPriser'] ?? []) !== []) {
+                $h['offers'] = self::nivaaTilbud($k['nivaaPriser'], $canon);
             }
             $hendelser[] = $h;
         }

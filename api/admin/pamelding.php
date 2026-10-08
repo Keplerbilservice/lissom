@@ -988,7 +988,12 @@ if ($handling === 'endre') {
             Svar::feil('Beløpet må være mellom 0 og 100 000 kroner.');
         }
         $felt['belop_ore'] = $belop;
-    } elseif (isset($felt['antall']) || $rabatt !== null) {
+    } elseif ((isset($felt['antall']) || $rabatt !== null)
+        // Paint on Pots: gjenstandene er slaatt inn i kassa (migrasjon 260).
+        // Da er beloepet summen av dem, ikke kursprisen gange antall — det
+        // roeres ikke av et nytt antall.
+        && (!DB::harKolonne('bookings', 'gjenstander_ore')
+            || DB::verdi('SELECT gjenstander_ore FROM bookings WHERE id = :i', ['i' => $id]) === null)) {
         $prisKol = DB::harKolonne('course_sessions', 'pris_ore')
             ? 'COALESCE(cs.pris_ore, c.pris_ore)' : 'c.pris_ore';
         $pris = DB::verdi(

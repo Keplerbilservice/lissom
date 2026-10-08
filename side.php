@@ -269,6 +269,9 @@ if (preg_match('~^/kurs/([a-z0-9\-]+)$~i', $adresse, $treff) === 1) {
         // av det foerste bildet appen viser — se $forhaandsbilde under.
         $egne .= DB::harKolonne('courses', 'bilder') ? ', bilder' : ', NULL AS bilder';
         $egne .= DB::harKolonne('courses', 'karusell_fra') ? ', karusell_fra' : ', NULL AS karusell_fra';
+        // Paint on Pots: kursprisen er beloepet ved booking (migrasjon 260),
+        // ikke prisen. Da faller setningen med {pris} bort.
+        $egne .= DB::harKolonne('courses', 'depositum') ? ', depositum' : ', 0 AS depositum';
         $k = DB::en(
             "SELECT tittel, beskrivelse, bilde, pris_ore, {$egne} FROM courses
               WHERE slug = :s AND status = 'publisert'
@@ -282,7 +285,7 @@ if (preg_match('~^/kurs/([a-z0-9\-]+)$~i', $adresse, $treff) === 1) {
             // {pris} i den egne beskrivelsen er kursets pris slik den staar
             // i basen naa (migrasjon 254, Paint on Pots) — ikke et tall
             // skrevet inn en gang og glemt.
-            $egenMeta = Robottekst::medPris($egenMeta, (int) ($k['pris_ore'] ?? 0));
+            $egenMeta = Robottekst::medPris($egenMeta, (int) ($k['depositum'] ?? 0) === 1 ? 0 : (int) ($k['pris_ore'] ?? 0));
             $meta = $egenMeta !== '' ? $egenMeta
                   : trim((string) preg_replace('/\s+/u', ' ', (string) ($k['beskrivelse'] ?? '')));
             if (mb_strlen($meta) > 158) {

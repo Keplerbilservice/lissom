@@ -23,9 +23,11 @@ $medlem = krev_medlem();
  * to forskjellige ting, ville kunden lest ett tall her og faatt et annet inn
  * paa konto.
  */
-$frist = static function (?string $startUtc): array {
+$frist = static function (?string $startUtc, ?int $fristTimer = null): array {
+    // Paint on Pots: kursets egen frist (migrasjon 260), som api/avbestill.php.
     $r = Booking::avbestillingsregel(
-        $startUtc === null ? null : (strtotime($startUtc) - time()) / 3600
+        $startUtc === null ? null : (strtotime($startUtc) - time()) / 3600,
+        $fristTimer
     );
     return [$r['kunde'], $r['kanAvbestille']];
 };
@@ -72,7 +74,7 @@ $bilder = static function (int $bookingId): array {
 };
 
 $bookinger = DB::alle(
-    "SELECT b.id, b.antall, b.status, b.belop_ore, b.created_at, {$bevisFelt}
+    "SELECT b.id, b.course_id, b.antall, b.status, b.belop_ore, b.created_at, {$bevisFelt}
             c.tittel, c.tema, cs.start_tid, cs.slutt_tid, p.vipps_reference
        FROM bookings b
        JOIN courses c ON c.id = b.course_id
@@ -86,7 +88,7 @@ $bookinger = DB::alle(
 
 $plasser = [];
 foreach ($bookinger as $b) {
-    [$fristTekst, $kanAvbestille] = $frist($b['start_tid']);
+    [$fristTekst, $kanAvbestille] = $frist($b['start_tid'], PopPris::avbestillingTimer((int) $b['course_id']));
     $betalt = $b['status'] === 'betalt';
 
     $plasser[] = [

@@ -161,6 +161,12 @@ final class Kort
         $pris = (!empty($kat['gjenstandIKassa']) || !empty($kat['fraPris']))
             ? (!empty($kat['prisFraOre']) ? 'Fra ' . $kat['prisFra'] : '')
             : ((int) $kat['prisOre'] === 0 ? 'Gratis' : (string) $kat['pris']);
+        // Paint on Pots med prisnivaaer (migrasjon 260): kursprisen er
+        // beloepet ved booking, ikke prisen. Kortet viser ingen enkeltpris;
+        // nivaaene staar paa kurssida. Ingen «fra»-pris.
+        if (!empty($kat['popNivaer'])) {
+            $pris = '';
+        }
         $slug = (string) ($kat['slug'] ?? '');
         $felles = [
             'slug'     => $slug,

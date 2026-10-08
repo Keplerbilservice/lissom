@@ -84,6 +84,8 @@ final class Katalog
         $kassaFelt = DB::harKolonne('courses', 'gjenstand_i_kassa') ? ', gjenstand_i_kassa' : '';
         // «Vis som fra-pris» (migrasjon 209).
         $kassaFelt .= DB::harKolonne('courses', 'fra_pris') ? ', fra_pris' : '';
+        // Beloep ved booking som trekkes fra i verkstedet (migrasjon 260).
+        $kassaFelt .= DB::harKolonne('courses', 'depositum') ? ', depositum, avbestilling_timer' : '';
         // «Datoene lages av aapningstidene» — Paint on Pots. Kom med
         // migrasjon 079. Foer laa den inni gjenstand_i_kassa, som gjorde to jobber.
         $apenFelt = DB::harKolonne('courses', 'folger_apningstid') ? ', folger_apningstid' : '';
@@ -188,12 +190,27 @@ final class Katalog
                 // forsvant helt da datoene tok slutt — det finnes fortsatt, det
                 // settes bare opp naar noen sporr.
                 'utenDatoOk' => (bool) ($k['vis_uten_dato'] ?? 0),
-                'pris'    => Booking::kroner((int) $k['pris_ore']),
+                // Paint on Pots med beloep ved booking (migrasjon 260): ingen
+                // pris som tekst — kortene skal ikke vise «kr. 100,-» som om
+                // det var prisen. Beloepet staar i prisOre, og det er det
+                // bookingen regner med.
+                'pris'    => (int) ($k['depositum'] ?? 0) === 1 ? '' : Booking::kroner((int) $k['pris_ore']),
                 'prisOre' => (int) $k['pris_ore'],
                 // Kan plassen bookes og betales ved oppmoete? Én bryter for
                 // alle kurs — ⊙ Synlighet → Betal ved oppmøte (migrasjon 198).
                 // Gratis kurs har ingenting aa betale, og da finnes ikke valget.
-                'utenForskudd' => (int) $k['pris_ore'] > 0 && Oppmote::kurs(),
+                'utenForskudd' => (int) $k['pris_ore'] > 0 && Oppmote::kurs() && (int) ($k['depositum'] ?? 0) !== 1,
+                // Paint on Pots (eieren, «ok, bygg det» 8. oktober 2026): prisen
+                // er beloepet per person ved booking, og det trekkes fra i
+                // verkstedet. Ingen rabatt paa det, og ikke «betal ved
+                // oppmoete». Siden viser prisnivaaene i stedet for en pris.
+                'depositum'         => (int) ($k['depositum'] ?? 0) === 1,
+                'avbestillingTimer' => isset($k['avbestilling_timer']) ? (int) $k['avbestilling_timer'] : null,
+                'popNivaer'         => (int) ($k['depositum'] ?? 0) === 1
+                    ? array_map(static fn(array $n): array => [
+                        'navn' => $n['navn'], 'pris' => $n['pris'], 'gjenstander' => $n['gjenstander'],
+                    ], PopPris::nivaer())
+                    : [],
                 'om'      => $k['beskrivelse'],
                 // Nivaaet kunden leser, varigheten regnet av oektene, og tekstene.
                 //

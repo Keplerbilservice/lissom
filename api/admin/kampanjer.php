@@ -6,6 +6,13 @@
  *   POST handling=lagre     ny eller endret kampanje
  *   POST handling=vis       { id }  — denne staar paa forsiden
  *   POST handling=slett     { id }
+ *   POST handling=bryter    { id, paa } — kortets av/paa-bryter i admin-ny
+ *
+ * To slags kampanjer (eieren, 8. oktober 2026): «paa lissom.no» (banneret paa
+ * forsiden, «Kampanje/», bryteren Vis/salgsuke) og «til medlemmer» (banner
+ * paa Min side for medlemmer, «Medlemskampanje/», bryteren
+ * Vis/medlemskampanje). Kolonnen «publikum» kommer med migrasjon 260; til
+ * den er kjoert er alt «nett».
  *
  * Eieren, 13. september 2026: «Jeg vil ogsaa at salgsuke banneret skal vaere
  * et generelt salgs kampanje. Her vil jeg legge til og redigere bilde og
@@ -27,30 +34,82 @@ if (!DB::harTabell('kampanjer')) {
     Svar::feil('Dette krever en oppdatering av databasen. Kjør vedlikeholdet fra menyen nederst til venstre.');
 }
 
-/** Id-en til den som staar ute, eller 0. */
-function aktivKampanje(): int
+/** Har basen fått kolonnen «publikum» (migrasjon 260)? */
+function harPublikum(): bool
 {
-    return (int) DB::verdi("SELECT verdi FROM content_blocks WHERE nokkel = 'Kampanje/aktiv'");
+    static $har = null;
+    return $har ??= DB::harKolonne('kampanjer', 'publikum');
+}
+
+/** «nett» eller «medlemmer». */
+function publikumAv(array $k): string
+{
+    return (($k['publikum'] ?? 'nett') === 'medlemmer') ? 'medlemmer' : 'nett';
+}
+
+/** Hvor kampanjen speiles, og hvilken bryter som viser den. */
+function prefiks(string $publikum): string
+{
+    return $publikum === 'medlemmer' ? 'Medlemskampanje/' : 'Kampanje/';
+}
+
+function bryterNokkel(string $publikum): string
+{
+    return $publikum === 'medlemmer' ? 'Vis/medlemskampanje' : 'Vis/salgsuke';
+}
+
+/** Id-en til den som staar ute, eller 0. */
+function aktivKampanje(string $publikum = 'nett'): int
+{
+    return (int) DB::verdi('SELECT verdi FROM content_blocks WHERE nokkel = :n', ['n' => prefiks($publikum) . 'aktiv']);
+}
+
+/**
+ * Staar bryteren paa? Salgskampanjen er paa naar raden mangler (slik
+ * forsiden leser den); medlemskampanjen er av til noen slaar den paa.
+ */
+function bryterPaa(string $publikum): bool
+{
+    $v = (string) DB::verdi('SELECT verdi FROM content_blocks WHERE nokkel = :n', ['n' => bryterNokkel($publikum)]);
+    return $publikum === 'medlemmer' ? $v === 'ja' : $v !== 'nei';
+}
+
+function settInnhold(string $nokkel, string $verdi, ?int $adminId): void
+{
+    DB::kjor(
+        'INSERT INTO content_blocks (nokkel, verdi, endret_av)
+              VALUES (:n, :v, :a)
+         ON DUPLICATE KEY UPDATE verdi = VALUES(verdi), endret_av = VALUES(endret_av)',
+        ['n' => $nokkel, 'v' => $verdi, 'a' => $adminId]
+    );
 }
 
 /** Alle kampanjene, slik admin viser dem. */
 function kampanjene(): array
 {
-    $aktiv = aktivKampanje();
-    return array_map(static fn($r) => [
-        'id'      => (int) $r['id'],
-        'navn'    => (string) $r['navn'],
-        'merke'   => (string) ($r['merke'] ?? ''),
-        'tittel'  => (string) $r['tittel'],
-        'tekst'   => (string) ($r['tekst'] ?? ''),
-        // Kroner ut, oere i basen. Admin skriver kroner.
-        'pris'    => $r['pris_ore'] === null ? '' : (string) ((int) $r['pris_ore'] / 100),
-        'bilde'   => (string) ($r['bilde'] ?? ''),
-        'knapp'   => (string) ($r['knapp'] ?? ''),
-        'maal'    => (string) $r['maal'],
-        'brukt'   => (string) ($r['sist_brukt'] ?? ''),
-        'ute'     => (int) $r['id'] === $aktiv,
-    ], DB::alle('SELECT * FROM kampanjer ORDER BY sist_brukt IS NULL, sist_brukt DESC, id'));
+    $aktiv = ['nett' => aktivKampanje('nett'), 'medlemmer' => harPublikum() ? aktivKampanje('medlemmer') : 0];
+    $paa   = ['nett' => bryterPaa('nett'), 'medlemmer' => harPublikum() && bryterPaa('medlemmer')];
+    return array_map(static function ($r) use ($aktiv, $paa) {
+        $pub = publikumAv($r);
+        $ute = (int) $r['id'] === $aktiv[$pub];
+        return [
+            'id'       => (int) $r['id'],
+            'navn'     => (string) $r['navn'],
+            'merke'    => (string) ($r['merke'] ?? ''),
+            'tittel'   => (string) $r['tittel'],
+            'tekst'    => (string) ($r['tekst'] ?? ''),
+            // Kroner ut, oere i basen. Admin skriver kroner.
+            'pris'     => $r['pris_ore'] === null ? '' : (string) ((int) $r['pris_ore'] / 100),
+            'bilde'    => (string) ($r['bilde'] ?? ''),
+            'knapp'    => (string) ($r['knapp'] ?? ''),
+            'maal'     => (string) $r['maal'],
+            'brukt'    => (string) ($r['sist_brukt'] ?? ''),
+            'publikum' => $pub,
+            'ute'      => $ute,
+            // Kortets bryter: valgt OG bryteren paa.
+            'paa'      => $ute && $paa[$pub],
+        ];
+    }, DB::alle('SELECT * FROM kampanjer ORDER BY sist_brukt IS NULL, sist_brukt DESC, id'));
 }
 
 /**
@@ -61,23 +120,19 @@ function kampanjene(): array
  */
 function speilKampanje(array $k, ?int $adminId): array
 {
+    $p = prefiks(publikumAv($k));
     $felt = [
-        'Kampanje/aktiv'  => (string) (int) $k['id'],
-        'Kampanje/merke'  => (string) ($k['merke'] ?? ''),
-        'Kampanje/tittel' => (string) $k['tittel'],
-        'Kampanje/tekst'  => (string) ($k['tekst'] ?? ''),
-        'Kampanje/pris'   => $k['pris_ore'] === null ? '' : (string) (int) $k['pris_ore'],
-        'Kampanje/bilde'  => (string) ($k['bilde'] ?? ''),
-        'Kampanje/knapp'  => (string) ($k['knapp'] ?? ''),
-        'Kampanje/maal'   => (string) $k['maal'],
+        $p . 'aktiv'  => (string) (int) $k['id'],
+        $p . 'merke'  => (string) ($k['merke'] ?? ''),
+        $p . 'tittel' => (string) $k['tittel'],
+        $p . 'tekst'  => (string) ($k['tekst'] ?? ''),
+        $p . 'pris'   => $k['pris_ore'] === null ? '' : (string) (int) $k['pris_ore'],
+        $p . 'bilde'  => (string) ($k['bilde'] ?? ''),
+        $p . 'knapp'  => (string) ($k['knapp'] ?? ''),
+        $p . 'maal'   => (string) $k['maal'],
     ];
     foreach ($felt as $nokkel => $verdi) {
-        DB::kjor(
-            'INSERT INTO content_blocks (nokkel, verdi, endret_av)
-                  VALUES (:n, :v, :a)
-             ON DUPLICATE KEY UPDATE verdi = VALUES(verdi), endret_av = VALUES(endret_av)',
-            ['n' => $nokkel, 'v' => $verdi, 'a' => $adminId]
-        );
+        settInnhold($nokkel, $verdi, $adminId);
     }
     // Sendes tilbake, saa admin kan legge dem rett inn i sitt eget bilde av
     // innholdet. hentInnhold() lar det som alt staar i nettleseren vinne, og
@@ -86,7 +141,12 @@ function speilKampanje(array $k, ?int $adminId): array
 }
 
 if (Foresporsel::metode() === 'GET') {
-    Svar::json(['kampanjer' => kampanjene(), 'aktiv' => aktivKampanje()]);
+    Svar::json([
+        'kampanjer'    => kampanjene(),
+        'aktiv'        => aktivKampanje(),
+        // Til migrasjon 260 er kjoert, kan det ikke lages medlemskampanjer.
+        'harMedlemmer' => harPublikum(),
+    ]);
 }
 
 Foresporsel::krevMetode('POST');
@@ -159,25 +219,43 @@ if ($handling === 'lagre') {
     ];
 
     if ($id > 0) {
-        if (DB::en('SELECT id FROM kampanjer WHERE id = :i', ['i' => $id]) === null) {
+        $finnes = DB::en('SELECT * FROM kampanjer WHERE id = :i', ['i' => $id]);
+        if ($finnes === null) {
             Svar::feil('Fant ikke kampanjen.', 404);
         }
+        // Hvor den vises, velges naar den lages, og flyttes ikke etterpaa.
+        $publikum = publikumAv($finnes);
         DB::oppdater('kampanjer', $data, ['id' => $id]);
         revider('kampanje_endret', 'kampanje', $id, ['navn' => $navn]);
     } else {
+        // Ingenting forhaandsvalgt: admin-ny sender alltid et valg. Den gamle
+        // adminen sender ikke feltet, og lager da kampanjer for lissom.no.
+        $publikum = Foresporsel::tekst('publikum', 'nett');
+        if (!in_array($publikum, ['nett', 'medlemmer'], true)) {
+            Svar::feil('Velg hvor kampanjen skal vises.');
+        }
+        if ($publikum === 'medlemmer' && !harPublikum()) {
+            Svar::feil('Kampanjer til medlemmer krever en oppdatering av databasen. Kjør vedlikeholdet fra menyen nederst til venstre.');
+        }
+        if (harPublikum()) {
+            $data['publikum'] = $publikum;
+        }
         $id = DB::settInn('kampanjer', $data);
-        revider('kampanje_opprettet', 'kampanje', $id, ['navn' => $navn]);
+        revider('kampanje_opprettet', 'kampanje', $id, ['navn' => $navn, 'publikum' => $publikum]);
     }
 
-    // Endrer du den som staar ute, skal forsiden se det med det samme.
-    $ute   = aktivKampanje() === $id;
-    $speil = $ute ? speilKampanje(array_merge($data, ['id' => $id]), $adminId) : [];
+    // Endrer du den som staar ute, skal forsiden (eller Min side) se det med
+    // det samme.
+    $ute   = aktivKampanje($publikum) === $id;
+    $speil = $ute ? speilKampanje(array_merge($data, ['id' => $id, 'publikum' => $publikum]), $adminId) : [];
 
     Svar::ok([
         'id'        => $id,
         'kampanjer' => kampanjene(),
         'speil'     => (object) $speil,
-        'beskjed'   => $ute ? 'Kampanjen er lagret, og står på forsiden.' : 'Kampanjen er lagret.',
+        'beskjed'   => $ute
+            ? ($publikum === 'medlemmer' ? 'Kampanjen er lagret, og er valgt for medlemmene.' : 'Kampanjen er lagret, og står på forsiden.')
+            : 'Kampanjen er lagret.',
     ]);
 }
 
@@ -195,26 +273,63 @@ if ($handling === 'vis') {
     // Bryteren er et eget valg. Staar den av, ligger kampanjen klar uten aa
     // vaere synlig — og svaret skal si det framfor aa melde «paa forsiden»
     // om noe ingen ser.
-    $paa = (string) DB::verdi("SELECT verdi FROM content_blocks WHERE nokkel = 'Vis/salgsuke'") !== 'nei';
+    $pub = publikumAv($k);
+    $paa = bryterPaa($pub);
 
     Svar::ok([
         'kampanjer' => kampanjene(),
         'speil'     => (object) $speil,
         'beskjed'   => $paa
-            ? '«' . $k['navn'] . '» står på forsiden.'
+            ? '«' . $k['navn'] . '» ' . ($pub === 'medlemmer' ? 'vises for medlemmene.' : 'står på forsiden.')
             : '«' . $k['navn'] . '» er valgt, men banneret er slått av.',
+    ]);
+}
+
+// ── Kortets bryter (admin-ny › Kampanjer) ─────────────────────────────────
+// Paa: kampanjen velges OG bryteren slaas paa — eieren skal ikke maatte lete
+// i Synlighet. Av: bryteren slaas av. Den valgte kampanjen blir staaende
+// valgt, saa ingenting peker paa noe som er borte.
+if ($handling === 'bryter') {
+    $id  = Foresporsel::heltall('id');
+    $paa = (bool) (Foresporsel::kropp()['paa'] ?? false);
+    $k   = DB::en('SELECT * FROM kampanjer WHERE id = :i', ['i' => $id]);
+    if ($k === null) {
+        Svar::feil('Fant ikke kampanjen.', 404);
+    }
+    $pub   = publikumAv($k);
+    $bryt  = bryterNokkel($pub);
+    $speil = [];
+    if ($paa) {
+        DB::oppdater('kampanjer', ['sist_brukt' => date('Y-m-d H:i:s')], ['id' => $id]);
+        $speil = speilKampanje($k, $adminId);
+        settInnhold($bryt, 'ja', $adminId);
+        $speil[$bryt] = 'ja';
+        revider('kampanje_vist', 'kampanje', $id, ['navn' => $k['navn'], 'publikum' => $pub]);
+    } elseif (aktivKampanje($pub) === $id) {
+        settInnhold($bryt, 'nei', $adminId);
+        $speil[$bryt] = 'nei';
+        revider('kampanje_skjult', 'kampanje', $id, ['navn' => $k['navn'], 'publikum' => $pub]);
+    }
+    $hvor = $pub === 'medlemmer' ? 'på Min side for medlemmer' : 'på lissom.no';
+    Svar::ok([
+        'kampanjer' => kampanjene(),
+        'speil'     => (object) $speil,
+        'beskjed'   => '«' . $k['navn'] . '» ' . ($paa ? 'vises nå ' . $hvor . '.' : 'er slått av ' . $hvor . '.'),
     ]);
 }
 
 // ── Slett ──────────────────────────────────────────────────────────────────
 if ($handling === 'slett') {
     $id = Foresporsel::heltall('id');
-    $k  = DB::en('SELECT navn FROM kampanjer WHERE id = :i', ['i' => $id]);
+    $k  = DB::en('SELECT * FROM kampanjer WHERE id = :i', ['i' => $id]);
     if ($k === null) {
         Svar::feil('Fant ikke kampanjen.', 404);
     }
     // Den som staar ute slettes ikke ved et uhell. Velg en annen foerst, saa
     // staar forsiden aldri og peker paa noe som er borte.
+    if (publikumAv($k) === 'medlemmer' && harPublikum() && aktivKampanje('medlemmer') === $id) {
+        Svar::feil('Denne er valgt for medlemmene. Velg en annen først.');
+    }
     if (aktivKampanje() === $id) {
         Svar::feil('Denne står på forsiden. Vis en annen først, eller slå av banneret.');
     }

@@ -31,8 +31,8 @@ setupRoutes.forEach(([u,r])=>NATIVE.set(u,r));
 contentRoutes.forEach(([u,r])=>NATIVE.set(u,r));
 extraRoutes.forEach(([u,r])=>NATIVE.set(u,r));
 adminRoutes.forEach(([u,r])=>NATIVE.set(u,r));
-const PLACES=[...STEDER,['Frys av medlemskap','#frys'],['Medlemsgaver','#gaver'],['Grupperabatter','#rabatter'],['Betalinger','#betalinger'],['Timeliste','#timeliste'],['Vervepremie','#verving'],['Medlemsbidrag og galleri','#medlemsbidrag'],['Kjøpsmåling','#maaling'],['AI-bilder og oppsett','#aibilder'],['Standardtekster for kurs','#kursstandard'],['Vipps og betalingsvarsler','#vippsoppsett'],['Nyttige lenker','#lenker'],['Bildebibliotek','#bilder'],['Dokumenter og håndbøker','#dokumenter'],['Spør verkstedet','#dokumenter'],['Designmaler','#designmaler'],['Dubletter i medlemslisten','#dubletter'],['Min side for medlemmer','#minside']];
-NATIVE.set('#betalinger','betalinger');NATIVE.set('#timeliste','timeliste');['frys','gaver','rabatter','kursstandard','vippsoppsett','lenker','bilder','verving','medlemsbidrag','maaling','aibilder','dokumenter','dubletter','designmaler'].forEach(r=>NATIVE.set('#'+r,r));
+const PLACES=[...STEDER,['Frys av medlemskap','#frys'],['Medlemsgaver','#gaver'],['Grupperabatter','#rabatter'],['Betalinger','#betalinger'],['Timeliste','#timeliste'],['Vervepremie','#verving'],['Medlemsbidrag og galleri','#medlemsbidrag'],['Kjøpsmåling','#maaling'],['AI-bilder og oppsett','#aibilder'],['Standardtekster for kurs','#kursstandard'],['Vipps og betalingsvarsler','#vippsoppsett'],['Nyttige lenker','#lenker'],['Bildebibliotek','#bilder'],['Dokumenter og håndbøker','#dokumenter'],['Spør verkstedet','#dokumenter'],['Designmaler','#designmaler'],['Dubletter i medlemslisten','#dubletter'],['Min side for medlemmer','#minside'],['Kampanjer','#kampanjer']];
+NATIVE.set('#betalinger','betalinger');NATIVE.set('#timeliste','timeliste');['frys','gaver','rabatter','kursstandard','vippsoppsett','lenker','bilder','verving','medlemsbidrag','maaling','aibilder','dokumenter','dubletter','designmaler','kampanjer'].forEach(r=>NATIVE.set('#'+r,r));
 PLACES.push(...chatPlaces);NATIVE.set('#chat','chat');
 const main=document.querySelector('main');let generation=0;let people=[];let current='idag';let authenticated=false;let peopleRequested=false;let accountant=false;
 const route=()=>location.hash.slice(1).split('?')[0]||'idag';
@@ -172,7 +172,7 @@ async function messages(){const[d,m]=await Promise.all([api('pameldte.php'),api(
 
 const RENDERERS={idag:dashboard,kalender:calendar,kurs:courses,folk:members,penger:finance,henting:pickup,dugnad:volunteering,ressurser:resources,foresporsler:enquiries,butikk:shop,brukere:users,beskjeder:messages,
  verksted:()=>el('div',{},title('Verksted','Dugnad, henting og utstyr — samlet på ett sted.'),el('div',{class:'actions',style:'margin-bottom:24px'},link('Dugnad',href('dugnad'),'primary'),link('Klar til henting',href('henting')),link('Ressurser',href('ressurser'))),directory((n,u)=>/oppskrifter|ressurser|ferie|skisser|ferdigbrent|dugnad|handlelister/.test(u))),
- innhold:()=>el('div',{},title('Innhold og synlighet','Tekster, bilder og kommunikasjon på nettsiden.'),directory((n,u)=>/innhold|nyttig|minside/.test(u))),
+ innhold:()=>el('div',{},title('Innhold og synlighet','Tekster, bilder og kommunikasjon på nettsiden.'),directory((n,u)=>/innhold|nyttig|minside|kampanjer/.test(u))),
  alle:()=>el('div',{},title('Alle funksjoner','Hele funksjonslisten fra vanlig admin. Søk øverst for å gå rett til oppgaven.',[button('Logg ut',logout)]),el('p',{class:'notice',text:'Oppgavene åpnes i arbeidsrommet. Skisseverktøyet åpnes separat.'}),directory((n,u)=>!I_ANDRE_MENYER.test(u)))};
 /* Tilbake på alle undersider (eieren 08.10.2026: «ingen lukke eller tilbake, denne må globalt fikses»). Forrige side når man kom hit i arbeidsrommet, ellers menypunktet siden hører til. Hovedmenyens sider har ingen. */
 let iAppen=false;

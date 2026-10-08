@@ -119,6 +119,101 @@ if (Foresporsel::heltall('historikk') === 1) {
     ]);
 }
 
+// ── Folk › Deltakere: ett kort per kursdato ─────────────────────────────
+//
+//   ?kursliste=1
+//
+// Eieren, 8. oktober 2026: deltakerne vises kurs for kurs, med navnene inni
+// og Betalt / Ikke betalt. Kurs som pågår eller kommer, og avsluttede kurs
+// et år bakover. Paint on Pots er ikke et kurs her (det står på I dag).
+// Bare datoer med minst én påmelding (betalt eller reservert).
+if (Foresporsel::heltall('kursliste') === 1) {
+    $oslo = new DateTimeZone('Europe/Oslo');
+    $utc  = new DateTimeZone('UTC');
+    $popId = (int) ((Malebord::kurs() ?? [])['id'] ?? 0);
+
+    $okterK = DB::alle(
+        "SELECT cs.id, cs.course_id, cs.start_tid, cs.slutt_tid, c.tittel
+           FROM course_sessions cs
+           JOIN courses c ON c.id = cs.course_id
+          WHERE cs.status <> 'avlyst'
+            AND cs.start_tid > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 12 MONTH)
+            AND c.id <> :pop
+            AND LOWER(COALESCE(c.tema, '')) <> 'paint on pots'
+            AND LOWER(c.tittel) NOT LIKE 'paint on pots%'
+            AND EXISTS (SELECT 1 FROM bookings b
+                         WHERE b.course_session_id = cs.id
+                           AND b.status IN ('betalt','reservert'))
+          ORDER BY cs.start_tid DESC
+          LIMIT 300",
+        ['pop' => $popId]
+    );
+
+    $iderK = array_map(static fn(array $o): int => (int) $o['id'], $okterK);
+    $perOkt = [];
+    if ($iderK !== []) {
+        // Heltallene er castet over, saa de kan staa i IN-lista.
+        $inn = implode(',', $iderK);
+        foreach (DB::alle(
+            "SELECT b.id, b.course_session_id, b.member_id, b.antall, b.status,
+                    COALESCE(m.navn, b.gjest_navn) AS navn
+               FROM bookings b
+          LEFT JOIN members m ON m.id = b.member_id
+              WHERE b.course_session_id IN ({$inn})
+                AND b.status IN ('betalt','reservert')
+           ORDER BY b.id"
+        ) as $b) {
+            $perOkt[(int) $b['course_session_id']][] = [
+                'id'       => (int) $b['id'],
+                'medlemId' => $b['member_id'] !== null ? (int) $b['member_id'] : null,
+                'navn'     => (string) ($b['navn'] ?? ''),
+                'antall'   => (int) $b['antall'],
+                'betalt'   => (string) $b['status'] === 'betalt',
+            ];
+        }
+    }
+    $samlingerK = Samlinger::forOkter($iderK);
+    $naaK = time();
+
+    $kursK = [];
+    foreach ($okterK as $o) {
+        $id = (int) $o['id'];
+        $start = new DateTimeImmutable((string) $o['start_tid'], $utc);
+        $slutt = $o['slutt_tid'] !== null
+            ? new DateTimeImmutable((string) $o['slutt_tid'], $utc)
+            : $start->modify('+3 hours');
+        $saml = $samlingerK[$id] ?? [];
+        $iGang = 0;
+        foreach ($saml as $sa) {
+            $sDag = new DateTimeImmutable($sa['dato'] . ' ' . ($sa['til'] !== '' ? $sa['til'] : '23:59'), $oslo);
+            if ($sDag->getTimestamp() > $slutt->getTimestamp()) {
+                $slutt = $sDag;
+            }
+            $sStart = new DateTimeImmutable($sa['dato'] . ' ' . ($sa['fra'] !== '' ? $sa['fra'] : '00:00'), $oslo);
+            if ($sStart->getTimestamp() <= $naaK) {
+                $iGang++;
+            }
+        }
+        $kursK[] = [
+            'oktId'      => $id,
+            'kursId'     => (int) $o['course_id'],
+            'tittel'     => (string) $o['tittel'],
+            'start'      => $start->getTimestamp(),
+            'dato'       => $start->setTimezone($oslo)->format('Y-m-d'),
+            'fra'        => $start->setTimezone($oslo)->format('H:i'),
+            'sluttDato'  => $slutt->setTimezone($oslo)->format('Y-m-d'),
+            // kommende / pagar / avsluttet
+            'fase'       => $start->getTimestamp() > $naaK ? 'kommende'
+                          : ($slutt->getTimestamp() >= $naaK ? 'pagar' : 'avsluttet'),
+            'samlinger'  => count($saml),
+            'samlingNaa' => $iGang,
+            'deltakere'  => $perOkt[$id] ?? [],
+        ];
+    }
+
+    Svar::json(['kurs' => $kursK]);
+}
+
 /** Samme regel som paa Min side: betalt og gjennomfort. */
 $kursbevis = static function (array $d): ?string {
     if (($d['status'] ?? '') !== 'betalt') {

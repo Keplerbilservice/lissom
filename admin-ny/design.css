@@ -24,6 +24,7 @@
 .butikk-piller{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 18px}.butikk-piller+.card{margin-bottom:22px}
 /* Lukk og tilbake globalt (eieren 08.10.2026): × i arkhodet blir stående når arket rulles, og undersider får «Tilbake» øverst. Folk: Medlemmer/Deltakere, med Aktive/Tidligere under (samme piller som Butikk). */
 .tilbake{margin:0 0 14px}.folk-piller{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}.folk-piller+.folk-piller{margin-bottom:18px}
+/* Folk 08.10.2026: hele kortet/raden er knappen; kurskort med deltakerne inni. */.folk-rad{display:block;width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer}.folk-rad:hover{border-color:#a2502b}.folk-gruppe{margin-bottom:26px}.folk-kurs h3{margin:0}.folk-kurs-naar{margin:2px 0 10px}.folk-deltaker{width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);background:none;font:inherit;color:inherit;cursor:pointer;padding:12px 0}.folk-deltaker:last-child{border-bottom:0}.folk-deltaker:hover{background:#f4ebde70}.folk-deltaker small{display:block}
 .form-heading{margin:6px 0 -8px;font-weight:700}
 
 /* Beloepet og knappene brekker ikke (eieren 04.10.2026: «Beløpet deler seg

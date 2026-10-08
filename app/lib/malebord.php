@@ -103,6 +103,10 @@ final class Malebord
             'avbestillingTimer' => PopPris::avbestillingTimer($id),
             'nivaer'            => PopPris::nivaer(),
             'prisKlar'          => PopPris::klar() && DB::harKolonne('bookings', 'gjenstander_ore'),
+            // Gjenstand → butikkvare, frivillig (migrasjon 262).
+            'lagerKlar'         => PopPris::lagerKlar(),
+            'koblinger'         => (object) PopPris::koblinger(),
+            'varer'             => PopPris::varer(),
         ];
     }
 

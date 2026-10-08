@@ -114,6 +114,10 @@ final class PopPris
                 $beholdes[] = (int) $id;
             }
             DB::kjor('DELETE FROM pop_prisnivaer WHERE id NOT IN (' . implode(',', $beholdes) . ')');
+            // Koblingene til varer for nivåer som er tatt bort (migrasjon 262).
+            if (DB::harTabell('pop_gjenstand_vare')) {
+                DB::kjor('DELETE FROM pop_gjenstand_vare WHERE nivaa_id NOT IN (' . implode(',', $beholdes) . ')');
+            }
         });
     }
 
@@ -262,11 +266,207 @@ final class PopPris
         return $lagret !== '' && hash_equals($lagret, $kode);
     }
 
-    // ── Kassa ────────────────────────────────────────────────────────────
+    // ── Gjenstander og lager (migrasjon 262) ─────────────────────────────
 
     /**
-     * Det kassa trenger for én booking: hvem, når, nivåene, det som alt er
-     * slått inn, og hva som er betalt.
+     * Gjenstandene i et nivå, slik admin skrev dem (skilt med komma).
+     *
+     * @return list<string>
+     */
+    public static function gjenstandsliste(string $tekst): array
+    {
+        $ut = [];
+        foreach (explode(',', $tekst) as $g) {
+            $g = trim(mb_substr(trim($g), 0, 100));
+            if ($g !== '' && !in_array($g, $ut, true)) {
+                $ut[] = $g;
+            }
+        }
+        return $ut;
+    }
+
+    /** Kan gjenstander kobles til varer og trekke lager (migrasjon 262)? */
+    public static function lagerKlar(): bool
+    {
+        return DB::harTabell('pop_gjenstand_vare') && DB::harKolonne('pop_kasselinjer', 'trukket');
+    }
+
+    /**
+     * Koblingene: «nivå-id|gjenstand» => vare-id.
+     *
+     * @return array<string,int>
+     */
+    public static function koblinger(): array
+    {
+        if (!self::lagerKlar()) {
+            return [];
+        }
+        $ut = [];
+        foreach (DB::alle('SELECT nivaa_id, gjenstand, produkt_id FROM pop_gjenstand_vare') as $r) {
+            $ut[(int) $r['nivaa_id'] . '|' . (string) $r['gjenstand']] = (int) $r['produkt_id'];
+        }
+        return $ut;
+    }
+
+    /**
+     * Varene en gjenstand kan kobles til.
+     *
+     * @return list<array{id:int,tittel:string,lager:?int}>
+     */
+    public static function varer(): array
+    {
+        if (!self::lagerKlar()) {
+            return [];
+        }
+        return array_map(static fn(array $v): array => [
+            'id'     => (int) $v['id'],
+            'tittel' => (string) $v['tittel'],
+            'lager'  => $v['lager'] === null ? null : (int) $v['lager'],
+        ], DB::alle("SELECT id, tittel, lager FROM products WHERE status <> 'kladd' ORDER BY tittel, id"));
+    }
+
+    /**
+     * Lagrer koblingene fra admin. Lista fra admin er hele sannheten: en
+     * kobling som ikke er med (eller står på 0) tas bort. Gjenstanden må stå i
+     * nivået, og varen må finnes. Linjer som alt er slått inn beholder varen
+     * de ble trukket fra.
+     *
+     * @param list<array{nivaaId?:int|string,gjenstand?:string,produktId?:int|string}> $rader
+     */
+    public static function lagreKoblinger(array $rader): void
+    {
+        if (!self::lagerKlar()) {
+            throw new RuntimeException('Kjør oppdateringene først (⚙ Kjør oppdateringer).');
+        }
+        $nivaer = array_column(self::nivaer(), null, 'id');
+        $rene = [];
+        foreach ($rader as $r) {
+            $id = (int) ($r['nivaaId'] ?? 0);
+            $g = trim(mb_substr((string) ($r['gjenstand'] ?? ''), 0, 100));
+            $vare = (int) ($r['produktId'] ?? 0);
+            if ($vare <= 0) {
+                continue;
+            }
+            if (!isset($nivaer[$id]) || !in_array($g, self::gjenstandsliste($nivaer[$id]['gjenstander']), true)) {
+                throw new RuntimeException('Fant ikke gjenstanden. Last siden på nytt.');
+            }
+            if (DB::verdi('SELECT id FROM products WHERE id = :i', ['i' => $vare]) === null) {
+                throw new RuntimeException('Fant ikke varen. Last siden på nytt.');
+            }
+            $rene[$id . '|' . $g] = ['nivaa_id' => $id, 'gjenstand' => $g, 'produkt_id' => $vare];
+        }
+        DB::iTransaksjon(static function () use ($rene): void {
+            foreach (DB::alle('SELECT nivaa_id, gjenstand FROM pop_gjenstand_vare FOR UPDATE') as $r) {
+                if (!isset($rene[(int) $r['nivaa_id'] . '|' . (string) $r['gjenstand']])) {
+                    DB::kjor('DELETE FROM pop_gjenstand_vare WHERE nivaa_id = :n AND gjenstand = :g',
+                        ['n' => (int) $r['nivaa_id'], 'g' => (string) $r['gjenstand']]);
+                }
+            }
+            foreach ($rene as $r) {
+                DB::kjor(
+                    'INSERT INTO pop_gjenstand_vare (nivaa_id, gjenstand, produkt_id) VALUES (:n, :g, :p)
+                     ON DUPLICATE KEY UPDATE produkt_id = VALUES(produkt_id)',
+                    ['n' => $r['nivaa_id'], 'g' => $r['gjenstand'], 'p' => $r['produkt_id']]
+                );
+            }
+        });
+    }
+
+    /**
+     * Legger tilbake det som er trukket fra lageret for en booking (plassen
+     * avbestilt i admin etter at gjenstandene er slått inn). Bare det som
+     * faktisk ble trukket, og bare én gang: «trukket» settes til 0.
+     */
+    public static function leggTilbakeLager(int $bookingId): void
+    {
+        if (!self::lagerKlar()) {
+            return;
+        }
+        DB::iTransaksjon(static function () use ($bookingId): void {
+            foreach (DB::alle(
+                'SELECT id, produkt_id, trukket FROM pop_kasselinjer
+                  WHERE booking_id = :b AND produkt_id IS NOT NULL AND trukket > 0 FOR UPDATE',
+                ['b' => $bookingId]
+            ) as $l) {
+                DB::kjor('UPDATE products SET lager = lager + :a WHERE id = :p AND lager IS NOT NULL',
+                    ['a' => (int) $l['trukket'], 'p' => (int) $l['produkt_id']]);
+                DB::oppdater('pop_kasselinjer', ['trukket' => 0], ['id' => (int) $l['id']]);
+            }
+        });
+    }
+
+    /**
+     * Lageret etter et nytt valg i kassa: per vare sammenlignes det som alt er
+     * trukket med det de nye linjene trenger. Mer = trekkes (aldri under null,
+     * og «Bestill mer» via Lager::etterSalg), mindre = legges tilbake. Det som
+     * faktisk er trukket fordeles på de nye linjene («trukket»).
+     *
+     * @param list<array{produkt_id:?int,trukket:int}> $gamle
+     * @param list<array<string,mixed>> $nye linjene som skal lagres (endres)
+     */
+    private static function justerLager(array $gamle, array &$nye): void
+    {
+        $har = [];
+        foreach ($gamle as $l) {
+            if ($l['produkt_id'] !== null) {
+                $har[(int) $l['produkt_id']] = ($har[(int) $l['produkt_id']] ?? 0) + (int) $l['trukket'];
+            }
+        }
+        $vil = [];
+        foreach ($nye as $l) {
+            if (($l['produkt_id'] ?? null) !== null) {
+                $vil[(int) $l['produkt_id']] = ($vil[(int) $l['produkt_id']] ?? 0) + (int) $l['antall'];
+            }
+        }
+        $totalt = [];
+        foreach (array_unique(array_merge(array_keys($har), array_keys($vil))) as $p) {
+            $gammel = $har[$p] ?? 0;
+            $onsket = $vil[$p] ?? 0;
+            $rad = DB::en('SELECT lager FROM products WHERE id = :p FOR UPDATE', ['p' => $p]);
+            if ($rad === null || $rad['lager'] === null) {
+                $totalt[$p] = 0;
+                continue;
+            }
+            if ($onsket > $gammel) {
+                $ta = min($onsket - $gammel, max(0, (int) $rad['lager']));
+                if ($ta > 0) {
+                    DB::kjor('UPDATE products SET lager = lager - :a WHERE id = :p AND lager IS NOT NULL',
+                        ['a' => $ta, 'p' => $p]);
+                    Lager::etterSalg($p, $ta);
+                }
+                $totalt[$p] = $gammel + $ta;
+            } elseif ($onsket < $gammel) {
+                DB::kjor('UPDATE products SET lager = lager + :a WHERE id = :p AND lager IS NOT NULL',
+                    ['a' => $gammel - $onsket, 'p' => $p]);
+                $totalt[$p] = $onsket;
+            } else {
+                $totalt[$p] = $gammel;
+            }
+        }
+        foreach ($nye as &$l) {
+            $p = $l['produkt_id'] ?? null;
+            if ($p === null) {
+                $l['trukket'] = 0;
+                continue;
+            }
+            $l['trukket'] = min((int) $l['antall'], $totalt[(int) $p] ?? 0);
+            $totalt[(int) $p] = ($totalt[(int) $p] ?? 0) - $l['trukket'];
+        }
+        unset($l);
+    }
+
+    // ── Kassa ────────────────────────────────────────────────────────────
+
+    /** «nivå-id|gjenstand». Et tall alene er hele nivået (uten gjenstand). */
+    private static function nokkel(int|string $k): string
+    {
+        $k = (string) $k;
+        return str_contains($k, '|') ? $k : $k . '|';
+    }
+
+    /**
+     * Det kassa trenger for én booking: hvem, når, én rad per gjenstand i
+     * hvert nivå, det som alt er slått inn, og hva som er betalt.
      *
      * @return array<string,mixed>
      */
@@ -274,24 +474,29 @@ final class PopPris
     {
         $b = self::kassaBooking($bookingId, false);
         $bet = Booking::betalingerFor($bookingId);
-        $linjer = DB::alle(
-            'SELECT nivaa_id, navn, pris_ore, antall FROM pop_kasselinjer WHERE booking_id = :b ORDER BY id',
-            ['b' => $bookingId]
-        );
         $oslo = new DateTimeZone('Europe/Oslo');
         $start = (new DateTimeImmutable((string) $b['start_tid'], new DateTimeZone('UTC')))->setTimezone($oslo);
-        // Nivåene kassa viser: de aktive, pluss et nivå som er tatt bort i
-        // admin men har gjenstander slått inn på denne bookingen (med navnet
-        // og prisen de ble slått inn med). «lagret» er linjene per nivå, så
-        // skjermen regner summen likt med serveren (regnLinjer()).
         $lagret = self::lagredeLinjer($bookingId);
-        $vis = self::nivaer();
-        $aktive = array_column($vis, 'id');
-        foreach ($lagret as $id => $ls) {
-            if (!in_array($id, $aktive, true)) {
-                $vis[] = ['id' => $id, 'navn' => $ls[0]['navn'], 'prisOre' => $ls[0]['prisOre'],
-                          'pris' => self::kr($ls[0]['prisOre']), 'gjenstander' => '', 'aktiv' => false];
+        $kobling = self::koblinger();
+        // Én rad per gjenstand i hvert aktivt nivå (eller hele nivået når det
+        // ikke har gjenstander). Det som er slått inn på en gjenstand eller et
+        // nivå som ikke lenger finnes, står som egen rad: det kan beholdes
+        // eller tas bort, men ikke økes.
+        $rader = [];
+        foreach (self::nivaer() as $n) {
+            foreach (self::gjenstandsliste($n['gjenstander']) ?: [''] as $g) {
+                $k = $n['id'] . '|' . $g;
+                $rader[$k] = ['nokkel' => $k, 'nivaaId' => $n['id'], 'gjenstand' => $g, 'nivaa' => $n['navn'],
+                              'prisOre' => $n['prisOre'], 'aktiv' => true, 'lager' => isset($kobling[$k])];
             }
+        }
+        foreach ($lagret as $k => $ls) {
+            if (!isset($rader[$k])) {
+                [$id, $g] = explode('|', $k, 2);
+                $rader[$k] = ['nokkel' => $k, 'nivaaId' => (int) $id, 'gjenstand' => $g, 'nivaa' => $ls[0]['navn'],
+                              'prisOre' => $ls[0]['prisOre'], 'aktiv' => false, 'lager' => false];
+            }
+            $rader[$k]['lagret'] = array_map(static fn(array $l): array => ['prisOre' => $l['prisOre'], 'antall' => $l['antall']], $ls);
         }
         return [
             'bookingId'      => $bookingId,
@@ -299,15 +504,7 @@ final class PopPris
             'antall'         => (int) $b['antall'],
             'naar'           => Booking::norskDato((string) $b['start_tid']),
             'dato'           => $start->format('Y-m-d'),
-            'nivaer'         => $vis,
-            'lagret'         => (object) array_map(static fn(array $ls): array => array_map(
-                static fn(array $l): array => ['prisOre' => $l['prisOre'], 'antall' => $l['antall']], $ls), $lagret),
-            'linjer'         => array_map(static fn(array $l): array => [
-                'nivaaId' => $l['nivaa_id'] !== null ? (int) $l['nivaa_id'] : null,
-                'navn'    => (string) $l['navn'],
-                'prisOre' => (int) $l['pris_ore'],
-                'antall'  => (int) $l['antall'],
-            ], $linjer),
+            'rader'          => array_values(array_map(static fn(array $r): array => $r + ['lagret' => []], $rader)),
             'depositumOre'   => (int) $b['depositum_ore'],
             'betaltOre'      => (int) $bet['sum'],
             'belopOre'       => (int) $b['belop_ore'],
@@ -322,24 +519,30 @@ final class PopPris
      * Bookingens beløp blir summen av gjenstandene (aldri lavere enn det som
      * alt er betalt — penger tilbake er en refusjon, og den gjøres for seg).
      * Det som er betalt ved booking trekkes dermed fra av seg selv, og resten
-     * står som «skyldig» under «Ta betalt». Kan gjøres om: linjene byttes ut.
+     * står som «skyldig» under «Ta betalt». Kan gjøres om: linjene byttes ut,
+     * og lageret for koblede gjenstander justeres med forskjellen.
      *
-     * @param array<int|string,int|string> $valg nivå-id => antall
+     * @param array<int|string,mixed> $valg [{nivaaId, gjenstand, antall}] — eller nivå-id => antall
      * @return array{sumOre:int, betaltOre:int, skyldigOre:int}
      */
     public static function kassa(int $bookingId, array $valg, ?int $adminId): array
     {
         $onsket = [];
-        foreach ($valg as $id => $n) {
-            $id = (int) $id;
-            $n = (int) $n;
+        foreach ($valg as $k => $v) {
+            if (is_array($v)) {
+                $nk = (int) ($v['nivaaId'] ?? 0) . '|' . trim(mb_substr((string) ($v['gjenstand'] ?? ''), 0, 100));
+                $n = (int) ($v['antall'] ?? 0);
+            } else {
+                $nk = self::nokkel($k);
+                $n = (int) $v;
+            }
             if ($n === 0) {
                 continue;
             }
             if ($n < 0 || $n > self::MAKS_PER_NIVAA) {
                 throw new RuntimeException('Antallet må være mellom 0 og ' . self::MAKS_PER_NIVAA . '.');
             }
-            $onsket[$id] = $n;
+            $onsket[$nk] = ($onsket[$nk] ?? 0) + $n;
         }
         if ($onsket === []) {
             throw new RuntimeException('Velg minst én gjenstand.');
@@ -368,6 +571,25 @@ final class PopPris
             if ($aapen > 0) {
                 throw new RuntimeException('Betalingen ved booking er ikke ferdig i Vipps ennå. Prøv igjen om litt.');
             }
+            if (self::lagerKlar()) {
+                // Lageret (migrasjon 262): koblingen slik den står nå, og det
+                // som alt er trukket for bookingen.
+                $kobling = self::koblinger();
+                foreach ($linjer as &$l) {
+                    $l['produkt_id'] = $kobling[$l['nivaa_id'] . '|' . (string) ($l['gjenstand'] ?? '')] ?? null;
+                }
+                unset($l);
+                $gamle = array_map(static fn(array $r): array => [
+                    'produkt_id' => $r['produkt_id'] !== null ? (int) $r['produkt_id'] : null,
+                    'trukket'    => (int) $r['trukket'],
+                ], DB::alle('SELECT produkt_id, trukket FROM pop_kasselinjer WHERE booking_id = :b FOR UPDATE', ['b' => $bookingId]));
+                self::justerLager($gamle, $linjer);
+            } else {
+                foreach ($linjer as &$l) {
+                    unset($l['gjenstand']);
+                }
+                unset($l);
+            }
             DB::kjor('DELETE FROM pop_kasselinjer WHERE booking_id = :b', ['b' => $bookingId]);
             foreach ($linjer as $l) {
                 DB::settInn('pop_kasselinjer', $l + ['booking_id' => $bookingId, 'registrert_av' => $adminId]);
@@ -386,54 +608,67 @@ final class PopPris
     }
 
     /**
-     * Linjene som er slått inn, per nivå, i den rekkefølgen de ble lagret.
+     * Linjene som er slått inn, per «nivå-id|gjenstand», i den rekkefølgen de
+     * ble lagret.
      *
-     * @return array<int, list<array{navn:string,prisOre:int,antall:int}>>
+     * @return array<string, list<array{navn:string,prisOre:int,antall:int}>>
      */
     private static function lagredeLinjer(int $bookingId): array
     {
+        $g = DB::harKolonne('pop_kasselinjer', 'gjenstand') ? 'gjenstand' : 'NULL AS gjenstand';
         $ut = [];
         foreach (DB::alle(
-            'SELECT nivaa_id, navn, pris_ore, antall FROM pop_kasselinjer
-              WHERE booking_id = :b AND nivaa_id IS NOT NULL ORDER BY id',
+            "SELECT nivaa_id, {$g}, navn, pris_ore, antall FROM pop_kasselinjer
+              WHERE booking_id = :b AND nivaa_id IS NOT NULL ORDER BY id",
             ['b' => $bookingId]
         ) as $l) {
-            $ut[(int) $l['nivaa_id']][] = ['navn' => (string) $l['navn'], 'prisOre' => (int) $l['pris_ore'], 'antall' => (int) $l['antall']];
+            $ut[(int) $l['nivaa_id'] . '|' . (string) ($l['gjenstand'] ?? '')][] =
+                ['navn' => (string) $l['navn'], 'prisOre' => (int) $l['pris_ore'], 'antall' => (int) $l['antall']];
         }
         return $ut;
     }
 
     /**
-     * Linjene og summen for et nytt valg. Per nivå brukes først de lagrede
-     * linjene (med sin pris), og bare det som kommer i tillegg prises med
-     * dagens nivåpris. Et nivå som er tatt bort i admin kan beholde eller
-     * redusere det som alt er slått inn, men ikke få flere.
+     * Linjene og summen for et nytt valg. Per gjenstand brukes først de
+     * lagrede linjene (med sin pris), og bare det som kommer i tillegg prises
+     * med dagens nivåpris. En gjenstand eller et nivå som er tatt bort i admin
+     * kan beholde eller redusere det som alt er slått inn, men ikke få flere.
      *
-     * @param array<int,int> $onsket nivå-id => antall
+     * @param array<int|string,int> $onsket «nivå-id|gjenstand» (eller nivå-id) => antall
      * @param array<int,array<string,mixed>> $nivaer aktive nivåer per id
-     * @param array<int, list<array{navn:string,prisOre:int,antall:int}>> $lagret
+     * @param array<int|string, list<array{navn:string,prisOre:int,antall:int}>> $lagret
      * @return array{0: list<array<string,mixed>>, 1: int}
      */
     public static function regnLinjer(array $onsket, array $nivaer, array $lagret): array
     {
+        $lagretN = [];
+        foreach ($lagret as $k => $ls) {
+            $lagretN[self::nokkel($k)] = $ls;
+        }
         $linjer = [];
         $sum = 0;
-        foreach ($onsket as $id => $n) {
+        foreach ($onsket as $k => $n) {
+            $k = self::nokkel($k);
+            [$id, $g] = explode('|', $k, 2);
+            $id = (int) $id;
             $igjen = $n;
-            foreach ($lagret[$id] ?? [] as $l) {
+            foreach ($lagretN[$k] ?? [] as $l) {
                 if ($igjen <= 0) {
                     break;
                 }
                 $ta = min($igjen, $l['antall']);
-                $linjer[] = ['nivaa_id' => $id, 'navn' => $l['navn'], 'pris_ore' => $l['prisOre'], 'antall' => $ta];
+                $linjer[] = ['nivaa_id' => $id, 'gjenstand' => $g === '' ? null : $g, 'navn' => $l['navn'],
+                             'pris_ore' => $l['prisOre'], 'antall' => $ta];
                 $sum += $l['prisOre'] * $ta;
                 $igjen -= $ta;
             }
             if ($igjen > 0) {
-                if (!isset($nivaer[$id])) {
+                $liste = isset($nivaer[$id]) ? self::gjenstandsliste((string) ($nivaer[$id]['gjenstander'] ?? '')) : [];
+                if (!isset($nivaer[$id]) || ($g !== '' && !in_array($g, $liste, true))) {
                     throw new RuntimeException('Fant ikke prisnivået. Last siden på nytt.');
                 }
-                $linjer[] = ['nivaa_id' => $id, 'navn' => $nivaer[$id]['navn'], 'pris_ore' => $nivaer[$id]['prisOre'], 'antall' => $igjen];
+                $linjer[] = ['nivaa_id' => $id, 'gjenstand' => $g === '' ? null : $g, 'navn' => $nivaer[$id]['navn'],
+                             'pris_ore' => $nivaer[$id]['prisOre'], 'antall' => $igjen];
                 $sum += $nivaer[$id]['prisOre'] * $igjen;
             }
         }

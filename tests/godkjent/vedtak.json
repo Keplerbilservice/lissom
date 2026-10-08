@@ -6223,6 +6223,41 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "pop-lager-faktura-avbestillingsside",
+            "dato": "2026-10-08",
+            "hva": "Eieren sa ja 8. oktober 2026 til tre punkter fra opus-kontrollen på Paint on Pots: (1) avbestillingssiden viser Vipps-delen, gavekortdelen og det som er betalt i verkstedet hver for seg, aldri «0 kr tilbake på Vipps»; (2) admin-påmelding med Faktura gir en manuell betalingsrad for beløpet ved booking, så kassa trekker det fra; (3) hver gjenstand i et prisnivå kan frivillig kobles til en butikkvare (admin-ny › Paint on Pots › Koble til varer). Når en koblet gjenstand slås inn i kassa trekkes lageret (Lager::etterSalg), og det legges tilbake ved reduksjon og når plassen avbestilles i admin. Gjenstander uten kobling trekker ingenting (migrasjon 262).",
+            "hvor": "/api/pop-avbestill.php, admin-ny › Paint on Pots og Kasse, admin-påmelding",
+            "kode": [
+                {
+                    "fil": "api/pop-avbestill.php",
+                    "finnes": [
+                        "' betaler vi tilbake i verkstedet.'",
+                        "// Bare delene som finnes — aldri «0 kr tilbake på Vipps»."
+                    ]
+                },
+                {
+                    "fil": "api/admin/pamelding.php",
+                    "finnes": [
+                        "in_array($maate, ['Kontant', 'Vipps', 'Vipps i verkstedet', 'Faktura'], true)",
+                        "PopPris::leggTilbakeLager($id);"
+                    ]
+                },
+                {
+                    "fil": "app/lib/poppris.php",
+                    "finnes": [
+                        "Lager::etterSalg($p, $ta);",
+                        "self::justerLager($gamle, $linjer);"
+                    ]
+                },
+                {
+                    "fil": "db/migrations/262_pop_gjenstand_lager.sql",
+                    "finnes": [
+                        "CREATE TABLE IF NOT EXISTS pop_gjenstand_vare ("
+                    ]
+                }
+            ]
         }
     ]
 }

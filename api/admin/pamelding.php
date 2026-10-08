@@ -93,6 +93,9 @@ if ($handling === 'fjern') {
         'status'       => 'avbestilt',
         'avbestilt_at' => gmdate('Y-m-d H:i:s'),
     ], ['id' => $id]);
+    // Paint on Pots: gjenstander som er slått inn og har trukket lager,
+    // legges tilbake (migrasjon 262). Ingenting for andre plasser.
+    PopPris::leggTilbakeLager($id);
 
     // Kunden skal vite det. Eieren, 27. september 2026: «en avbestilling fra
     // admin, må sende epost til kunden» — testet paa lissom.no samme dag:
@@ -1369,7 +1372,9 @@ $bookingId = DB::iTransaksjon(static function () use ($okt, $oktId, $navn, $epos
     // som leser Booking::betalingerFor) ingenting aa trekke fra, og kunden
     // ville betalt beloepet ved booking to ganger. Pengene som kom inn blir
     // en manuell betalingsrad, som i «Ta betalt».
-    if ($popFelt !== [] && $belop > 0 && $status === 'betalt' && in_array($maate, ['Kontant', 'Vipps', 'Vipps i verkstedet'], true)) {
+    // Faktura (eieren, 8. oktober 2026): beløpet ved booking regnes som
+    // betalt, så kassa trekker det fra.
+    if ($popFelt !== [] && $belop > 0 && $status === 'betalt' && in_array($maate, ['Kontant', 'Vipps', 'Vipps i verkstedet', 'Faktura'], true)) {
         $betalingId = Booking::manuellBetaling($bookingId, $belop, $maate,
             $medlemId > 0 ? $medlemId : null, (int) $admin['id'], 'Beløp ved booking');
         DB::oppdater('bookings', ['payment_id' => $betalingId], ['id' => $bookingId]);

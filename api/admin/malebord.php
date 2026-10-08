@@ -275,6 +275,20 @@ switch (Foresporsel::tekst('handling')) {
         revider('pop_prisnivaer', 'pop_prisnivaer', null, ['antall' => count(PopPris::nivaer())]);
         Svar::ok($svar() + ['beskjed' => 'Prisnivåene er lagret.']);
 
+    case 'koblinger':
+        // Gjenstand i et nivå → butikkvare (migrasjon 262). Frivillig.
+        $rader = Foresporsel::kropp()['koblinger'] ?? null;
+        if (!is_array($rader)) {
+            Svar::feil('Fant ingen koblinger å lagre.');
+        }
+        try {
+            PopPris::lagreKoblinger(array_values(array_filter($rader, 'is_array')));
+        } catch (RuntimeException $e) {
+            Svar::feil($e->getMessage());
+        }
+        revider('pop_koblinger', 'pop_gjenstand_vare', null, ['antall' => count(PopPris::koblinger())]);
+        Svar::ok($svar() + ['beskjed' => 'Koblingene er lagret.']);
+
     case 'kassa':
         $valg = Foresporsel::kropp()['nivaer'] ?? null;
         if (!is_array($valg)) {

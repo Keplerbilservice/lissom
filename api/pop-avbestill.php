@@ -63,10 +63,13 @@ if (!$ok || $b === null) {
     $frist = PopPris::fristFor($b);
     $regel = Booking::avbestillingsregel($timerIgjen, $frist);
     $n = (int) $b['antall'];
-    // Det som faktisk gaar tilbake: Vipps-delen til Vipps, gavekortdelen til
-    // kortet (samme deling som api/avbestill.php).
+    // Det som faktisk gaar tilbake, hver del for seg (samme deling som
+    // api/avbestill.php): Vipps-delen til Vipps, gavekortdelen til kortet, og
+    // det som er betalt i verkstedet (kontant, Vipps der, faktura) tilbake
+    // for haand.
     $vipps = 0;
     $gave = 0;
+    $manuell = 0;
     foreach (Booking::betalingerFor((int) $b['id'])['rader'] as $p) {
         if ($p['annullert_at'] !== null || !in_array((string) $p['status'], ['betalt', 'delvis_refundert'], true)) {
             continue;
@@ -74,19 +77,27 @@ if (!$ok || $b === null) {
         $gave += Booking::gavekortBrukt((int) $p['id']);
         if ((string) $p['type'] !== 'manuell') {
             $vipps += max(0, (int) $p['belop_ore'] - (int) $p['refundert_ore']);
+        } else {
+            $manuell += max(0, (int) $p['belop_ore']);
         }
     }
     $kr = static fn(int $ore): string => str_replace("\u{a0}", ' ', PopPris::kr($ore));
     $tittel = 'Avbestill ' . (string) $b['tittel'];
-    $linjer = [
-        Booking::norskDato((string) $b['start_tid']) . ' · ' . $n . ($n === 1 ? ' person' : ' personer'),
-        $regel['andel'] < 1.0
-            ? 'Det er mindre enn ' . ($frist ?? 48) . ' timer igjen, så beløpet beholdes.'
-            : ($gave > 0
-                ? ($vipps > 0 ? 'Du får ' . $kr($vipps) . ' tilbake på Vipps og ' : 'Du får ')
-                  . $kr($gave) . ' tilbake på gavekortet.'
-                : 'Du får ' . $kr($vipps) . ' tilbake på Vipps.'),
-    ];
+    $linjer = [Booking::norskDato((string) $b['start_tid']) . ' · ' . $n . ($n === 1 ? ' person' : ' personer')];
+    if ($regel['andel'] < 1.0) {
+        $linjer[] = 'Det er mindre enn ' . ($frist ?? 48) . ' timer igjen, så beløpet beholdes.';
+    } else {
+        // Bare delene som finnes — aldri «0 kr tilbake på Vipps».
+        if ($vipps > 0) {
+            $linjer[] = 'Du får ' . $kr($vipps) . ' tilbake på Vipps.';
+        }
+        if ($gave > 0) {
+            $linjer[] = $kr($gave) . ' går tilbake på gavekortet.';
+        }
+        if ($manuell > 0) {
+            $linjer[] = $kr($manuell) . ' betaler vi tilbake i verkstedet.';
+        }
+    }
     $knapp = true;
 }
 

@@ -77,7 +77,9 @@ export function popUkeKort(start){
     :el('div',{class:'row'},el('div',{},el('small',{text:'Pris og betaling'}),el('strong',{text:`${money(k.prisOre)} per person`}),el('small',{text:k.oppmote?'Kunden velger Vipps nå eller betal ved besøket':'Kunden betaler i Vipps ved bestilling'})),link('Kurs','#kurs')),
    k.prisKlar?el('div',{class:'row'},el('div',{},el('small',{text:'Prisnivåer (vises på nettsiden)'}),...(k.nivaer||[]).map(n=>el('strong',{text:`${n.navn} · ${money(n.prisOre)}`,title:n.gjenstander})),el('small',{text:'Glasur og brenning er med i prisen.'})),
     button('Endre',()=>{const rader=[...(k.nivaer||[]),{},{}];const felter=[];const init={};rader.forEach((n,i)=>{felter.push(field('navn'+i,`Nivå ${i+1} · navn`,'text'),field('pris'+i,`Nivå ${i+1} · pris (kr)`,'number',{min:1,max:100000,step:1}),field('gjenstander'+i,`Nivå ${i+1} · gjenstander`,'textarea',{help:'Skilt med komma, slik de vises på nettsiden. Tomt navn og pris fjerner nivået.'}));init['navn'+i]=n.navn||'';init['pris'+i]=n.prisOre?Math.round(n.prisOre/100):null;init['gjenstander'+i]=n.gjenstander||'';});
-     form('Prisnivåer',felter,init,async v=>{const nivaer=rader.map((n,i)=>({id:n.id||0,navn:v['navn'+i]||'',pris:v['pris'+i]??'',gjenstander:v['gjenstander'+i]||''})).filter(n=>n.navn||n.pris!=='');if(!await confirm('Lagre prisnivåene?','Prisene vises på nettsiden og brukes i kassa fra nå. Gjenstander som alt er slått inn beholder prisen sin.','Lagre'))throw Error('Avbrutt.');await last({handling:'nivaer',nivaer});});})):null);
+     form('Prisnivåer',felter,init,async v=>{const nivaer=rader.map((n,i)=>({id:n.id||0,navn:v['navn'+i]||'',pris:v['pris'+i]??'',gjenstander:v['gjenstander'+i]||''})).filter(n=>n.navn||n.pris!=='');if(!await confirm('Lagre prisnivåene?','Prisene vises på nettsiden og brukes i kassa fra nå. Gjenstander som alt er slått inn beholder prisen sin.','Lagre'))throw Error('Avbrutt.');await last({handling:'nivaer',nivaer});});}),
+    // Gjenstand → butikkvare (migrasjon 262). Frivillig: en koblet gjenstand trekker lageret når den slås inn i kassa.
+    k.lagerKlar?button('Koble til varer',()=>{const felter=[field('hjelp','Valgfritt. En koblet gjenstand trekker lageret når den slås inn i kassa.','heading')];const init={};const rader=[];const valg=[[0,'Ingen kobling'],...(k.varer||[]).map(v=>[v.id,v.tittel+(v.lager!==null?` (${v.lager} på lager)`:'')])];for(const n of (k.nivaer||[]))for(const g of String(n.gjenstander||'').split(',').map(x=>x.trim()).filter(Boolean)){const i=rader.length;rader.push({nivaaId:n.id,gjenstand:g});felter.push(field('v'+i,`${n.navn} · ${g}`,'number',{options:valg}));init['v'+i]=(k.koblinger||{})[n.id+'|'+g]||0;}if(!rader.length){toast('Legg inn gjenstander i prisnivåene først.');return;}form('Gjenstander og lager',felter,init,async v=>{await last({handling:'koblinger',koblinger:rader.map((r,i)=>({...r,produktId:Number(v['v'+i])||0}))});});}):null):null);
  }
  function dagsliste(d){
   const x=d.dag;const s=x.status||'apen';
@@ -131,24 +133,25 @@ export async function popIdagArk(d){
 // fra serveren; det som er betalt ved booking trekkes fra. Selve pengene registreres i «Ta betalt» etterpå.
 export async function popKassa(bookingId,etter){
  let d;try{d=await api('malebord.php?kassa='+bookingId);}catch(e){toast(e.message);return;}
- const valg=new Map();for(const l of d.linjer)if(l.nivaaId)valg.set(l.nivaaId,(valg.get(l.nivaaId)||0)+l.antall);
+ // Én rad per gjenstand i hvert nivå (migrasjon 262). Antallet starter på det som alt er slått inn.
+ const valg=new Map();for(const r of d.rader){const n=(r.lagret||[]).reduce((a,l)=>a+l.antall,0);if(n)valg.set(r.nokkel,n);}
  const boks=el('div',{});let s;
  const tegn=()=>{
   // Samme regnestykke som PopPris::regnLinjer(): det som alt er slått inn beholder prisen sin, nye får dagens nivåpris.
-  const lagretAntall=id=>((d.lagret||{})[id]||[]).reduce((a,l)=>a+l.antall,0);
-  const linjeSum=n=>{let igjen=valg.get(n.id)||0,s=0;for(const l of ((d.lagret||{})[n.id]||[])){const t=Math.min(igjen,l.antall);s+=t*l.prisOre;igjen-=t;}return s+igjen*n.prisOre;};
-  const sum=d.nivaer.reduce((a,n)=>a+linjeSum(n),0);const rest=Math.max(0,sum-d.betaltOre);
+  const lagretAntall=r=>(r.lagret||[]).reduce((a,l)=>a+l.antall,0);
+  const linjeSum=r=>{let igjen=valg.get(r.nokkel)||0,s=0;for(const l of (r.lagret||[])){const t=Math.min(igjen,l.antall);s+=t*l.prisOre;igjen-=t;}return s+igjen*r.prisOre;};
+  const sum=d.rader.reduce((a,r)=>a+linjeSum(r),0);const rest=Math.max(0,sum-d.betaltOre);
   boks.replaceChildren(
    el('p',{class:'muted',text:`${d.naar} · ${d.antall} ${d.antall===1?'person':'personer'}`}),
-   el('div',{class:'list'},d.nivaer.map(n=>{const x=valg.get(n.id)||0;return el('div',{class:'row'},el('div',{},el('strong',{text:`${n.navn} · ${money(n.prisOre)}`}),el('small',{text:n.gjenstander})),
-    el('div',{class:'actions'},button('−',()=>{x>1?valg.set(n.id,x-1):valg.delete(n.id);tegn();}),el('strong',{text:String(x),'aria-live':'polite'}),button('+',()=>{if(x>=50||(n.aktiv===false&&x>=lagretAntall(n.id)))return;valg.set(n.id,x+1);tegn();})));})),
+   el('div',{class:'list'},d.rader.map(r=>{const x=valg.get(r.nokkel)||0;return el('div',{class:'row'},el('div',{},el('strong',{text:r.gjenstand||r.nivaa}),el('small',{text:`${r.nivaa} · ${money(r.prisOre)}${r.lager?' · trekker lager':''}`})),
+    el('div',{class:'actions'},button('−',()=>{x>1?valg.set(r.nokkel,x-1):valg.delete(r.nokkel);tegn();}),el('strong',{text:String(x),'aria-live':'polite'}),button('+',()=>{if(x>=50||(r.aktiv===false&&x>=lagretAntall(r)))return;valg.set(r.nokkel,x+1);tegn();})));})),
    el('div',{class:'list',style:'margin-top:16px'},
     el('div',{class:'row'},el('span',{text:'Gjenstander'}),el('strong',{text:money(sum)})),
     el('div',{class:'row'},el('span',{text:'Betalt ved booking'}),el('strong',{text:'−'+money(d.betaltOre)})),
     el('div',{class:'row'},el('span',{text:'Å betale'}),el('strong',{class:'stat',text:money(rest)}))),
    el('div',{class:'actions',style:'margin-top:16px'},button('Lagre og ta betalt',async ev=>{
-    const nivaer=Object.fromEntries([...valg.entries()].filter(([,n])=>n>0));
-    if(!Object.keys(nivaer).length){toast('Velg minst én gjenstand.');return;}
+    const nivaer=d.rader.filter(r=>(valg.get(r.nokkel)||0)>0).map(r=>({nivaaId:r.nivaaId,gjenstand:r.gjenstand,antall:valg.get(r.nokkel)}));
+    if(!nivaer.length){toast('Velg minst én gjenstand.');return;}
     ev.target.disabled=true;
     try{const r=await api('malebord.php',{handling:'kassa',bookingId,nivaer});toast(r.skyldigOre>0?`Lagret. Å betale: ${money(r.skyldigOre)}.`:'Lagret. Ingenting mer å betale.');s.close();etter&&etter();bookingPayments(bookingId,etter);}
     catch(e){toast(e.message);ev.target.disabled=false;}},'primary')));

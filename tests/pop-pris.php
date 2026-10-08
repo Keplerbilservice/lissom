@@ -154,6 +154,43 @@ $felt = PopPris::bookingFelt($kurs, 20000);
 sjekk('admin/venteliste får beløp ved booking og frist', ($felt['depositum_ore'] ?? null) === 20000 && ($felt['avbestilling_timer'] ?? null) === 24, json_encode($felt));
 sjekk('… og beløpet per person er kursets', PopPris::depositumPerPerson($kurs) === 10000);
 
+echo "\n── Lager: koblet gjenstand trekker og legger tilbake ────────\n";
+// Eieren, ja 8. oktober 2026 (migrasjon 262): en gjenstand kan kobles til en
+// butikkvare. Kassa trekker den, reduksjon og avbestilling legger tilbake.
+if (PopPris::lagerKlar()) {
+    $vare = DB::settInn('products', ['tittel' => 'Test PoP-kopp', 'pris_ore' => 10000, 'mva_prosent' => 25,
+        'kun_medlemmer' => 0, 'status' => 'publisert', 'lager' => 5]);
+    $liten = array_values(array_filter(PopPris::nivaer(), static fn($n) => $n['navn'] === 'Liten'))[0];
+    $gj = PopPris::gjenstandsliste($liten['gjenstander'])[0];
+    PopPris::lagreKoblinger([['nivaaId' => $liten['id'], 'gjenstand' => $gj, 'produktId' => $vare]]);
+    $lager = static fn(): int => (int) DB::verdi('SELECT lager FROM products WHERE id = :i', ['i' => $vare]);
+    [$bL] = $lagBooking(2, 20000);
+    PopPris::kassa($bL, [['nivaaId' => $liten['id'], 'gjenstand' => $gj, 'antall' => 2],
+                         ['nivaaId' => $liten['id'], 'gjenstand' => '', 'antall' => 0]], null);
+    sjekk('2 koblede gjenstander: lageret 5 → 3', $lager() === 3, (string) $lager());
+    PopPris::kassa($bL, [['nivaaId' => $liten['id'], 'gjenstand' => $gj, 'antall' => 1]], null);
+    sjekk('redusert til 1: én tilbake (4)', $lager() === 4, (string) $lager());
+    $andre = PopPris::gjenstandsliste($liten['gjenstander'])[1] ?? null;
+    if ($andre !== null) {
+        PopPris::kassa($bL, [['nivaaId' => $liten['id'], 'gjenstand' => $gj, 'antall' => 1],
+                             ['nivaaId' => $liten['id'], 'gjenstand' => $andre, 'antall' => 3]], null);
+        sjekk('gjenstand uten kobling trekker ingenting', $lager() === 4, (string) $lager());
+    }
+    PopPris::leggTilbakeLager($bL);
+    sjekk('avbestilt i admin: alt tilbake (5)', $lager() === 5, (string) $lager());
+    PopPris::leggTilbakeLager($bL);
+    sjekk('… og bare én gang', $lager() === 5, (string) $lager());
+    DB::oppdater('products', ['lager' => 1], ['id' => $vare]);
+    PopPris::kassa($bL, [['nivaaId' => $liten['id'], 'gjenstand' => $gj, 'antall' => 3]], null);
+    $tr = (int) DB::verdi('SELECT SUM(trukket) FROM pop_kasselinjer WHERE booking_id = :b', ['b' => $bL]);
+    sjekk('lageret går aldri under null, og bare det som gikk ut er trukket', $lager() === 0 && $tr === 1, $lager() . '/' . $tr);
+    PopPris::lagreKoblinger([]);
+    DB::kjor('DELETE FROM pop_kasselinjer WHERE booking_id = :b', ['b' => $bL]);
+    DB::kjor('DELETE FROM products WHERE id = :i', ['i' => $vare]);
+} else {
+    sjekk('migrasjon 262 er kjørt', false);
+}
+
 echo "\n── Kassa venter og rører ikke eldre bookinger ───────────────\n";
 [$b2] = $lagBooking(1, 10000, 'venter');
 try {

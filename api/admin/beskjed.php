@@ -3,6 +3,11 @@
  * Beskjed til deltakere, medlemmer eller én enkelt person.
  *
  *   POST { til: "okt", oktId, tekst, ogsaaSms }     alle paameldte paa en dato
+ *   kursbevis: "ja" (alle grupper)                 hver faar lenken til kursbeviset for sitt
+ *                                                  siste fullfoerte kurs (eieren, 8. oktober 2026:
+ *                                                  «uavhengig av deltakere og medlemmer kunne sende ut
+ *                                                  kursbevis»). Da gaar det ikke ut automatisk etterpaa
+ *                                                  (Booking::bevisSendtManuelt, bin/cron.php anmeldelser).
  *   POST { til: "medlemmer", tekst, ogsaaSms }      alle aktive medlemmer
  *   POST { til: "medlemmer", type: "30 timer" }     bare den medlemskapstypen
  *   POST { til: "en", navn, epost, telefon }        én mottaker, ogsaa uten medlemskap
@@ -22,6 +27,7 @@ $jeg = krev_admin();
 $til   = Foresporsel::tekst('til', 'okt');
 $tekst = trim(Foresporsel::tekst('tekst'));
 $sms   = Foresporsel::tekst('ogsaaSms') === 'ja';
+$medBevis = Foresporsel::tekst('kursbevis') === 'ja';
 $emne  = mb_substr(Foresporsel::tekst('emne', 'Beskjed fra Lissom'), 0, 191);
 // Bildet og bildeteksten til et nyhetsbrev. En vanlig beskjed sender ingen
 // bilde; da staar feltene tomme og brevet er ren tekst som for.
@@ -70,7 +76,7 @@ if ($til === 'okt') {
     }
 
     $mottakere = DB::alle(
-        "SELECT COALESCE(m.navn, b.gjest_navn) AS navn,
+        "SELECT b.id AS booking_id, COALESCE(m.navn, b.gjest_navn) AS navn,
                 COALESCE(m.epost, b.gjest_epost) AS epost,
                 COALESCE(m.telefon, b.gjest_telefon) AS telefon
            FROM bookings b
@@ -87,13 +93,13 @@ if ($til === 'okt') {
 
     if ($type === 'prove') {
         $mottakere = DB::alle(
-            "SELECT navn, epost, telefon FROM members
+            "SELECT id AS member_id, navn, epost, telefon FROM members
               WHERE status = 'prove' AND anonymisert_at IS NULL"
         );
         $hvem = 'medlemmer på prøve';
     } elseif ($type !== '') {
         $mottakere = DB::alle(
-            "SELECT navn, epost, telefon FROM members
+            "SELECT id AS member_id, navn, epost, telefon FROM members
               WHERE status IN ('aktiv','prove') AND anonymisert_at IS NULL
                 AND medlemskap_type = :t",
             ['t' => $type]
@@ -101,7 +107,7 @@ if ($til === 'okt') {
         $hvem = 'medlemmer med ' . $type;
     } else {
         $mottakere = DB::alle(
-            "SELECT navn, epost, telefon FROM members
+            "SELECT id AS member_id, navn, epost, telefon FROM members
               WHERE status IN ('aktiv','prove') AND anonymisert_at IS NULL"
         );
         $hvem = 'alle aktive medlemmer';
@@ -170,6 +176,18 @@ $utenVei = [];
 
 foreach ($mottakere as $m) {
     $personlig = str_replace('{navn}', (string) $m['navn'], $tekst);
+    // Kursbeviset, med den korte lenken (.htaccess /k/) som i SMS-en etter
+    // kurset. Uten bevis (kurset er ikke over, eller beviset er trukket) faar
+    // mottakeren beskjeden uten lenke.
+    $bevisBooking = !empty($m['booking_id']) ? (int) $m['booking_id']
+        : ($medBevis ? Booking::sisteBevisBooking((int) ($m['member_id'] ?? 0), (string) ($m['epost'] ?? ''), (string) ($m['telefon'] ?? '')) : 0);
+    if ($medBevis && $bevisBooking > 0) {
+        $bevis = Booking::bevisLenke($bevisBooking);
+        if ($bevis !== null) {
+            $personlig .= "\n\nKursbeviset ditt: "
+                . (string) preg_replace('~api/kursbevis\.php\?booking=(\d+)&k=([a-f0-9]{32})~', 'k/$1.$2', $bevis);
+        }
+    }
 
     if (!empty($m['epost'])) {
         // Oppsettet: bildet oeverst, overskriften, avsnittene og en

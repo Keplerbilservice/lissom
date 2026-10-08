@@ -5937,6 +5937,33 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "beskjed-kursbevis",
+            "dato": "2026-10-08",
+            "hva": "Eieren, 8. oktober 2026: «jeg vil ha mulighet å sende [kursbevis] manuelt, i send beskjed». Det automatiske kursbeviset er uendret. Og: «om jeg har sendt kursbeviset, så vil jeg ikke at det skal sendes på automatikk også … uavhengig av deltakere og medlemmer». Beskjeder › Skriv beskjed har «Legg ved kursbeviset» for alle mottakergrupper: hver får sin egen korte lenke til kursbeviset for sitt siste fullførte kurs, i e-posten og SMS-en. Er beviset sendt slik, går den automatiske e-posten neste dag uten kursbeviset, og ingen kursbevis-SMS.",
+            "hvor": "admin-ny › Beskjeder",
+            "kode": [
+                {
+                    "fil": "api/admin/beskjed.php",
+                    "finnes": [
+                        "$medBevis = Foresporsel::tekst('kursbevis') === 'ja';",
+                        "$bevis = Booking::bevisLenke($bevisBooking);"
+                    ]
+                },
+                {
+                    "fil": "bin/cron.php",
+                    "finnes": [
+                        "$bevisUrl = Booking::bevisSendtManuelt((int) $d['id']) ? null : Booking::bevisLenke((int) $d['id']);"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/app.js",
+                    "finnes": [
+                        "field('kursbevis','Legg ved kursbeviset','checkbox'"
+                    ]
+                }
+            ]
         }
     ]
 }

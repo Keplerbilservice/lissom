@@ -493,7 +493,9 @@ switch ($jobb) {
             );
 
             foreach ($deltakere as $d) {
-                $bevisUrl = Booking::bevisLenke((int) $d['id']);
+                // Sendt for haand fra Beskjeder: anmeldelsen gaar, men uten
+                // kursbeviset, og ingen kursbevis-SMS (eieren, 8. oktober 2026).
+                $bevisUrl = Booking::bevisSendtManuelt((int) $d['id']) ? null : Booking::bevisLenke((int) $d['id']);
                 Varsel::mal('anmeldelse', [
                     'epost'   => $d['m_epost'] ?? $d['gjest_epost'],
                     // Samme regel som paaminnelsen: SMS bare der kurset har

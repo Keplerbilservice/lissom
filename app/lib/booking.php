@@ -3041,6 +3041,48 @@ final class Booking
      *
      * Eieren, 25. september 2026: kursbeviset sendes med Google-anmeldelsen.
      */
+    /**
+     * Siste fullfoerte, betalte paamelding for en person — til «Legg ved
+     * kursbeviset» i Beskjeder naar mottakeren er et medlem eller én person,
+     * ikke en kursdato. Kontoen gaar foran, saa e-post, saa telefon. 0 = ingen.
+     */
+    public static function sisteBevisBooking(int $medlemId, string $epost, string $telefon): int
+    {
+        $epost = mb_strtolower(trim($epost));
+        $tlf = normaliser_telefon($telefon);
+        if ($medlemId <= 0 && $epost === '' && $tlf === '') {
+            return 0;
+        }
+        return (int) (DB::verdi(
+            "SELECT b.id FROM bookings b
+               JOIN course_sessions cs ON cs.id = b.course_session_id
+          LEFT JOIN members m ON m.id = b.member_id
+              WHERE b.status = 'betalt'
+                AND COALESCE(cs.slutt_tid, cs.start_tid) <= UTC_TIMESTAMP()
+                AND ((:mid > 0 AND b.member_id = :mid2)
+                     OR (:ep <> '' AND LOWER(COALESCE(m.epost, b.gjest_epost)) = :ep2)
+                     OR (:tl <> '' AND COALESCE(m.telefon, b.gjest_telefon) = :tl2))
+              ORDER BY cs.start_tid DESC, b.id DESC LIMIT 1",
+            ['mid' => $medlemId, 'mid2' => $medlemId, 'ep' => $epost, 'ep2' => $epost, 'tl' => $tlf, 'tl2' => $tlf]
+        ) ?? 0);
+    }
+
+    /**
+     * Er kursbeviset for paameldingen alt sendt for haand fra Beskjeder?
+     * Eieren, 8. oktober 2026: «om jeg har sendt kursbeviset, så vil jeg ikke
+     * at det skal sendes på automatikk også». Lenken i beskjeden er den korte
+     * (/k/<id>.<kode>); punktumet etter id-en gjoer at 12 ikke treffer 123.
+     */
+    public static function bevisSendtManuelt(int $bookingId): bool
+    {
+        return (int) (DB::verdi(
+            "SELECT COUNT(*) FROM notifications
+              WHERE ref_type LIKE 'beskjed%' AND status IN ('ko', 'sendt')
+                AND tekst LIKE :l",
+            ['l' => '%/k/' . $bookingId . '.%']
+        ) ?? 0) > 0;
+    }
+
     public static function bevisLenke(int $bookingId): ?string
     {
         if (!DB::harKolonne('bookings', 'bevis_kode')) {

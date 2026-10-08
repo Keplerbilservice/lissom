@@ -162,7 +162,7 @@ async function visSalg(){
   el('button',{type:'button',class:'k-stor',disabled:!kanBetale,text:'Ta betalt '+sum,onclick:visBetaling}),el('button',{type:'button',class:'k-stor rolig',text:'Avbryt',onclick:visIdag})));
 
  const hoyre=[];
- if(pop||popUten){hoyre.push(el('h3',{text:'Trykk på nivået for hver gjenstand'}),el('div',{class:'k-varer to'},data.nivaer.map(n=>el('button',{type:'button',class:'k-vare',onclick:()=>leggTilNivaa(n)},n.navn+' · '+n.pris,el('small',{text:n.gjenstander})))),el('h3',{text:'Annet'}),fliser(false));}
+ if(pop||popUten){hoyre.push(el('h3',{text:'Trykk på nivået for hver gjenstand'}),el('div',{class:'k-varer to'},data.nivaer.map(n=>el('button',{type:'button',class:'k-vare',onclick:()=>leggTilNivaa(n)},n.navn+' · '+n.pris,el('small',{text:n.gjenstander})))));} // Bare kategoriene på prislisten (eieren 08.10.2026)
  else hoyre.push(el('h3',{text:'Selg'}),fliser(!salg.bookingId));
  const tittel='Lissom Kasse · '+(salg.navn||'Kontantkunde')+(pop||popUten?' · Paint on Pots':'');
  rot.replaceChildren(topp(tittel,...personValg()),el('div',{class:'k-innhold'},el('div',{class:'k-kol'},venstre),el('div',{class:'k-kol'},hoyre)));

@@ -396,6 +396,10 @@ RewriteRule ^nyttig-info/([a-z0-9-]+)/?$ /guide.php?slug=$1 [L,QSA]
 # så det bare finnes ett nytt admin. 302, så det kan snus.
 RewriteRule ^admin2(\.html)?/?$ /admin-ny [R=302,L]
 
+# Kort lenke til kursbeviset i SMS-en (eieren 8. oktober 2026): /k/<påmelding>.<kode>.
+# Samme kontroll som den lange lenken: api/kursbevis.php sjekker koden.
+RewriteRule ^k/([0-9]+)\.([a-f0-9]{32})$ /api/kursbevis.php?booking=$1&k=$2 [L,QSA]
+
 RewriteRule ^$ /side.php [L]
 
 # Ekte filer, mapper og /api går uendret gjennom.

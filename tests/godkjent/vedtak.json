@@ -5874,6 +5874,32 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "kursbevis-sms",
+            "dato": "2026-10-08",
+            "hva": "Eieren, 8. oktober 2026 («ok, godkjent», skissen 1JpA7jncCDah2exGGjJZYz): kursbeviset går også på SMS neste dag kl. 10, samtidig med e-posten, til dem som har møtt, har betalt og har mobil. Kort lenke /k/<påmelding>.<kode>. Mal «Kursbevis (SMS)» under Tekstmaler. Start kurset › Etter kurset viser «E-post: X · SMS: Y» og bryteren «Send også på SMS» per økt (på som standard).",
+            "hvor": "bin/cron.php › anmeldelser, Start kurset › Etter kurset",
+            "kode": [
+                {
+                    "fil": "bin/cron.php",
+                    "finnes": [
+                        "Varsel::mal('kursbevis_sms', ['telefon' => $tlf], ["
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kursstart3.js",
+                    "finnes": [
+                        "' Send også på SMS'"
+                    ]
+                },
+                {
+                    "fil": ".htaccess",
+                    "finnes": [
+                        "RewriteRule ^k/([0-9]+)\\.([a-f0-9]{32})$ /api/kursbevis.php?booking=$1&k=$2 [L,QSA]"
+                    ]
+                }
+            ]
         }
     ]
 }

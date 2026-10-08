@@ -7,6 +7,7 @@
  *   GET  ?okt=7                deltakerne med det som står igjen og Vipps-kravet,
  *                              og statusen til e-postene etter kurset (bare lesing)
  *   POST handling=qr           { bookingId } QR-kode for det som står igjen (KursstartKrav::visQr)
+ *   POST handling=kursbevis-sms { okt, paa } «Send også på SMS» for én økt (migrasjon 259)
  *   POST handling=krav         avvist: «Send Vipps-krav» er slått av (eieren, 3. oktober 2026)
  *
  * Tekstene (de fem kortene) leses fortsatt fra api/admin/kursstart.php, som
@@ -35,6 +36,20 @@ if (Foresporsel::metode() === 'POST') {
     $handling = Foresporsel::tekst('handling');
     if ($handling === 'krav') {
         Svar::feil('«Send Vipps-krav» er slått av. Bruk «Vis QR-kode» eller kontant.', 409);
+    }
+    // Eieren, 8. oktober 2026: kursbeviset også på SMS, bryter per økt.
+    if ($handling === 'kursbevis-sms') {
+        if (!DB::harKolonne('course_sessions', 'kursbevis_sms')) {
+            Svar::feil('Dette krever en oppdatering av databasen. Trykk ⚙ Kjør oppdateringer.', 503);
+        }
+        $okt = Foresporsel::heltall('okt');
+        if ($okt <= 0) {
+            Svar::feil('Mangler økta.');
+        }
+        $paa = Foresporsel::tekst('paa') === 'ja' ? 1 : 0;
+        DB::oppdater('course_sessions', ['kursbevis_sms' => $paa], ['id' => $okt]);
+        revider('kursbevis_sms', 'course_session', $okt, ['paa' => $paa]);
+        Svar::ok(['paa' => $paa === 1]);
     }
     if ($handling !== 'qr') {
         Svar::feil('Ukjent handling.');
@@ -65,7 +80,8 @@ if ($oktId <= 0) {
 }
 
 $okt = DB::en(
-    'SELECT cs.id, cs.start_tid, cs.slutt_tid, c.tittel
+    'SELECT cs.id, cs.start_tid, cs.slutt_tid, c.tittel, '
+    . (DB::harKolonne('course_sessions', 'kursbevis_sms') ? 'cs.kursbevis_sms' : '0 AS kursbevis_sms') . '
        FROM course_sessions cs JOIN courses c ON c.id = cs.course_id
       WHERE cs.id = :i',
     ['i' => $oktId]
@@ -212,6 +228,10 @@ $eposter = [
 Svar::json([
     'paa'       => KursstartKrav::paa(),
     'okt'       => ['id' => $oktId, 'tittel' => (string) $okt['tittel']],
+    // «Send også på SMS» i Etter kurset. null = SMS er ikke satt opp, eller
+    // migrasjon 259 mangler: da vises ingen bryter.
+    'kursbevisSms' => (Varsel::smsMulig() && DB::harKolonne('course_sessions', 'kursbevis_sms'))
+        ? (int) $okt['kursbevis_sms'] === 1 : null,
     'deltakere' => $deltakere,
     'eposter'   => $eposter,
 ]);

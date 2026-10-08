@@ -168,7 +168,11 @@ export async function startKurs(e,o){
   const naar=String(an?.status||'').startsWith('Sendt')?'Sendt sammen med spørsmålet om anmeldelse.'
    :an?.status==='Planlagt'?'Sendes neste dag kl. 10 sammen med spørsmålet om anmeldelse.'
    :`Sendes ikke nå: «Google-anmeldelse» står som «${an?.status||'Slått av'}».`;
-  return [el('div',{class:'ks-kort ks-bevis'},el('b',{text:`Kursbevis sendes til ${faar.length} av ${mott.length}`}),el('p',{class:'muted',text:naar})),
+  // Kursbevis på SMS (eieren 8. oktober 2026, migrasjon 259): null = SMS er ikke satt opp.
+  const smsKan=mott.filter(p=>p.statusKode==='betalt'&&!p.bevisSperret&&p.harTlf);
+  const smsDel=d.kursbevisSms==null?[]:[el('p',{class:'ks-kanaler',text:`E-post: ${faar.length} · SMS: ${d.kursbevisSms?smsKan.length:0}`}),
+   el('label',{class:'ks-bryter'},el('input',{type:'checkbox',checked:!!d.kursbevisSms,onchange:async ev=>{const inp=ev.currentTarget,paa=inp.checked;inp.disabled=true;try{await api('kursstart3.php',{handling:'kursbevis-sms',okt:id,paa:paa?'ja':'nei'});d.kursbevisSms=paa;tegn();}catch(e){inp.checked=!paa;toast(e.message);}finally{inp.disabled=false;}}}),' Send også på SMS')];
+  return [el('div',{class:'ks-kort ks-bevis'},el('b',{text:`Kursbevis sendes til ${faar.length} av ${mott.length}`}),el('p',{class:'muted',text:naar}),...smsDel),
    mangler.length?el('div',{class:'ks-kort ks-mangler'},el('b',{text:'Mangler e-post'}),
     el('ul',{class:'ks-navn'},mangler.map(p=>el('li',{text:p.navn}))),
     el('button',{type:'button',class:'button kal-liten',text:'Legg inn e-post',onclick:()=>{steg=0;visFeil('');tegn();document.getElementById('ks-epost-'+mangler[0].bookingId)?.focus();}})):null];

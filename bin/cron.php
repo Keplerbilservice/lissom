@@ -465,8 +465,9 @@ switch ($jobb) {
         // 2026 — foer: «anmeldelse_timer» timer etter). Basen gir kurs som er
         // over og yngre enn tre doegn; Booking::anmeldelseKlar() avgjor om
         // klokka er passert 10 dagen etter, i Europe/Oslo.
+        $bevisSms = DB::harKolonne('course_sessions', 'kursbevis_sms') ? 'cs.kursbevis_sms' : '0 AS kursbevis_sms';
         $okter = DB::alle(
-            "SELECT cs.id, cs.start_tid, c.tittel, c.sms_paaminnelse,
+            "SELECT cs.id, cs.start_tid, c.tittel, c.sms_paaminnelse, {$bevisSms},
                     COALESCE(cs.slutt_tid, cs.start_tid) AS slutt
                FROM course_sessions cs
                JOIN courses c ON c.id = cs.course_id
@@ -516,6 +517,19 @@ switch ($jobb) {
                 ], 'course_session', (int) $okt['id'],
                 Booking::anmeldelseHtml(fornavnet((string) ($d['m_navn'] ?: $d['gjest_navn'])), (string) $okt['tittel'], $lenke, $bevisUrl));
                 $antall++;
+
+                // Kursbeviset paa SMS (eieren, 8. oktober 2026, migrasjon 259):
+                // samtidig, med kort lenke (.htaccess /k/), naar okta ikke har
+                // slaatt det av i Start kurset. Varsel::mal() sender ikke naar
+                // malen er slaatt av under Tekstmaler.
+                $tlf = trim((string) ($d['m_telefon'] ?: $d['gjest_telefon']));
+                if ($bevisUrl !== null && $tlf !== '' && (int) ($okt['kursbevis_sms'] ?? 0) === 1 && Varsel::smsMulig()) {
+                    Varsel::mal('kursbevis_sms', ['telefon' => $tlf], [
+                        'fornavn' => fornavnet((string) ($d['m_navn'] ?: $d['gjest_navn'])),
+                        'kurs'    => (string) $okt['tittel'],
+                        'lenke'   => (string) preg_replace('~api/kursbevis\.php\?booking=(\d+)&k=([a-f0-9]{32})~', 'k/$1.$2', $bevisUrl),
+                    ], 'booking', (int) $d['id']);
+                }
             }
 
             // Merkes ogsaa naar okta ikke hadde deltakere. Ellers ville den

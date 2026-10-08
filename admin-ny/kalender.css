@@ -208,6 +208,9 @@
 .ks-lagret.ok{color:var(--green)}.ks-lagret.feil{color:var(--red)}
 .ks-del .ks-betal{justify-content:flex-start}
 .ks-bevis b{font-size:17px}
+.ks-kanaler{margin:6px 0 0;font-weight:600}
+.ks-bryter{display:flex;align-items:center;gap:8px;margin-top:6px;cursor:pointer}
+.ks-bryter input{width:20px;height:20px}
 .ks-mangler{border-color:var(--red)}
 .ks-mangler .ks-navn{margin:6px 0 8px;padding-left:20px}
 @media(max-width:360px){.ks-to{grid-template-columns:1fr}}

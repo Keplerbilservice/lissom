@@ -329,6 +329,17 @@ final class Maler
             'hvor'   => 'Sendes når du godkjenner en medlemssøknad.',
             'felter' => ['navn' => 'Navnet på søkeren'],
         ],
+        // Migrasjon 259 (eieren 8. oktober 2026). Sendes av bin/cron.php
+        // anmeldelser, samtidig med e-posten med kursbeviset.
+        'kursbevis_sms' => [
+            'tittel' => 'Kursbevis (SMS)',
+            'hvor'   => 'Sendes neste dag kl. 10 sammen med e-posten, til dem som har møtt, har betalt og har mobil. Kan slås av per kurs i Start kurset.',
+            'felter' => [
+                'fornavn' => 'Fornavnet til deltakeren',
+                'kurs'    => 'Kurset de var på',
+                'lenke'   => 'Lenken til kursbeviset',
+            ],
+        ],
         'soknad_godkjent_sms' => [
             'tittel' => 'Søknad godkjent (SMS)',
             'hvor'   => 'Sendes som SMS sammen med e-posten over, når søkeren har oppgitt nummer.',

@@ -360,12 +360,17 @@ switch ($jobb) {
         $naaOslo = new DateTimeImmutable($testtid !== '' ? $testtid : 'now', $oslo);
         $iDag = $naaOslo->setTime(0, 0);
         $tilOslo = (int) $naaOslo->format('G') >= 12 ? $iDag->modify('+2 days') : $iDag->modify('+1 day');
+        // Med utsendingsnoeklene (migrasjon 270) merkes hver paamelding for
+        // seg: en paaminnelse sendt for haand tidlig stopper ikke cron for dem
+        // som kom til etterpaa (kontrolloeren runde 3, 9. oktober 2026). Uten
+        // tabellen: hele oekta, som foer.
+        $ikkeSendt = Paaminnelse::harNokler() ? '' : 'AND cs.paaminnelse_sendt_at IS NULL';
         $okter = DB::alle(
             "SELECT cs.id, cs.start_tid, cs.slutt_tid, c.tittel, c.sms_paaminnelse
                FROM course_sessions cs
                JOIN courses c ON c.id = cs.course_id
               WHERE cs.status = 'planlagt'
-                AND cs.paaminnelse_sendt_at IS NULL
+                {$ikkeSendt}
                 AND cs.start_tid >= UTC_TIMESTAMP()
                 AND cs.start_tid < :til",
             ['til' => $tilOslo->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s')]
@@ -376,8 +381,9 @@ switch ($jobb) {
             // «Send påminnelse» i ny admin (kontrolloeren 9. oktober 2026: samme
             // mottakere begge steder — bare betalte, og 14-dagersregelen).
             //
-            // Oekta tas og meldingene legges i koen i én transaksjon. Er den
-            // alt sendt for haand, treffer ikke UPDATE-en. Feiler koeleggingen
+            // Oekta laases og leses paa nytt: er den avlyst eller flyttet siden
+            // utvalget, hoppes den over. Bare paameldte uten noekkel faar den
+            // (noekkel og koe i én transaksjon). Feiler koeleggingen
             // midt i, rulles alt tilbake: oekta er ikke merket sendt, og neste
             // kjoering proever igjen (Codex 9. oktober 2026).
             try {

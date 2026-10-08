@@ -633,7 +633,7 @@ H.flyttOk = async b => {
     try {
       await api('kurs.php', {handling: 'endredato', oktId: h.oktId, start: `${t.dato} ${t.tid}`, slutt});
       ok++;
-      if (FL.varsle === 'ja' && h.pameldt > 0) { const r = await api('okt-varsel.php', {handling: 'flyttet', oktId: h.oktId, fra: `${h.dato} ${h.tid}`}); varslet += r.sendt || 0; alt += r.alleredeSendt || 0; ikke.push(...(r.ikkeNaadd || [])); }
+      if (FL.varsle === 'ja' && h.pameldt > 0) { const r = await api('okt-varsel.php', {handling: 'flyttet', oktId: h.oktId, fra: `${h.dato} ${h.tid}`, forventet: `${t.dato} ${t.tid}`}); varslet += r.sendt || 0; alt += r.alleredeSendt || 0; ikke.push(...(r.ikkeNaadd || [])); }
     } catch (e) { feil.push(`${kortDato(h.dato)} ${h.tittel}: ${e.message}`); }
   }
   K.valgt.clear(); lukk(true);
@@ -717,17 +717,18 @@ export async function arkPaaminnelse(oktId) {
   const r = await api('okt-varsel.php', {handling: 'forhandsvis', mal: 'kurspaaminnelse', oktId});
   const boks = document.getElementById('nk-pforh'); if (!boks) return;
   // Sendt fra før (for hånd eller dagen før): da sendes den ikke igjen herfra.
-  boks.innerHTML = r.paaminnelseSendt
+  boks.innerHTML = r.paaminnelseSendt && !r.kanSendes
     ? `<b>Påminnelse sendt ${esc(r.paaminnelseSendt)}.</b> Den sendes ikke en gang til.`
     : r.aktiv
-      ? `<b>${r.naas} av ${r.antall} får påminnelsen (${r.epost} e-post, ${r.sms} SMS):</b>${r.ikkeNaadd?.length ? ` <span class="ikke-naadd">Ikke nådd: ${r.ikkeNaadd.map(esc).join(', ')}</span>` : ''}${r.ikkeMed ? `<br><small>${r.ikkeMed} på lista får den ikke: påminnelsen går bare til dem som har betalt og meldte seg på for minst 14 dager siden.</small>` : ''}<br>${r.epost ? esc(r.emne) + '<br>' : ''}<span class="forh-tekst">${esc(r.tekst)}</span><br><small>Den automatiske påminnelsen dagen før sendes da ikke.</small>`
+      ? `${r.alleredeSendt ? `<small>Sist sendt ${esc(r.paaminnelseSendt)}. ${r.alleredeSendt} har alt fått den og får den ikke igjen.</small><br>` : ''}<b>${r.naas} av ${r.antall} får påminnelsen (${r.epost} e-post, ${r.sms} SMS):</b>${r.ikkeNaadd?.length ? ` <span class="ikke-naadd">Ikke nådd: ${r.ikkeNaadd.map(esc).join(', ')}</span>` : ''}${r.ikkeMed ? `<br><small>${r.ikkeMed} på lista får den ikke: påminnelsen går bare til dem som har betalt og meldte seg på for minst 14 dager siden.</small>` : ''}<br>${r.epost ? esc(r.emne) + '<br>' : ''}<span class="forh-tekst">${esc(r.tekst)}</span><br><small>Den automatiske påminnelsen dagen før sendes da ikke til dem som får den nå.</small>`
       : '<b>Meldingen «Påminnelse før kurset» er slått av.</b> Slå den på under Innstillinger › Meldinger.';
   const k = document.getElementById('nk-pok');
-  if (k) { k.disabled = !!r.paaminnelseSendt || !r.aktiv || !r.naas; if (r.paaminnelseSendt) k.textContent = 'Påminnelse sendt'; }
+  if (k) { k.disabled = !r.kanSendes || !r.aktiv; if (r.paaminnelseSendt && !r.kanSendes) k.textContent = 'Påminnelse sendt'; }
 }
 H.paaminnelseOk = async b => {
   b.disabled = true;
-  const r = await api('okt-varsel.php', {handling: 'paaminnelse', oktId: +b.dataset.okt});
+  const h = OKTER.get(+b.dataset.okt);
+  const r = await api('okt-varsel.php', {handling: 'paaminnelse', oktId: +b.dataset.okt, forventet: h ? `${h.dato} ${h.tid}` : ''});
   lukk(true); toast(`<b>Påminnelse sendt ${esc(r.sendtAt || '')}</b> til ${r.sendt}.${ikkeNaaddTekst(r.ikkeNaadd || [])}`);
 };
 

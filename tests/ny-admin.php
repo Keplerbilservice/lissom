@@ -37,6 +37,12 @@
  *      en feil midt i køleggingen (påminnelse for hånd, cron og «Ny dato») ruller
  *      alt tilbake — ingenting i køen, datoen ikke merket — og neste forsøk
  *      sender én gang.
+ *   M  Kontrolløren runde 3 (09.10.2026): påminnelsen merkes per påmelding
+ *      («paaminnelse:<booking>»), så en påminnelse for hånd tidlig ikke stopper
+ *      cron for dem som kom til etterpå; «Ny dato»-nøkkelen har fra-datoen med
+ *      (A→B→C→B varsler hver gang); økta leses på nytt under låsen, og en annen
+ *      dato enn admin så gir 409 (cron hopper over avlyste og flyttede); uten
+ *      migrasjon 270 svarer «Ny dato» 503 og påminnelsen tar hele økta som før.
  *   L  «Ny dato på kurset» tilbys ikke som SMS (pamelding.php sender bare e-post).
  *   J  Betaling i ny admin: kalender.php gir betaltOre (delbetalt) og
  *      vippsPaaVei; «Ikke betalt» (oversikt.php) har restOre; ny-admin bruker dem,
@@ -83,11 +89,19 @@ register_shutdown_function(static function () use (&$ferdig, &$medlemmer, &$kurs
     $b = implode(',', array_map('intval', array_column(DB::alle("SELECT id FROM bookings WHERE course_id IN ($k)"), 'id')) ?: [0]);
     $s = implode(',', array_map('intval', array_column(DB::alle("SELECT id FROM course_sessions WHERE course_id IN ($k)"), 'id')) ?: [0]);
     try { DB::kobling()->exec('DROP TRIGGER IF EXISTS nyadmin_testfeil'); } catch (Throwable $e) {}
-    if (DB::harTabell('varsel_utsendinger')) {
-        foreach (explode(',', $b) as $bid) {
-            try { DB::kjor('DELETE FROM varsel_utsendinger WHERE nokkel LIKE :n', ['n' => 'flyttet:' . (int) $bid . ':%']); } catch (Throwable $e) {}
+    // M: tabellen ble lånt bort for «uten migrasjon 270» — legg den tilbake.
+    try {
+        $finnes = static fn(string $t): bool => DB::verdi('SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :t', ['t' => $t]) !== null;
+        if (!$finnes('varsel_utsendinger') && $finnes('varsel_utsendinger_nyadmtest')) {
+            DB::kobling()->exec('RENAME TABLE varsel_utsendinger_nyadmtest TO varsel_utsendinger');
         }
-    }
+    } catch (Throwable $e) { echo '  (opprydding: ' . $e->getMessage() . ")\n"; }
+    try {
+        foreach (explode(',', $b) as $bid) {
+            DB::kjor('DELETE FROM varsel_utsendinger WHERE nokkel LIKE :n OR nokkel = :p',
+                ['n' => 'flyttet:' . (int) $bid . ':%', 'p' => 'paaminnelse:' . (int) $bid]);
+        }
+    } catch (Throwable $e) {}
     foreach ([
         "UPDATE bookings SET payment_id = NULL WHERE id IN ($b)",
         "DELETE FROM payments WHERE booking_id IN ($b)",
@@ -158,6 +172,9 @@ $nyBooking = static function (int $kursId, int $okt, string $navn, string $statu
 };
 $ko = static fn(string $refType, int $refId): int => (int) DB::verdi(
     'SELECT COUNT(*) FROM notifications WHERE ref_type = :t AND ref_id = :i', ['t' => $refType, 'i' => $refId]);
+// Datoen admin ser (norsk tid, «Y-m-d H:i»), slik ny-admin sender den som «forventet».
+$forv = static fn(int $o): string => (new DateTimeImmutable((string) DB::verdi('SELECT start_tid FROM course_sessions WHERE id = :i', ['i' => $o]), new DateTimeZone('UTC')))
+    ->setTimezone(new DateTimeZone('Europe/Oslo'))->format('Y-m-d H:i');
 $malPaa = static function (string $navn, bool $paa, ?string $kanal = null): void {
     DB::oppdater('notification_templates', ['aktiv' => $paa ? 1 : 0] + ($kanal !== null ? ['kanal' => $kanal] : []), ['navn' => $navn]);
 };
@@ -225,14 +242,14 @@ try {
     sjekk('D forhåndsvisning: «ikke nådd» = den uten kontakt', ($f[1]['ikkeNaadd'] ?? null) === [$tag . ' Ingenkontakt'], $vis($f));
     sjekk('D forhåndsvisning: ikke sendt ennå', ($f[1]['paaminnelseSendt'] ?? 'x') === '', $vis($f));
     $foer = $ko('course_session', $okt);
-    $r1 = kall('/api/admin/okt-varsel.php', ['handling' => 'paaminnelse', 'oktId' => $okt], $tA);
+    $r1 = kall('/api/admin/okt-varsel.php', ['handling' => 'paaminnelse', 'oktId' => $okt, 'forventet' => $forv($okt)], $tA);
     sjekk('D første påminnelse: sendt til 1 (den betalte)', $r1[0] === 200 && ($r1[1]['sendt'] ?? 0) === 1, $vis($r1));
     sjekk('D teller bare faktisk køede: 1 ny i køen', $ko('course_session', $okt) - $foer === 1);
     $tilEpost = array_column(DB::alle("SELECT mottaker FROM notifications WHERE ref_type = 'course_session' AND ref_id = :i AND mal = 'kurspaaminnelse'", ['i' => $okt]), 'mottaker');
     sjekk('D ikke til reservert eller nylig påmeldt', $tilEpost === [strtolower($tag) . '-betalt@example.com'], json_encode($tilEpost));
     $satt = DB::verdi('SELECT paaminnelse_sendt_at FROM course_sessions WHERE id = :i', ['i' => $okt]);
     sjekk('D paaminnelse_sendt_at er satt', $satt !== null);
-    $r2 = kall('/api/admin/okt-varsel.php', ['handling' => 'paaminnelse', 'oktId' => $okt], $tA);
+    $r2 = kall('/api/admin/okt-varsel.php', ['handling' => 'paaminnelse', 'oktId' => $okt, 'forventet' => $forv($okt)], $tA);
     sjekk('D andre gang: 409 «alt sendt»', $r2[0] === 409 && str_contains((string) ($r2[1]['feil'] ?? ''), 'alt sendt'), $vis($r2));
     sjekk('D andre gang: ingen nye i køen', $ko('course_session', $okt) - $foer === 1);
     $f2 = kall('/api/admin/okt-varsel.php', ['handling' => 'forhandsvis', 'oktId' => $okt, 'mal' => 'kurspaaminnelse'], $tA);
@@ -243,7 +260,7 @@ try {
     $mh = curl_multi_init(); $hs = [];
     foreach ([0, 1] as $_) {
         $c = curl_init('http://127.0.0.1:' . $port . '/api/admin/okt-varsel.php');
-        curl_setopt_array($c, [CURLOPT_RETURNTRANSFER => true, CURLOPT_POST => true, CURLOPT_POSTFIELDS => json_encode(['handling' => 'paaminnelse', 'oktId' => $okt2]),
+        curl_setopt_array($c, [CURLOPT_RETURNTRANSFER => true, CURLOPT_POST => true, CURLOPT_POSTFIELDS => json_encode(['handling' => 'paaminnelse', 'oktId' => $okt2, 'forventet' => $forv($okt2)]),
             CURLOPT_HTTPHEADER => ['Origin: ' . Config::nettsted(), 'Cookie: lissom_sesjon=' . $tA, 'Content-Type: application/json']]);
         curl_multi_add_handle($mh, $c); $hs[] = $c;
     }
@@ -255,7 +272,7 @@ try {
     DB::oppdater('course_sessions', ['paaminnelse_sendt_at' => null], ['id' => $okt]);
     $malPaa('kurspaaminnelse', false);
     $foer = $ko('course_session', $okt);
-    $r3 = kall('/api/admin/okt-varsel.php', ['handling' => 'paaminnelse', 'oktId' => $okt], $tA);
+    $r3 = kall('/api/admin/okt-varsel.php', ['handling' => 'paaminnelse', 'oktId' => $okt, 'forventet' => $forv($okt)], $tA);
     sjekk('D malen av: 409, ikke «sendt»', $r3[0] === 409, $vis($r3));
     sjekk('D malen av: paaminnelse_sendt_at står tomt', DB::verdi('SELECT paaminnelse_sendt_at FROM course_sessions WHERE id = :i', ['i' => $okt]) === null);
     sjekk('D malen av: ingenting i køen', $ko('course_session', $okt) === $foer);
@@ -263,18 +280,18 @@ try {
     // Ingen å nå: feltet slippes igjen.
     $okt3 = DB::settInn('course_sessions', ['course_id' => $k, 'start_tid' => $tid('+5 days 18:00'), 'status' => 'planlagt']);
     $nyBooking($k, $okt3, 'Ukjent', 'betalt', ['gjest_epost' => null, 'created_at' => $gammel]);
-    $r4 = kall('/api/admin/okt-varsel.php', ['handling' => 'paaminnelse', 'oktId' => $okt3], $tA);
+    $r4 = kall('/api/admin/okt-varsel.php', ['handling' => 'paaminnelse', 'oktId' => $okt3, 'forventet' => $forv($okt3)], $tA);
     sjekk('D ingen å nå: 409', $r4[0] === 409, $vis($r4));
     sjekk('D ingen å nå: paaminnelse_sendt_at står tomt', DB::verdi('SELECT paaminnelse_sendt_at FROM course_sessions WHERE id = :i', ['i' => $okt3]) === null);
 
     // ── E Ny dato på kurset ─────────────────────────────────────────────
     $malPaa('pamelding_flyttet', false);
-    $e1 = kall('/api/admin/okt-varsel.php', ['handling' => 'flyttet', 'oktId' => $okt, 'fra' => '2026-10-20 18:00'], $tA);
+    $e1 = kall('/api/admin/okt-varsel.php', ['handling' => 'flyttet', 'oktId' => $okt, 'fra' => '2026-10-20 18:00', 'forventet' => $forv($okt)], $tA);
     sjekk('E «Ny dato» med malen av: 409, ikke «sendt=3»', $e1[0] === 409, $vis($e1));
     $malPaa('pamelding_flyttet', true, 'epost');
     $flyttKo = static fn(): int => (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE mal = 'pamelding_flyttet' AND ref_id IN ($bBetalt, $bRes, $bUtgaatt, $bIngen, $bNy)");
     $foer = $flyttKo();
-    $e2 = kall('/api/admin/okt-varsel.php', ['handling' => 'flyttet', 'oktId' => $okt, 'fra' => '2026-10-20 18:00'], $tA);
+    $e2 = kall('/api/admin/okt-varsel.php', ['handling' => 'flyttet', 'oktId' => $okt, 'fra' => '2026-10-20 18:00', 'forventet' => $forv($okt)], $tA);
     $etter = $flyttKo();
     sjekk('E «Ny dato»: sendt = 3 = det som kom i køen (betalt, reservert, nylig)', $e2[0] === 200 && ($e2[1]['sendt'] ?? 0) === 3 && $etter - $foer === 3, $vis($e2) . " kø=" . ($etter - $foer));
     sjekk('E «Ny dato»: ikke den utgåtte reservasjonen', (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE mal = 'pamelding_flyttet' AND ref_id = $bUtgaatt") === 0);
@@ -282,12 +299,12 @@ try {
 
     // ── K Ingen dublett ved to kall, samtidige kall eller feil midt i ───
     sjekk('K migrasjon 270 er kjørt i testbasen (varsel_utsendinger)', DB::harTabell('varsel_utsendinger'));
-    $e3 = kall('/api/admin/okt-varsel.php', ['handling' => 'flyttet', 'oktId' => $okt, 'fra' => '2026-10-20 18:00'], $tA);
+    $e3 = kall('/api/admin/okt-varsel.php', ['handling' => 'flyttet', 'oktId' => $okt, 'fra' => '2026-10-20 18:00', 'forventet' => $forv($okt)], $tA);
     sjekk('K «Ny dato» en gang til: sendt 0, alleredeSendt 3', $e3[0] === 200 && ($e3[1]['sendt'] ?? -1) === 0 && ($e3[1]['alleredeSendt'] ?? 0) === 3, $vis($e3));
     sjekk('K «Ny dato» en gang til: ingen nye i køen', $flyttKo() === $etter, (string) ($flyttKo() - $etter));
     // Ny dato (datoen flyttet igjen): da er det en ny beskjed.
     DB::oppdater('course_sessions', ['start_tid' => $tid('+3 days 19:00')], ['id' => $okt]);
-    $e4 = kall('/api/admin/okt-varsel.php', ['handling' => 'flyttet', 'oktId' => $okt, 'fra' => '2026-10-20 18:00'], $tA);
+    $e4 = kall('/api/admin/okt-varsel.php', ['handling' => 'flyttet', 'oktId' => $okt, 'fra' => '2026-10-20 18:00', 'forventet' => $forv($okt)], $tA);
     sjekk('K ny dato igjen: ny beskjed til 3', ($e4[1]['sendt'] ?? 0) === 3 && $flyttKo() === $etter + 3, $vis($e4));
     // To faner samtidig på en ny dato: én beskjed per påmelding.
     DB::oppdater('course_sessions', ['start_tid' => $tid('+3 days 20:00')], ['id' => $okt]);
@@ -295,7 +312,7 @@ try {
     $mh = curl_multi_init(); $hs = [];
     foreach ([0, 1] as $_) {
         $c = curl_init('http://127.0.0.1:' . $port . '/api/admin/okt-varsel.php');
-        curl_setopt_array($c, [CURLOPT_RETURNTRANSFER => true, CURLOPT_POST => true, CURLOPT_POSTFIELDS => json_encode(['handling' => 'flyttet', 'oktId' => $okt, 'fra' => '2026-10-20 18:00']),
+        curl_setopt_array($c, [CURLOPT_RETURNTRANSFER => true, CURLOPT_POST => true, CURLOPT_POSTFIELDS => json_encode(['handling' => 'flyttet', 'oktId' => $okt, 'fra' => '2026-10-20 18:00', 'forventet' => $forv($okt)]),
             CURLOPT_HTTPHEADER => ['Origin: ' . Config::nettsted(), 'Cookie: lissom_sesjon=' . $tA, 'Content-Type: application/json']]);
         curl_multi_add_handle($mh, $c); $hs[] = $c;
     }
@@ -316,7 +333,7 @@ try {
         $okt4 = DB::settInn('course_sessions', ['course_id' => $k, 'start_tid' => $tid('+6 days 18:00'), 'status' => 'planlagt']);
         $nyBooking($k, $okt4, 'Forste', 'betalt', ['created_at' => $gammel]);
         $nyBooking($k, $okt4, 'Feil', 'betalt', ['created_at' => $gammel]);
-        $p1 = kall('/api/admin/okt-varsel.php', ['handling' => 'paaminnelse', 'oktId' => $okt4], $tA);
+        $p1 = kall('/api/admin/okt-varsel.php', ['handling' => 'paaminnelse', 'oktId' => $okt4, 'forventet' => $forv($okt4)], $tA);
         sjekk('K påminnelse, feil midt i: ikke 200', $p1[0] >= 500, $vis($p1));
         sjekk('K påminnelse, feil midt i: ingenting i køen', $ko('course_session', $okt4) === 0, (string) $ko('course_session', $okt4));
         sjekk('K påminnelse, feil midt i: datoen er ikke merket sendt', DB::verdi('SELECT paaminnelse_sendt_at FROM course_sessions WHERE id = :i', ['i' => $okt4]) === null);
@@ -331,14 +348,14 @@ try {
         $f1 = $nyBooking($k, $okt5, 'Forste', 'betalt');
         $f2 = $nyBooking($k, $okt5, 'Feil', 'betalt');
         $flytt5 = static fn(): int => (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE mal = 'pamelding_flyttet' AND ref_id IN ($f1, $f2)");
-        $n1 = kall('/api/admin/okt-varsel.php', ['handling' => 'flyttet', 'oktId' => $okt5, 'fra' => '2026-10-20 18:00'], $tA);
+        $n1 = kall('/api/admin/okt-varsel.php', ['handling' => 'flyttet', 'oktId' => $okt5, 'fra' => '2026-10-20 18:00', 'forventet' => $forv($okt5)], $tA);
         sjekk('K «Ny dato», feil midt i: ikke 200, ingenting i køen, ingen nøkler', $n1[0] >= 500 && $flytt5() === 0
             && (int) DB::verdi('SELECT COUNT(*) FROM varsel_utsendinger WHERE nokkel LIKE :a OR nokkel LIKE :b', ['a' => "flyttet:$f1:%", 'b' => "flyttet:$f2:%"]) === 0, $vis($n1));
         DB::kobling()->exec('DROP TRIGGER IF EXISTS nyadmin_testfeil');
-        $p2 = kall('/api/admin/okt-varsel.php', ['handling' => 'paaminnelse', 'oktId' => $okt4], $tA);
+        $p2 = kall('/api/admin/okt-varsel.php', ['handling' => 'paaminnelse', 'oktId' => $okt4, 'forventet' => $forv($okt4)], $tA);
         sjekk('K påminnelse etter feilen: sendt til 2, 2 i køen', ($p2[1]['sendt'] ?? 0) === 2 && $ko('course_session', $okt4) === 2, $vis($p2));
-        $n2 = kall('/api/admin/okt-varsel.php', ['handling' => 'flyttet', 'oktId' => $okt5, 'fra' => '2026-10-20 18:00'], $tA);
-        $n3 = kall('/api/admin/okt-varsel.php', ['handling' => 'flyttet', 'oktId' => $okt5, 'fra' => '2026-10-20 18:00'], $tA);
+        $n2 = kall('/api/admin/okt-varsel.php', ['handling' => 'flyttet', 'oktId' => $okt5, 'fra' => '2026-10-20 18:00', 'forventet' => $forv($okt5)], $tA);
+        $n3 = kall('/api/admin/okt-varsel.php', ['handling' => 'flyttet', 'oktId' => $okt5, 'fra' => '2026-10-20 18:00', 'forventet' => $forv($okt5)], $tA);
         sjekk('K «Ny dato» etter feilen: 2, og et nytt forsøk gir ingen dublett', ($n2[1]['sendt'] ?? 0) === 2 && ($n3[1]['sendt'] ?? -1) === 0 && $flytt5() === 2, $vis($n2) . ' / ' . $vis($n3));
     }
     sjekk('K cron bruker den felles utsendingen', str_contains((string) file_get_contents($rot . '/bin/cron.php'), '$r = Paaminnelse::send($okt, false);')
@@ -417,6 +434,96 @@ try {
     // ── H Skoleferier ───────────────────────────────────────────────────
     $h = kall('/api/admin/skoleferier.php', null, $tA);
     sjekk('H skoleferier.php svarer med perioder', $h[0] === 200 && is_array($h[1]['perioder'] ?? null) && count($h[1]['perioder']) > 0, $vis($h));
+
+    // ── M Kontrolløren runde 3: per påmelding, fra-dato, låsen, uten 270 ──
+    $mottakereAv = static fn(int $o): array => array_column(DB::alle("SELECT mottaker FROM notifications WHERE ref_type = 'course_session' AND ref_id = :i AND mal = 'kurspaaminnelse' ORDER BY id", ['i' => $o]), 'mottaker');
+    $cronRad = static fn(int $o): array => DB::en('SELECT cs.id, cs.start_tid, cs.slutt_tid, c.tittel, c.sms_paaminnelse FROM course_sessions cs JOIN courses c ON c.id = cs.course_id WHERE cs.id = :i', ['i' => $o]);
+    $malPaa('kurspaaminnelse', true, 'epost');
+    // 1) Påminnelse for hånd tidlig, så en ny påmeldt: cron sender bare til den nye.
+    $oktM = DB::settInn('course_sessions', ['course_id' => $k, 'start_tid' => $tid('+10 days 18:00'), 'status' => 'planlagt']);
+    $m1 = $nyBooking($k, $oktM, 'Tidlig', 'betalt', ['created_at' => $gammel]);
+    $pm1 = kall('/api/admin/okt-varsel.php', ['handling' => 'paaminnelse', 'oktId' => $oktM, 'forventet' => $forv($oktM)], $tA);
+    sjekk('M for hånd tidlig: sendt til 1', $pm1[0] === 200 && ($pm1[1]['sendt'] ?? 0) === 1, $vis($pm1));
+    sjekk('M for hånd: nøkkelen paaminnelse:<booking> er satt', (int) DB::verdi('SELECT COUNT(*) FROM varsel_utsendinger WHERE nokkel = :n', ['n' => 'paaminnelse:' . $m1]) === 1);
+    $m2 = $nyBooking($k, $oktM, 'Senere', 'betalt', ['created_at' => $gammel]);
+    $fm = kall('/api/admin/okt-varsel.php', ['handling' => 'forhandsvis', 'oktId' => $oktM, 'mal' => 'kurspaaminnelse'], $tA);
+    sjekk('M forhåndsvisning etterpå: 1 ny får den, 1 har alt fått den, kan sendes', ($fm[1]['antall'] ?? 0) === 1 && ($fm[1]['alleredeSendt'] ?? 0) === 1
+        && ($fm[1]['kanSendes'] ?? false) === true && ($fm[1]['paaminnelseSendt'] ?? '') !== '', $vis($fm));
+    $rc = Paaminnelse::send($cronRad($oktM), false);
+    sjekk('M cron etter tidlig påminnelse for hånd: sendt til den nye (1)', $rc['sendt'] === 1, json_encode($rc));
+    sjekk('M cron: den tidlige får ikke en til', $mottakereAv($oktM) === [strtolower($tag) . '-tidlig@example.com', strtolower($tag) . '-senere@example.com'], json_encode($mottakereAv($oktM)));
+    $rc2 = Paaminnelse::send($cronRad($oktM), false);
+    sjekk('M cron en gang til: ingen nye', $rc2['sendt'] === 0 && count($mottakereAv($oktM)) === 2, json_encode($rc2));
+    $pm2 = kall('/api/admin/okt-varsel.php', ['handling' => 'paaminnelse', 'oktId' => $oktM, 'forventet' => $forv($oktM)], $tA);
+    sjekk('M for hånd når alle har fått den: 409 «alt sendt»', $pm2[0] === 409 && str_contains((string) ($pm2[1]['feil'] ?? ''), 'alt sendt'), $vis($pm2));
+    $fm2 = kall('/api/admin/okt-varsel.php', ['handling' => 'forhandsvis', 'oktId' => $oktM, 'mal' => 'kurspaaminnelse'], $tA);
+    sjekk('M forhåndsvisning når alle har fått den: kan ikke sendes', ($fm2[1]['kanSendes'] ?? true) === false, $vis($fm2));
+    sjekk('M cron velger økta selv om paaminnelse_sendt_at er satt (med nøklene)', str_contains((string) file_get_contents($rot . '/bin/cron.php'), "\$ikkeSendt = Paaminnelse::harNokler() ? '' : 'AND cs.paaminnelse_sendt_at IS NULL';"));
+
+    // 2) A→B→C→B: hver flytting gir beskjed, også tilbake til B.
+    $oktF = DB::settInn('course_sessions', ['course_id' => $k, 'start_tid' => $tid('+12 days 18:00'), 'status' => 'planlagt']);
+    $fb = $nyBooking($k, $oktF, 'Flytter', 'betalt');
+    $flyttN = static fn(): int => (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE mal = 'pamelding_flyttet' AND ref_id = $fb");
+    $oslo = static fn(string $nar): string => (new DateTimeImmutable($nar, new DateTimeZone('Europe/Oslo')))->format('Y-m-d H:i');
+    $A = $oslo('+12 days 18:00'); $B = $oslo('+13 days 18:00'); $C = $oslo('+14 days 18:00');
+    $flytt = static function (string $fra, string $til) use ($oktF, $tid, $tA): array {
+        DB::oppdater('course_sessions', ['start_tid' => $tid($til)], ['id' => $oktF]);
+        return kall('/api/admin/okt-varsel.php', ['handling' => 'flyttet', 'oktId' => $oktF, 'fra' => $fra, 'forventet' => $til], $tA);
+    };
+    $ab = $flytt($A, $B); $bc = $flytt($B, $C); $cb = $flytt($C, $B);
+    sjekk('M A→B→C→B: tre beskjeder (også den siste tilbake til B)', ($ab[1]['sendt'] ?? 0) === 1 && ($bc[1]['sendt'] ?? 0) === 1 && ($cb[1]['sendt'] ?? 0) === 1 && $flyttN() === 3,
+        $vis($ab) . ' / ' . $vis($bc) . ' / ' . $vis($cb));
+    $cb2 = kall('/api/admin/okt-varsel.php', ['handling' => 'flyttet', 'oktId' => $oktF, 'fra' => $C, 'forventet' => $B], $tA);
+    sjekk('M C→B en gang til: ingen dublett', ($cb2[1]['sendt'] ?? -1) === 0 && ($cb2[1]['alleredeSendt'] ?? 0) === 1 && $flyttN() === 3, $vis($cb2));
+    sjekk('M nøkkelen har fra-datoen: flyttet:<booking>:<fra>:<til>:epost', (int) DB::verdi('SELECT COUNT(*) FROM varsel_utsendinger WHERE nokkel LIKE :n', ['n' => "flyttet:$fb:%:%:epost"]) === 3);
+
+    // 3) Under låsen: en annen dato enn admin så gir 409, og teksten bygges fra raden.
+    $feilDato = kall('/api/admin/okt-varsel.php', ['handling' => 'flyttet', 'oktId' => $oktF, 'fra' => $C, 'forventet' => $A], $tA);
+    sjekk('M «Ny dato» med en annen dato enn admin så: 409, ingenting i køen', $feilDato[0] === 409 && $flyttN() === 3, $vis($feilDato));
+    $oktD = DB::settInn('course_sessions', ['course_id' => $k, 'start_tid' => $tid('+15 days 18:00'), 'status' => 'planlagt']);
+    $d1 = $nyBooking($k, $oktD, 'Datosjekk', 'betalt', ['created_at' => $gammel]);
+    $sett = $forv($oktD);
+    DB::oppdater('course_sessions', ['start_tid' => $tid('+16 days 18:00')], ['id' => $oktD]);
+    $pd = kall('/api/admin/okt-varsel.php', ['handling' => 'paaminnelse', 'oktId' => $oktD, 'forventet' => $sett], $tA);
+    sjekk('M påminnelse med en annen dato enn admin så: 409, ingenting i køen, ingen nøkkel', $pd[0] === 409 && $ko('course_session', $oktD) === 0
+        && (int) DB::verdi('SELECT COUNT(*) FROM varsel_utsendinger WHERE nokkel = :n', ['n' => 'paaminnelse:' . $d1]) === 0, $vis($pd));
+    $pu = kall('/api/admin/okt-varsel.php', ['handling' => 'paaminnelse', 'oktId' => $oktD], $tA);
+    sjekk('M påminnelse uten forventet dato: 409', $pu[0] === 409 && $ko('course_session', $oktD) === 0, $vis($pu));
+    // Cron: utvalget gjort, så flyttet eller avlyst → hoppes over.
+    $valgt = $cronRad($oktD);
+    DB::oppdater('course_sessions', ['start_tid' => $tid('+17 days 18:00')], ['id' => $oktD]);
+    $rf = Paaminnelse::send($valgt, false);
+    sjekk('M cron hopper over en økt som er flyttet etter utvalget', $rf['grunn'] === 'dato' && $rf['sendt'] === 0 && $ko('course_session', $oktD) === 0, json_encode($rf));
+    $valgt = $cronRad($oktD);
+    DB::oppdater('course_sessions', ['status' => 'avlyst'], ['id' => $oktD]);
+    $ra = Paaminnelse::send($valgt, false);
+    sjekk('M cron hopper over en økt som er avlyst etter utvalget', $ra['grunn'] === 'avlyst' && $ra['sendt'] === 0 && $ko('course_session', $oktD) === 0, json_encode($ra));
+    DB::oppdater('course_sessions', ['status' => 'planlagt'], ['id' => $oktD]);
+    $gammelRad = $cronRad($oktD);
+    $gammelRad['tittel'] = 'UTDATERT TITTEL';
+    $rt = Paaminnelse::send($gammelRad, false);
+    $tekstD = (string) DB::verdi("SELECT tekst FROM notifications WHERE ref_type = 'course_session' AND ref_id = :i ORDER BY id DESC LIMIT 1", ['i' => $oktD]);
+    sjekk('M teksten bygges fra raden under låsen (ikke den utvalget leste)', $rt['sendt'] === 1 && !str_contains($tekstD, 'UTDATERT') && str_contains($tekstD, $tag . ' Dreiekurs'), mb_substr($tekstD, 0, 200));
+
+    // 4) Uten migrasjon 270: «Ny dato» 503, påminnelsen tar hele økta som før.
+    DB::kobling()->exec('RENAME TABLE varsel_utsendinger TO varsel_utsendinger_nyadmtest');
+    try {
+        $u1 = kall('/api/admin/okt-varsel.php', ['handling' => 'flyttet', 'oktId' => $oktF, 'fra' => $C, 'forventet' => $forv($oktF)], $tA);
+        sjekk('M uten 270: «Ny dato» 503 «Kjør oppdateringene først», ingenting i køen', $u1[0] === 503 && str_contains((string) ($u1[1]['feil'] ?? ''), 'Kjør oppdateringene først') && $flyttN() === 3, $vis($u1));
+        $oktU = DB::settInn('course_sessions', ['course_id' => $k, 'start_tid' => $tid('+18 days 18:00'), 'status' => 'planlagt']);
+        $nyBooking($k, $oktU, 'Uten1', 'betalt', ['created_at' => $gammel]);
+        $pu1 = kall('/api/admin/okt-varsel.php', ['handling' => 'paaminnelse', 'oktId' => $oktU, 'forventet' => $forv($oktU)], $tA);
+        sjekk('M uten 270: påminnelse for hånd sendt til 1 og økta merket', $pu1[0] === 200 && ($pu1[1]['sendt'] ?? 0) === 1
+            && DB::verdi('SELECT paaminnelse_sendt_at FROM course_sessions WHERE id = :i', ['i' => $oktU]) !== null, $vis($pu1));
+        $nyBooking($k, $oktU, 'Uten2', 'betalt', ['created_at' => $gammel]);
+        $pu2 = kall('/api/admin/okt-varsel.php', ['handling' => 'paaminnelse', 'oktId' => $oktU, 'forventet' => $forv($oktU)], $tA);
+        sjekk('M uten 270: hele økta er sendt (409), som før', $pu2[0] === 409 && $ko('course_session', $oktU) === 1, $vis($pu2));
+        $fu = kall('/api/admin/okt-varsel.php', ['handling' => 'forhandsvis', 'oktId' => $oktU, 'mal' => 'kurspaaminnelse'], $tA);
+        sjekk('M uten 270: forhåndsvisningen sier sendt og kan ikke sendes', ($fu[1]['kanSendes'] ?? true) === false && ($fu[1]['paaminnelseSendt'] ?? '') !== '', $vis($fu));
+    } finally {
+        DB::kobling()->exec('RENAME TABLE varsel_utsendinger_nyadmtest TO varsel_utsendinger');
+    }
+    sjekk('M tabellen er tilbake', DB::verdi("SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'varsel_utsendinger'") !== null);
 
     // ── I Varer: lageret som differanse ─────────────────────────────────
     $produkt = DB::settInn('products', ['tittel' => $tag . ' Leire', 'pris_ore' => 29000, 'lager' => 10, 'status' => 'publisert', 'kategori' => 'Materialer']);

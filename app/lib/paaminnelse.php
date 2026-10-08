@@ -9,10 +9,12 @@
  * 14-dagersregelen. Samme melding, to utvalg. Naa leser begge mottakerne,
  * feltene og «naar»-linja herfra.
  *
- * Utsendingen er atomisk (Codex runde 2): oekta tas (paaminnelse_sendt_at) og
- * meldingene legges i koen i én transaksjon. Feiler noe midt i, rulles alt
- * tilbake — ingen halv utsending, og datoen er ikke merket sendt. To faner
- * eller cron samtidig: den andre UPDATE-en venter paa raden og treffer ingen.
+ * Utsendingen er atomisk (Codex runde 2): oekta laases, paameldingene merkes
+ * (varsel_utsendinger, «paaminnelse:<booking>») og meldingene legges i koen i
+ * én transaksjon. Feiler noe midt i, rulles alt tilbake — ingen halv
+ * utsending, ingen merket. To faner eller cron samtidig: den andre venter paa
+ * laasen og finner noeklene. Uten migrasjon 270 tas hele oekta med
+ * paaminnelse_sendt_at, som foer.
  */
 
 declare(strict_types=1);
@@ -28,17 +30,56 @@ final class Paaminnelse
      *
      * @return list<array<string,mixed>>
      */
-    public static function mottakere(int $oktId): array
+    public static function mottakere(int $oktId, bool $utenSendte = false): array
     {
+        // $utenSendte: bare dem som ikke har faatt paaminnelsen for denne
+        // paameldingen (noekkel «paaminnelse:<booking>», migrasjon 270).
+        $uten = $utenSendte && self::harNokler()
+            ? " AND NOT EXISTS (SELECT 1 FROM varsel_utsendinger v WHERE v.nokkel = CONCAT('paaminnelse:', b.id))"
+            : '';
         return DB::alle(
             "SELECT b.id, b.gjest_navn, b.gjest_epost, b.gjest_telefon,
                     m.navn AS m_navn, m.epost AS m_epost, m.telefon AS m_telefon
                FROM bookings b
           LEFT JOIN members m ON m.id = b.member_id
               WHERE b.course_session_id = :s AND b.status = 'betalt'
-                AND b.created_at <= DATE_SUB(NOW(), INTERVAL 14 DAY)
+                AND b.created_at <= DATE_SUB(NOW(), INTERVAL 14 DAY){$uten}
            ORDER BY b.id",
             ['s' => $oktId]
+        );
+    }
+
+    /**
+     * Finnes utsendingsnoeklene (migrasjon 270)? Da merkes paaminnelsen per
+     * paamelding, ikke per oekt: en paaminnelse sendt for haand tidlig stopper
+     * ikke cron for dem som meldte seg paa etterpaa (kontrolloeren runde 3,
+     * 9. oktober 2026). Uten tabellen: hele oekta, som foer.
+     */
+    public static function harNokler(): bool
+    {
+        return DB::harTabell('varsel_utsendinger');
+    }
+
+    public static function nokkel(int $bookingId): string
+    {
+        return 'paaminnelse:' . $bookingId;
+    }
+
+    /**
+     * Oekta slik den staar i basen naa. Kalles under radlaasen i send(), saa
+     * noekkel og meldingstekst bygges fra samme rad.
+     *
+     * @return array<string,mixed>|null
+     */
+    public static function oktRad(int $oktId): ?array
+    {
+        $smsKol = DB::harKolonne('courses', 'sms_paaminnelse') ? 'c.sms_paaminnelse' : '0 AS sms_paaminnelse';
+        return DB::en(
+            "SELECT cs.id, cs.start_tid, cs.slutt_tid, cs.status, c.tittel, {$smsKol}
+               FROM course_sessions cs
+               JOIN courses c ON c.id = cs.course_id
+              WHERE cs.id = :i",
+            ['i' => $oktId]
         );
     }
 
@@ -119,39 +160,64 @@ final class Paaminnelse
     /**
      * Sender paaminnelsen for én oekt.
      *
-     * Tar oekta (paaminnelse_sendt_at) og legger meldingene i koen i én
-     * transaksjon. Treffer ikke UPDATE-en, har noen alt sendt den: da
-     * returneres tatt=false og ingenting legges i koen.
+     * Oekta laases (SELECT … FOR UPDATE) og leses paa nytt under laasen:
+     * status, start_tid og kurs. Er den avlyst, hoppes den over (grunn
+     * «avlyst»). Er datoen en annen enn den som ble forventet
+     * ($okt['forventet_start'] fra skjermen, ellers $okt['start_tid'] slik
+     * cron valgte den), hoppes den over (grunn «dato»). Teksten bygges fra
+     * raden under laasen.
+     *
+     * Med noeklene (migrasjon 270): hver paamelding merkes for seg
+     * («paaminnelse:<booking>») i samme transaksjon som koeleggingen, og bare
+     * paameldte uten noekkel faar den. paaminnelse_sendt_at settes som «sist
+     * sendt» naar noe gikk ut, men stopper ikke cron for nye. Uten tabellen:
+     * oekta tas med paaminnelse_sendt_at, som foer (grunn «sendt» naar den
+     * alt er tatt).
      *
      * $forHaand (ny admin, «Send påminnelse»): mottakere ingen vei naar,
-     * hoppes over og listes i ikkeNaadd (skjermen viser dem), og naar ingen
-     * ble naadd rulles det tilbake — datoen staar umerket, saa cron kan sende
-     * sin. Uten (cron): som foer — Varsel::mal() for alle, og oekta er merket
-     * selv om ingen sto paa lista.
+     * hoppes over og listes i ikkeNaadd, og naar ingen ble naadd rulles det
+     * tilbake. Uten (cron): Varsel::mal() for alle.
      *
-     * @param array<string,mixed> $okt id, start_tid, slutt_tid, tittel, sms_paaminnelse
-     * @return array{tatt: bool, sendt: int, ikkeNaadd: list<string>, sendtAt: string}
+     * @param array<string,mixed> $okt id, start_tid (og ev. forventet_start)
+     * @return array{tatt: bool, grunn: string, sendt: int, alt: int, ikkeNaadd: list<string>, sendtAt: string}
      */
     public static function send(array $okt, bool $forHaand): array
     {
         $oktId = (int) $okt['id'];
+        $forventet = substr((string) ($okt['forventet_start'] ?? $okt['start_tid'] ?? ''), 0, 16);
         $mal = $forHaand ? DB::en("SELECT * FROM notification_templates WHERE navn = 'kurspaaminnelse'") : null;
+        $nokler = self::harNokler();
+        $tom = static fn(string $grunn): array
+            => ['tatt' => false, 'grunn' => $grunn, 'sendt' => 0, 'alt' => 0, 'ikkeNaadd' => [], 'sendtAt' => ''];
         $pdo = DB::kobling();
         $pdo->beginTransaction();
         try {
+            DB::verdi('SELECT id FROM course_sessions WHERE id = :i FOR UPDATE', ['i' => $oktId]);
+            $rad = self::oktRad($oktId);
+            if ($rad === null || (string) $rad['status'] === 'avlyst') {
+                $pdo->rollBack();
+                return $tom('avlyst');
+            }
+            if (substr((string) $rad['start_tid'], 0, 16) !== $forventet) {
+                $pdo->rollBack();
+                return $tom('dato');
+            }
+            $okt = $rad;
             $tatt = gmdate('Y-m-d H:i:s');
-            if (DB::kjor(
+            if (!$nokler && DB::kjor(
                 'UPDATE course_sessions SET paaminnelse_sendt_at = :t WHERE id = :i AND paaminnelse_sendt_at IS NULL',
                 ['t' => $tatt, 'i' => $oktId]
             )->rowCount() !== 1) {
                 $pdo->rollBack();
-                return ['tatt' => false, 'sendt' => 0, 'ikkeNaadd' => [], 'sendtAt' => ''];
+                return $tom('sendt');
             }
             $naar = self::naar($oktId, (string) $okt['start_tid'], (string) ($okt['slutt_tid'] ?? ''));
             $sted = self::sted();
             $sendt = 0;
             $ikkeNaadd = [];
-            foreach (self::mottakere($oktId) as $d) {
+            $nye = self::mottakere($oktId, true);
+            $alt = count(self::mottakere($oktId)) - count($nye);
+            foreach ($nye as $d) {
                 $mottaker = self::mottaker($okt, $d);
                 if ($forHaand) {
                     $v = self::veier($mal, $mottaker);
@@ -160,20 +226,33 @@ final class Paaminnelse
                         continue;
                     }
                 }
+                $n = self::nokkel((int) $d['id']);
+                if ($nokler && DB::kjor('INSERT IGNORE INTO varsel_utsendinger (nokkel) VALUES (:n)', ['n' => $n])->rowCount() !== 1) {
+                    $alt++;
+                    continue;
+                }
                 $lagt = Varsel::mal('kurspaaminnelse', $mottaker,
                     self::felter($okt, self::navn($d), $naar, $sted), 'course_session', $oktId);
                 if ($lagt > 0) {
                     $sendt++;
                 } else {
                     $ikkeNaadd[] = self::navn($d);
+                    if ($nokler) {
+                        DB::kjor('DELETE FROM varsel_utsendinger WHERE nokkel = :n', ['n' => $n]);
+                    }
                 }
             }
             if ($forHaand && $sendt === 0) {
                 $pdo->rollBack();
-                return ['tatt' => true, 'sendt' => 0, 'ikkeNaadd' => $ikkeNaadd, 'sendtAt' => ''];
+                return ['tatt' => true, 'grunn' => '', 'sendt' => 0, 'alt' => $alt, 'ikkeNaadd' => $ikkeNaadd, 'sendtAt' => ''];
+            }
+            if ($nokler && $sendt > 0) {
+                // «Sist sendt», for visning. Stopper ikke cron (noeklene gjoer det).
+                DB::kjor('UPDATE course_sessions SET paaminnelse_sendt_at = :t WHERE id = :i', ['t' => $tatt, 'i' => $oktId]);
             }
             $pdo->commit();
-            return ['tatt' => true, 'sendt' => $sendt, 'ikkeNaadd' => $ikkeNaadd, 'sendtAt' => $tatt];
+            return ['tatt' => true, 'grunn' => '', 'sendt' => $sendt, 'alt' => $alt, 'ikkeNaadd' => $ikkeNaadd,
+                    'sendtAt' => $sendt > 0 || !$nokler ? $tatt : ''];
         } catch (Throwable $e) {
             if ($pdo->inTransaction()) {
                 $pdo->rollBack();

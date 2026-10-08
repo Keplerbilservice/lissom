@@ -6,8 +6,12 @@
  *   POST handling=forhandsvis { oktId, mal: pamelding_flyttet|kurspaaminnelse, fra?, til? }
  *        → { aktiv, kanal, emne, tekst, epostTekst, smsTekst, epost, sms, antall, naas,
  *            ikkeNaadd: [navn], paaminnelseSendt }   ingenting sendes
- *   POST handling=flyttet     { oktId, fra }   «Ny dato paa kurset» til hver paameldt
- *   POST handling=paaminnelse { oktId }        «Paaminnelse foer kurset» naa
+ *   POST handling=flyttet     { oktId, fra, forventet }   «Ny dato paa kurset» til hver paameldt
+ *   POST handling=paaminnelse { oktId, forventet }        «Paaminnelse foer kurset» naa
+ *
+ *   forventet: datoen admin saa (norsk tid, «2026-10-20 18:00»). Oekta leses
+ *   paa nytt under radlaasen; er datoen en annen, svares 409 og ingenting
+ *   sendes (kontrolloeren runde 3, 9. oktober 2026).
  *
  * ── Hvorfor et eget endepunkt ────────────────────────────────────────
  *
@@ -19,8 +23,10 @@
  * paaminnelsen bare naar kurset har det paa, som i bin/cron.php). Ingen nye
  * tekster: malen eieren har skrevet under Maler er det som gaar ut.
  *
- * En paaminnelse sendt for haand setter paaminnelse_sendt_at, saa cron ikke
- * sender én til dagen foer (eieren 08.10: én SMS per anledning). Paaminnelsen
+ * En paaminnelse sendt for haand merker hver paamelding den gikk til
+ * («paaminnelse:<booking>», migrasjon 270), saa cron ikke sender dem én til
+ * dagen foer (eieren 08.10: én SMS per anledning) — men den som meldte seg paa
+ * etterpaa, faar cron sin. paaminnelse_sendt_at er «sist sendt». Paaminnelsen
  * gaar gjennom Paaminnelse (app/lib/paaminnelse.php), felles med cron: samme
  * mottakere (bare betalte, og 14-dagersregelen — kontrolloeren 9. oktober
  * 2026), og oekta tas og meldingene legges i koen i én transaksjon. To klikk,
@@ -29,10 +35,12 @@
  *
  * «Ny dato paa kurset» gaar til dem som staar paa lista: betalt og aktive
  * reservasjoner (Booking::aktivSql, samme regel som plassene), paa e-post som
- * i pamelding.php. Hver beskjed faar en utsendingsnoekkel (paamelding + ny
- * dato + kanal, migrasjon 270) i samme transaksjon som koeleggingen, saa et
+ * i pamelding.php. Hver beskjed faar en utsendingsnoekkel (paamelding + fra-
+ * dato + ny dato + kanal, migrasjon 270) i samme transaksjon som koeleggingen, saa et
  * nytt trykk eller en annen fane ikke gir samme beskjed to ganger. Bare det
- * som faktisk ble lagt i koen telles.
+ * som faktisk ble lagt i koen telles. Med fra-datoen i noekkelen varsles
+ * A→B→C→B riktig. Uten migrasjon 270 svarer den 503 (ingen utsending uten
+ * noekkel).
  */
 
 declare(strict_types=1);
@@ -88,6 +96,17 @@ $tilRaa = trim(Foresporsel::tekst('til'));
 if (preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/', $tilRaa) === 1) {
     $tilTekst = Booking::norskDato((new DateTimeImmutable($tilRaa, $oslo))->setTimezone($utc)->format('Y-m-d H:i:s'));
 }
+// Datoen admin saa (norsk tid) → UTC «Y-m-d H:i», sammenlignes under laasen.
+$forventetUtc = '';
+$forvRaa = trim(Foresporsel::tekst('forventet'));
+if (preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/', $forvRaa) === 1) {
+    $forventetUtc = (new DateTimeImmutable($forvRaa, $oslo))->setTimezone($utc)->format('Y-m-d H:i');
+}
+$fraUtc = $fraRaa !== '' && $fraTekst !== ''
+    ? (new DateTimeImmutable($fraRaa, $oslo))->setTimezone($utc)->format('Y-m-d H:i')
+    : '';
+$datoEndret = 'Datoen er endret siden du åpnet den. Last siden på nytt.';
+
 if ($fraTekst === '' && Foresporsel::tekst('handling') === 'forhandsvis') {
     $fraTekst = Booking::norskDato((string) $okt['start_tid']);
 }
@@ -98,7 +117,8 @@ $fornavn = static fn(string $navn): string => Paaminnelse::fornavn($navn);
 $paaminnelseMottakere = static fn(): array => Paaminnelse::mottakere($oktId);
 $paaminnelseNaar = Paaminnelse::naar($oktId, (string) $okt['start_tid'], (string) ($okt['slutt_tid'] ?? ''));
 
-$felterFor = static function (string $mal, array $d) use ($okt, $fraTekst, $tilTekst, $paaminnelseNaar): array {
+$felterFor = static function (string $mal, array $d, ?array $rad = null) use ($okt, $fraTekst, $tilTekst, $paaminnelseNaar): array {
+    $okt = $rad ?? $okt;
     if ($mal === 'pamelding_flyttet') {
         return [
             'navn'  => (string) ($d['navn'] ?? ''),
@@ -140,7 +160,9 @@ if ($handling === 'forhandsvis') {
         Svar::feil('Ukjent mal.');
     }
     $m = $malRad($mal);
-    $liste = $mal === 'kurspaaminnelse' ? $paaminnelseMottakere() : $deltakere;
+    $alleP = $mal === 'kurspaaminnelse' ? $paaminnelseMottakere() : [];
+    // Paaminnelsen: bare dem som ikke har faatt den (noekkel per paamelding).
+    $liste = $mal === 'kurspaaminnelse' ? Paaminnelse::mottakere($oktId, true) : $deltakere;
     $forste = $liste[0] ?? ['navn' => '', 'gjest_navn' => ''];
     $f = $felterFor($mal, $forste);
     $f['navn'] = $fornavn((string) ($f['navn'] ?? ''));
@@ -176,7 +198,12 @@ if ($handling === 'forhandsvis') {
         'antall'     => count($liste),
         // Paaminnelsen: de paa lista som ikke faar den (ikke betalt, eller
         // paameldt for under 14 dager siden), saa tallet ikke ser feil ut.
-        'ikkeMed'    => $mal === 'kurspaaminnelse' ? max(0, count($deltakere) - count($liste)) : 0,
+        'ikkeMed'    => $mal === 'kurspaaminnelse' ? max(0, count($deltakere) - count($alleP)) : 0,
+        // Har alt faatt paaminnelsen (for haand eller cron), faar den ikke igjen.
+        'alleredeSendt' => $mal === 'kurspaaminnelse' ? count($alleP) - count($liste) : 0,
+        // Kan «Send påminnelse» trykkes? Uten migrasjon 270: bare naar oekta
+        // ikke er sendt (som foer). Med: naar noen uten noekkel naas.
+        'kanSendes'  => $naas > 0 && (Paaminnelse::harNokler() || ($okt['paaminnelse_sendt_at'] ?? null) === null),
         'naas'       => $naas,
         'epost'      => $epostN,
         'sms'        => $smsN,
@@ -190,9 +217,14 @@ if ($handling === 'flyttet') {
     if ($m === null || (int) $m['aktiv'] !== 1) {
         Svar::feil('Meldingen «Ny dato på kurset» er slått av under Innstillinger › Meldinger. Ingen fikk beskjed.', 409);
     }
-    // Utsendingsnoekkelen (migrasjon 270). Uten tabellen sendes det som foer,
-    // men fortsatt atomisk og laast per dato.
-    $harNokler = DB::harTabell('varsel_utsendinger');
+    // Utsendingsnoekkelen (migrasjon 270). Uten tabellen sendes ingenting:
+    // en ny dato uten noekkel kan gi dublett (kontrolloeren runde 3).
+    if (!DB::harTabell('varsel_utsendinger')) {
+        Svar::feil('Kjør oppdateringene først.', 503);
+    }
+    if ($fraUtc === '' || $forventetUtc === '') {
+        Svar::feil('Mangler datoen kurset ble flyttet fra eller til. Last siden på nytt.');
+    }
     $sendt = 0;
     $alt = 0;
     $ikkeNaadd = [];
@@ -202,6 +234,26 @@ if ($handling === 'flyttet') {
         // Laas datoen: to faner samtidig venter paa hverandre, og noekkelen
         // gjelder datoen slik den staar naa (etter flyttingen).
         $start = (string) DB::verdi('SELECT start_tid FROM course_sessions WHERE id = :i FOR UPDATE', ['i' => $oktId]);
+        // Les oekta og lista paa nytt under laasen: noekkel og tekst fra samme rad.
+        $rad = DB::en(
+            "SELECT cs.id, cs.start_tid, cs.slutt_tid, cs.status, c.tittel
+               FROM course_sessions cs JOIN courses c ON c.id = cs.course_id WHERE cs.id = :i",
+            ['i' => $oktId]
+        );
+        if ($rad === null || substr($start, 0, 16) !== $forventetUtc) {
+            $pdo->rollBack();
+            Svar::feil($datoEndret, 409);
+        }
+        $deltakere = DB::alle(
+            "SELECT b.id, COALESCE(m.navn, b.gjest_navn) AS navn,
+                    COALESCE(m.epost, b.gjest_epost) AS epost,
+                    COALESCE(m.telefon, b.gjest_telefon) AS telefon
+               FROM bookings b
+          LEFT JOIN members m ON m.id = b.member_id
+              WHERE b.course_session_id = :o AND " . Booking::aktivSql('b') . "
+           ORDER BY b.id",
+            ['o' => $oktId]
+        );
         foreach ($deltakere as $d) {
             $mottaker = $mottakerFor('pamelding_flyttet', $d);
             $v = $veiFor($m, $mottaker);
@@ -209,22 +261,22 @@ if ($handling === 'flyttet') {
                 $ikkeNaadd[] = (string) $d['navn'];
                 continue;
             }
-            if ($harNokler) {
-                $nye = 0;
-                foreach (['epost', 'sms'] as $k) {
-                    if ($v[$k]) {
-                        $nye += DB::kjor(
-                            'INSERT IGNORE INTO varsel_utsendinger (nokkel) VALUES (:n)',
-                            ['n' => 'flyttet:' . (int) $d['id'] . ':' . $start . ':' . $k]
-                        )->rowCount();
-                    }
-                }
-                if ($nye === 0) {
-                    $alt++;
-                    continue;
+            // flyttet:<booking>:<fra>:<til>:<kanal> — fra-datoen med, saa
+            // A→B→C→B gir beskjed ogsaa om den siste flyttingen tilbake til B.
+            $nye = 0;
+            foreach (['epost', 'sms'] as $k) {
+                if ($v[$k]) {
+                    $nye += DB::kjor(
+                        'INSERT IGNORE INTO varsel_utsendinger (nokkel) VALUES (:n)',
+                        ['n' => 'flyttet:' . (int) $d['id'] . ':' . $fraUtc . ':' . substr($start, 0, 16) . ':' . $k]
+                    )->rowCount();
                 }
             }
-            $lagt = Varsel::mal('pamelding_flyttet', $mottaker, $felterFor('pamelding_flyttet', $d), 'booking', (int) $d['id']);
+            if ($nye === 0) {
+                $alt++;
+                continue;
+            }
+            $lagt = Varsel::mal('pamelding_flyttet', $mottaker, $felterFor('pamelding_flyttet', $d, $rad), 'booking', (int) $d['id']);
             if ($lagt > 0) {
                 $sendt++;
             } else {
@@ -250,11 +302,22 @@ if ($handling === 'paaminnelse') {
     if ($m === null || (int) $m['aktiv'] !== 1) {
         Svar::feil('Meldingen «Påminnelse før kurset» er slått av under Innstillinger › Meldinger. Ingen fikk påminnelse.', 409);
     }
-    // Ta datoen og legg i koen i én transaksjon (Paaminnelse::send). Treffer
-    // ikke UPDATE-en, har noen (et klikk til, en annen fane eller cron) alt
-    // sendt den. Gikk ingenting ut, rulles det tilbake: cron kan sende sin.
+    if ($forventetUtc === '') {
+        Svar::feil($datoEndret, 409);
+    }
+    // Laas oekta, les den paa nytt og legg i koen i én transaksjon
+    // (Paaminnelse::send). Datoen maa vaere den admin saa. Bare paameldte uten
+    // noekkel faar den; har alle faatt den (et klikk til, en annen fane eller
+    // cron), er den alt sendt. Gikk ingenting ut, rulles det tilbake.
+    $okt['forventet_start'] = $forventetUtc;
     $r = Paaminnelse::send($okt, true);
-    if (!$r['tatt']) {
+    if ($r['grunn'] === 'avlyst') {
+        Svar::feil('Datoen er avlyst.', 409);
+    }
+    if ($r['grunn'] === 'dato') {
+        Svar::feil($datoEndret, 409);
+    }
+    if (!$r['tatt'] || ($r['sendt'] === 0 && $r['alt'] > 0)) {
         $naar = (string) DB::verdi('SELECT paaminnelse_sendt_at FROM course_sessions WHERE id = :i', ['i' => $oktId]);
         Svar::feil('Påminnelsen er alt sendt ' . $iOsloTid($naar) . '.', 409);
     }

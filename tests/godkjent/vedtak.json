@@ -7540,6 +7540,47 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "nyadmin-paaminnelse-per-pamelding",
+            "dato": "2026-10-09",
+            "hva": "Ny admin etter kontrolløren runde 3 (grundig sjekk, eieren 09.10.2026). (1) Påminnelsen før kurset merkes per påmelding («paaminnelse:<booking>» i varsel_utsendinger, migrasjon 270) i samme transaksjon som køleggingen. Både «Send påminnelse» og cron sender bare til påmeldte uten nøkkel (fortsatt bare betalte og 14-dagersregelen, cron dagen før kl. 12): en påminnelse for hånd tidlig stopper ikke cron for dem som kom til etterpå. paaminnelse_sendt_at er «sist sendt» for visning. Uten migrasjon 270: hele økta, som før. (2) «Ny dato på kurset»-nøkkelen har fra-datoen med (flyttet:<booking>:<fra>:<til>:<kanal>), så A→B→C→B varsler hver gang. (3) Økta leses på nytt under radlåsen (status, start_tid, kurs) og nøkkel og tekst bygges fra den raden; ny admin sender datoen admin så (forventet), og en annen dato gir 409. Cron hopper over avlyste og flyttede økter. (4) Uten migrasjon 270 svarer «Ny dato» 503 «Kjør oppdateringene først.». Nye tekster (bare i admin): «Datoen er endret siden du åpnet den. Last siden på nytt.», «Mangler datoen kurset ble flyttet fra eller til. Last siden på nytt.», «Kjør oppdateringene først.», «Sist sendt …. N har alt fått den og får den ikke igjen.», «Den automatiske påminnelsen dagen før sendes da ikke til dem som får den nå.».",
+            "hvor": "app/lib/paaminnelse.php, bin/cron.php paaminnelser, api/admin/okt-varsel.php, ny-admin/kalender.js, tests/ny-admin.php (M)",
+            "kode": [
+                {
+                    "fil": "app/lib/paaminnelse.php",
+                    "finnes": [
+                        "return 'paaminnelse:' . $bookingId;",
+                        "DB::verdi('SELECT id FROM course_sessions WHERE id = :i FOR UPDATE', ['i' => $oktId]);",
+                        "AND NOT EXISTS (SELECT 1 FROM varsel_utsendinger v WHERE v.nokkel = CONCAT('paaminnelse:', b.id))",
+                        "return $tom('dato');",
+                        "return $tom('avlyst');"
+                    ]
+                },
+                {
+                    "fil": "bin/cron.php",
+                    "finnes": [
+                        "$ikkeSendt = Paaminnelse::harNokler() ? '' : 'AND cs.paaminnelse_sendt_at IS NULL';"
+                    ]
+                },
+                {
+                    "fil": "api/admin/okt-varsel.php",
+                    "finnes": [
+                        "'flyttet:' . (int) $d['id'] . ':' . $fraUtc . ':' . substr($start, 0, 16) . ':' . $k",
+                        "Svar::feil('Kjør oppdateringene først.', 503);",
+                        "$okt['forventet_start'] = $forventetUtc;",
+                        "Svar::feil($datoEndret, 409);"
+                    ]
+                },
+                {
+                    "fil": "ny-admin/kalender.js",
+                    "finnes": [
+                        "forventet: `${t.dato} ${t.tid}`",
+                        "forventet: h ? `${h.dato} ${h.tid}` : ''",
+                        "k.disabled = !r.kanSendes || !r.aktiv;"
+                    ]
+                }
+            ]
         }
     ]
 }

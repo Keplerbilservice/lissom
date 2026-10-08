@@ -550,6 +550,27 @@ try {
     sjekk('samtidige qr() og betal() for samme del: nøyaktig ett oppgjør, ingen QR igjen som venter',
         count($betalt) === 1 && count($venter) === 0, json_encode([$svar2[0][0], $svar2[1][0], $radene]));
 
+    // Øktlåsen: en QR som lages for én kurv mens kontant tas for en annen,
+    // blir aldri merket avbrutt før den er laget hos Vipps (da kunne kunden
+    // betalt en kode vi trodde var stoppet).
+    $sett('.betaling-status', 'CREATED');
+    $kqA = $kjop(['fritt' => ['410']], []);
+    $kqB = $kjop(['fritt' => ['420']], []);
+    $linjerFor = is_file($vlogg) ? count(file($vlogg)) : 0;
+    $svar3 = samtidig([$K, ['handling' => 'qr', 'del' => 'ordre'] + $send($kqA)], [$K, ['handling' => 'betal', 'maate' => 'Kontant'] + $send($kqB)], $kasseToken);
+    $qrRad = DB::en('SELECT vipps_reference, status FROM payments WHERE idempotency_key = :k', ['k' => strtolower($kqA['nokler']['ordre'])]);
+    $nyeKall = array_map(static fn($l) => json_decode($l, true), array_slice(is_file($vlogg) ? file($vlogg) : [], $linjerFor));
+    $opprettet = $avbrutt = -1;
+    foreach ($nyeKall as $i => $k) {
+        if (($k['metode'] ?? '') === 'POST' && ($k['sti'] ?? '') === '/epayment/v1/payments' && ($k['kropp']['reference'] ?? '') === ($qrRad['vipps_reference'] ?? '-')) { $opprettet = $i; }
+        if (($k['sti'] ?? '') === '/epayment/v1/payments/' . ($qrRad['vipps_reference'] ?? '-') . '/cancel') { $avbrutt = $i; }
+    }
+    $iOrden = $qrRad === null
+        || ($qrRad['status'] === 'venter' && $opprettet >= 0)
+        || ($qrRad['status'] === 'avbrutt' && ($opprettet === -1 || $avbrutt > $opprettet));
+    sjekk('QR og kontant samtidig (to kurver): QR-en er enten ventende og laget, eller stoppet etter at den ble laget',
+        $iOrden && $svar3[1][0] === 200, json_encode([$svar3[0][0], $svar3[1][0], $qrRad, $opprettet, $avbrutt]));
+
     // ══ F: kvittering ═══════════════════════════════════════════════════
     echo "\n── F: kvittering ──\n";
     $for = (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE ref_type = 'booking' AND ref_id = :b", ['b' => $kari]);
@@ -565,6 +586,13 @@ try {
     }
     $s = kall($K, ['handling' => 'kvitteringValg', 'betaler' => ['bookingId' => $kari], 'betalinger' => $kariBetalinger], $kasseToken);
     sjekk('med SMS satt opp og mobil: «Kvittering på SMS» kan velges', ($s[1]['sms'] ?? false) === true, $tekst($s));
+    $s = kall($K, ['handling' => 'kvitteringValg', 'betaler' => ['bookingId' => $ola], 'betalinger' => $kariBetalinger], $kasseToken);
+    sjekk('… men ikke for Karis betaling når en annen kunde er valgt', ($s[1]['sms'] ?? true) === false, $tekst($s));
+    $s = kall($K, ['handling' => 'kvittering', 'kanal' => 'sms', 'betalinger' => $kariBetalinger, 'betaler' => ['bookingId' => $ola]], $kasseToken);
+    sjekk('Karis beløp til Olas mobil avvises: «Kvitteringen hører ikke til denne kunden.»', $s[0] === 409
+        && ($s[1]['feil'] ?? '') === 'Kvitteringen hører ikke til denne kunden.'
+        && DB::verdi("SELECT COUNT(*) FROM notifications WHERE mal = 'kassekvittering_sms' AND ref_type = 'payment' AND ref_id = :p",
+            ['p' => (int) ($kariBetalinger[0] ?? 0)]) == 0, $tekst($s));
     $s = kall($K, ['handling' => 'kvittering', 'kanal' => 'sms', 'betalinger' => $kariBetalinger, 'betaler' => ['bookingId' => $kari]], $kasseToken);
     $sms = DB::en("SELECT kanal, mottaker, mal, tekst FROM notifications WHERE ref_type = 'payment' AND ref_id = :p AND mal = 'kassekvittering_sms'",
         ['p' => (int) ($kariBetalinger[0] ?? 0)]);
@@ -576,6 +604,13 @@ try {
         && normaliser_telefon((string) $sms['mottaker']) === normaliser_telefon('+4799887766')
         && str_replace([' ', "\u{a0}"], ' ', trim((string) $sms['tekst'])) === str_replace([' ', "\u{a0}"], ' ', $ventet),
         $tekst($s) . ' ' . json_encode($sms, JSON_UNESCAPED_UNICODE));
+    $s = kall($K, ['handling' => 'kvittering', 'kanal' => 'sms', 'betalinger' => $kariBetalinger, 'betaler' => ['bookingId' => $kari]], $kasseToken);
+    sjekk('SMS-kvittering nr. 2 for samme betaling avvises: «Kvittering på SMS er alt sendt for dette kjøpet.»', $s[0] === 409
+        && ($s[1]['feil'] ?? '') === 'Kvittering på SMS er alt sendt for dette kjøpet.'
+        && DB::verdi("SELECT COUNT(*) FROM notifications WHERE mal = 'kassekvittering_sms' AND ref_type = 'payment' AND ref_id = :p",
+            ['p' => (int) ($kariBetalinger[0] ?? 0)]) == 1, $tekst($s));
+    $s = kall($K, ['handling' => 'kvitteringValg', 'betaler' => ['bookingId' => $kari], 'betalinger' => $kariBetalinger], $kasseToken);
+    sjekk('… og knappen vises ikke lenger for den', ($s[1]['sms'] ?? true) === false, $tekst($s));
     $s = kall($K, ['handling' => 'kvitteringValg', 'betaler' => [], 'betalinger' => $kariBetalinger], $kasseToken);
     sjekk('kontantkunden får ingen SMS- eller e-postkvittering', ($s[1]['sms'] ?? true) === false && ($s[1]['epost'] ?? true) === false, $tekst($s));
 

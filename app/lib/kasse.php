@@ -233,12 +233,17 @@ final class Kasse
 
         $nokkelListe = array_column($deler, 'nokkel');
         $laast = [];
+        $oktLaast = false;
         $resultat = ['deler' => [], 'gavekort' => []];
         try {
             foreach ($nokkelListe as $n) {
                 self::laasDel($n);
                 $laast[] = $n;
             }
+            // Øktlåsen etter dellåsene, samme rekkefølge som qr(): en QR-kode
+            // som er under opprettelse, blir ferdig før den kan stoppes.
+            self::laasOkt();
+            $oktLaast = true;
             // QR-koder fra denne iPaden som venter for en annen kurv (for
             // eksempel før «Tilbake»), stoppes hos Vipps før kontanten tas.
             self::stoppOktensQr($nokkelListe);
@@ -262,6 +267,9 @@ final class Kasse
                 $resultat['deler'][] = $d['type'];
             }
         } finally {
+            if ($oktLaast) {
+                self::slippOkt();
+            }
             foreach ($laast as $n) {
                 self::slippDel($n);
             }
@@ -351,7 +359,7 @@ final class Kasse
      */
     private static function oktPrefiks(): string
     {
-        return self::QR_PREFIKS . '-' . substr(hash('sha256', (string) Sesjon::tokenHash()), 0, 8);
+        return self::QR_PREFIKS . '-' . self::oktId();
     }
 
     /**
@@ -813,10 +821,37 @@ final class Kasse
         $nokkel = (string) $d['nokkel'];
         self::laasDel($nokkel);
         try {
-            return self::qrDel($d, $deler, $betaler, $nokkel, $person);
+            // Øktlåsen holdes mens QR-en opprettes (og andre stoppes): da kan
+            // ikke betal() for en annen del merke den avbrutt midt i, før den
+            // er laget hos Vipps (kontrolløren 8. oktober 2026).
+            self::laasOkt();
+            try {
+                return self::qrDel($d, $deler, $betaler, $nokkel, $person);
+            } finally {
+                self::slippOkt();
+            }
         } finally {
             self::slippDel($nokkel);
         }
+    }
+
+    /** Én lås per iPad-økt rundt opprettelse og stopp av QR-koder. */
+    private static function laasOkt(): void
+    {
+        if ((int) DB::verdi('SELECT GET_LOCK(:l, 20)', ['l' => 'kasse-okt:' . self::oktId()]) !== 1) {
+            throw new RuntimeException('Et annet trykk for det samme kjøpet er i gang. Prøv igjen.', 409);
+        }
+    }
+
+    private static function slippOkt(): void
+    {
+        DB::verdi('SELECT RELEASE_LOCK(:l)', ['l' => 'kasse-okt:' . self::oktId()]);
+    }
+
+    /** Åtte tegn som hører til innloggingen på iPaden. */
+    private static function oktId(): string
+    {
+        return substr(hash('sha256', (string) Sesjon::tokenHash()), 0, 8);
     }
 
     /** Den nyeste betalte KS-QR-betalingen på påmeldingen i dag, eller null. */
@@ -1124,7 +1159,7 @@ final class Kasse
         $ut = [];
         foreach (array_slice(array_values(array_unique(array_map('intval', $ider))), 0, 20) as $id) {
             $r = DB::en(
-                "SELECT id, type, maate, belop_ore, refundert_ore, gavekort_ore, booking_id, order_id
+                "SELECT id, type, maate, belop_ore, refundert_ore, gavekort_ore, booking_id, order_id, member_id
                    FROM payments
                   WHERE id = :i AND created_at >= :fra AND status IN ('betalt', 'delvis_refundert')
                     AND annullert_at IS NULL
@@ -1136,6 +1171,49 @@ final class Kasse
             }
         }
         return $ut;
+    }
+
+    /**
+     * Hører betalingen til den som betaler? Påmeldingen er betalerens egen,
+     * betalingen står på medlemmet, eller ordren ble laget for medlemmet eller
+     * med det samme mobilnummeret. Ellers kunne kunde As beløp gått til kunde
+     * Bs mobil (kontrolløren 8. oktober 2026).
+     *
+     * @param array<string,mixed> $r rad fra kvitteringRader()
+     * @param array<string,mixed> $betaler fra KasseKurv::betaler()
+     */
+    private static function tilhorer(array $r, array $betaler): bool
+    {
+        $bid = (int) ($betaler['bookingId'] ?? 0);
+        $mid = (int) ($betaler['medlemId'] ?? 0);
+        $tlf = normaliser_telefon((string) ($betaler['telefon'] ?? ''));
+        if ($r['booking_id'] !== null) {
+            return $bid > 0 && (int) $r['booking_id'] === $bid;
+        }
+        if ($r['member_id'] !== null && $mid > 0 && (int) $r['member_id'] === $mid) {
+            return true;
+        }
+        if ($r['order_id'] !== null) {
+            $o = DB::en('SELECT member_id, kunde_telefon FROM orders WHERE id = :i', ['i' => (int) $r['order_id']]);
+            if ($o === null) {
+                return false;
+            }
+            if ($mid > 0 && (int) ($o['member_id'] ?? 0) === $mid) {
+                return true;
+            }
+            return $tlf !== '' && normaliser_telefon((string) ($o['kunde_telefon'] ?? '')) === $tlf;
+        }
+        return false;
+    }
+
+    /** Er det alt sendt en SMS-kvittering for en av betalingene? */
+    private static function smsSendt(array $rader): bool
+    {
+        $ider = array_map(static fn(array $r): int => (int) $r['id'], $rader);
+        return $ider !== [] && DB::verdi(
+            "SELECT 1 FROM audit_log WHERE handling = 'kassekvittering_sms' AND objekt_type = 'payment'
+                AND objekt_id IN (" . implode(',', $ider) . ') LIMIT 1'
+        ) !== null;
     }
 
     /** Er SMS-kvitteringen (kassekvittering_sms) på, og kan SMS sendes? */
@@ -1157,14 +1235,17 @@ final class Kasse
     {
         $rader = self::kvitteringRader($ider);
         $harEpostDel = false;
+        $alleHans = $rader !== [];
         foreach ($rader as $r) {
             if ($r['booking_id'] !== null || $r['order_id'] !== null) {
                 $harEpostDel = true;
             }
+            $alleHans = $alleHans && self::tilhorer($r, $betaler);
         }
         return [
             'epost'      => $harEpostDel && $betaler['epost'] !== '' && filter_var($betaler['epost'], FILTER_VALIDATE_EMAIL) !== false,
-            'sms'        => $rader !== [] && normaliser_telefon((string) $betaler['telefon']) !== '' && self::smsKvitteringPaa(),
+            'sms'        => $alleHans && normaliser_telefon((string) $betaler['telefon']) !== '' && self::smsKvitteringPaa()
+                            && !self::smsSendt($rader),
             'betalinger' => array_map(static fn(array $r): int => (int) $r['id'], $rader),
         ];
     }
@@ -1214,17 +1295,37 @@ final class Kasse
             if ($tlf === '' || !self::smsKvitteringPaa()) {
                 throw new RuntimeException('Kvittering på SMS kan ikke sendes til denne kunden.', 409);
             }
-            $sum = 0;
             foreach ($rader as $r) {
-                $sum += max(0, (int) $r['belop_ore'] - (int) $r['refundert_ore']) + (int) $r['gavekort_ore'];
+                if (!self::tilhorer($r, $betaler)) {
+                    throw new RuntimeException('Kvitteringen hører ikke til denne kunden.', 409);
+                }
             }
-            $d = new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo'));
-            $mnd = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember'];
-            Varsel::mal('kassekvittering_sms', ['telefon' => $tlf], [
-                'belop' => KasseKurv::kr($sum),
-                'maate' => self::maateTekst($rader),
-                'dato'  => (int) $d->format('j') . '. ' . $mnd[(int) $d->format('n') - 1],
-            ], 'payment', (int) $rader[0]['id']);
+            // Én SMS-kvittering per betaling. Låsen gjør at to trykk samtidig
+            // ikke begge kommer forbi sjekken.
+            if ((int) DB::verdi("SELECT GET_LOCK('kasse-sms', 10)") !== 1) {
+                throw new RuntimeException('Et annet trykk for det samme kjøpet er i gang. Prøv igjen.', 409);
+            }
+            try {
+                if (self::smsSendt($rader)) {
+                    throw new RuntimeException('Kvittering på SMS er alt sendt for dette kjøpet.', 409);
+                }
+                $sum = 0;
+                foreach ($rader as $r) {
+                    $sum += max(0, (int) $r['belop_ore'] - (int) $r['refundert_ore']) + (int) $r['gavekort_ore'];
+                }
+                $d = new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo'));
+                $mnd = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember'];
+                Varsel::mal('kassekvittering_sms', ['telefon' => $tlf], [
+                    'belop' => KasseKurv::kr($sum),
+                    'maate' => self::maateTekst($rader),
+                    'dato'  => (int) $d->format('j') . '. ' . $mnd[(int) $d->format('n') - 1],
+                ], 'payment', (int) $rader[0]['id']);
+                foreach ($rader as $r) {
+                    revider('kassekvittering_sms', 'payment', (int) $r['id']);
+                }
+            } finally {
+                DB::verdi("SELECT RELEASE_LOCK('kasse-sms')");
+            }
             return 1;
         }
         $sendt = 0;

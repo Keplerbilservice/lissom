@@ -6622,6 +6622,23 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "kasse-ipad-oktlaas-sms-eier-20261008",
+            "dato": "2026-10-08",
+            "hva": "Kontrolløren (opus) på 1312d1d: én lås per iPad-økt (GET_LOCK kasse-okt:<økt>) rundt opprettelse og stopp av QR-koder, så en QR under opprettelse aldri merkes avbrutt før den er laget hos Vipps; SMS-kvitteringen sendes bare når betalingene hører til betaleren (samme påmelding, medlem, eller ordre for medlemmet/mobilnummeret), og høyst én gang per betaling («Kvittering på SMS er alt sendt for dette kjøpet.»).",
+            "hvor": "app/lib/kasse.php, tests/kasse.php",
+            "kode": [
+                {
+                    "fil": "app/lib/kasse.php",
+                    "finnes": [
+                        "'kasse-okt:' . self::oktId()",
+                        "throw new RuntimeException('Kvitteringen hører ikke til denne kunden.', 409);",
+                        "throw new RuntimeException('Kvittering på SMS er alt sendt for dette kjøpet.', 409);",
+                        "revider('kassekvittering_sms', 'payment', (int) $r['id']);"
+                    ]
+                }
+            ]
         }
     ]
 }

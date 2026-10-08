@@ -162,7 +162,7 @@ async function nyttSalg(fra){
 }
 async function hentPerson(s=salg){
  const p=await kall('kasse.php',{handling:'person',bookingId:s.bookingId});s.person=p;s.navn=p.navn;
- if(p.pop){s.pop=new Map();for(const l of p.lagret||[])s.pop.set(l.nokkel,{nivaaId:l.nivaaId,gjenstand:l.gjenstand,antall:l.antall});if(s.popUten.size){for(const [id,n] of s.popUten){const k=id+'|';const q=s.pop.get(k)||{nivaaId:id,gjenstand:'',antall:0};q.antall+=n;s.pop.set(k,q);}s.popUten=new Map();s.popGjester=0;}}
+ if(p.pop){s.pop=new Map();for(const l of p.lagret||[])s.pop.set(l.nokkel,{nivaaId:l.nivaaId,gjenstand:l.gjenstand,antall:l.antall});if(s.popUten.size){for(const [id,n] of s.popUten){const k=id+'|';const q=s.pop.get(k)||{nivaaId:id,gjenstand:'',antall:0};const pris=s.priser.get('pop:'+id);s.priser.delete('pop:'+id);if(pris!==undefined&&!q.antall)s.priser.set('booking:'+s.bookingId+':'+k,pris);q.antall+=n;s.pop.set(k,q);}s.popUten=new Map();s.popGjester=0;}}
 }
 const kurvTilServer=(s=salg)=>({bookingId:s.bookingId||undefined,pop:[...s.pop.values()].filter(p=>p.antall>0).map(p=>({nivaaId:p.nivaaId,gjenstand:p.gjenstand,antall:p.antall})),popGjester:s.popUten.size?s.popGjester:undefined,popUten:[...s.popUten].map(([nivaaId,antall])=>({nivaaId,antall})),varer:[...s.varer].map(([id,antall])=>({id,antall})),fritt:s.fritt,gavekort:s.gavekort,timepakke:s.timepakke||undefined,priser:s.priser.size?Object.fromEntries(s.priser):undefined,rabatt:s.rabatt||undefined});
 const betalerTilServer=(s=salg)=>s.kontantkunde||!s.betaler?{}:s.betaler;
@@ -311,19 +311,24 @@ function deltArk(){
 }
 // Vipps-QR i kurven: én QR per del, neste når den forrige er betalt. Mens QR-en vises, er kurven låst («Tilbake» låser opp).
 function qrStart(){const s=salg;if(!s||!s.regnet||s.vent)return;forbered(s);const deler=s.regnet.deler.map(d=>d.id);qr(s,Math.max(0,deler.findIndex(id=>!s.betalt.has(id))),deler);}
+function qrValg(s){
+ const igjen=()=>{stopPoll();if(salg!==s)return;s.vent=false;qrStart();};
+ const kontant=()=>{stopPoll();if(salg!==s)return;s.vent=false;registrer('Kontant',s.betalt.size?'med Vipps og kontant':'kontant');};
+ return el('div',{class:'k-rad-knapper',style:'justify-content:center'},pille('Prøv igjen',igjen,'fylt'),s.betalt.size?pille('Betal resten kontant',kontant):null);
+}
 async function qr(s,i,deler){
  stopPoll();const id=deler[i];const n=deler.length;s.vent=true;
  const omraade=el('div',{class:'k-qrsone'},el('p',{text:'Henter QR-kode …'}));
  sett(kurvEl,el('div',{class:'k-hvem'},el('span',{text:s.navn||'Kontantkunde'})),el('div',{class:'k-sum'},el('span',{text:'Totalt'}),el('span',{text:s.regnet.sum})),omraade,s.betalt.size?null:pille('Tilbake',()=>{stopPoll();s.vent=false;if(salg===s)tegnKurv();}));
  let d;
  try{d=await kall('kasse.php',{handling:'qr',del:id,...body(s)});}
- catch(e){if(e.stille)return;if(e.status===410)s.nokler[id]=uuid();omraade.replaceChildren(el('p',{class:'k-feil',role:'alert',text:e.message}));return;}
+ catch(e){if(e.stille)return;if(e.status===410)s.nokler[id]=uuid();omraade.replaceChildren(el('p',{class:'k-feil',role:'alert',text:e.message}),qrValg(s));return;}
  if(d.betalt){if(d.betalingId)s.betalinger.push(d.betalingId);await delBetalt(s,i,deler);return;}
  if(!omraade.isConnected)return;
  const status=el('p',{style:'font-weight:700',text:'Venter på Vipps …'});
  omraade.replaceChildren(...[n>1?el('p',{class:'k-tom',text:`Vipps ${i+1} av ${n} · ${d.belop}`}):null,el('img',{class:'k-qr',src:d.qr,alt:'QR-kode for betaling med Vipps'}),status].filter(Boolean));
  let runder=0;
- const sjekk=async()=>{pollTimer=null;if(!omraade.isConnected||salg!==s)return;try{const st=await kall('kasse.php',{handling:'status',poll:d.poll});if(st.betalt){if(st.kode)s.koder.push({kode:st.kode,belop:d.belop});if(st.betalingId)s.betalinger.push(st.betalingId);await delBetalt(s,i,deler);return;}if(['avbrutt','feilet'].includes(st.status)){s.nokler[id]=uuid();status.textContent='Betalingen ble avbrutt i Vipps. Trykk «Vipps» for en ny QR-kode.';return;}}catch(e){if(e.stille)return;status.textContent=e.message;}
+ const sjekk=async()=>{pollTimer=null;if(!omraade.isConnected||salg!==s)return;try{const st=await kall('kasse.php',{handling:'status',poll:d.poll});if(st.betalt){if(st.kode)s.koder.push({kode:st.kode,belop:d.belop});if(st.betalingId)s.betalinger.push(st.betalingId);await delBetalt(s,i,deler);return;}if(['avbrutt','feilet'].includes(st.status)){s.nokler[id]=uuid();status.textContent='Betalingen ble avbrutt i Vipps.';omraade.append(qrValg(s));return;}}catch(e){if(e.stille)return;status.textContent=e.message;}
   if(++runder<220)pollTimer=setTimeout(sjekk,3000);else status.textContent='Ingen bekreftelse ennå. Sjekk Penger i admin før du tar betalt på nytt.';};
  pollTimer=setTimeout(sjekk,3000);
 }

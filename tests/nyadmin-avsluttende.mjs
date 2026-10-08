@@ -44,14 +44,12 @@ try {
   assert.deepEqual(kfeil,[]);await k.close();
   console.log(`Kalender ${width} px: uke over månedsskifte, lagring av notat, riktig hendelsestype og sletting bestått.`);
  }
- await p.goto('http://lokal.lissom.no:8140/admin-ny#idag');
- await p.locator('.row-link').filter({hasText:'Dugnad'}).click();
- await p.getByRole('heading',{name:'Dugnad',exact:true}).waitFor();
- await p.goto('http://lokal.lissom.no:8140/admin-ny#idag');
- const usage=await p.evaluate(async()=>await(await fetch('/api/admin/kortbruk.php')).json());assert.ok(usage.bruk.dugnad.antall>=1);
- await p.getByRole('button',{name:'Tilbakestill rekkefølgen',exact:true}).click();
- await p.getByRole('dialog',{name:'Tilbakestill snarveiene?',exact:true}).getByRole('button',{name:'Tilbakestill',exact:true}).click();
- await p.waitForResponse(r=>r.url().includes('kortbruk.php')&&r.request().method()==='POST');
+ // Enklere admin (08.10.2026): flisene på Innhold og Oppsett følger bruken. «Tilbakestill rekkefølgen» er tatt bort fra I dag; nullstillingen prøves mot API-et.
+ await p.goto('http://lokal.lissom.no:8140/admin-ny#innhold');
+ await p.locator('a.flis').filter({hasText:'Min side for medlemmer'}).click();
+ await p.waitForFunction(()=>location.hash.startsWith('#minside'));
+ const usage=await p.evaluate(async()=>await(await fetch('/api/admin/kortbruk.php')).json());assert.ok(usage.bruk.minside.antall>=1);
+ await p.evaluate(async()=>await fetch('/api/admin/kortbruk.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({handling:'null'})}));
  const reset=await p.evaluate(async()=>await(await fetch('/api/admin/kortbruk.php')).json());assert.deepEqual(reset.bruk,[]);
  console.log('Personlige snarveier: faktisk registrering og nullstilling bestått.');
  let sends=0;await p.route('**/api/admin/pamelding.php',route=>{const body=route.request().postDataJSON();if(body.send)sends++;return route.fulfill({json:{ok:true,antall:1,liste:[{id:s.booking,navn:s.tag,epost:s.tag+'@e2e.lissom.test',kurs:s.tag,dato:'1. oktober'}]}});});
@@ -59,6 +57,6 @@ try {
  await p.getByRole('button',{name:'Send til disse deltakerne',exact:true}).click();
  await p.getByRole('dialog',{name:'Send kursbevis?',exact:true}).getByRole('button',{name:'Avbryt',exact:true}).click();assert.equal(sends,0);
  console.log('Samlede kursbevis: mottakere forhåndsvises, avbrutt utsending sender ingenting (simulert API).');
- let delivered;const responseDone=new Promise(resolve=>delivered=resolve);await p.route('**/api/admin/medlemmer.php?person=*',async route=>{try{const response=await route.fetch({url:route.request().url().replace('lokal.lissom.no','127.0.0.1')});await new Promise(resolve=>setTimeout(resolve,400));await route.fulfill({response});}catch(e){errors.push('Forsinket testforespørsel feilet: '+e.message.split('Call log:')[0]);await route.abort();}finally{delivered();}});await p.goto('http://lokal.lissom.no:8140/admin-ny#folk?person='+s.admin);await p.getByRole('heading',{name:'Folk',exact:true}).waitFor();await p.locator('#mobil a[data-route="kurs"]').click();await responseDone;await p.getByRole('heading',{name:'Kurs',exact:true}).waitFor();await p.waitForTimeout(100);assert.equal(await p.locator('dialog').count(),0);console.log('Raskt sideskift: forsinket personforespørsel åpner ingen dialog på den nye siden.');
+ let delivered;const responseDone=new Promise(resolve=>delivered=resolve);await p.route('**/api/admin/medlemmer.php?person=*',async route=>{try{const response=await route.fetch({url:route.request().url().replace('lokal.lissom.no','127.0.0.1')});await new Promise(resolve=>setTimeout(resolve,400));await route.fulfill({response});}catch(e){errors.push('Forsinket testforespørsel feilet: '+e.message.split('Call log:')[0]);await route.abort();}finally{delivered();}});await p.goto('http://lokal.lissom.no:8140/admin-ny#folk?person='+s.admin);await p.getByRole('heading',{name:'Folk',exact:true}).waitFor();await p.locator('#mobil a[data-route="penger"]').click();await responseDone;await p.getByRole('heading',{name:'Penger',exact:true}).waitFor();await p.waitForTimeout(100);assert.equal(await p.locator('dialog').count(),0);console.log('Raskt sideskift: forsinket personforespørsel åpner ingen dialog på den nye siden.');
  assert.deepEqual(errors,[]);
 } finally {await browser.close();fixture('cleanup',s);}

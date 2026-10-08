@@ -6,7 +6,7 @@ const fixture=(mode,s)=>JSON.parse(execFileSync('php',['tests/nettleser/henting-
 const s=fixture('seed'),browser=await chromium.launch({args:['--host-resolver-rules=MAP lokal.lissom.no 127.0.0.1']});let p;
 try{
  const c=await browser.newContext({viewport:{width:390,height:900}});await c.addCookies([{name:'lissom_sesjon',value:s.token,domain:'lokal.lissom.no',path:'/'}]);p=await c.newPage();
- await p.goto('http://lokal.lissom.no:8140/admin-ny#butikk');await p.getByRole('button',{name:'Ny vare',exact:true}).click();
+ /* «Ny vare» ligger i «+» (eieren 08.10.2026): #butikk?ny=1 åpner skjemaet, og ?ny=1 fjernes fra adressen. */await p.goto('http://lokal.lissom.no:8140/admin-ny#butikk?ny=1');await p.getByRole('dialog',{name:'Ny vare',exact:true}).waitFor();assert.equal(new URL(p.url()).hash,'#butikk');
  await p.getByLabel('Varenavn',{exact:true}).fill(s.tag);await p.getByLabel('Pris i kroner',{exact:true}).fill('100');await p.getByLabel('Antall på lager',{exact:true}).fill('3');await p.getByLabel('Synlighet',{exact:true}).selectOption('publisert');
  await p.getByRole('button',{name:'Lagre',exact:true}).click();await p.getByRole('dialog',{name:'Publiser varen?',exact:true}).getByRole('button',{name:'Publiser',exact:true}).click();
  await p.getByRole('dialog',{name:'Ny vare',exact:true}).waitFor({state:'detached'});

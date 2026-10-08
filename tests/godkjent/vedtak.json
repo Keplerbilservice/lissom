@@ -3104,7 +3104,7 @@
         {
             "id": "nye-pameldinger-medlemskap",
             "dato": "2026-10-02",
-            "hva": "«det meldte seg på et nytt medlem, men det vises ikke under nye påmeldinger» — nye medlemskap (betalt, Prøv Lissom, betal i verkstedet og lagt inn i admin) står i «Nye påmeldinger» med plannavnet der kursnavnet står, i de samme tre dagene og med samme regel for avbrutt/feilet Vipps; telleren tar dem med; trykk åpner medlemmet; «Dagens bestillinger» tar dem med fra samme kilde; bare HELT NYE medlemmer — planbytte og avtale sendt til et medlem som fantes fra før står ikke (eieren 02.10); ingen grense før dedup, så Dagens bestillinger tar med alle (kontrolløren 02.10); Dagens bestillinger åpner personen med medlemId; et avbrutt førsteforsøk (stoppet, aldri godkjent eller betalt) gjør ikke kunden til et gammelt medlem (kontrolløren 02.10)",
+            "hva": "«det meldte seg på et nytt medlem, men det vises ikke under nye påmeldinger» — nye medlemskap (betalt, Prøv Lissom, betal i verkstedet og lagt inn i admin) står i «Nye påmeldinger» med plannavnet der kursnavnet står, i de samme tre dagene og med samme regel for avbrutt/feilet Vipps; telleren tar dem med; trykk åpner medlemmet; «Dagens bestillinger» tar dem med fra samme kilde; bare HELT NYE medlemmer — planbytte og avtale sendt til et medlem som fantes fra før står ikke (eieren 02.10); ingen grense før dedup, så Dagens bestillinger tar med alle (kontrolløren 02.10); Dagens bestillinger åpner personen med medlemId; et avbrutt førsteforsøk (stoppet, aldri godkjent eller betalt) gjør ikke kunden til et gammelt medlem (kontrolløren 02.10) ENDRET 2026-10-08 (eieren, «Ok, bygg det» på visningen «Enklere Lissom-admin»): I admin-ny står nye påmeldinger som saker i flisen «Kurs» under «Må gjøres» på I dag (Sett som sett / Åpne kurset).",
             "hvor": "Admin › Oversikt › Nye påmeldinger og Dagens bestillinger (gamle admin, admin-ny og nyadmin)",
             "kode": [
                 {
@@ -3142,12 +3142,6 @@
                     ]
                 },
                 {
-                    "fil": "admin-ny/app.js",
-                    "finnes": [
-                        "r==='pameldte'&&(d.nyeste||[]).length?[' ',badge(String(d.nyeste.length),'warn')]:null"
-                    ]
-                },
-                {
                     "fil": "tests/nye-pameldinger-medlem.sh",
                     "finnes": [
                         "avbrutt i Vipps står ikke med",
@@ -3155,6 +3149,12 @@
                         "flere enn 50 nye i dag: alle 55 står med",
                         "planbytte står ikke i Nye påmeldinger",
                         "avbrutt fast trekk, så engangs: står som ny"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/ramme.js",
+                    "finnes": [
+                        "pamelding:()=>[button('Sett som sett'"
                     ]
                 }
             ]
@@ -4302,15 +4302,9 @@
         {
             "id": "idag-mva-linjer",
             "dato": "2026-10-03",
-            "hva": "Eieren, 3. oktober 2026: beløpene på «Omsetning i dag» og «Denne måneden» skal ikke stå i én rotete setning. Stort tall = ekskl. mva, under det egne linjer «Ekskl. mva» / «Bekreftede betalinger, ekskl. mva» og «<beløp> inkl. mva», knappen på egen linje.",
+            "hva": "Eieren, 3. oktober 2026: beløpene på «Omsetning i dag» og «Denne måneden» skal ikke stå i én rotete setning. Stort tall = ekskl. mva, under det egne linjer «Ekskl. mva» / «Bekreftede betalinger, ekskl. mva» og «<beløp> inkl. mva», knappen på egen linje. ENDRET 2026-10-08 (eieren, «Ok, bygg det» på visningen «Enklere Lissom-admin»): omsetningskortene er tatt bort fra I dag i admin-ny; omsetningen står på Penger.",
             "hvor": "admin-ny › I dag",
             "kode": [
-                {
-                    "fil": "admin-ny/app.js",
-                    "finnes": [
-                        "el('small',{text:'Bekreftede betalinger, ekskl. mva'})"
-                    ]
-                },
                 {
                     "fil": "admin-ny/design.css",
                     "finnes": [
@@ -4472,7 +4466,7 @@
         {
             "id": "admin-ny-stemple-markedsforing-verksted",
             "dato": "2026-10-03",
-            "hva": "Eieren, 3. oktober 2026: (1) Admin-ny har «○  Stemple inn» / «●  Stemple ut» i toppen ved Administrator/Logg ut, også på mobil, for den innloggede. Samme endepunkt (/api/stempling.php) og tekster som topplinja i gamle admin; tittelen viser «Verkstedet er åpent · siden HH:MM». (2) «Markedsføring» er eget menypunkt mellom Innhold og Alle funksjoner (#marked) med SEO, GEO, Artikler, Referanser, Kursvelger, Videokurs, Mobilvisning og Tekstmaler. SEO og GEO står én gang — ikke i Innhold eller Alle funksjoner. (3) Innboks ligger ikke under Markedsføring, men blant Oppgaver på I dag, med rød pille «N ubesvarte i innboks» når kommentarer venter; hver kommentar har «Svar» og «Ferdig» (ikkeSvar) og forsvinner fra tellingen når den er håndtert. (4) Verksted har kortene Oppskrifter, Keramikk maler (#dokumenter) og Skisser; Skisser og Oppskrifter står ikke i Alle funksjoner. Ingen funksjon er fjernet; søket finner alt.",
+            "hva": "Eieren, 3. oktober 2026: (1) Admin-ny har «○  Stemple inn» / «●  Stemple ut» i toppen ved Administrator/Logg ut, også på mobil, for den innloggede. Samme endepunkt (/api/stempling.php) og tekster som topplinja i gamle admin; tittelen viser «Verkstedet er åpent · siden HH:MM». (2) «Markedsføring» er eget menypunkt mellom Innhold og Alle funksjoner (#marked) med SEO, GEO, Artikler, Referanser, Kursvelger, Videokurs, Mobilvisning og Tekstmaler. SEO og GEO står én gang — ikke i Innhold eller Alle funksjoner. (3) Innboks ligger ikke under Markedsføring, men blant Oppgaver på I dag, med rød pille «N ubesvarte i innboks» når kommentarer venter; hver kommentar har «Svar» og «Ferdig» (ikkeSvar) og forsvinner fra tellingen når den er håndtert. (4) Verksted har kortene Oppskrifter, Keramikk maler (#dokumenter) og Skisser; Skisser og Oppskrifter står ikke i Alle funksjoner. Ingen funksjon er fjernet; søket finner alt. ENDRET 2026-10-08 (eieren, «Ok, bygg det» på visningen «Enklere Lissom-admin»): menyen har fem faste valg I dag · Kalender · Folk · Penger · Mer; Markedsføring nås fra Mer. Innboksen står som sak i flisen «Meldinger» under «Må gjøres» («N ubesvarte på Instagram og Facebook», Svar).",
             "hvor": "Admin-ny › toppen, menyen, I dag, Markedsføring, Innboks, Verksted, Alle funksjoner",
             "kode": [
                 {
@@ -4480,10 +4474,7 @@
                     "finnes": [
                         "function stempleKnapp()",
                         "fetch('/api/stempling.php'",
-                        "'●  Stemple ut':'○  Stemple inn'",
-                        "['marked','Markedsføring','✦'],['alle','Alle funksjoner','☷']",
-                        "' ubesvarte i innboks'",
-                        "['Innboks','innboks']"
+                        "'●  Stemple ut':'○  Stemple inn'"
                     ]
                 },
                 {
@@ -4504,13 +4495,22 @@
                 {
                     "fil": "api/admin/oversikt.php",
                     "finnes": [
-                        "'innboksVenter' => $innboksVenter"
+                        "'innboksVenter' => $innboksVenter",
+                        "' ubesvarte på Instagram og Facebook'"
                     ]
                 },
                 {
                     "fil": "tests/nettleser/kjor.sh",
                     "finnes": [
                         "nyadmin-stemple-meny"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/ramme.js",
+                    "finnes": [
+                        "['mer','Mer','☷']",
+                        "tittel:'Markedsføring',tekst:'Kampanjer, SEO, innlegg',href:'#marked'",
+                        "innboks:()=>[link('Svar','#innboks','primary')]"
                     ]
                 }
             ]
@@ -4535,14 +4535,20 @@
         {
             "id": "topp-ovn-inne-idag-kurs",
             "dato": "2026-10-04",
-            "hva": "Ovnen (Ovn er tømt / Råbrann satt / Glasurbrann satt) og «Hvem er inne?» er alltid synlige i toppen ved siden av Stemple; I dag viser dagens kurs og notater ENDRET 2026-10-04 (eieren): «Hvem er inne?» er tatt ut av toppen — det står på I dag. Se adminny-toppen-diskret.",
+            "hva": "Ovnen (Ovn er tømt / Råbrann satt / Glasurbrann satt) og «Hvem er inne?» er alltid synlige i toppen ved siden av Stemple; I dag viser dagens kurs og notater ENDRET 2026-10-04 (eieren): «Hvem er inne?» er tatt ut av toppen — det står på I dag. Se adminny-toppen-diskret. ENDRET 2026-10-08 (eieren, «Ok, bygg det» på visningen «Enklere Lissom-admin»): dagens kurs og Paint on Pots står som fliser under «I dag på verkstedet», sammen med «Inne nå».",
             "hvor": "admin-ny › topp og I dag",
             "kode": [
                 {
                     "fil": "admin-ny/app.js",
                     "finnes": [
-                        "fetch('/api/ovn.php'",
-                        "card('Kurs og notater i dag'"
+                        "fetch('/api/ovn.php'"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/ramme.js",
+                    "finnes": [
+                        "etikett('I dag på verkstedet')",
+                        "tittel:'Inne nå'"
                     ]
                 }
             ]
@@ -4784,15 +4790,9 @@
         {
             "id": "adminny-kjopt-i-dag-dato-ledige",
             "dato": "2026-10-04",
-            "hva": "«Kjøpt i dag» viser kursdatoen (samme format som Kurs › Datoer) og antall ledige plasser på kurskjøp — i admin-ny og gamle admin: klokkeslett · kurs · kursdato · N ledige. Eieren 04.10: «du må endre overalt».",
+            "hva": "«Kjøpt i dag» viser kursdatoen (samme format som Kurs › Datoer) og antall ledige plasser på kurskjøp — i admin-ny og gamle admin: klokkeslett · kurs · kursdato · N ledige. Eieren 04.10: «du må endre overalt». ENDRET 2026-10-08 (eieren, «Ok, bygg det» på visningen «Enklere Lissom-admin»): «Kjøpt i dag» er tatt bort fra I dag i admin-ny (gjelder fortsatt gamle admin).",
             "hvor": "admin-ny › I dag › Kjøpt i dag; gamle admin › Oversikt › Dagens bestillinger",
             "kode": [
-                {
-                    "fil": "admin-ny/app.js",
-                    "finnes": [
-                        "[b.kl,b.hva,b.kursNaar,b.ledige!=null?b.ledige+' ledige':'']"
-                    ]
-                },
                 {
                     "fil": "api/admin/oversikt.php",
                     "finnes": [
@@ -4858,16 +4858,13 @@
         {
             "id": "adminny-butikk-lager",
             "dato": "2026-10-04",
-            "hva": "Butikk i hovedmenyen i admin-ny (mellom Penger og Verksted). Én vare kan ligge i både Nettbutikken og Internt, med felles lager (vareskjemaet: «Hvor skal varen vises?» ☐ Nettbutikken ☐ Internt; migrasjon 252, kolonnen i_nettbutikk, NULL = som før). Filterpiller Alle · Nettbutikk · Internt · Lite på lager N. «Lite på lager» i Butikk og på I dag («2 igjen · min 5 · fyll til 20», Fyll på, Åpne butikken). Fyll på legger antallet til lageret («Lageret er nå N.»). E-postvarselet intern_bestill_mer går også når antall eller min endres for hånd. Kunden: gjester ser varer i nettbutikken, medlemmer i tillegg det som er Internt.",
+            "hva": "Butikk i hovedmenyen i admin-ny (mellom Penger og Verksted). Én vare kan ligge i både Nettbutikken og Internt, med felles lager (vareskjemaet: «Hvor skal varen vises?» ☐ Nettbutikken ☐ Internt; migrasjon 252, kolonnen i_nettbutikk, NULL = som før). Filterpiller Alle · Nettbutikk · Internt · Lite på lager N. «Lite på lager» i Butikk og på I dag («2 igjen · min 5 · fyll til 20», Fyll på, Åpne butikken). Fyll på legger antallet til lageret («Lageret er nå N.»). E-postvarselet intern_bestill_mer går også når antall eller min endres for hånd. Kunden: gjester ser varer i nettbutikken, medlemmer i tillegg det som er Internt. ENDRET 2026-10-08 (eieren, «Ok, bygg det» på visningen «Enklere Lissom-admin»): Butikk nås fra Mer. «Lite på lager» og «Ta ut leire» på I dag er saker i flisen «Butikk» under «Må gjøres» (Bestill mer, Fyll på).",
             "hvor": "admin-ny › Butikk og I dag; api/butikk.php; Min side › internbutikken",
             "kode": [
                 {
                     "fil": "admin-ny/app.js",
                     "finnes": [
-                        "['butikk','Butikk','▢']",
                         "field('hvor','Hvor skal varen vises?','heading'),field('iNettbutikk','Nettbutikken','checkbox'),field('kunMedlemmer','Internt','checkbox')",
-                        "card('Lite på lager'",
-                        "link('Åpne butikken',href('butikk'))",
                         "form('Fyll på · '+navn"
                     ]
                 },
@@ -4903,6 +4900,13 @@
                     "finnes": [
                         "if(f.type==='heading'){grid.append(el('p',{class:'field wide form-heading',text:f.label}));continue;}",
                         "const i=inputs[f.key];if(!i)continue;"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/ramme.js",
+                    "finnes": [
+                        "tittel:'Butikk',tekst:'Varer, handlelister, leire',href:'#butikk'",
+                        "lager:()=>[trykk('Bestill mer'"
                     ]
                 }
             ]
@@ -5955,7 +5959,7 @@
         {
             "id": "folk-kurskort-idag-pop",
             "dato": "2026-10-08",
-            "hva": "Eieren, 8. oktober 2026: Folk åpner på Medlemmer › Aktive. Knappene «Medlemmer» / «Deltakere» og under «Aktive» / «Tidligere medlemmer» (Deltakere: «På kurs nå og kommende» / «Tidligere deltakere») — ingen tall i knappene. Aktive: medlemmer som mangler betaling står først i egen gruppe «Mangler betaling» med rød merkelapp og betalingsteksten, så resten; hele raden åpner medlemskortet. #folk?betaling=mangler viser bare gruppen «Mangler betaling». Deltakere: ett kort per kursdato (kursnavn + «Pågår · samling 2 av 4» / «Starter lør. 18.10 kl. 11:00» / «Avsluttet …») med deltakerne inni og Betalt / Ikke betalt (pameldte.php?kursliste=1); første fane kurs som pågår eller kommer, Tidligere avsluttede kurs nyeste først; Paint on Pots er ikke med. I dag: den store Paint on Pots-boksen øverst er fjernet; Paint on Pots er én rad i «Kurs og notater i dag» («Paint on Pots · 12:00–20:00 · N personer booket»), og raden åpner arket med «Fullt resten av dagen»/«Åpne igjen» og dagslista. Ingen PoP i dag → ingen rad.",
+            "hva": "Eieren, 8. oktober 2026: Folk åpner på Medlemmer › Aktive. Knappene «Medlemmer» / «Deltakere» og under «Aktive» / «Tidligere medlemmer» (Deltakere: «På kurs nå og kommende» / «Tidligere deltakere») — ingen tall i knappene. Aktive: medlemmer som mangler betaling står først i egen gruppe «Mangler betaling» med rød merkelapp og betalingsteksten, så resten; hele raden åpner medlemskortet. #folk?betaling=mangler viser bare gruppen «Mangler betaling». Deltakere: ett kort per kursdato (kursnavn + «Pågår · samling 2 av 4» / «Starter lør. 18.10 kl. 11:00» / «Avsluttet …») med deltakerne inni og Betalt / Ikke betalt (pameldte.php?kursliste=1); første fane kurs som pågår eller kommer, Tidligere avsluttede kurs nyeste først; Paint on Pots er ikke med. I dag: den store Paint on Pots-boksen øverst er fjernet; Paint on Pots er én rad i «Kurs og notater i dag» («Paint on Pots · 12:00–20:00 · N personer booket»), og raden åpner arket med «Fullt resten av dagen»/«Åpne igjen» og dagslista. Ingen PoP i dag → ingen rad. ENDRET 2026-10-08 (eieren, «Ok, bygg det» på visningen «Enklere Lissom-admin»): Paint on Pots er én flis under «I dag på verkstedet» («Paint on Pots · 12:00–20:00 · N personer»), og flisen åpner samme ark (popIdagArk).",
             "hvor": "admin-ny › Folk og I dag",
             "kode": [
                 {
@@ -5965,9 +5969,7 @@
                         "pille('Deltakere',gruppe==='deltakere'",
                         "['Aktive','Tidligere medlemmer']:['På kurs nå og kommende','Tidligere deltakere']",
                         "el('h3',{text:'Mangler betaling'})",
-                        "api('pameldte.php?kursliste=1')",
-                        "popIdagRad().catch(()=>null)",
-                        "e.type!=='pop'"
+                        "api('pameldte.php?kursliste=1')"
                     ],
                     "ikkeFinnes": [
                         "pop?el('div',{style:'margin-bottom:22px'},pop):null",
@@ -5988,6 +5990,14 @@
                     "finnes": [
                         "if (Foresporsel::heltall('kursliste') === 1) {",
                         "AND LOWER(c.tittel) NOT LIKE 'paint on pots%'"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/ramme.js",
+                    "finnes": [
+                        "tittel:'Paint on Pots'",
+                        "onclick:()=>popIdagArk(pop)",
+                        "!['verksted','brenning','pop','notat'].includes(e.type)"
                     ]
                 }
             ]
@@ -6057,7 +6067,7 @@
         {
             "id": "kampanjer-til-medlemmer",
             "dato": "2026-10-08",
-            "hva": "Eieren, 8. oktober 2026 («bygg det»): Kampanjer i admin-ny er én side med «På lissom.no» og «Til medlemmer». Hver kampanje er et kort med av/på-bryter og «Rediger» rett på kortet (redigeringen åpnes på samme sted), «Se som medlem» på medlemskampanjer, og «+ Ny kampanje» der man velger hvor den vises (ingenting forhåndsvalgt). Bryteren på et lissom.no-kort velger kampanjen og slår på Vis/salgsuke. Medlemskampanjen speiles til Medlemskampanje/* og vises som banner på Min side for medlemmer (gammel og ny) når Vis/medlemskampanje er «ja». Min side for medlemmer har kampanjen som egen modul med «Rediger».",
+            "hva": "Eieren, 8. oktober 2026 («bygg det»): Kampanjer i admin-ny er én side med «På lissom.no» og «Til medlemmer». Hver kampanje er et kort med av/på-bryter og «Rediger» rett på kortet (redigeringen åpnes på samme sted), «Se som medlem» på medlemskampanjer, og «+ Ny kampanje» der man velger hvor den vises (ingenting forhåndsvalgt). Bryteren på et lissom.no-kort velger kampanjen og slår på Vis/salgsuke. Medlemskampanjen speiles til Medlemskampanje/* og vises som banner på Min side for medlemmer (gammel og ny) når Vis/medlemskampanje er «ja». Min side for medlemmer har kampanjen som egen modul med «Rediger». ENDRET 2026-10-08 (eieren, «Ok, bygg det» på visningen «Enklere Lissom-admin»): «Ny kampanje» ligger i «+» (#kampanjer?ny=1 åpner redigeringen øverst på siden).",
             "hvor": "admin-ny › Kampanjer, admin-ny › Min side for medlemmer, Min side",
             "kode": [
                 {
@@ -6073,7 +6083,7 @@
                     "finnes": [
                         "const STED={nett:'På lissom.no',medlemmer:'Til medlemmer'};",
                         "role:'switch'",
-                        "button('+ Ny kampanje',newCampaign,'primary')"
+                        "if(ny.paa){ny.paa=false;newCampaign();}"
                     ]
                 },
                 {
@@ -6093,6 +6103,12 @@
                     "fil": "db/migrations/260_kampanjer_til_medlemmer.sql",
                     "finnes": [
                         "ADD COLUMN IF NOT EXISTS publikum VARCHAR(16) NOT NULL DEFAULT 'nett';"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/ramme.js",
+                    "finnes": [
+                        "['★','Ny kampanje',()=>gaa('#kampanjer?ny=1')]"
                     ]
                 }
             ]
@@ -6267,6 +6283,57 @@
                     "fil": "app/lib/booking.php",
                     "finnes": [
                         "PopPris::leggTilbakeLager($bid);"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "enklere-admin",
+            "dato": "2026-10-08",
+            "hva": "Eieren, 8. oktober 2026 («Ok, bygg det» på visningen «Enklere Lissom-admin»), admin-ny på mobil og PC: (1) Menyen har fem faste valg I dag · Kalender · Folk · Penger · Mer (fast bunnlinje på mobil, sidemeny på PC). «Mer» erstatter «Alle funksjoner»; Kurs, Butikk, Verksted, Markedsføring og Innhold nås fra Mer. Tilbake går til forelderen (Mer-sidene til Mer). (2) I dag: «Må gjøres» er seks fliser Meldinger, Medlemmer, Betaling, Kurs, Verksted, Butikk med rødt tall-merke når noe venter, ellers dempet med «Ingenting nytt». Trykk flis → ark med sakene; trykk sak → handlingen; etter handling forsvinner saken og merket teller ned. Sakene kommer fra oversikt.php (maGjores). Under: «I dag på verkstedet» som fliser (kurs, Paint on Pots, «Inne nå»). Omsetning, «Kjøpt i dag», «Tilbakestill rekkefølgen» og piler er borte fra I dag. (3) «+» nede til høyre på alle sider: Ta betalt, Gi tid, Legg ut til medlemmene, Nytt kurs, Ny booking, Ny vare, Ny kampanje, Beskjed til deltakere. «Nytt kurs», «Ny vare», «Ny kampanje» og «Ta betalt» er tatt bort øverst på sidene. (4) Søket finner personer, kurs, varer og funksjoner gruppert (Funksjoner, Personer, Kurs, Varer), med søkeord. (5) Mer er bare fliser: Medlemmene (fremhevet), Kurs, Butikk, Verksted, Markedsføring, Innhold, og dempet Oppsett og Verktøy. (6) Én drakt: oversiktssider er fliser (.flis), ingen forklaringsavsnitt under sideoverskriften, Folk har filtrene bak én «Filter»-knapp.",
+            "hvor": "Admin-ny › alle sider",
+            "kode": [
+                {
+                    "fil": "admin-ny/ramme.js",
+                    "finnes": [
+                        "export const NAV=[['idag','I dag','◉'],['kalender','Kalender','▦'],['folk','Folk','♧'],['penger','Penger','○'],['mer','Mer','☷']];",
+                        "const GRUPPER=[['Meldinger','✉'],['Medlemmer','♧'],['Betaling','kr'],['Kurs','◇'],['Verksted','⌂'],['Butikk','▢']];",
+                        "tekst:n?'':'Ingenting nytt'",
+                        "etikett('Må gjøres')",
+                        "tittel:'Medlemmene',tekst:'Se det de ser · legg ut internt',href:'#medlemmene',fremhevet:true",
+                        "flis({ikon:'⚙',tittel:'Oppsett'",
+                        "['+','Gi tid',()=>gaa('#gaver?ny=1')],['♧','Legg ut til medlemmene',()=>gaa('#medlemmene')]",
+                        "class:'ny-pluss','aria-label':'Ny'"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/app.js",
+                    "finnes": [
+                        "if(authenticated&&!document.querySelector('.ny-pluss'))document.body.append(plussKnapp());",
+                        "[['Funksjoner',[...funk,...spor]],['Personer',persons],['Kurs',kurs],['Varer',varer]]",
+                        "button('Filter',filterArk,",
+                        "MER_SIDER.includes(r)?'mer'"
+                    ],
+                    "ikkeFinnes": [
+                        "'Alle funksjoner','☷'",
+                        "button('Tilbakestill rekkefølgen'",
+                        "card('Kjøpt i dag'",
+                        "button('Nytt kurs',()=>edit(),'primary')",
+                        "button('Ny vare',()=>edit(),'primary')"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/design.css",
+                    "finnes": [
+                        ".page-head h1+p.muted{display:none}",
+                        ".flis-merke{",
+                        ".ny-pluss{"
+                    ]
+                },
+                {
+                    "fil": "api/admin/oversikt.php",
+                    "finnes": [
+                        "'maGjores' => $maGjores,"
                     ]
                 }
             ]

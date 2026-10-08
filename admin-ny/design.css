@@ -75,3 +75,32 @@
 .vare-bilde.tom{border:1.5px dashed #c6b1a0;background:transparent;color:var(--muted);font-size:10px;font-weight:700;line-height:1.05;padding:2px;text-align:center;cursor:pointer}
 /* Neste leirebestilling (eieren 08.10.2026): én skjerm øverst i Handlelister. */
 .leirebestilling{margin-bottom:8px}.leirebestilling>.card+.card{margin-top:22px}.leire-lev{padding-top:16px;margin-top:4px}.leire-lev+.leire-lev{border-top:1px solid var(--line)}.leire-lev h3{margin:0 0 8px}.leire-hvem{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}.leire-frakt{margin:8px 0 12px}.leire-bestilling .row+.row{border-top:1px solid var(--line);padding-top:10px;margin-top:10px}
+/* Enklere admin, én drakt (eieren 08.10.2026, «Ok, bygg det»): oversiktssider er bare fliser (.flis), innholdssider er lister med samme kant, hjørner og farger. Rødt merke bare når noe venter. Ingen forklaringsavsnitt under sideoverskriften. */
+.page-head h1+p.muted{display:none}
+.fliser{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+.flis{position:relative;display:grid;gap:4px;align-content:start;min-height:100px;padding:16px 14px 14px;border:1px solid var(--line);border-radius:var(--radius);background:var(--paper);color:var(--ink);text-align:left;font:inherit;cursor:pointer;min-width:0}
+.flis:hover{border-color:#a2502b}
+.flis-ikon{font-weight:700;color:#a2502b;font-size:17px;line-height:1.2}
+.flis-tittel{font-weight:700;font-size:18px;line-height:1.2;overflow-wrap:break-word;hyphens:auto}
+.flis-tekst{font-size:15px;color:var(--muted);line-height:1.3;overflow-wrap:anywhere}
+.flis-merke{position:absolute;top:10px;right:10px;min-width:26px;height:26px;padding:0 7px;border-radius:999px;background:var(--red);color:#fff;font-weight:700;font-size:15px;display:grid;place-items:center}
+.flis.rolig{opacity:.62}
+.flis.fremhevet{border-color:var(--yellow);background:#ffcf3826}
+.flis-etikett{font-family:'Alegreya Sans',sans-serif;font-size:14px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:26px 2px 10px}
+.idag .page-head+.flis-etikett{margin-top:0}
+.sak-liste{display:grid;gap:8px}
+.sak{display:block;width:100%;text-align:left;padding:13px 15px;border:1px solid var(--line);border-radius:14px;background:var(--paper)}
+.sak:hover{border-color:#a2502b}
+.sak strong,.sak small{display:block}
+.sak-melding{background:var(--ground);border-radius:12px;padding:12px 14px;margin:0 0 14px}
+.sak-ark .card{margin-bottom:14px}
+.search-gruppe{margin:8px 10px 2px;font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.filter-ark .toolbar{display:grid;gap:10px}
+.filter-ark .toolbar select{width:100%}
+.ny-pluss{position:fixed;right:28px;bottom:28px;z-index:22;width:58px;height:58px;border-radius:50%;border:0;background:var(--yellow);color:var(--ink);font-size:32px;font-weight:700;line-height:1;box-shadow:0 6px 20px #4d1d1233}
+@media(max-width:760px){.fliser{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.flis{min-height:86px;padding:12px 9px 10px;border-radius:14px}.flis-tittel{font-size:15px}.flis-tekst{font-size:13px}.flis-ikon{font-size:15px}.flis-merke{top:7px;right:7px;min-width:22px;height:22px;font-size:13px;padding:0 6px}.ny-pluss{right:16px;bottom:calc(84px + env(safe-area-inset-bottom))}body[data-rute=kalender] .ny-pluss{display:none}#arbeid{padding-bottom:170px}}
+.directory.fliser{grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}.directory a.flis{display:grid;padding:16px 14px 14px;border-radius:var(--radius)}
+@media(max-width:760px){.directory.fliser{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.directory a.flis{padding:12px 9px 10px;border-radius:14px}}
+.ma-gjores{grid-template-columns:repeat(6,minmax(0,1fr))}
+@media(max-width:1180px){.ma-gjores{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:360px){.fliser,.ma-gjores,.directory.fliser{grid-template-columns:repeat(2,minmax(0,1fr))}}

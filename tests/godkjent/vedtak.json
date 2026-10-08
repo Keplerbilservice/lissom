@@ -6318,6 +6318,63 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "gammel-admin-inn-1",
+            "dato": "2026-10-08",
+            "hva": "Gammel admin pensjoneres: månedsrapport (med og uten mva per kilde) på Penger, fast Vipps-kode til disken i kassa, slett flere kursdatoer (påmeldte avlyses), skriv ut dagen i kalenderen og «Lag ny adresse» for kalenderabonnementet bygget inn i arbeidsrommet",
+            "hvor": "Arbeidsrommet › Penger, Kasse, Kurs › Datoer, Kalender",
+            "kode": [
+                {
+                    "fil": "admin-ny/app.js",
+                    "finnes": [
+                        "import {manedsrapport} from './utskrift.js';",
+                        "button('Månedsrapport',manedsrapport)",
+                        "slettFlereDatoer(k,refresh)"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/utskrift.js",
+                    "finnes": [
+                        "api('manedsrapport.php?maaned='",
+                        "location.origin+'/betal'",
+                        "export async function skrivUtDag("
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kasse-og-handel.js",
+                    "finnes": [
+                        "button('Fast kode til disken',fastKode)"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kursdatoer-flere.js",
+                    "finnes": [
+                        "api('kurs.php',{handling:'slettdato',oktId:o.oktId})"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kalender.js",
+                    "finnes": [
+                        "api('oversikt.php',{handling:'kalendernokkel'})",
+                        "'Lage ny kalenderadresse?'",
+                        "button('Skriv ut dagen',"
+                    ]
+                },
+                {
+                    "fil": "api/admin/manedsrapport.php",
+                    "finnes": [
+                        "krev_admin();",
+                        "Omsetning::perKilde("
+                    ]
+                },
+                {
+                    "fil": "app/lib/omsetning.php",
+                    "finnes": [
+                        "'sumBruttoOre' => $brutto"
+                    ]
+                }
+            ]
         }
     ]
 }

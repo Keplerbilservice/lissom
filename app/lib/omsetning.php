@@ -327,9 +327,10 @@ final class Omsetning
 
         $kilder = [];
         foreach (self::KILDER as $nokkel => $navn) {
-            $kilder[$nokkel] = ['nokkel' => $nokkel, 'navn' => $navn, 'eksOre' => 0, 'salg' => []];
+            $kilder[$nokkel] = ['nokkel' => $nokkel, 'navn' => $navn, 'eksOre' => 0, 'bruttoOre' => 0, 'salg' => []];
         }
         $sum = 0;
+        $brutto = 0;
         foreach ($rader as $r) {
             $ore = (int) $r['belop_ore'] - (int) ($r['refundert_ore'] ?? 0) + (int) ($r['gavekort_ore'] ?? 0);
             if ($ore === 0) {
@@ -345,6 +346,8 @@ final class Omsetning
                 : implode(' · ', array_filter([(string) ($i['kurs'] ?? ''), (string) (($i['deltaker'] ?? '') ?: ($i['medlem'] ?? ''))]));
             $maate = trim((string) ($r['radmaate'] ?? '')) ?: trim((string) ($r['betalt_maate'] ?? ''));
             $kilder[$kilde]['eksOre'] += $eks;
+            $kilder[$kilde]['bruttoOre'] += $ore; // med mva (Maanedsrapport, 8. oktober 2026)
+            $brutto += $ore;
             $kilder[$kilde]['salg'][] = [
                 'dato'   => (new DateTimeImmutable((string) $r['created_at'], $utc))->setTimezone($oslo)->format('d.m. H:i'),
                 'hva'    => implode(' · ', array_filter([$hva !== '' ? $hva : self::KILDER[$kilde], $maate])),
@@ -352,6 +355,6 @@ final class Omsetning
             ];
             $sum += $eks;
         }
-        return ['sumEksOre' => $sum, 'kilder' => array_values($kilder)];
+        return ['sumEksOre' => $sum, 'sumBruttoOre' => $brutto, 'kilder' => array_values($kilder)];
     }
 }

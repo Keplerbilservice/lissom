@@ -1867,7 +1867,15 @@ final class Booking
      */
     private static function plasserEtterFullRefusjon(int $paymentId): void
     {
+        // Paint on Pots (migrasjon 262): en plass som frigis ved refusjon
+        // legger tilbake det kassa trakk fra lageret for koblede gjenstander.
+        $frigitt = array_map('intval', array_column(DB::alle(
+            "SELECT id FROM bookings WHERE payment_id = :p AND status <> 'refundert'", ['p' => $paymentId]
+        ), 'id'));
         DB::kjor("UPDATE bookings SET status = 'refundert' WHERE payment_id = :p", ['p' => $paymentId]);
+        foreach ($frigitt as $bid) {
+            PopPris::leggTilbakeLager($bid);
+        }
         // L-9: plassen kan ha flere betalinger (Vipps + kontant i Kasse).
         // Da peker «payment_id» paa den siste manuelle, og Vipps-raden
         // naas bare gjennom «payments.booking_id». Sto ikke paameldingen
@@ -1891,6 +1899,7 @@ final class Booking
             // — som naar Vipps-raden var den eneste (Codex, runde 3).
             if (self::betalingerFor((int) $b['id'])['sum'] === 0) {
                 DB::kjor("UPDATE bookings SET status = 'refundert' WHERE id = :b", ['b' => (int) $b['id']]);
+                PopPris::leggTilbakeLager((int) $b['id']);
                 self::revisjon('booking_etter_full_refusjon', 'booking', (int) $b['id'],
                     ['betaling' => $paymentId, 'status' => 'refundert', 'sum' => 0]);
                 continue;

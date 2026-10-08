@@ -382,7 +382,9 @@ final class PopPris
         if (!self::lagerKlar()) {
             return;
         }
-        DB::iTransaksjon(static function () use ($bookingId): void {
+        // Kalles ogsaa inne i en refusjon (Booking::plasserEtterFullRefusjon),
+        // som alt har en transaksjon aapen.
+        $arbeid = static function () use ($bookingId): void {
             foreach (DB::alle(
                 'SELECT id, produkt_id, trukket FROM pop_kasselinjer
                   WHERE booking_id = :b AND produkt_id IS NOT NULL AND trukket > 0 FOR UPDATE',
@@ -392,7 +394,8 @@ final class PopPris
                     ['a' => (int) $l['trukket'], 'p' => (int) $l['produkt_id']]);
                 DB::oppdater('pop_kasselinjer', ['trukket' => 0], ['id' => (int) $l['id']]);
             }
-        });
+        };
+        DB::kobling()->inTransaction() ? $arbeid() : DB::iTransaksjon($arbeid);
     }
 
     /**
@@ -575,8 +578,13 @@ final class PopPris
                 // Lageret (migrasjon 262): koblingen slik den står nå, og det
                 // som alt er trukket for bookingen.
                 $kobling = self::koblinger();
+                // Det som alt er slått inn beholder varen det ble trukket fra
+                // (regnLinjer() tar med produkt_id fra de lagrede linjene).
+                // Dagens kobling gjelder bare nye gjenstander.
                 foreach ($linjer as &$l) {
-                    $l['produkt_id'] = $kobling[$l['nivaa_id'] . '|' . (string) ($l['gjenstand'] ?? '')] ?? null;
+                    if (!array_key_exists('produkt_id', $l)) {
+                        $l['produkt_id'] = $kobling[$l['nivaa_id'] . '|' . (string) ($l['gjenstand'] ?? '')] ?? null;
+                    }
                 }
                 unset($l);
                 $gamle = array_map(static fn(array $r): array => [
@@ -586,7 +594,7 @@ final class PopPris
                 self::justerLager($gamle, $linjer);
             } else {
                 foreach ($linjer as &$l) {
-                    unset($l['gjenstand']);
+                    unset($l['gjenstand'], $l['produkt_id']);
                 }
                 unset($l);
             }
@@ -615,7 +623,7 @@ final class PopPris
      */
     private static function lagredeLinjer(int $bookingId): array
     {
-        $g = DB::harKolonne('pop_kasselinjer', 'gjenstand') ? 'gjenstand' : 'NULL AS gjenstand';
+        $g = DB::harKolonne('pop_kasselinjer', 'produkt_id') ? 'gjenstand, produkt_id' : 'NULL AS gjenstand, NULL AS produkt_id';
         $ut = [];
         foreach (DB::alle(
             "SELECT nivaa_id, {$g}, navn, pris_ore, antall FROM pop_kasselinjer
@@ -623,7 +631,8 @@ final class PopPris
             ['b' => $bookingId]
         ) as $l) {
             $ut[(int) $l['nivaa_id'] . '|' . (string) ($l['gjenstand'] ?? '')][] =
-                ['navn' => (string) $l['navn'], 'prisOre' => (int) $l['pris_ore'], 'antall' => (int) $l['antall']];
+                ['navn' => (string) $l['navn'], 'prisOre' => (int) $l['pris_ore'], 'antall' => (int) $l['antall'],
+                 'produktId' => $l['produkt_id'] !== null ? (int) $l['produkt_id'] : null];
         }
         return $ut;
     }
@@ -658,7 +667,9 @@ final class PopPris
                 }
                 $ta = min($igjen, $l['antall']);
                 $linjer[] = ['nivaa_id' => $id, 'gjenstand' => $g === '' ? null : $g, 'navn' => $l['navn'],
-                             'pris_ore' => $l['prisOre'], 'antall' => $ta];
+                             'pris_ore' => $l['prisOre'], 'antall' => $ta]
+                    // Varen den lagrede linja ble trukket fra, når den er kjent.
+                    + (array_key_exists('produktId', $l) ? ['produkt_id' => $l['produktId']] : []);
                 $sum += $l['prisOre'] * $ta;
                 $igjen -= $ta;
             }

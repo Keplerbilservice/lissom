@@ -70,6 +70,7 @@ if (!$ok || $b === null) {
     $vipps = 0;
     $gave = 0;
     $manuell = 0;
+    $faktura = 0;
     foreach (Booking::betalingerFor((int) $b['id'])['rader'] as $p) {
         if ($p['annullert_at'] !== null || !in_array((string) $p['status'], ['betalt', 'delvis_refundert'], true)) {
             continue;
@@ -77,6 +78,9 @@ if (!$ok || $b === null) {
         $gave += Booking::gavekortBrukt((int) $p['id']);
         if ((string) $p['type'] !== 'manuell') {
             $vipps += max(0, (int) $p['belop_ore'] - (int) $p['refundert_ore']);
+        } elseif ((string) ($p['maate'] ?? '') === 'Faktura') {
+            // Faktura krediteres, den betales ikke tilbake.
+            $faktura += max(0, (int) $p['belop_ore']);
         } else {
             $manuell += max(0, (int) $p['belop_ore']);
         }
@@ -96,6 +100,9 @@ if (!$ok || $b === null) {
         }
         if ($manuell > 0) {
             $linjer[] = $kr($manuell) . ' betaler vi tilbake i verkstedet.';
+        }
+        if ($faktura > 0) {
+            $linjer[] = $kr($faktura) . ' krediteres på fakturaen.';
         }
     }
     $knapp = true;

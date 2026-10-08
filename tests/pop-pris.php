@@ -184,9 +184,27 @@ if (PopPris::lagerKlar()) {
     PopPris::kassa($bL, [['nivaaId' => $liten['id'], 'gjenstand' => $gj, 'antall' => 3]], null);
     $tr = (int) DB::verdi('SELECT SUM(trukket) FROM pop_kasselinjer WHERE booking_id = :b', ['b' => $bL]);
     sjekk('lageret går aldri under null, og bare det som gikk ut er trukket', $lager() === 0 && $tr === 1, $lager() . '/' . $tr);
+    // Kontrollen 08.10: det som er slått inn beholder varen sin; ny kobling
+    // gjelder bare nye gjenstander.
+    $vare2 = DB::settInn('products', ['tittel' => 'Test PoP-kopp 2', 'pris_ore' => 10000, 'mva_prosent' => 25,
+        'kun_medlemmer' => 0, 'status' => 'publisert', 'lager' => 5]);
+    DB::oppdater('products', ['lager' => 5], ['id' => $vare]);
+    [$bK] = $lagBooking(1, 10000);
+    PopPris::kassa($bK, [['nivaaId' => $liten['id'], 'gjenstand' => $gj, 'antall' => 2]], null);
+    PopPris::lagreKoblinger([['nivaaId' => $liten['id'], 'gjenstand' => $gj, 'produktId' => $vare2]]);
+    PopPris::kassa($bK, [['nivaaId' => $liten['id'], 'gjenstand' => $gj, 'antall' => 3]], null);
+    $lager2 = (int) DB::verdi('SELECT lager FROM products WHERE id = :i', ['i' => $vare2]);
+    sjekk('ny kobling: de 2 som var slått inn står på gammel vare, den nye trekker fra ny vare',
+        $lager() === 3 && $lager2 === 4, $lager() . '/' . $lager2);
+    // Full refusjon frigir plassen og legger lageret tilbake.
+    $payK = (int) DB::verdi('SELECT payment_id FROM bookings WHERE id = :i', ['i' => $bK]);
+    DB::oppdater('payments', ['status' => 'refundert', 'refundert_ore' => 10000], ['id' => $payK]);
+    Booking::gjorOppFullRefusjon($payK);
+    $lager2 = (int) DB::verdi('SELECT lager FROM products WHERE id = :i', ['i' => $vare2]);
+    sjekk('full refusjon: lageret tilbake på begge varene', $lager() === 5 && $lager2 === 5, $lager() . '/' . $lager2);
     PopPris::lagreKoblinger([]);
-    DB::kjor('DELETE FROM pop_kasselinjer WHERE booking_id = :b', ['b' => $bL]);
-    DB::kjor('DELETE FROM products WHERE id = :i', ['i' => $vare]);
+    DB::kjor('DELETE FROM pop_kasselinjer WHERE booking_id IN (:b, :k)', ['b' => $bL, 'k' => $bK]);
+    DB::kjor('DELETE FROM products WHERE id IN (:i, :j)', ['i' => $vare, 'j' => $vare2]);
 } else {
     sjekk('migrasjon 262 er kjørt', false);
 }

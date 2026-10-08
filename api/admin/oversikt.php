@@ -888,7 +888,7 @@ $maGjores = (static function () use ($medlemsstatus, $nyeste): array {
         if (!DB::harTabell('membership_applications')) {
             return;
         }
-        foreach (DB::alle("SELECT id, navn, onsket_type FROM membership_applications WHERE status = 'venter' ORDER BY id DESC LIMIT 20") as $r) {
+        foreach (DB::alle("SELECT id, navn, onsket_type FROM membership_applications WHERE status IN ('venter') ORDER BY id DESC LIMIT 20") as $r) {
             $type = (string) ($r['onsket_type'] ?? '');
             $sak('Medlemmer', 'soknad', (int) $r['id'], 'Ny søknad om medlemskap',
                 (string) $r['navn'] . ($type !== '' ? ', ' . $type : ''), 'soknader');
@@ -941,7 +941,7 @@ $maGjores = (static function () use ($medlemsstatus, $nyeste): array {
             "SELECT w.id, w.navn, w.course_id, w.course_session_id, c.tittel, cs.start_tid
                FROM waitlist w JOIN courses c ON c.id = w.course_id
           LEFT JOIN course_sessions cs ON cs.id = w.course_session_id
-              WHERE w.status = 'venter' ORDER BY w.posisjon LIMIT 100"
+              WHERE w.status IN ('venter', 'varslet') ORDER BY w.posisjon LIMIT 100"
         );
         if ($rader === []) {
             return;

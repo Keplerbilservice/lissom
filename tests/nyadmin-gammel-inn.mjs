@@ -34,7 +34,7 @@ try{
   const lapp=await p.evaluate(()=>window.__lapp.join(''));
   assert.ok(lapp.includes(merke+' + Jernoksid 3 %')&&/Batch: B-\d{6}-\d+/.test(lapp)&&lapp.includes('Dato: '),'lappen har navn, dato og batch');
   assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,width+': ingen vannrett rulling');
-  await ark.getByRole('button',{name:'×'}).click();
+  await ark.getByRole('button',{name:'×'}).click({timeout:5000}).catch(()=>p.keyboard.press('Escape'));await ark.waitFor({state:'hidden',timeout:10000});
   // 2) Feil tid — si fra: saken står under Henvendelser.
   await p.goto(`${ADR}/admin-ny.html#foresporsler`);await p.getByRole('heading',{name:'Henvendelser',exact:true}).waitFor();
   await p.locator('article.list-item').filter({hasText:merke}).filter({hasText:'Feil stemplingstid'}).first().waitFor();

@@ -1,0 +1,341 @@
+<?php
+/**
+ * Paint on Pots: prisnivåene, beløpet ved booking og oppgjøret i kassa.
+ *
+ * Eieren, «ok, bygg det» 8. oktober 2026, til to fremvisninger
+ * (GFD76vZ7iEiFgDiaPFf6hu og PU3RwTARY6oVYx6dbwaLwo):
+ *
+ *   - Fire prisnivåer (Liten, Mellom, Stor, Ekstra stor) med gjenstandene,
+ *     redigerbare i admin. Siden viser dem i stedet for «fra 450 kr».
+ *   - 100 kr per person betales med Vipps ved booking. Beløpet står på
+ *     Paint on Pots-kurset (courses.pris_ore, courses.depositum = 1) og
+ *     settes i admin. Det trekkes fra i verkstedet.
+ *   - Avbestilling senest courses.avbestilling_timer før = refusjon via
+ *     Vipps (api/avbestill.php). Senere, eller ikke møtt: beholdes.
+ *   - I kassa slås gjenstandene inn. Bookingens beløp blir summen av dem, og
+ *     det som alt er betalt trekkes fra av seg selv: «skyldig» er beløp minus
+ *     betalt, samme regnestykke som «Ta betalt» bruker for alle påmeldinger.
+ *     Selve pengene registreres der, med de vanlige knappene.
+ *
+ * Beløp i øre som heltall. Prisen hentes alltid fra basen, aldri fra det
+ * nettleseren sender.
+ *
+ * Tåler at migrasjon 260 ikke er kjørt: da finnes ingen nivåer, ingen
+ * kurs er depositum-kurs, og alt er som før.
+ */
+
+declare(strict_types=1);
+
+final class PopPris
+{
+    /** Flest gjenstander av ett nivå på én booking. */
+    public const MAKS_PER_NIVAA = 50;
+
+    public static function klar(): bool
+    {
+        return DB::harTabell('pop_prisnivaer');
+    }
+
+    /**
+     * Nivåene i rekkefølge.
+     *
+     * @return list<array{id:int,navn:string,prisOre:int,pris:string,gjenstander:string,aktiv:bool}>
+     */
+    public static function nivaer(bool $ogsaaAv = false): array
+    {
+        if (!self::klar()) {
+            return [];
+        }
+        $ut = [];
+        foreach (DB::alle(
+            'SELECT id, navn, pris_ore, gjenstander, aktiv FROM pop_prisnivaer'
+            . ($ogsaaAv ? '' : ' WHERE aktiv = 1')
+            . ' ORDER BY rekkefolge, id'
+        ) as $r) {
+            $ut[] = [
+                'id'          => (int) $r['id'],
+                'navn'        => (string) $r['navn'],
+                'prisOre'     => (int) $r['pris_ore'],
+                'pris'        => self::kr((int) $r['pris_ore']),
+                'gjenstander' => trim((string) $r['gjenstander']),
+                'aktiv'       => (int) $r['aktiv'] === 1,
+            ];
+        }
+        return $ut;
+    }
+
+    /**
+     * Lagrer hele lista fra admin. Rader med id oppdateres, rader uten id
+     * legges til, og rader som ikke er med slettes. Linjer som alt er slått
+     * inn i kassa har sin egen kopi av navn og pris, så de røres ikke.
+     *
+     * @param list<array{id?:int|string,navn?:string,pris?:int|float|string,gjenstander?:string}> $rader
+     */
+    public static function lagreNivaer(array $rader): void
+    {
+        if (!self::klar()) {
+            throw new RuntimeException('Kjør oppdateringene først (⚙ Kjør oppdateringer).');
+        }
+        $rene = [];
+        foreach ($rader as $i => $r) {
+            $navn = trim(mb_substr((string) ($r['navn'] ?? ''), 0, 60));
+            $prisRaa = trim(str_replace([' ', "\u{a0}", 'kr', ',-'], '', (string) ($r['pris'] ?? '')));
+            $prisRaa = str_replace(',', '.', $prisRaa);
+            if ($navn === '' && $prisRaa === '') {
+                continue;
+            }
+            if ($navn === '') {
+                throw new RuntimeException('Hvert nivå må ha et navn.');
+            }
+            if (!is_numeric($prisRaa) || (float) $prisRaa <= 0 || (float) $prisRaa > 100000) {
+                throw new RuntimeException('Prisen på «' . $navn . '» må være mellom 1 og 100 000 kroner.');
+            }
+            $rene[] = [
+                'id'          => (int) ($r['id'] ?? 0),
+                'navn'        => $navn,
+                'pris_ore'    => (int) round((float) $prisRaa * 100),
+                'gjenstander' => trim(mb_substr((string) ($r['gjenstander'] ?? ''), 0, 500)),
+                'rekkefolge'  => $i + 1,
+            ];
+        }
+        if ($rene === []) {
+            throw new RuntimeException('Legg inn minst ett prisnivå.');
+        }
+        DB::iTransaksjon(static function () use ($rene): void {
+            $beholdes = [];
+            foreach ($rene as $r) {
+                $id = $r['id'];
+                unset($r['id']);
+                if ($id > 0 && DB::verdi('SELECT id FROM pop_prisnivaer WHERE id = :i', ['i' => $id]) !== null) {
+                    DB::oppdater('pop_prisnivaer', $r + ['aktiv' => 1], ['id' => $id]);
+                } else {
+                    $id = DB::settInn('pop_prisnivaer', $r + ['aktiv' => 1]);
+                }
+                $beholdes[] = (int) $id;
+            }
+            DB::kjor('DELETE FROM pop_prisnivaer WHERE id NOT IN (' . implode(',', $beholdes) . ')');
+        });
+    }
+
+    /** Er kursprisen et beløp ved booking som trekkes fra i verkstedet? */
+    public static function erDepositum(int $kursId): bool
+    {
+        if ($kursId <= 0 || !DB::harKolonne('courses', 'depositum')) {
+            return false;
+        }
+        return (int) DB::verdi('SELECT depositum FROM courses WHERE id = :i', ['i' => $kursId]) === 1;
+    }
+
+    /** Fristen for avbestilling med refusjon, i timer. null = vilkårenes 2 dager. */
+    public static function avbestillingTimer(int $kursId): ?int
+    {
+        if ($kursId <= 0 || !DB::harKolonne('courses', 'avbestilling_timer')) {
+            return null;
+        }
+        $t = DB::verdi('SELECT avbestilling_timer FROM courses WHERE id = :i', ['i' => $kursId]);
+        return $t === null ? null : max(0, (int) $t);
+    }
+
+    /** «500 kr», «1 000 kr» — slik fremvisningen skrev prisene. */
+    public static function kr(int $ore): string
+    {
+        return number_format($ore / 100, 0, ',', "\u{a0}") . "\u{a0}kr";
+    }
+
+    /**
+     * Prislista som én setning, til llms.txt og AI-svarene:
+     * «Liten 500 kr (standard kopp, …), Mellom 700 kr (…) …».
+     */
+    public static function prisliste(): string
+    {
+        $deler = [];
+        foreach (self::nivaer() as $n) {
+            $deler[] = $n['navn'] . ' ' . str_replace("\u{a0}", ' ', $n['pris'])
+                . ($n['gjenstander'] !== '' ? ' (' . $n['gjenstander'] . ')' : '');
+        }
+        return implode(', ', $deler);
+    }
+
+    // ── Bekreftelsen og avbestillingslenka ───────────────────────────────
+
+    /**
+     * «{betaling}» i bekreftelsen for en booking med beløp ved booking
+     * (fremvisningen, steg 2 og 3). Tom for alle andre.
+     *
+     * @param array<string,mixed> $b bookingraden (depositum_ore, course_id)
+     */
+    public static function bekreftelse(array $b): string
+    {
+        $dep = (int) ($b['depositum_ore'] ?? 0);
+        if ($dep <= 0) {
+            return '';
+        }
+        $kr = str_replace("\u{a0}", ' ', self::kr($dep));
+        $kroner = number_format($dep / 100, 0, ',', ' ');
+        $timer = self::avbestillingTimer((int) ($b['course_id'] ?? 0)) ?? 48;
+        $lenke = self::avbestillLenke((int) $b['id']);
+        return 'Betalt: ' . $kr . '. Prisen på gjenstandene betaler du i verkstedet. De ' . $kroner
+            . ' kronene trekkes fra. Avbestiller du senest ' . $timer . ' timer før, får du pengene tilbake. '
+            . 'Møter du ikke, beholdes beløpet.'
+            . ($lenke !== null ? ' Avbestill her: ' . $lenke : '');
+    }
+
+    /** Lenka i bekreftelsen. Koden lages første gang. */
+    public static function avbestillLenke(int $bookingId): ?string
+    {
+        if (!DB::harKolonne('bookings', 'avbestill_kode')) {
+            return null;
+        }
+        $kode = (string) (DB::verdi('SELECT avbestill_kode FROM bookings WHERE id = :i', ['i' => $bookingId]) ?? '');
+        if (preg_match('/^[a-f0-9]{32}$/', $kode) !== 1) {
+            $kode = bin2hex(random_bytes(16));
+            DB::oppdater('bookings', ['avbestill_kode' => $kode], ['id' => $bookingId]);
+        }
+        return rtrim(Config::nettsted(), '/') . '/api/pop-avbestill.php?b=' . $bookingId . '&k=' . $kode;
+    }
+
+    /** Stemmer koden for bookingen? Konstant tid. */
+    public static function kodeStemmer(int $bookingId, string $kode): bool
+    {
+        if ($bookingId <= 0 || preg_match('/^[a-f0-9]{32}$/', $kode) !== 1
+            || !DB::harKolonne('bookings', 'avbestill_kode')) {
+            return false;
+        }
+        $lagret = (string) (DB::verdi('SELECT avbestill_kode FROM bookings WHERE id = :i', ['i' => $bookingId]) ?? '');
+        return $lagret !== '' && hash_equals($lagret, $kode);
+    }
+
+    // ── Kassa ────────────────────────────────────────────────────────────
+
+    /**
+     * Det kassa trenger for én booking: hvem, når, nivåene, det som alt er
+     * slått inn, og hva som er betalt.
+     *
+     * @return array<string,mixed>
+     */
+    public static function kassaData(int $bookingId): array
+    {
+        $b = self::kassaBooking($bookingId, false);
+        $bet = Booking::betalingerFor($bookingId);
+        $linjer = DB::alle(
+            'SELECT nivaa_id, navn, pris_ore, antall FROM pop_kasselinjer WHERE booking_id = :b ORDER BY id',
+            ['b' => $bookingId]
+        );
+        $oslo = new DateTimeZone('Europe/Oslo');
+        $start = (new DateTimeImmutable((string) $b['start_tid'], new DateTimeZone('UTC')))->setTimezone($oslo);
+        return [
+            'bookingId'      => $bookingId,
+            'navn'           => (string) $b['navn'],
+            'antall'         => (int) $b['antall'],
+            'naar'           => Booking::norskDato((string) $b['start_tid']),
+            'dato'           => $start->format('Y-m-d'),
+            'nivaer'         => self::nivaer(),
+            'linjer'         => array_map(static fn(array $l): array => [
+                'nivaaId' => $l['nivaa_id'] !== null ? (int) $l['nivaa_id'] : null,
+                'navn'    => (string) $l['navn'],
+                'prisOre' => (int) $l['pris_ore'],
+                'antall'  => (int) $l['antall'],
+            ], $linjer),
+            'depositumOre'   => (int) $b['depositum_ore'],
+            'betaltOre'      => (int) $bet['sum'],
+            'belopOre'       => (int) $b['belop_ore'],
+            'gjenstanderOre' => $b['gjenstander_ore'] !== null ? (int) $b['gjenstander_ore'] : null,
+            'skyldigOre'     => max(0, (int) $b['belop_ore'] - (int) $bet['sum']),
+        ];
+    }
+
+    /**
+     * Slår inn gjenstandene på bookingen.
+     *
+     * Bookingens beløp blir summen av gjenstandene (aldri lavere enn det som
+     * alt er betalt — penger tilbake er en refusjon, og den gjøres for seg).
+     * Det som er betalt ved booking trekkes dermed fra av seg selv, og resten
+     * står som «skyldig» under «Ta betalt». Kan gjøres om: linjene byttes ut.
+     *
+     * @param array<int|string,int|string> $valg nivå-id => antall
+     * @return array{sumOre:int, betaltOre:int, skyldigOre:int}
+     */
+    public static function kassa(int $bookingId, array $valg, ?int $adminId): array
+    {
+        $nivaer = array_column(self::nivaer(), null, 'id');
+        $linjer = [];
+        $sum = 0;
+        foreach ($valg as $id => $n) {
+            $id = (int) $id;
+            $n = (int) $n;
+            if ($n === 0) {
+                continue;
+            }
+            if ($n < 0 || $n > self::MAKS_PER_NIVAA) {
+                throw new RuntimeException('Antallet må være mellom 0 og ' . self::MAKS_PER_NIVAA . '.');
+            }
+            if (!isset($nivaer[$id])) {
+                throw new RuntimeException('Fant ikke prisnivået. Last siden på nytt.');
+            }
+            $linjer[] = ['nivaa_id' => $id, 'navn' => $nivaer[$id]['navn'], 'pris_ore' => $nivaer[$id]['prisOre'], 'antall' => $n];
+            $sum += $nivaer[$id]['prisOre'] * $n;
+        }
+        if ($linjer === []) {
+            throw new RuntimeException('Velg minst én gjenstand.');
+        }
+
+        return DB::iTransaksjon(static function () use ($bookingId, $linjer, $sum, $adminId): array {
+            self::kassaBooking($bookingId, true);
+            // En betaling som fortsatt er på vei i Vipps kan sette bookingen
+            // til «betalt» når den kommer (Booking::markerBetalt). Da ville
+            // resten for gjenstandene forsvunnet. Vent til den er avklart.
+            $aapen = (int) DB::verdi(
+                "SELECT COUNT(*) FROM payments
+                  WHERE status IN ('opprettet','venter','autorisert')
+                    AND (booking_id = :b OR id = (SELECT payment_id FROM bookings WHERE id = :b2))",
+                ['b' => $bookingId, 'b2' => $bookingId]
+            );
+            if ($aapen > 0) {
+                throw new RuntimeException('Betalingen ved booking er ikke ferdig i Vipps ennå. Prøv igjen om litt.');
+            }
+            DB::kjor('DELETE FROM pop_kasselinjer WHERE booking_id = :b', ['b' => $bookingId]);
+            foreach ($linjer as $l) {
+                DB::settInn('pop_kasselinjer', $l + ['booking_id' => $bookingId, 'registrert_av' => $adminId]);
+            }
+            $betalt = (int) Booking::betalingerFor($bookingId)['sum'];
+            DB::oppdater('bookings', [
+                'belop_ore'       => max($sum, $betalt),
+                'gjenstander_ore' => $sum,
+            ], ['id' => $bookingId]);
+            $st = Booking::settBetaltStatus($bookingId);
+            return ['sumOre' => $sum, 'betaltOre' => $betalt, 'skyldigOre' => (int) $st['skyldig']];
+        });
+    }
+
+    /**
+     * Bookingen, og at den er en Paint on Pots-booking med beløp ved booking
+     * som kan gjøres opp. Eldre bookinger (uten depositum_ore) røres ikke her.
+     *
+     * @return array<string,mixed>
+     */
+    private static function kassaBooking(int $bookingId, bool $laas): array
+    {
+        if (!self::klar() || !DB::harKolonne('bookings', 'gjenstander_ore')) {
+            throw new RuntimeException('Kjør oppdateringene først (⚙ Kjør oppdateringer).');
+        }
+        $b = DB::en(
+            'SELECT b.id, b.status, b.antall, b.belop_ore, b.depositum_ore, b.gjenstander_ore,
+                    COALESCE(m.navn, b.gjest_navn) AS navn, cs.start_tid, cs.course_id
+               FROM bookings b
+               JOIN course_sessions cs ON cs.id = b.course_session_id
+          LEFT JOIN members m ON m.id = b.member_id
+              WHERE b.id = :i' . ($laas ? ' FOR UPDATE' : ''),
+            ['i' => $bookingId]
+        );
+        if ($b === null || !Malebord::gjelder((int) $b['course_id'])) {
+            throw new RuntimeException('Fant ikke Paint on Pots-bookingen.');
+        }
+        if ($b['depositum_ore'] === null) {
+            throw new RuntimeException('Denne bookingen ble gjort før beløpet ved booking. Bruk «Ta betalt».');
+        }
+        if (!in_array((string) $b['status'], ['betalt', 'reservert'], true)) {
+            throw new RuntimeException('Bookingen er ikke aktiv.');
+        }
+        return $b;
+    }
+}

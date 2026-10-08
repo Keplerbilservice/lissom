@@ -104,6 +104,7 @@ spl_autoload_register(static function (string $klasse): void {
         'Oppsett' => 'oppsett.php',
         'Lager' => 'lager.php',
         'Pdftekst' => 'pdftekst.php',
+        'PopPris' => 'poppris.php',
         'Rate' => 'ratelimit.php',
         'Robottekst' => 'robottekst.php',
         'Samlinger' => 'samlinger.php',

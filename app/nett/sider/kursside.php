@@ -303,7 +303,14 @@ $h .= '</div>';
 // ── Boksen: pris og datoene ───────────────────────────────────────────────
 $fmt = static fn(float $n): string => 'kr. ' . number_format((int) round($n), 0, ',', ' ') . ',-';
 $grunn = ($valgt !== null && isset($valgt['prisOre']) && $valgt['prisOre'] !== null) ? (int) $valgt['prisOre'] / 100 : (int) ($kat['prisOre'] ?? 0) / 100;
-if ((!empty($kat['gjenstandIKassa']) || !empty($kat['fraPris'])) && !empty($kat['prisFraOre'])) {
+// Paint on Pots med prisnivaaer (eieren, «ok, bygg det» 8. oktober 2026):
+// boksen viser nivaaene med gjenstandene i stedet for én pris. Kursprisen er
+// beloepet ved booking, og den staar ikke som pris. Ingen «fra»-pris.
+$popNivaer = (array) ($kat['popNivaer'] ?? []);
+if ($popNivaer !== []) {
+    $pris = '';
+    $rabattTeaser = '';
+} elseif ((!empty($kat['gjenstandIKassa']) || !empty($kat['fraPris'])) && !empty($kat['prisFraOre'])) {
     $pris = 'Fra ' . $fmt((int) $kat['prisFraOre'] / 100);
     $rabattTeaser = '';
 } else {
@@ -328,8 +335,22 @@ if ($naar !== '') {
 }
 $oppsummering = implode(' · ', array_filter([$naar, (string) ($kort['duration'] ?? ''), (string) ($kat['nivaaTekst'] ?? '')]));
 
+$prisTopp = '<div style="display: flex; align-items: baseline; gap: 8px 10px; margin-bottom: var(--space-6); flex-wrap: wrap;"><span style="font-family: var(--font-display); font-weight: 800; font-size: min(var(--text-4xl), 10vw); color: var(--text-heading); white-space: nowrap;" class="lx-pris">' . $e($pris) . '</span><span style="font-size: var(--text-sm); color: var(--text-muted);">' . $e($prisNote) . '</span></div>';
+if ($popNivaer !== []) {
+    // Fremvisningen PU3RwTARY6oVYx6dbwaLwo: navn og pris på én linje,
+    // gjenstandene under, og «Glasur og brenning er med i prisen».
+    $prisTopp = '<div class="lx-pop-nivaer" style="margin-bottom: var(--space-6);">';
+    foreach ($popNivaer as $n) {
+        $prisTopp .= '<div style="padding: 10px 0; border-bottom: 1px dashed var(--border-subtle);">'
+            . '<div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px;"><span style="font-weight: 700; color: var(--text-heading);">' . $e((string) $n['navn']) . '</span>'
+            . '<span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--text-heading); white-space: nowrap;">' . $e((string) $n['pris']) . '</span></div>'
+            . ((string) $n['gjenstander'] !== '' ? '<div style="font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">' . $e((string) $n['gjenstander']) . '</div>' : '')
+            . '</div>';
+    }
+    $prisTopp .= '<div style="margin-top: var(--space-3); font-size: var(--text-sm); color: var(--text-body);">Glasur og brenning er med i prisen</div></div>';
+}
 $h .= '<div class="lx-kurs-boks" style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-8); position: sticky; top: 104px;">'
-    . '<div style="display: flex; align-items: baseline; gap: 8px 10px; margin-bottom: var(--space-6); flex-wrap: wrap;"><span style="font-family: var(--font-display); font-weight: 800; font-size: min(var(--text-4xl), 10vw); color: var(--text-heading); white-space: nowrap;" class="lx-pris">' . $e($pris) . '</span><span style="font-size: var(--text-sm); color: var(--text-muted);">' . $e($prisNote) . '</span></div>'
+    . $prisTopp
     . ($rabattTeaser !== '' ? '<div style="font-size: var(--text-sm); color: var(--terracotta-600); font-weight: 600; margin: -8px 0 var(--space-5);">' . $e($rabattTeaser) . '</div>' : '')
     . '<div style="font-size: var(--text-sm); color: var(--text-body); margin: -8px 0 var(--space-5);">' . $e($oppsummering) . '</div>';
 
@@ -514,7 +535,12 @@ if ($erPop) {
     // Spoersmaal og svar. Pris og tid kommer fra kurset; uten dem faller
     // spoersmaalet bort heller enn aa svare noe som ikke stemmer.
     $faq = [];
-    if ($pris !== '' && !$gratis) {
+    if ($popNivaer !== []) {
+        // Prisnivaaene, ikke beloepet ved booking (eieren, 8. oktober 2026).
+        $faq[] = ['q' => 'Hva koster Paint on Pots?', 'a' => trim('Prisen er per gjenstand: '
+            . implode(', ', array_map(static fn(array $n): string => $n['navn'] . ' ' . str_replace("\u{a0}", ' ', (string) $n['pris']), $popNivaer))
+            . '. Glasur og brenning er med i prisen. ' . $innh('Paint on Pots/4/Brødtekst'))];
+    } elseif ($pris !== '' && !$gratis) {
         $prisSvar = str_starts_with($pris, 'Fra ')
             ? 'Prisen er fra ' . mb_substr($pris, 4) . ' og avhenger av gjenstanden du velger.'
             : 'Prisen er ' . $pris . '.';
@@ -557,8 +583,16 @@ if ($erPop) {
         $h .= '</div></div>';
     }
 
-    // Priser.
-    if ($pris !== '' && !$gratis) {
+    // Priser. Med prisnivaaer: de samme nivaaene som i boksen (eieren,
+    // 8. oktober 2026), ikke beloepet ved booking.
+    if ($popNivaer !== []) {
+        $h .= '<div style="' . $boks . '">'
+            . $kicker($innh('Paint on Pots/4/Kicker'))
+            . $h2($innh('Paint on Pots/4/Overskrift'))
+            . str_replace('margin-bottom: var(--space-6);', 'margin-bottom: var(--space-4); max-width: 46ch;', $prisTopp)
+            . $avsnitt($innh('Paint on Pots/4/Brødtekst'))
+            . '</div>';
+    } elseif ($pris !== '' && !$gratis) {
         $h .= '<div style="' . $boks . '">'
             . $kicker($innh('Paint on Pots/4/Kicker'))
             . $h2($innh('Paint on Pots/4/Overskrift'))

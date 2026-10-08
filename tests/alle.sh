@@ -138,6 +138,7 @@ kjor "AI-kommentarsvar" php tests/autosvar.php
 kjor "galleri"       php tests/galleri.php
 kjor "lager"         php tests/lager.php
 kjor "malebord (Paint on Pots)" php tests/malebord.php
+kjor "Paint on Pots: prisnivåer, 100 kr ved booking og kassa" php tests/pop-pris.php
 kjor "skisser"       php tests/skisser.php
 kjor "frakt"         php tests/frakt.php
 kjor "mva, nytt admin" php tests/mva.php

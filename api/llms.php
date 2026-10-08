@@ -62,6 +62,9 @@ try {
         $bit = [];
         if ($k['pris_ore'] > 0) {
             $bit[] = Robottekst::kroner($k['pris_ore']);
+        } elseif ($k['prisliste'] !== '') {
+            // Paint on Pots: prisnivaaene (migrasjon 260).
+            $bit[] = 'per gjenstand: ' . $k['prisliste'];
         }
         if ($k['neste'] !== null) {
             $bit[] = 'neste ' . Robottekst::dato($k['neste']);
@@ -155,7 +158,11 @@ function popLive(string $sv, string $fakta): array
     $pris = '';
     try {
         foreach (Robottekst::kurs() as $k) {
-            if ($k['slug'] === 'paint-on-pots' && $k['pris_ore'] > 0) {
+            // Prisnivaaene naar de finnes (eieren, 8. oktober 2026): ingen
+            // «fra»-pris, og ikke beloepet ved booking.
+            if ($k['slug'] === 'paint-on-pots' && $k['prisliste'] !== '') {
+                $pris = 'per gjenstand: ' . $k['prisliste'] . '. Glasur og brenning er med i prisen';
+            } elseif ($k['slug'] === 'paint-on-pots' && $k['pris_ore'] > 0) {
                 $pris = ($k['fra_pris'] ? 'fra ' : '') . Robottekst::kroner($k['pris_ore']) . ' per gjenstand';
             }
         }

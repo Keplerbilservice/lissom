@@ -7281,10 +7281,12 @@ sjekk('… og slaar av «gjenstand i kassa», som la 300 oppaa',
 if (DB::harTabell('courses') && DB::harKolonne('courses', 'gjenstand_i_kassa')) {
     $pop = DB::en("SELECT pris_ore, gjenstand_i_kassa, status FROM courses WHERE slug = 'paint-on-pots'");
     if ($pop !== null) {
-        // 24. september (migrasjon 209, eierens valg): «Fra kr. 450,-».
-        $mig209 = (string) les_testfil(dirname(__DIR__) . '/db/migrations/209_fra_pris_paa_kurs.sql');
-        $fraMig = preg_match('~pris_ore = (\d+)~', $mig209, $pm) ? (int) $pm[1] : -1;
-        sjekk('Paint on Pots har prisen fra migrasjon 209 i basen', (int) $pop['pris_ore'] === $fraMig,
+        // 8. oktober 2026 (migrasjon 260, eieren «ok, bygg det»): kursprisen
+        // er beloepet per person ved booking, 100 kr. Avloeser «Fra kr.
+        // 450,-» fra migrasjon 209.
+        $mig260 = (string) les_testfil(dirname(__DIR__) . '/db/migrations/260_pop_prisnivaer_og_depositum.sql');
+        $fraMig = preg_match('~SET pris_ore = (\d+)~', $mig260, $pm) ? (int) $pm[1] : -1;
+        sjekk('Paint on Pots har beloepet ved booking fra migrasjon 260 i basen', (int) $pop['pris_ore'] === $fraMig,
             (int) $pop['pris_ore'] . ' oere, migrasjonen sier ' . $fraMig);
         sjekk('… og legger ikke gjenstanden oppaa', (int) $pop['gjenstand_i_kassa'] === 0);
         // Et kurs uten pris far ingen bookingknapp i det hele tatt — knappen

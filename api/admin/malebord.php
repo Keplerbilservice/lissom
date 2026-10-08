@@ -11,6 +11,15 @@
  *                          tilgjengeligheten foer den lagres
  *   POST handling=sjekk    { bookingId, antall } er det plass til nytt antall?
  *
+ * Prisnivaaer og beloep ved booking (eieren, «ok, bygg det» 8. oktober 2026,
+ * migrasjon 260):
+ *   GET  ?kassa=<bookingId>          gjenstandene og betalingene paa én booking
+ *   POST handling=betaling { belop, frist }  beloep per person ved booking (kr)
+ *                                    og avbestillingsfrist (timer)
+ *   POST handling=nivaer   { nivaer: [{id?, navn, pris, gjenstander}] }
+ *   POST handling=kassa    { bookingId, nivaer: {id: antall} } slaar inn
+ *                          gjenstandene; pengene registreres i «Ta betalt»
+ *
  * Eieren, 7. og 8. oktober 2026. Plassgrensen staar paa ressursen «Paint on
  * Pots» under Ressurser og lagres ikke her. Antall, betaling, avbestilling og
  * oppmoete gaar gjennom pamelding.php og «Ta betalt» som for alle andre
@@ -80,6 +89,13 @@ $svar = static function () use (&$kurs, $kursId, $naa, $idag, $gyldigDato): arra
 };
 
 if (Foresporsel::metode() === 'GET') {
+    if (Foresporsel::heltall('kassa') > 0) {
+        try {
+            Svar::json(PopPris::kassaData(Foresporsel::heltall('kassa')));
+        } catch (RuntimeException $e) {
+            Svar::feil($e->getMessage(), 409);
+        }
+    }
     Svar::json($svar());
 }
 
@@ -225,6 +241,53 @@ switch (Foresporsel::tekst('handling')) {
         }
         revider('pop_flyttet', 'booking', (int) $b['id'], ['fra' => $fraOkt, 'til' => $tilOkt, 'dato' => $dato, 'tid' => $tid]);
         Svar::ok($svar() + ['beskjed' => 'Flyttet til ' . $tid . '.']);
+
+    case 'betaling':
+        // Beloepet per person ved booking og fristen for avbestilling med
+        // refusjon. Bare Paint on Pots-kurset. Gjelder nye bookinger; de som
+        // er gjort beholder sitt beloep.
+        if (!DB::harKolonne('courses', 'depositum')) {
+            Svar::feil('Kjør oppdateringene først (⚙ Kjør oppdateringer).', 409);
+        }
+        $kr = str_replace(',', '.', trim(Foresporsel::tekst('belop')));
+        $frist = Foresporsel::heltall('frist', -1);
+        if (!is_numeric($kr) || (float) $kr < 1 || (float) $kr > 5000) {
+            Svar::feil('Beløpet ved booking må være mellom 1 og 5 000 kroner.');
+        }
+        if ($frist < 0 || $frist > 720) {
+            Svar::feil('Fristen må være mellom 0 og 720 timer.');
+        }
+        $ore = (int) round((float) $kr * 100);
+        DB::oppdater('courses', ['pris_ore' => $ore, 'depositum' => 1, 'avbestilling_timer' => $frist], ['id' => $kursId]);
+        revider('pop_betaling', 'course', $kursId, ['pris_ore' => $ore, 'avbestilling_timer' => $frist]);
+        Svar::ok($svar() + ['beskjed' => 'Lagret.']);
+
+    case 'nivaer':
+        $rader = Foresporsel::kropp()['nivaer'] ?? null;
+        if (!is_array($rader)) {
+            Svar::feil('Fant ingen prisnivåer å lagre.');
+        }
+        try {
+            PopPris::lagreNivaer(array_values(array_filter($rader, 'is_array')));
+        } catch (RuntimeException $e) {
+            Svar::feil($e->getMessage());
+        }
+        revider('pop_prisnivaer', 'pop_prisnivaer', null, ['antall' => count(PopPris::nivaer())]);
+        Svar::ok($svar() + ['beskjed' => 'Prisnivåene er lagret.']);
+
+    case 'kassa':
+        $valg = Foresporsel::kropp()['nivaer'] ?? null;
+        if (!is_array($valg)) {
+            Svar::feil('Velg minst én gjenstand.');
+        }
+        $bookingId = Foresporsel::heltall('bookingId');
+        try {
+            $r = PopPris::kassa($bookingId, $valg, $adminId);
+        } catch (RuntimeException $e) {
+            Svar::feil($e->getMessage(), 409);
+        }
+        revider('pop_kassa', 'booking', $bookingId, $r + ['nivaer' => $valg]);
+        Svar::ok($r + ['kassa' => PopPris::kassaData($bookingId)]);
 
     default:
         Svar::feil('Ukjent handling.');

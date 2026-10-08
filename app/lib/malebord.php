@@ -97,6 +97,12 @@ final class Malebord
             'prisOre'    => (int) $k['pris_ore'],
             'ukeplan'    => Apent::ukeplan($id),
             'oppmote'    => Oppmote::kurs(),
+            // Beloep ved booking som trekkes fra i verkstedet, fristen for
+            // avbestilling og prisnivaaene (migrasjon 260, eieren 8. oktober 2026).
+            'depositum'         => PopPris::erDepositum($id),
+            'avbestillingTimer' => PopPris::avbestillingTimer($id),
+            'nivaer'            => PopPris::nivaer(),
+            'prisKlar'          => PopPris::klar() && DB::harKolonne('bookings', 'gjenstander_ore'),
         ];
     }
 
@@ -464,10 +470,13 @@ final class Malebord
         $min  = Apent::plassMinutter($kursId);
         $melding = DB::harKolonne('bookings', 'gjest_melding') ? 'b.gjest_melding' : 'NULL';
         $forskudd = DB::harKolonne('bookings', 'uten_forskudd') ? 'b.uten_forskudd' : '0';
+        // Beloep ved booking og gjenstandene i kassa (migrasjon 260).
+        $dep = DB::harKolonne('bookings', 'gjenstander_ore')
+            ? 'b.depositum_ore, b.gjenstander_ore' : 'NULL AS depositum_ore, NULL AS gjenstander_ore';
         $ut = [];
         foreach (DB::alle(
             "SELECT b.id, b.antall, b.status, b.belop_ore, b.reservert_til, b.betalt_maate,
-                    {$melding} AS melding, {$forskudd} AS uten_forskudd, b.allergier,
+                    {$melding} AS melding, {$forskudd} AS uten_forskudd, b.allergier, {$dep},
                     COALESCE(m.navn, b.gjest_navn) AS navn,
                     COALESCE(m.epost, b.gjest_epost) AS epost,
                     COALESCE(m.telefon, b.gjest_telefon) AS telefon,
@@ -501,6 +510,12 @@ final class Malebord
                 'betaling'  => self::betalingsstatus($r, (int) $bet['sum']),
                 'mott'      => (string) $r['status'] !== 'ikke_mott',
                 'forStatus' => self::forStatus($r, $bet),
+                // Paint on Pots med beloep ved booking: kassa kan slaa inn
+                // gjenstandene. Eldre bookinger (uten depositum_ore) bruker
+                // «Ta betalt» som foer.
+                'depositumOre'   => $r['depositum_ore'] !== null ? (int) $r['depositum_ore'] : null,
+                'gjenstanderOre' => $r['gjenstander_ore'] !== null ? (int) $r['gjenstander_ore'] : null,
+                'kanKassa'       => $r['depositum_ore'] !== null && in_array((string) $r['status'], ['betalt', 'reservert'], true),
             ];
         }
         return $ut;
@@ -515,6 +530,13 @@ final class Malebord
         $belop = (int) $r['belop_ore'];
         if ($belop <= 0) {
             return 'Gratis';
+        }
+        // Paint on Pots med beloep ved booking (eieren, 8. oktober 2026):
+        // betalt ved booking, men gjenstandene er ikke slaatt inn ennaa =
+        // «Delvis betalt». Foerst naar kassa har gjort opp, kan den bli
+        // «Betalt».
+        if (($r['depositum_ore'] ?? null) !== null && ($r['gjenstander_ore'] ?? null) === null && $betaltOre > 0) {
+            return 'Delvis betalt';
         }
         if ($betaltOre >= $belop || ((string) $r['status'] === 'betalt' && Booking::maateGirPenger((string) ($r['betalt_maate'] ?? '')))) {
             return 'Betalt';

@@ -791,12 +791,35 @@ final class Booking
      * og den andre ikke, leser kunden ett tall og faar et annet inn paa
      * konto. Naa er det ett sted, og vilkaarsteksten sier det samme.
      *
+     * Paint on Pots har sin egen frist (eieren, 8. oktober 2026: «avbestilling
+     * senest 24 t før = refusjon via Vipps; senere/ikke møtt = beholdes»),
+     * satt i admin og lagret i courses.avbestilling_timer. Den sendes inn som
+     * $fristTimer. null = vilkaarenes 2 dager, som foer.
+     *
      * @param  float|null $timerIgjen Timer til kursstart. null naar kurset
      *                                ikke har en fastsatt dato.
+     * @param  int|null   $fristTimer Kursets egen frist (PopPris::avbestillingTimer()).
      * @return array{andel: float, regel: string, kunde: string, kanAvbestille: bool}
      */
-    public static function avbestillingsregel(?float $timerIgjen): array
+    public static function avbestillingsregel(?float $timerIgjen, ?int $fristTimer = null): array
     {
+        if ($fristTimer !== null && $timerIgjen !== null && $timerIgjen > 0) {
+            // «Senest 24 timer før»: akkurat 24 timer igjen gir refusjon.
+            if ($timerIgjen >= $fristTimer) {
+                return [
+                    'andel' => 1.0,
+                    'regel' => 'Avbestilt minst ' . $fristTimer . ' timer foer: full refusjon.',
+                    'kunde' => 'Full refusjon fram til ' . $fristTimer . ' timer før.',
+                    'kanAvbestille' => true,
+                ];
+            }
+            return [
+                'andel' => 0.0,
+                'regel' => 'Avbestilt mindre enn ' . $fristTimer . ' timer foer: beloepet beholdes.',
+                'kunde' => 'Nærmere enn ' . $fristTimer . ' timer før refunderes ikke.',
+                'kanAvbestille' => false,
+            ];
+        }
         if ($timerIgjen === null) {
             return [
                 'andel' => 1.0,
@@ -968,6 +991,11 @@ final class Booking
         if ((int) $fra === 1) {
             return 0.0;
         }
+        // Beloepet ved booking paa Paint on Pots (migrasjon 260) er ikke en
+        // pris aa gi rabatt paa — det trekkes fra i verkstedet.
+        if (self::erDepositum($kurs)) {
+            return 0.0;
+        }
 
         $dreiing = $tema === 'Dreiing'
             || str_contains(mb_strtolower((string) ($kurs['tittel'] ?? '')), 'dreie');
@@ -990,6 +1018,22 @@ final class Booking
         );
 
         return max(0.0, min(100.0, (float) ($best ?? 0)));
+    }
+
+    /**
+     * Er kursprisen beloepet som betales ved booking og trekkes fra i
+     * verkstedet (Paint on Pots, migrasjon 260)? Leser «depositum» fra raden
+     * naar den er med, ellers fra kurset.
+     *
+     * @param array<string,mixed> $kurs
+     */
+    public static function erDepositum(array $kurs): bool
+    {
+        if (array_key_exists('depositum', $kurs)) {
+            return (int) $kurs['depositum'] === 1;
+        }
+        $kursId = (int) ($kurs['course_id'] ?? 0);
+        return $kursId > 0 && PopPris::erDepositum($kursId);
     }
 
     /** Medlemsrabatten paa kurs, i prosent. */
@@ -1033,7 +1077,8 @@ final class Booking
         $kanMedlem = $medlemsrabatt && $antall >= 1 && $enhet > 0
             && (string) ($kurs['tema'] ?? '') !== 'Medlemskap'
             && (int) $fra !== 1
-            && (int) ($kurs['gjenstand_i_kassa'] ?? 0) !== 1;
+            && (int) ($kurs['gjenstand_i_kassa'] ?? 0) !== 1
+            && !self::erDepositum($kurs);
 
         if (!$kanMedlem) {
             $netto = (int) round($brutto * (1 - $rabatt / 100));
@@ -1086,6 +1131,10 @@ final class Booking
         // hen maler naar hen staar der.
         $kassaFelt = DB::harKolonne('courses', 'gjenstand_i_kassa')
             ? 'c.gjenstand_i_kassa' : '0 AS gjenstand_i_kassa';
+        // Beloep ved booking som trekkes fra i verkstedet (Paint on Pots,
+        // migrasjon 260). Uten kolonna er ingen kurs det.
+        $kassaFelt .= DB::harKolonne('courses', 'depositum')
+            ? ', c.depositum' : ', 0 AS depositum';
         $okt = DB::en(
             'SELECT cs.id, cs.course_id, cs.start_tid,
                     c.tittel, ' . $egenPris . ' AS pris_ore, c.type, c.tema, c.slug,
@@ -1135,7 +1184,12 @@ final class Booking
         // rett til serveren skal ikke kunne hoppe over betalingen naar
         // ⊙ Synlighet sier at kurs skal betales paa forhaand. Samme regel som
         // fast trekk i api/bli-medlem.php.
-        $oppmote = $utenForskudd && !$gratis && Oppmote::kurs();
+        // Paint on Pots med beloep ved booking (eieren, 8. oktober 2026:
+        // «100 kr per person betales med Vipps ved booking»): da finnes ikke
+        // «betal ved oppmoete». Katalogen tilbyr det ikke, og et kall rett hit
+        // avvises med samme beskjed som naar bryteren er av.
+        $depositum = (int) ($okt['depositum'] ?? 0) === 1;
+        $oppmote = $utenForskudd && !$gratis && !$depositum && Oppmote::kurs();
         if ($utenForskudd && !$gratis && !$oppmote) {
             throw new RuntimeException('Dette kurset må betales når du melder deg på.');
         }
@@ -1174,7 +1228,7 @@ final class Booking
         $reservasjon = DB::iTransaksjon(static function () use (
             $okt, $oktId, $antall, $navn, $epost, $telefon, $medlemId,
             $folgeMedlem, $gratis, $belop, $aBetale, $gavekortId, $gavekortOre, $rabatt, $referanse,
-            $allergier, $oppmote, $gjestMelding
+            $allergier, $oppmote, $gjestMelding, $depositum
         ): array {
             // Plassen sjekkes en gang til inne i transaksjonen. Uten dette kunne
             // to samtidige bookinger begge se den siste plassen som ledig.
@@ -1235,6 +1289,12 @@ final class Booking
             ];
             if ($oppmote && DB::harKolonne('bookings', 'uten_forskudd')) {
                 $felter['uten_forskudd'] = 1;
+            }
+            // Det som betales ved booking. Kassa trekker fra det som faktisk
+            // er betalt; dette er tallet bekreftelsen og admin viser, og det
+            // som skiller en slik booking fra en eldre (migrasjon 260).
+            if ($depositum && !$gratis && DB::harKolonne('bookings', 'depositum_ore')) {
+                $felter['depositum_ore'] = $belop;
             }
 
             // Kolonnen kommer med migrasjon 057. Er den ikke kjort, skal en
@@ -2195,9 +2255,13 @@ final class Booking
             // oppmoete, staar maaten — ikke summen. Migrasjon 197 legger
             // «{betaling}» bakerst i malen, men bare hvis den ikke er
             // skrevet om for haand.
+            //
+            // Paint on Pots med beloep ved booking (eieren, 8. oktober 2026,
+            // fremvisningen steg 3): det som er betalt, at det trekkes fra i
+            // verkstedet, avbestillingsfristen og lenka for aa avbestille.
             'betaling' => (int) ($b['uten_forskudd'] ?? 0) === 1
                 ? 'Du betaler ved oppmøte — kontant eller Vipps.'
-                : '',
+                : PopPris::bekreftelse($b),
             // Samlingskortene. Ikke et felt eieren skriver i malen — Varsel::
             // oppsett() tegner dem som egne kort under faktakortet.
             Varsel::SAMLINGER => $samlingskort !== [] ? (string) json_encode($samlingskort, JSON_UNESCAPED_UNICODE) : '',

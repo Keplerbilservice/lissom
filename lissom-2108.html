@@ -3774,10 +3774,25 @@ window.__resources = {
             </div>
 
             <div class="lx-kurs-boks" style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-8); position: sticky; top: 104px;">
+              <sc-if value="{{ bPrisVis }}" hint-placeholder-val="{{ true }}">
               <div style="display: flex; align-items: baseline; gap: 8px 10px; margin-bottom: var(--space-6); flex-wrap: wrap;">
                 <span style="font-family: var(--font-display); font-weight: 800; font-size: min(var(--text-4xl), 10vw); color: var(--text-heading); white-space: nowrap;" class="lx-pris">{{ bPris }}</span>
                 <span style="font-size: var(--text-sm); color: var(--text-muted);">{{ bPrisNote }}</span>
               </div>
+              </sc-if>
+              <!-- Paint on Pots: prisnivaaene med gjenstandene (eieren, «ok, bygg det»
+                   8. oktober 2026). Samme som boksen paa kurssida (kursside.php). -->
+              <sc-if value="{{ bPopNivaerVis }}" hint-placeholder-val="{{ false }}">
+                <div class="lx-pop-nivaer" style="margin-bottom: var(--space-6);">
+                  <sc-for list="{{ bPopNivaer }}" as="n" hint-placeholder-count="4">
+                    <div style="padding: 10px 0; border-bottom: 1px dashed var(--border-subtle);">
+                      <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px;"><span style="font-weight: 700; color: var(--text-heading);">{{ n.navn }}</span><span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--text-heading); white-space: nowrap;">{{ n.pris }}</span></div>
+                      <div style="font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">{{ n.gjenstander }}</div>
+                    </div>
+                  </sc-for>
+                  <div style="margin-top: var(--space-3); font-size: var(--text-sm); color: var(--text-body);">Glasur og brenning er med i prisen</div>
+                </div>
+              </sc-if>
               <sc-if value="{{ bPrisAntallNote }}" hint-placeholder-val="{{ false }}">
                 <div style="font-size: var(--text-sm); color: var(--text-muted); margin: -14px 0 var(--space-5);">{{ bPrisAntallNote }}</div>
               </sc-if>
@@ -3998,6 +4013,10 @@ window.__resources = {
                       <div>{{ bPopOppsDag }}</div>
                       <div>{{ bPopOppsAntall }}</div>
                       <div>{{ bPopOppsBetaling }}</div>
+                      <sc-if value="{{ bPopDepositum }}" hint-placeholder-val="{{ false }}">
+                        <div style="margin-top: 8px; background: var(--surface-card); border-radius: var(--radius-sm); padding: 8px 10px; font-weight: 700;">{{ bPopDepTrekk }}</div>
+                        <div style="margin-top: 6px; font-size: var(--text-xs); color: var(--text-muted);">{{ bPopDepAvbestill }}</div>
+                      </sc-if>
                     </div>
                   </sc-if>
                   <div style="height: var(--space-5);"></div>
@@ -34184,6 +34203,10 @@ class Component extends DCLogic {
   rabattFor(kurs, antall) {
     const tema = (kurs && kurs.tema) || '';
     if (tema === 'Medlemskap' || antall < 2) return 0;
+    // Paint on Pots: beloepet ved booking trekkes fra i verkstedet, og gir
+    // ingen grupperabatt (migrasjon 260) — som Booking::rabattProsent().
+    const katD = (this.state.katalog || []).find(x => x.tittel === ((kurs && (kurs.title || kurs.tittel)) || ''));
+    if (katD && katD.depositum) return 0;
     return this.nivaerFor(kurs)
       .filter(r => r.aktiv && antall >= (parseInt(r.min, 10) || 0))
       .reduce((m, r) => Math.max(m, parseFloat(r.prosent) || 0), 0);
@@ -59972,6 +59995,21 @@ class Component extends DCLogic {
       bPopOppsAntall: this.valgtAntall() + (this.valgtAntall() === 1 ? ' person' : ' personer'),
       bPopOppsBetaling: 'Å betale: ' + this.bookSum()
         + ((this.state.valgtKurs || {}).utenForskudd ? ' — med Vipps nå, eller ved besøket.' : ' — med Vipps nå.'),
+      // Beloep ved booking (fremvisningen GFD76vZ7iEiFgDiaPFf6hu, steg 2):
+      // det trekkes fra i verkstedet, og avbestillingsregelen staar under.
+      bPopDepositum: !!this.katalogKurs().depositum,
+      bPopDepTrekk: (() => {
+        const n = this.valgtAntall();
+        const kr = Math.round((parseInt(this.katalogKurs().prisOre, 10) || 0) / 100 * n).toLocaleString('nb-NO');
+        return kr + ' kr trekkes fra når ' + (n === 1 ? 'du betaler' : 'dere betaler') + ' i verkstedet.';
+      })(),
+      bPopDepAvbestill: 'Avbestiller du senest ' + (this.katalogKurs().avbestillingTimer ?? 48)
+        + ' timer før, får du pengene tilbake. Møter du ikke, beholdes beløpet.',
+      // Prisnivaaene i boksen i stedet for én pris (fremvisningen
+      // PU3RwTARY6oVYx6dbwaLwo).
+      bPopNivaer: this.katalogKurs().depositum ? (this.katalogKurs().popNivaer || []) : [],
+      bPopNivaerVis: !!(this.katalogKurs().depositum && (this.katalogKurs().popNivaer || []).length),
+      bPrisVis: !(this.katalogKurs().depositum && (this.katalogKurs().popNivaer || []).length),
       bookBetalLinje: !this.state.innlogget
         ? 'Du logger inn med Vipps først — så betaler du ' + this.bookSum()
         : 'Du betaler ' + this.bookSum(),
@@ -60663,7 +60701,7 @@ class Component extends DCLogic {
         // om prisFraOre skulle mangle og visningen under ikke slaar til.
         const katM = (this.state.katalog || []).find(x => x.tittel === (k.title || k.tittel || '')) || {};
         const mPst = (this.state.innlogget && k.tema !== 'Medlemskap' && k.price !== 'Gratis' && grunn > 0
-            && !katM.gjenstandIKassa && !katM.fraPris)
+            && !katM.gjenstandIKassa && !katM.fraPris && !katM.depositum)
           ? (Number(this.state.medlemsrabatt) || 0) : 0;
         const netto = mPst > 0
           ? grunn * (1 - Math.max(rabatt, mPst) / 100) + grunn * (antall - 1) * (1 - rabatt / 100)
@@ -60676,6 +60714,11 @@ class Component extends DCLogic {
         // kommer med kurset, saa det aldri kan bli lavere enn det kassa
         // faktisk krever.
         const kat2 = (this.state.katalog || []).find(x => x.tittel === (k.title || k.tittel || ''));
+        // Paint on Pots med prisnivaaer (eieren, 8. oktober 2026): boksen
+        // viser nivaaene, ikke beloepet ved booking som en pris.
+        if (kat2 && kat2.depositum && (kat2.popNivaer || []).length) {
+          return { bPris: '', bPrisAntallNote: '', bRabattLinje: '', bRabattTeaser: '' };
+        }
         if (kat2 && (kat2.gjenstandIKassa || kat2.fraPris) && kat2.prisFraOre) {
           return {
             bPris: 'Fra ' + fmt(kat2.prisFraOre / 100 * antall),

@@ -27,27 +27,58 @@ require __DIR__ . '/_boot.php';
 
 Foresporsel::krevMetode('POST');
 Foresporsel::krevSammeOpphav();
-$medlem = krev_medlem();
-Rate::sjekk('avbestill', maks: 10, vindu: 3600, nokkel: (string) $medlem['id']);
 
 $bookingId = Foresporsel::heltall('bookingId');
 
+// ── Lenka i bekreftelsen (Paint on Pots, migrasjon 260) ─────────────────
+//
+// Eieren, 8. oktober 2026: bekreftelsen har en lenke for aa avbestille, og
+// de fleste som booker Paint on Pots har ingen konto. Lenka har en personlig
+// kode (bookings.avbestill_kode) og virker uten innlogging — som kursbeviset.
+// Uten kode gjelder det som foer: bare den innloggede, og bare egne plasser.
+$kode = Foresporsel::tekst('k');
+$medKode = $kode !== '' && PopPris::kodeStemmer($bookingId, $kode);
+if ($kode !== '' && !$medKode) {
+    Rate::sjekk('avbestill-kode', maks: 10, vindu: 3600);
+    Svar::feil('Lenken virker ikke.', 404);
+}
+$medlem = $medKode ? null : krev_medlem();
+Rate::sjekk('avbestill', maks: 10, vindu: 3600,
+    nokkel: $medlem !== null ? (string) $medlem['id'] : 'booking-' . $bookingId);
+
 $b = DB::en(
     'SELECT b.*, c.tittel, c.type, cs.start_tid, p.vipps_reference, p.belop_ore AS betalt_ore,
-            p.refundert_ore, p.status AS betalingsstatus, p.id AS pid
+            p.refundert_ore, p.status AS betalingsstatus, p.id AS pid,
+            m.navn AS m_navn, m.epost AS m_epost, m.telefon AS m_telefon
        FROM bookings b
        JOIN courses c ON c.id = b.course_id
   LEFT JOIN course_sessions cs ON cs.id = b.course_session_id
   LEFT JOIN payments p ON p.id = b.payment_id
-      WHERE b.id = :i AND b.member_id = :m',
-    ['i' => $bookingId, 'm' => $medlem['id']]
+  LEFT JOIN members m ON m.id = b.member_id
+      WHERE b.id = :i' . ($medlem !== null ? ' AND b.member_id = :m' : ''),
+    $medlem !== null ? ['i' => $bookingId, 'm' => $medlem['id']] : ['i' => $bookingId]
 );
 
 if ($b === null) {
     Svar::feil('Fant ikke plassen din.', 404);
 }
+// Hvem kvitteringen gaar til: medlemmet, eller den som booket.
+$kontakt = $medlem !== null
+    ? ['navn' => (string) $medlem['navn'], 'epost' => $medlem['epost'], 'telefon' => $medlem['telefon']]
+    : [
+        'navn'    => (string) ($b['m_navn'] ?: $b['gjest_navn']),
+        'epost'   => $b['m_epost'] ?: $b['gjest_epost'],
+        'telefon' => $b['m_telefon'] ?: $b['gjest_telefon'],
+    ];
 if ($b['status'] === 'avbestilt' || $b['status'] === 'refundert') {
     Svar::feil('Denne plassen er allerede avbestilt.', 409);
+}
+// Lenka i bekreftelsen avbestiller bare en plass som ikke har vaert ennaa,
+// og som ikke er gjort opp i kassa.
+if ($medKode && (!in_array((string) $b['status'], ['betalt', 'reservert'], true)
+    || $b['start_tid'] === null || strtotime((string) $b['start_tid'] . ' UTC') <= time()
+    || ($b['gjenstander_ore'] ?? null) !== null)) {
+    Svar::feil('Denne plassen kan ikke avbestilles her lenger. Ta kontakt med oss.', 409);
 }
 
 // --- Betalingene paa plassen ----------------------------------------------
@@ -107,7 +138,9 @@ if ($betalt === 0 && $gavekort === 0) {
     // Selve regelen staar i Booking::avbestillingsregel(). Den samme brukes
     // av api/mine-plasser.php, som forteller kunden hva hen faar — sto den to
     // steder, kunne de si hver sitt om de samme pengene.
-    $r = Booking::avbestillingsregel($timerIgjen);
+    // Paint on Pots har sin egen frist (courses.avbestilling_timer). Andre
+    // kurs: null, og vilkaarenes 2 dager gjelder som foer.
+    $r = Booking::avbestillingsregel($timerIgjen, PopPris::avbestillingTimer((int) $b['course_id']));
     $andel = $r['andel'];
     $regel = $r['regel'];
 }
@@ -121,10 +154,13 @@ $manuelt = $forHaand > 0;
 
 $harClaim = false;
 $claim = static function () use ($bookingId, $medlem, $b, &$harClaim, $gavedeler, $andel, &$gaveGitt): void {
+    // Med kode: den samme koden som ble sjekket over, saa en byttet kode
+    // ikke kan avbestille.
     $endret = DB::kjor(
     "UPDATE bookings SET status = 'avbestilt', avbestilt_at = UTC_TIMESTAMP()
-      WHERE id = :i AND member_id = :m AND status = :s AND avbestilt_at IS NULL",
-    ['i' => $bookingId, 'm' => $medlem['id'], 's' => $b['status']]
+      WHERE id = :i AND " . ($medlem !== null ? 'member_id = :m' : 'avbestill_kode = :m') . "
+        AND status = :s AND avbestilt_at IS NULL",
+    ['i' => $bookingId, 'm' => $medlem !== null ? $medlem['id'] : (string) $b['avbestill_kode'], 's' => $b['status']]
     )->rowCount();
     if ($endret !== 1) {
         throw new RuntimeException('Denne plassen er allerede avbestilt.', 409);
@@ -201,10 +237,10 @@ revider('avbestilling', 'booking', $bookingId, [
 ]);
 
 Varsel::mal('avbestilling', [
-    'epost'   => $medlem['epost'],
-    'telefon' => $medlem['telefon'],
+    'epost'   => $kontakt['epost'],
+    'telefon' => $kontakt['telefon'],
 ], [
-    'navn'  => (string) $medlem['navn'],
+    'navn'  => $kontakt['navn'],
     'kurs'  => (string) $b['tittel'] . ($b['start_tid'] ? ' — ' . Booking::norskDato((string) $b['start_tid']) : ''),
     // Refusjonen staar bare i e-posten naar den faktisk skjer. Tomme felt
     // fjerner avsnittet og radene (Varsel::oppsett()).

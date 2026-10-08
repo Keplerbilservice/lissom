@@ -32,7 +32,7 @@ function maGjores(d,ctx,mer){
  const sett=d.settPaaServer?new Set():settLes();
  /* Idé 3, 4, 5 (08.10): saker fra ma-gjores-mer.php; henting som «Ovnen er ferdig» dekker, tas ut. */
  const dekker=new Set(mer?.dekker||[]);
- const saker=[...(d.maGjores||[]).filter(s=>!(s.type==='pamelding'&&sett.has(s.id))&&!(s.type==='henting'&&dekker.has(s.id))),...(mer?.saker||[])];
+ const saker=[...(d.maGjores||[]).filter(s=>!(s.type==='pamelding'&&(s.ider||[s.id]).every(i=>sett.has(i)))&&!(s.type==='henting'&&dekker.has(s.id))),...(mer?.saker||[])];
  const gjort=new Set();const nokkel=s=>s.type+':'+s.id;
  const igjen=g=>saker.filter(s=>s.gruppe===g&&!gjort.has(nokkel(s)));
  const boks=el('div',{class:'fliser ma-gjores'});
@@ -53,7 +53,7 @@ function maGjores(d,ctx,mer){
    frys:()=>[trykk('Godkjenn frys',async()=>{const r=await api('frys.php',{handling:'godkjenn',id:s.id});ferdig(r.beskjed||'Frysen er godkjent.');},'primary'),trykk('Avslå',async()=>{const r=await api('frys.php',{handling:'avslag',id:s.id});ferdig(r.beskjed||'Frysen er avslått.');})],
    bidrag:()=>[s.bilde?trykk('Godkjenn til galleriet',async()=>{const r=await api('medlemsforslag.php',{handling:'godkjenn',id:s.id,instagram:'0',galleri:'1'});ferdig(r.beskjed||'Godkjent til galleriet.');},'primary'):link('Godkjenn','#medlemsbidrag','primary'),trykk('Avvis',async()=>{if(!await confirm('Avvis','Avvis bidraget. Opplastingen slettes.','Avvis'))return;const r=await api('medlemsforslag.php',{handling:'avvis',id:s.id});ferdig(r.beskjed||'Bidraget er avvist.');},'danger')],
    betaling:()=>[button('Åpne medlemmet',()=>{ark.close();setTimeout(()=>ctx.medlem(s.id),0);},'primary')],
-   pamelding:()=>[trykk('Sett som sett',async()=>{const r=await api('pamelding.php',{handling:'sett',id:s.id});if(!r||!r.lagret)settLegg(s.id);ferdig('Satt som sett.');},'primary'),link('Åpne kurset','#'+s.rute)],
+   pamelding:()=>[trykk('Sett som sett',async()=>{for(const id of s.ider||[s.id]){const r=await api('pamelding.php',{handling:'sett',id});if(!r||!r.lagret)settLegg(id);}ferdig('Satt som sett.');},'primary'),link('Åpne kurset','#'+s.rute)],
    venteliste:()=>[trykk('Tilby plassen til '+(s.fornavn||'første på lista'),async()=>{const r=await api('venteliste.php',{handling:'varsle',id:s.id});ferdig(r.beskjed);},'primary')],
    henting:()=>[button('Send «Klar til henting»',()=>{ark.close();setTimeout(()=>ctx.henting(s.id),0);},'primary')],
    leire:()=>[link('Åpne bestillingen','#handlelister','primary')],

@@ -965,14 +965,33 @@ $maGjores = (static function () use ($medlemsstatus, $nyeste): array {
             ), 'booking_id')));
         }
     });
+    // Samme person på samme kurs blir én sak (eieren 08.10: «Ny påmelding: Sara
+    // Kolberg» kom to ganger). «Sett som sett» setter alle bookingene i saken.
+    $pameldinger = [];
     foreach ($nyeste as $b) {
         if (isset($settId[(int) $b['id']])) {
             continue;
         }
-        $sak('Kurs', 'pamelding', (int) $b['id'], 'Ny påmelding: ' . (string) $b['navn'],
+        $hvem = mb_strtolower(trim((string) ($b['epost'] ?: $b['navn'])));
+        $p = &$pameldinger[$hvem . '|' . mb_strtolower((string) $b['tittel'])];
+        $p ??= ['b' => $b, 'ider' => [], 'plasser' => 0, 'datoer' => [], 'betalt' => true];
+        $p['ider'][] = (int) $b['id'];
+        $p['plasser'] += max(1, (int) $b['antall']);
+        if ($b['start_tid']) {
+            $p['datoer'][] = Booking::norskDato((string) $b['start_tid']);
+        }
+        $p['betalt'] = $p['betalt'] && $b['status'] === 'betalt';
+        unset($p);
+    }
+    foreach ($pameldinger as $p) {
+        $b = $p['b'];
+        $flere = count($p['ider']) > 1;
+        $sak('Kurs', 'pamelding', (int) $b['id'], 'Ny påmelding: ' . (string) $b['navn']
+                . ($flere ? ' (' . $p['plasser'] . ' plasser)' : ''),
             implode(' · ', array_filter([(string) $b['tittel'],
-                $b['start_tid'] ? Booking::norskDato((string) $b['start_tid']) : '',
-                $b['status'] === 'betalt' ? 'Betalt' : 'Ikke betalt'])), 'pameldte?booking=' . (int) $b['id']);
+                implode(', ', array_unique($p['datoer'])),
+                $p['betalt'] ? 'Betalt' : 'Ikke betalt'])), 'pameldte?booking=' . (int) $b['id'],
+            ['ider' => $p['ider']]);
     }
     $trygt('venteliste', static function () use ($sak): void {
         $rader = DB::alle(

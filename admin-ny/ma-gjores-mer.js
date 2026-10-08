@@ -19,7 +19,7 @@ export function merHandlinger(s,{trykk,ferdig,lukk,grenser}){
   tregt:()=>[
    trykk('Lag markedsføring',async()=>{if(!await confirm('Lag markedsføring?',`Lag en kursboost for «${s.kurs}»: artikkel, innlegg, nyhetsbrev og melding til medlemmer. Dette bruker AI-budsjettet. Ingenting publiseres før du har kontrollert det.`,'Lag markedsføring'))return;toast('AI-en skriver. Dette tar gjerne et halvt minutt.');const r=await api('ai.php',{handling:'kursboost',kursId:s.kursId});lukk();if(r.id)await boostPackage(r.id,()=>{});},'primary'),
    button('Send til medlemmene',()=>{lukk();const q=new URLSearchParams({ny:'1',til:'medlemmer',emne:'Ledige plasser: '+s.kurs,tekst:`Hei {navn}! Det er fortsatt ledige plasser på ${s.kurs}, ${s.dato}. Meld deg på her: ${s.url}`});location.hash='#beskjeder?'+q.toString();}),
-   trykk('Vent en uke',async()=>{const r=await api('ma-gjores-mer.php',{handling:'skjul',nokkel:'tregt:'+s.id});ferdig(r.beskjed);}),
+   trykk('Vent en uke',async()=>{const r=await api('ma-gjores-mer.php',{handling:'skjul',nokkel:s.nokkel||'tregt:'+s.id});ferdig(r.beskjed);}),
    button('Endre grensene',()=>grenserSkjema(grenser))],
   ikkeinnom:()=>[
    button('Send hilsen',()=>{lukk();sendHilsen(s,ferdig);},'primary'),

@@ -46,6 +46,19 @@ sjekk('standardgrenser 50/21/21', str_contains($api, 'STD_ANDEL = 50') && str_co
 sjekk('skjul i 7 dager', str_contains($api, 'SKJUL_DAGER = 7'));
 sjekk('tåler manglende migrasjon', str_contains($api, "DB::harTabell('ma_gjores_skjul')") && str_contains($api, "DB::harKolonne('brenninger', 'ferdig_at')"));
 sjekk('omsetning fra Omsetning', str_contains($api, 'Omsetning::sumUtenMva(Omsetning::perFormal('));
+sjekk('Paint on Pots og åpningstid utelates', str_contains($api, "AND c.slug <> 'paint-on-pots'") && str_contains($api, "COALESCE(c.folger_apningstid, 0) = 0") && str_contains($api, "NOT LIKE '%paint on pots%'"));
+$finnes = static fn(string $tekst, string ...$biter): bool => array_filter($biter, static fn($b) => !str_contains($tekst, $b)) === [];
+sjekk('én sak per kurs (datoene under)', $finnes($api, '$perKurs($tregeKurs($g))', <<<'T'
+'tittel' => $k['tittel'] . ' fylles tregt'
+T, <<<'T'
+$d['dato'] . ': ' . $d['tatt'] . ' av ' . $d['kapasitet']
+T));
+sjekk('samme kurs+dato slås sammen', $finnes($api, <<<'T'
+$d = &$kurs[$k]['datoer'][$o['dato']];
+T));
+sjekk('Vent en uke skjuler hele kurset', $finnes($api, <<<'T'
+'nokkel' => 'tregtkurs:' . $k['kursId']
+T, 'tregtkurs:\d+'));
 sjekk('frosne utelates', str_contains($api, "status = 'godkjent' AND fra_dato <= CURDATE() AND til_dato >= CURDATE()"));
 
 echo "\n── Skjul lagres og utløper ──────────────────────────────────\n";
@@ -67,6 +80,14 @@ sjekk('ramme.js henter sakene', str_contains($ramme, "hentMer()") && str_contain
 sjekk('mandag over Må gjøres', str_contains($ramme, "mandag?etikett('Mandag'):null,mandag,etikett('Må gjøres')"));
 sjekk('hilsen-forslaget', str_contains($js, 'Hei! Vi savner deg på verkstedet. Ovnen er varm og det er god plass på torsdager.'));
 sjekk('hilsen krever «Er du sikker?»', str_contains($js, "confirm('Er du sikker?'"));
+sjekk('Vent en uke bruker sakens nøkkel', str_contains($js, "nokkel:s.nokkel||'tregt:'+s.id"));
+$ov = (string) file_get_contents($rot . '/api/admin/oversikt.php');
+sjekk('påmeldinger slås sammen per person+kurs', $finnes($ov, <<<'T'
+' (' . $p['plasser'] . ' plasser)'
+T, <<<'T'
+['ider' => $p['ider']]
+T));
+sjekk('Sett som sett setter alle i saken', str_contains($ramme, "for(const id of s.ider||[s.id]){const r=await api('pamelding.php',{handling:'sett',id});"));
 sjekk('Send til medlemmene sender ikke selv', str_contains($js, "location.hash='#beskjeder?'"));
 
 $ferdig = true;

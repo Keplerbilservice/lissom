@@ -6693,7 +6693,7 @@
                     "fil": "admin-ny/ramme.js",
                     "finnes": [
                         "chat:()=>[link('Svar','#chat','primary'),trykk('Marker som lest'",
-                        "api('pamelding.php',{handling:'sett',id:s.id})",
+                        "for(const id of s.ider||[s.id]){const r=await api('pamelding.php',{handling:'sett',id});",
                         "const sett=d.settPaaServer?new Set():settLes();"
                     ]
                 },
@@ -6769,6 +6769,44 @@
                     "finnes": [
                         "tittel:'Synlighet',tekst:'Slå av og på, også kassa',href:'#synlighet'",
                         "'innhold','synlighet','oppsett','verktoy'"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "ma-gjores-mindre-stoy-20261008",
+            "dato": "2026-10-08",
+            "hva": "Eieren, 8. oktober 2026 (for mye støy i «Må gjøres»): «fylles tregt» er én sak per kurs («<kurs> fylles tregt», under: «13.10: 1 av 8 · 14.10: 2 av 8»), flere økter samme kurs og dato slås sammen, og Paint on Pots og kurs som følger åpningstiden er ikke med. «Vent en uke» skjuler hele kurset i 7 dager (tregtkurs:<kursId>). «Ny påmelding» slås sammen per person og kurs («Ny påmelding: Sara Kolberg (2 plasser)»), og «Sett som sett» setter alle bookingene i saken.",
+            "hvor": "admin-ny › I dag › Må gjøres (Kurs)",
+            "kode": [
+                {
+                    "fil": "api/admin/ma-gjores-mer.php",
+                    "finnes": [
+                        "AND c.slug <> 'paint-on-pots'",
+                        "COALESCE(c.folger_apningstid, 0) = 0",
+                        "$perKurs($tregeKurs($g))",
+                        "'nokkel' => 'tregtkurs:' . $k['kursId']",
+                        "$d['dato'] . ': ' . $d['tatt'] . ' av ' . $d['kapasitet']"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/ma-gjores-mer.js",
+                    "finnes": [
+                        "nokkel:s.nokkel||'tregt:'+s.id"
+                    ]
+                },
+                {
+                    "fil": "api/admin/oversikt.php",
+                    "finnes": [
+                        "' (' . $p['plasser'] . ' plasser)'",
+                        "['ider' => $p['ider']]"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/ramme.js",
+                    "finnes": [
+                        "for(const id of s.ider||[s.id])",
+                        "(s.ider||[s.id]).every(i=>sett.has(i))"
                     ]
                 }
             ]

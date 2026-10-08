@@ -15,6 +15,8 @@
  *    Kursdatoene den dekker tas ut av den vanlige henting-saken («dekker»).
  *    Utsendingen er den som finnes (ferdigbrent.php meld-alle).
  * 4  Kurs som fylles tregt: under «andel» % fylt og under «dager» dager igjen.
+ *    Én sak per kurs med datoene under; Paint on Pots og kurs som følger
+ *    åpningstiden er ikke med. «Vent en uke» skjuler hele kurset (tregtkurs:<id>).
  * 5  Medlemmer som ikke har vært innom: Aktivitet::lave(innom), uten frosne.
  * 7  Mandagsoppsummering: bare mandager (Oslo). Omsetning fra Omsetning.
  *
@@ -155,6 +157,11 @@ $tregeKurs = static function (array $g) use ($oslo, $utc): array {
           WHERE cs.status = 'planlagt' AND c.status = 'publisert'
             AND cs.start_tid > UTC_TIMESTAMP()
             AND cs.start_tid < DATE_ADD(UTC_TIMESTAMP(), INTERVAL :d DAY)
+            -- Paint on Pots og kurs som følger åpningstiden er ikke kurs som «fylles» (eieren 08.10).
+            AND c.slug <> 'paint-on-pots'
+            AND LOWER(COALESCE(c.tema, '')) NOT LIKE '%paint on pots%'
+            AND LOWER(c.tittel) NOT LIKE 'paint on pots%'"
+            . (DB::harKolonne('courses', 'folger_apningstid') ? ' AND COALESCE(c.folger_apningstid, 0) = 0' : '') . "
        ORDER BY cs.start_tid LIMIT 60",
         ['d' => $g['dager']]
     );
@@ -179,6 +186,32 @@ $tregeKurs = static function (array $g) use ($oslo, $utc): array {
         ];
     }
     return $ut;
+};
+
+/**
+ * Én sak per kurs (eieren 08.10): flere økter samme kurs og dato slås sammen
+ * til én dato, og alle datoene til kurset står i én sak.
+ */
+$perKurs = static function (array $okter): array {
+    $kurs = [];
+    foreach ($okter as $o) {
+        $k = $o['kursId'];
+        $kurs[$k] ??= ['kursId' => $k, 'tittel' => $o['tittel'], 'slug' => $o['slug'],
+            'start' => $o['start'], 'dager' => $o['dager'], 'datoer' => []];
+        $d = &$kurs[$k]['datoer'][$o['dato']];
+        $d ??= ['dato' => $o['dato'], 'tatt' => 0, 'kapasitet' => 0, 'start' => $o['start']];
+        $d['tatt'] += $o['tatt'];
+        $d['kapasitet'] += $o['kapasitet'];
+        unset($d);
+    }
+    foreach ($kurs as &$k) {
+        $k['datoer'] = array_values($k['datoer']);
+        $f = $k['datoer'][0];
+        // Feltene første dato har, så mandagsflisen og meldingen virker som før.
+        $k += ['dato' => $f['dato'], 'tatt' => $f['tatt'], 'kapasitet' => $f['kapasitet']];
+    }
+    unset($k);
+    return array_values($kurs);
 };
 
 /** Idé 5: aktive medlemmer uten innstempling på «innom» dager, uten frosne. */
@@ -257,20 +290,24 @@ if (Foresporsel::metode() === 'GET') {
         $saker = array_merge($saker, $o['saker']);
         $dekker = $o['dekker'];
     });
-    $trygt('tregt', static function () use (&$saker, &$trege, $tregeKurs, $g, &$skjult): void {
-        foreach ($tregeKurs($g) as $k) {
-            if (isset($skjult['tregt:' . $k['oktId']])) {
+    $trygt('tregt', static function () use (&$saker, &$trege, $tregeKurs, $perKurs, $g, &$skjult): void {
+        foreach ($perKurs($tregeKurs($g)) as $k) {
+            if (isset($skjult['tregtkurs:' . $k['kursId']])) {
                 continue;
             }
             $trege[] = $k;
+            $linjer = array_map(static fn($d) => $d['dato'] . ': ' . $d['tatt'] . ' av ' . $d['kapasitet'], $k['datoer']);
+            $lange = array_map(static fn($d) => Booking::norskDato($d['start']) . ' (' . $d['tatt'] . ' av '
+                . $d['kapasitet'] . ' plasser)', $k['datoer']);
             $saker[] = [
-                'gruppe' => 'Kurs', 'type' => 'tregt', 'id' => $k['oktId'], 'teller' => true,
-                'tittel' => $k['tittel'] . ' ' . $k['dato'] . ' fylles tregt',
-                'under'  => $k['tatt'] . ' av ' . $k['kapasitet'] . ' plasser, ' . $k['dager'] . ' dager igjen',
-                'melding' => $k['tittel'] . ' ' . Booking::norskDato($k['start']) . ' har ' . $k['tatt'] . ' av '
-                    . $k['kapasitet'] . ' plasser fylt, og det er ' . $k['dager'] . ' dager igjen.',
+                'gruppe' => 'Kurs', 'type' => 'tregt', 'id' => $k['kursId'], 'teller' => true,
+                'nokkel' => 'tregtkurs:' . $k['kursId'],
+                'tittel' => $k['tittel'] . ' fylles tregt',
+                'under'  => implode(' · ', $linjer),
+                'melding' => $k['tittel'] . ' fylles tregt: ' . implode(', ', $lange) . '. Første dato er om '
+                    . $k['dager'] . ' dager.',
                 'rute' => 'kurs', 'kursId' => $k['kursId'], 'kurs' => $k['tittel'],
-                'dato' => Booking::norskDato($k['start']),
+                'dato' => implode(', ', array_map(static fn($d) => Booking::norskDato($d['start']), $k['datoer'])),
                 'url'  => Config::nettsted() . '/kurs/' . rawurlencode($k['slug']),
             ];
         }
@@ -362,7 +399,7 @@ if ($handling === 'skjul') {
         Svar::feil($kreverOppdatering);
     }
     $nokkel = Foresporsel::tekst('nokkel');
-    if (preg_match('/^(tregt:\d+|ikkeinnom)$/', $nokkel) !== 1) {
+    if (preg_match('/^(tregt:\d+|tregtkurs:\d+|ikkeinnom)$/', $nokkel) !== 1) {
         Svar::feil('Ukjent sak.');
     }
     DB::kjor(

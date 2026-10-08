@@ -252,9 +252,9 @@ final class Lager
     //
     // Fristen for neste bestilling staar i innstillinger (leirebestilling_frist,
     // ÅÅÅÅ-MM-DD). Statusen per linje (Bestilt -> Kommet -> Hentet) krever
-    // migrasjon 260; foer den er kjoert er alt som er bestilt «Bestilt».
+    // migrasjon 261; foer den er kjoert er alt som er bestilt «Bestilt».
 
-    /** Er kolonnene for Kommet og Hentet paa plass (migrasjon 260)? */
+    /** Er kolonnene for Kommet og Hentet paa plass (migrasjon 261)? */
     public static function harLeireStatus(): bool
     {
         return DB::harTabell('handleliste_linjer') && DB::harKolonne('handleliste_linjer', 'kommet_at')

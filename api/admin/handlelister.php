@@ -20,8 +20,8 @@
  *   POST handling=fraktvekt      { leverandorId, kg }      rettet totalvekt
  *   POST handling=linjevekt      { produktId (<0), kg }    vekt paa et oenske
  *   POST handling=frist          { dato }                  frist for neste leirebestilling
- *   POST handling=kommet         { ider }                  linjene er kommet (migrasjon 260)
- *   POST handling=hentet         { ider }                  linjene er hentet (migrasjon 260)
+ *   POST handling=kommet         { ider }                  linjene er kommet (migrasjon 261)
+ *   POST handling=hentet         { ider }                  linjene er hentet (migrasjon 261)
  *
  * Fraktsatsene og bestillingsrutinen (migrasjon 210): eieren, 24. september
  * 2026, «fraktpriser og bestillingsrutiner som styres fra admin». Satsene er
@@ -435,7 +435,7 @@ function handleliste_leire(array $levBilde): array
     }
 
     // Tidligere bestillinger, de siste 120 dagene. Samlet paa nummeret i
-    // e-posten (migrasjon 260); eldre linjer uten nummer paa leverandoer og tid.
+    // e-posten (migrasjon 261); eldre linjer uten nummer paa leverandoer og tid.
     $harStatus = Lager::harLeireStatus();
     $kol = $harStatus ? 'h.bestilling_nr, h.kommet_at, h.hentet_at' : 'NULL AS bestilling_nr, NULL AS kommet_at, NULL AS hentet_at';
     $ferdig = DB::alle(
@@ -570,11 +570,11 @@ if ($handling === 'frist') {
     Svar::ok(handleliste_bilde() + ['beskjed' => $dato === '' ? 'Fristen er fjernet.' : 'Fristen er lagret.']);
 }
 
-// Kommet og Hentet med ett trykk (eieren 08.10.2026, migrasjon 260).
+// Kommet og Hentet med ett trykk (eieren 08.10.2026, migrasjon 261).
 // «ider» er linjene: hele bestillingen for Kommet, ett medlem for Hentet.
 if ($handling === 'kommet' || $handling === 'hentet') {
     if (!Lager::harLeireStatus()) {
-        Svar::feil('Dette krever oppdatering 260. Kjør oppdateringene først.');
+        Svar::feil('Dette krever oppdatering 261. Kjør oppdateringene først.');
     }
     $ider = array_values(array_unique(array_filter(
         array_map('intval', (array) (Foresporsel::kropp()['ider'] ?? [])),
@@ -1010,7 +1010,7 @@ if ($handling === 'bestill') {
         $leverandorId
     );
 
-    // Nummeret lagres paa linjene (migrasjon 260), saa «Tidligere bestillinger»
+    // Nummeret lagres paa linjene (migrasjon 261), saa «Tidligere bestillinger»
     // kan vise dem samlet med status Bestilt / Kommet / Hentet.
     $medNr = Lager::harLeireStatus();
     DB::kjor(

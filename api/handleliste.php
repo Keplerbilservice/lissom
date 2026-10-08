@@ -84,7 +84,7 @@ $mine = static function () use ($klar, $harLev, $medlemId): array {
  * Leira (eieren 08.10.2026): leirene medlemmet kan bestille (leire og «Kan
  * bestilles», publisert), med bilde, pris og hvor mange hun har med i neste
  * bestilling, fristen, og statusen paa det som er bestilt: Bestilt, Kommet
- * eller Hentet (migrasjon 260). Hentet vises i 30 dager.
+ * eller Hentet (migrasjon 261). Hentet vises i 30 dager.
  */
 $leire = static function () use ($klar, $paa, $medlemId): array {
     $tom = ['leire' => [], 'leireFrist' => ['dato' => '', 'tekst' => ''], 'leireStatus' => []];

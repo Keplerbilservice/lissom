@@ -1,6 +1,6 @@
 /* Neste leirebestilling (eieren 08.10.2026): én skjerm øverst i Handlelister. Frist (innstillinger), per leverandør varene med bilde og hvem som har
    bestilt hvor mye, frakten og hvor mange den deles på, «Send bestilling» (handling bestill) og «Krev inn med Vipps» (handling krav — gjelder alle
-   medlemmene, som før). Under: tidligere bestillinger med status Bestilt → Kommet → Hentet; Kommet og Hentet settes med ett trykk (migrasjon 260). */
+   medlemmene, som før). Under: tidligere bestillinger med status Bestilt → Kommet → Hentet; Kommet og Hentet settes med ett trykk (migrasjon 261). */
 import {el,button,badge,card,form,field,list,toast} from './ui.js';
 const bilde=v=>v.bilde?el('img',{class:'vare-bilde',src:v.bilde,alt:'',loading:'lazy'}):el('span',{class:'vare-bilde','aria-hidden':'true'});
 export function leireBestilling(d,save,act){const L=d.leire;if(!L)return null;

@@ -51,7 +51,7 @@ final class Aktivitet
     {
         $dager ??= self::dager();
         $rader = DB::alle(
-            "SELECT m.id, m.navn, m.telefon, m.epost, m.start_dato,
+            "SELECT m.id, m.navn, m.telefon, m.epost, m.start_dato, m.status, m.medlemskap_type, m.slutt_dato,
                     (SELECT MAX(c.inn_tid) FROM check_ins c WHERE c.member_id = m.id) AS sist
                FROM members m
               WHERE m.status IN ('prove', 'aktiv')
@@ -60,6 +60,11 @@ final class Aktivitet
         $idag = new DateTimeImmutable('today', new DateTimeZone('Europe/Oslo'));
         $ut = [];
         foreach ($rader as $r) {
+            // Prøv Lissom som er over, er ikke medlem lenger (eieren, 8. oktober
+            // 2026: «når de ikke lenger er medlem»).
+            if (Medlemskap::proveSluttet($r) !== null) {
+                continue;
+            }
             $fra = $r['sist'] !== null ? substr((string) $r['sist'], 0, 10) : (string) ($r['start_dato'] ?? '');
             if ($fra === '') {
                 continue;

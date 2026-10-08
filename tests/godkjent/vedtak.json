@@ -6933,6 +6933,20 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "lav-aktivitet-uten-sluttet-prove-20261008",
+            "dato": "2026-10-08",
+            "hva": "Eieren, 8. oktober 2026: «ikke vært innom» (Folk-filteret og Må gjøres) tar ikke med Prøv Lissom som er over (Medlemskap::proveSluttet) — de er ikke medlemmer lenger.",
+            "hvor": "admin-ny › Folk, admin-ny › I dag",
+            "kode": [
+                {
+                    "fil": "app/lib/aktivitet.php",
+                    "finnes": [
+                        "if (Medlemskap::proveSluttet($r) !== null) {"
+                    ]
+                }
+            ]
         }
     ]
 }

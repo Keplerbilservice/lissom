@@ -14,7 +14,7 @@ try{
  await p.goto(URL+'#folk');await p.getByRole('heading',{name:'Folk',exact:true}).waitFor();await p.getByRole('button',{name:'Filter',exact:true}).click();await p.getByRole('dialog').getByRole('link',{name:'Brukere',exact:true}).click();await p.getByRole('heading',{name:'Brukere',exact:true}).waitFor();
  await p.getByRole('button',{name:'Ny bruker',exact:true}).click();
  const tilgang=p.getByRole('combobox',{name:'Tilgang',exact:true});
- assert.deepEqual(await tilgang.locator('option').allTextContents(),['Medlem','Kursholder','Regnskap','Administrator']);
+ assert.deepEqual(await tilgang.locator('option').allTextContents(),['Medlem','Kursholder','Regnskap','Kasse (iPad)','Administrator']);
  await p.getByRole('textbox',{name:'Navn',exact:true}).fill(s.tag+' kursholder');await p.getByRole('textbox',{name:'Brukernavn',exact:true}).fill(brukernavn);
  await p.getByRole('textbox',{name:'Telefon',exact:true}).fill('90000001');await p.getByLabel('Passord',{exact:true}).fill('kursholder-passord-1');
  await tilgang.selectOption('kursholder');

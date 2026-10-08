@@ -5978,6 +5978,49 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "kampanjer-til-medlemmer",
+            "dato": "2026-10-08",
+            "hva": "Eieren, 8. oktober 2026 («bygg det»): Kampanjer i admin-ny er én side med «På lissom.no» og «Til medlemmer». Hver kampanje er et kort med av/på-bryter og «Rediger» rett på kortet (redigeringen åpnes på samme sted), «Se som medlem» på medlemskampanjer, og «+ Ny kampanje» der man velger hvor den vises (ingenting forhåndsvalgt). Bryteren på et lissom.no-kort velger kampanjen og slår på Vis/salgsuke. Medlemskampanjen speiles til Medlemskampanje/* og vises som banner på Min side for medlemmer (gammel og ny) når Vis/medlemskampanje er «ja». Min side for medlemmer har kampanjen som egen modul med «Rediger».",
+            "hvor": "admin-ny › Kampanjer, admin-ny › Min side for medlemmer, Min side",
+            "kode": [
+                {
+                    "fil": "api/admin/kampanjer.php",
+                    "finnes": [
+                        "return $publikum === 'medlemmer' ? 'Medlemskampanje/' : 'Kampanje/';",
+                        "return $publikum === 'medlemmer' ? 'Vis/medlemskampanje' : 'Vis/salgsuke';",
+                        "if ($handling === 'bryter') {"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kampanjer.js",
+                    "finnes": [
+                        "const STED={nett:'På lissom.no',medlemmer:'Til medlemmer'};",
+                        "role:'switch'",
+                        "button('+ Ny kampanje',newCampaign,'primary')"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/innhold-og-kurs.js",
+                    "finnes": [
+                        "['Kampanje til medlemmer','Vis/medlemskampanje',false,"
+                    ]
+                },
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "return il['Vis/medlemskampanje'] === 'ja' && !!(il['Medlemskampanje/tittel'] || '');",
+                        "<div class=\"ms-kmp ms-mk\" data-msny=\"hjem\" style=\"{{ msBannerStil }}\">"
+                    ]
+                },
+                {
+                    "fil": "db/migrations/260_kampanjer_til_medlemmer.sql",
+                    "finnes": [
+                        "ADD COLUMN IF NOT EXISTS publikum VARCHAR(16) NOT NULL DEFAULT 'nett';"
+                    ]
+                }
+            ]
         }
     ]
 }

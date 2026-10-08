@@ -7421,6 +7421,21 @@ window.__resources = {
                 </div>
               </div>
               </sc-if>
+              <!-- Kampanjen til medlemmer (eieren, 8. oktober 2026): den som er
+                   valgt og slaatt paa i admin › Kampanjer › Til medlemmer. -->
+              <sc-if value="{{ msMkVis }}" hint-placeholder-val="{{ false }}">
+              <div class="ms-kmp ms-mk" data-msny="hjem" style="{{ msBannerStil }}">
+                <div style="min-width: 0; flex: 1 1 320px;">
+                  <div style="font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--lissom-yellow);">{{ msMkMerke }}</div>
+                  <h3 style="margin: 4px 0 6px; font-family: var(--font-display); font-weight: 800; font-size: 26px; line-height: 1.2; color: #fff;">{{ msMkTittel }}</h3>
+                  <p style="margin: 0; color: var(--clay-100); max-width: 60ch;">{{ msMkTekst }}</p>
+                </div>
+                <div style="display: grid; gap: 8px; justify-items: end;">
+                  <sc-if value="{{ msMkHarPris }}" hint-placeholder-val="{{ false }}"><div style="font-family: var(--font-display); font-weight: 800; font-size: 22px; color: var(--lissom-yellow);">{{ msMkPris }}</div></sc-if>
+                  <sc-if value="{{ msMkHarKnapp }}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{ msMkGaa }}" style="appearance: none; cursor: pointer; border: none; background: var(--lissom-yellow); color: var(--lissom-brown); border-radius: 999px; padding: 9px 22px; font-weight: 800;">{{ msMkKnapp }}</button></sc-if>
+                </div>
+              </div>
+              </sc-if>
 
               <!-- Vervepremien for medlemmer (eieren, 27. september 2026): verv en
                    venn til aarsmedlemskap og faa timer i verkstedet. Slaas av og
@@ -33604,6 +33619,7 @@ class Component extends DCLogic {
       msVerkstedVis: medlem,
       msVervVis: medlem && !!this.state.verving,
       msKmpVis: !medlem && this.bryterPaa('salgsuke'),
+      msMkVis: medlem && this.msMkPaa(),
       msNesteVis: !medlem && plasser.length > 0,
       msNesteVelg: gaa('d-kurs'),
       // Doerkoden staar bare i Verkstedet naa, ikke i menylinja.
@@ -33773,6 +33789,38 @@ class Component extends DCLogic {
       msBanMeld: forste ? forste.meld : () => {},
       msBanFlere: interne.slice(1, 4),
       msKmpVis: hjem && !medlem && this.bryterPaa('salgsuke'),
+      // Kampanjen til medlemmer (eieren, 8. oktober 2026): valgt og slaatt
+      // paa i admin-ny › Kampanjer, speilet til «Medlemskampanje/». Av til
+      // Vis/medlemskampanje staar paa «ja».
+      msMkVis: hjem && medlem && this.msMkPaa(),
+      ...(() => {
+        const il = this.state.innholdLagret || {};
+        const f = n => String(il['Medlemskampanje/' + n] || '');
+        const prisOre = parseInt(f('pris'), 10);
+        const harPris = Number.isFinite(prisOre) && prisOre > 0;
+        const maal = f('maal') || 'medlemsbutikk';
+        return {
+          msMkMerke: f('merke'),
+          msMkTittel: f('tittel'),
+          msMkTekst: f('tekst'),
+          msMkHarPris: harPris,
+          msMkPris: harPris ? 'kr.' + ' ' + Math.round(prisOre / 100).toLocaleString('nb-NO') + ',-' : '',
+          msMkHarKnapp: !!f('knapp'),
+          msMkKnapp: f('knapp'),
+          msMkGaa: () => {
+            const steder = {
+              butikk:        { side: 'butikk', butikkKolleksjon: 'Lissom', butikkFilter: 'Alt' },
+              medlemsbutikk: { side: 'butikk', butikkKolleksjon: 'Medlem', butikkFilter: 'Alt' },
+              kurs:          { side: 'kurs' },
+              events:        { side: 'events' },
+              medlemskap:    { side: 'medlemskap' },
+              gavekort:      { side: 'gavekort' },
+            };
+            this.setState(steder[maal] || steder.medlemsbutikk);
+            window.scrollTo(0, 0);
+          },
+        };
+      })(),
       // Vervepremien. Eieren, 27. september 2026 — tekstene er godkjent
       // ordrett. Serveren avgjor om den vises (api/meg.php); timetallet er
       // det eieren har satt i Markedsfoering › Vervepremie.
@@ -35011,6 +35059,13 @@ class Component extends DCLogic {
   // seksjonen.
   bryterPaa(nokkel) {
     return (this.state.innholdLagret || {})['Vis/' + nokkel] !== 'nei';
+  }
+
+  // Kampanjen til medlemmer: av til bryteren staar paa «ja», og bare naar en
+  // kampanje er valgt (har overskrift). Se api/admin/kampanjer.php.
+  msMkPaa() {
+    const il = this.state.innholdLagret || {};
+    return il['Vis/medlemskampanje'] === 'ja' && !!(il['Medlemskampanje/tittel'] || '');
   }
 
   /**

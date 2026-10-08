@@ -6,26 +6,29 @@
  *                                         varer, prisnivåer, dagens oppgjør
  *   POST handling=person   { bookingId }  én person fra lista (Paint on Pots)
  *   POST handling=regn     { kurv, betaler }               kurven, regnet her
- *   POST handling=betal    { kurv, betaler, maate, nokler, forventetOre }
- *   POST handling=delt     { kurv, betaler, deler, nokler, forventetOre }
- *   POST handling=qr       { kurv, betaler, del, nokler, forventetOre }
+ *   POST handling=betal    { kurv, betaler, maate, nokler, forventet }
+ *   POST handling=delt     { kurv, betaler, deler, nokler, forventet }
+ *   POST handling=qr       { kurv, betaler, del, nokler, forventet }
  *   POST handling=status   { poll: {bookingId} | {referanse} }
+ *   POST handling=kvitteringValg { betaler, betalinger }   etter Vipps-QR
  *   POST handling=betalteIkke { bookingId }               «Endre» → «Betalte ikke»
- *   POST handling=kvittering  { mal, kanal }
+ *   POST handling=kvittering  { betalinger, kanal, betaler }
  *   POST handling=oppgjor                                 dagens oppgjør
  *
- * Alt krever at kassa er låst opp med PIN (Kasse::krevUlast()). Beløpene
- * regnes på serveren; se app/lib/kasse.php.
+ * «nokler» og «forventet» er per del, med delens faste id som nøkkel
+ * (KasseKurv::deler). Alt krever at kassa er låst opp med PIN
+ * (KasseTilgang::krevUlast()). Beløpene regnes på serveren; se
+ * app/lib/kasse.php og app/lib/kassekurv.php.
  */
 
 declare(strict_types=1);
 
 require __DIR__ . '/../_boot.php';
 
-$person = Kasse::krevUlast();
+$person = KasseTilgang::krevUlast();
 
 if (Foresporsel::metode() === 'GET') {
-    Svar::json(Kasse::idag() + ['person' => ['navn' => $person['navn']], 'laasMinutter' => Kasse::LAAS_MINUTTER]);
+    Svar::json(KasseKurv::idag() + ['person' => ['navn' => $person['navn']], 'laasMinutter' => KasseTilgang::LAAS_MINUTTER]);
 }
 
 Foresporsel::krevMetode('POST');
@@ -38,46 +41,42 @@ $handling = Foresporsel::tekst('handling');
 try {
     switch ($handling) {
         case 'person':
-            Svar::ok(Kasse::person(Foresporsel::heltall('bookingId')));
+            Svar::ok(KasseKurv::person(Foresporsel::heltall('bookingId')));
 
         case 'regn':
-            $betaler = Kasse::betaler($liste('betaler'));
-            Svar::ok(Kasse::visning(Kasse::deler($liste('kurv'), $betaler)));
+            $betaler = KasseKurv::betaler($liste('betaler'));
+            Svar::ok(KasseKurv::visning(KasseKurv::deler($liste('kurv'), $betaler)));
 
         case 'betal':
             Svar::ok(Kasse::betal($liste('kurv'), $liste('betaler'), Foresporsel::tekst('maate'),
-                array_values($liste('nokler')), Foresporsel::heltall('forventetOre', -1), $person));
+                $liste('nokler'), $liste('forventet'), $person));
 
         case 'delt':
             Svar::ok(Kasse::betal($liste('kurv'), $liste('betaler'), '',
-                array_values($liste('nokler')), Foresporsel::heltall('forventetOre', -1), $person,
-                array_values($liste('deler'))));
+                $liste('nokler'), $liste('forventet'), $person, array_values($liste('deler'))));
 
         case 'qr':
-            $r = Kasse::qr($liste('kurv'), $liste('betaler'), Foresporsel::heltall('del'),
-                array_values($liste('nokler')), Foresporsel::heltall('forventetOre', -1), $person);
-            Svar::ok($r + ['mal' => Kasse::qrMal($r)]);
-
-        case 'kvitteringValg':
-            // Etter Vipps-QR: hvilke kvitteringer som kan sendes for det som ble betalt.
-            $mal = array_values(array_filter($liste('mal'), static fn($m): bool => is_array($m)
-                && in_array($m['type'] ?? '', ['booking', 'ordre'], true) && (int) ($m['id'] ?? 0) > 0));
-            $mal = array_map(static fn(array $m): array => ['type' => (string) $m['type'], 'id' => (int) $m['id']], $mal);
-            Svar::ok(Kasse::kvitteringValg(Kasse::betaler($liste('betaler')), $mal));
+            Svar::ok(Kasse::qr($liste('kurv'), $liste('betaler'), Foresporsel::tekst('del'),
+                $liste('nokler'), $liste('forventet'), $person));
 
         case 'status':
             Svar::ok(Kasse::status($liste('poll')));
 
+        case 'kvitteringValg':
+            // Etter Vipps-QR: hvilke kvitteringer som kan sendes for det som ble betalt.
+            Svar::ok(Kasse::kvitteringValg(KasseKurv::betaler($liste('betaler')), array_values($liste('betalinger'))));
+
         case 'betalteIkke':
             $r = Kasse::betalteIkke(Foresporsel::heltall('bookingId'), $person['id']);
-            Svar::ok($r + ['person' => Kasse::person(Foresporsel::heltall('bookingId'))]);
+            Svar::ok($r + ['person' => KasseKurv::person(Foresporsel::heltall('bookingId'))]);
 
         case 'kvittering':
-            Kasse::kvittering(array_values($liste('mal')), Foresporsel::tekst('kanal'));
+            Kasse::kvittering(array_values($liste('betalinger')), Foresporsel::tekst('kanal'),
+                KasseKurv::betaler($liste('betaler')));
             Svar::ok(['beskjed' => 'Kvitteringen er sendt.']);
 
         case 'oppgjor':
-            Svar::ok(Kasse::oppgjor());
+            Svar::ok(KasseKurv::oppgjor());
 
         default:
             Svar::feil('Ukjent handling.');

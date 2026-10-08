@@ -7,20 +7,20 @@
  *   POST handling=laas        låser kassa
  *
  * Bare kassekontoen (rollen «kasse») og admin, og bare når «Vis/kasse» er på.
- * Se app/lib/kasse.php.
+ * Se app/lib/kassetilgang.php.
  */
 
 declare(strict_types=1);
 
 require __DIR__ . '/../_boot.php';
 
-$konto = Kasse::krevKonto();
+KasseTilgang::krevKonto();
 
 if (Foresporsel::metode() === 'GET') {
-    $p = Kasse::ulast();
+    $p = KasseTilgang::ulast();
     Svar::json([
         'person'       => $p === null ? null : ['navn' => $p['navn']],
-        'laasMinutter' => Kasse::LAAS_MINUTTER,
+        'laasMinutter' => KasseTilgang::LAAS_MINUTTER,
     ]);
 }
 
@@ -29,11 +29,11 @@ Foresporsel::krevSammeOpphav();
 
 $handling = Foresporsel::tekst('handling');
 if ($handling === 'laas') {
-    Kasse::laas();
+    KasseTilgang::laas();
     Svar::ok();
 }
 if ($handling !== 'pin') {
     Svar::feil('Ukjent handling.');
 }
-$p = Kasse::laasOpp(Foresporsel::tekst('pin'));
+$p = KasseTilgang::laasOpp(Foresporsel::tekst('pin'));
 Svar::ok(['person' => ['navn' => $p['navn']]]);

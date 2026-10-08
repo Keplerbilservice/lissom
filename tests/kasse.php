@@ -6,7 +6,8 @@
  *      side ser den som ikke innlogget. Andre brukere får 404. Bryteren
  *      «Vis/kasse» av = 403. Innloggingen varer i 30 dager.
  *   B  PIN: feil PIN avvises, riktig låser opp, låsen går ut etter 5 minutter,
- *      «Lås» låser, PIN-en er unik, kassekontoen kan ikke ha PIN, og for
+ *      «Lås» låser, PIN-en er unik, kassekontoen kan ikke ha PIN, fjernet
+ *      tilgang (Brukere › Fjern tilgang) fjerner PIN-en og låser kassa, og for
  *      mange forsøk stoppes.
  *   C  Beløpene regnes på serveren: Paint on Pots (nivåpris fra basen, betalt
  *      ved booking trukket fra), varer (pris fra basen, ikke nettleseren),
@@ -16,14 +17,17 @@
  *      trekkes ikke fra; Vipps-betalt nektes.
  *   E  Vipps-QR mot den falske Vippsen: én betaling per nøkkel, beløpet fra
  *      serveren, status hentes fra Vipps, lageret trekkes når pengene er
- *      inne, kontant etter en QR stopper QR-en først, påmeldingen betales med
- *      KursstartKrav (også resten etter Vipps-depositum).
+ *      inne, kontant etter en QR stopper QR-en først (også når kurven er
+ *      endret etter «Tilbake»), påmelding med QR og så varer med QR går
+ *      gjennom, og samtidige qr()/betal() for samme del gir ett oppgjør.
  *   F  Kvittering: e-post i kø for påmeldingen, ingen «ny påmelding» til
- *      verkstedet. Ingenting sendes (ingen SMTP i testoppsettet).
+ *      verkstedet; SMS-kvitteringen (kassekvittering_sms) legges i kø med
+ *      riktig beløp og måte. Ingenting sendes (ingen SMTP eller cron i testen).
  *   G  Dagens oppgjør øker med akkurat det som ble tatt inn.
  *
- * Ekte endepunkter (PHP-server) mot en isolert testbase, og tests/falsk-vipps.mjs
- * som Vipps. Ingen ekte betaling, e-post eller SMS.   php tests/kasse.php
+ * Ekte endepunkter (to PHP-servere) mot en isolert testbase, og
+ * tests/falsk-vipps.mjs som Vipps. Ingen ekte betaling, e-post eller SMS.
+ *   php tests/kasse.php
  */
 declare(strict_types=1);
 
@@ -64,17 +68,27 @@ $sett = static function (string $n, ?string $v) use ($styr): void {
 $tag = 'KASSE-' . strtoupper(bin2hex(random_bytes(3)));
 $medlemmer = []; $kurs = []; $produkt = 0; $ferdig = false;
 $bryterFor = DB::verdi("SELECT verdi FROM content_blocks WHERE nokkel = 'Vis/kasse'");
+// SMS-oppsettet i basen (innstillinger) settes bare for testen. Ingen cron
+// kjører, så SMS-en blir liggende i køen og ryddes bort.
+$smsFor = DB::harTabell('innstillinger')
+    ? array_column(DB::alle("SELECT nokkel, verdi FROM innstillinger WHERE nokkel IN ('sveve_bruker', 'sveve_passord', 'sms_leverandor')"), 'verdi', 'nokkel')
+    : [];
 $logg = sys_get_temp_dir() . '/lissom-kasse-' . bin2hex(random_bytes(4)) . '.log';
 
-// Ordrene testen lager, er de med høyere id enn det som fantes nå (egen testbase).
+// Ordrene og betalingene testen lager, er de med høyere id enn det som fantes nå (egen testbase).
 $ordreFor = (int) DB::verdi('SELECT COALESCE(MAX(id), 0) FROM orders');
+$betalingFor = (int) DB::verdi('SELECT COALESCE(MAX(id), 0) FROM payments');
 
-register_shutdown_function(static function () use (&$ferdig, &$medlemmer, &$kurs, &$produkt, &$prosesser, $forStyr, $sett, $bryterFor, $ordreFor): void {
+register_shutdown_function(static function () use (&$ferdig, &$medlemmer, &$kurs, &$produkt, &$prosesser, $forStyr, $sett, $bryterFor, $ordreFor, $betalingFor, $smsFor): void {
     foreach ($forStyr as $n => $v) { $sett($n, $v); }
     foreach ($prosesser as $p) { if (is_resource($p)) { proc_terminate($p); } }
     try {
         if ($bryterFor === null) { DB::kjor("DELETE FROM content_blocks WHERE nokkel = 'Vis/kasse'"); }
         else { DB::kjor("UPDATE content_blocks SET verdi = :v WHERE nokkel = 'Vis/kasse'", ['v' => (string) $bryterFor]); }
+        if (DB::harTabell('innstillinger')) {
+            DB::kjor("DELETE FROM innstillinger WHERE nokkel IN ('sveve_bruker', 'sveve_passord', 'sms_leverandor')");
+            foreach ($smsFor as $n => $v) { DB::kjor('INSERT INTO innstillinger (nokkel, verdi) VALUES (:n, :v)', ['n' => $n, 'v' => $v]); }
+        }
     } catch (Throwable $e) {}
     $k = implode(',', array_map('intval', $kurs ?: [0]));
     $m = implode(',', array_map('intval', $medlemmer ?: [0]));
@@ -85,6 +99,7 @@ register_shutdown_function(static function () use (&$ferdig, &$medlemmer, &$kurs
     foreach ([
         "DELETE FROM notifications WHERE ref_type = 'booking' AND ref_id IN ($b)",
         "DELETE FROM notifications WHERE ref_type = 'order' AND ref_id IN ($o)",
+        "DELETE FROM notifications WHERE ref_type = 'payment' AND ref_id > " . $betalingFor,
         "DELETE FROM pop_kasselinjer WHERE booking_id IN ($b)",
         "UPDATE bookings SET payment_id = NULL WHERE id IN ($b)",
         "UPDATE orders SET payment_id = NULL WHERE id IN ($o)",
@@ -110,17 +125,25 @@ $ok = 0; $feil = 0;
 function sjekk(string $n, bool $v, string $mer = ''): void
 { global $ok, $feil; if ($v) { $ok++; echo "  OK    $n\n"; } else { $feil++; echo "  FEIL  $n" . ($mer !== '' ? "  — $mer" : '') . "\n"; } }
 
-$port = $ledigPort();
-$prosesser[] = proc_open([PHP_BINARY, '-c', (string) php_ini_loaded_file(), '-S', '127.0.0.1:' . $port, '-t', $rot, $rot . '/tests/nettleser/ruter.php'],
-    [0 => ['pipe', 'r'], 1 => ['file', $logg, 'a'], 2 => ['file', $logg, 'a']], $pp, $rot);
-fclose($pp[0]);
-$klar = false;
-for ($v = 0; $v < 60; $v++) { $f = @fsockopen('127.0.0.1', $port, $e1, $e2, 0.1); if ($f) { fclose($f); $klar = true; break; } usleep(50000); }
+// To servere mot samme base: én forespørsel hver gir ekte samtidighet (E).
+$porter = [];
+foreach ([0, 1] as $_) {
+    $p = $ledigPort();
+    $porter[] = $p;
+    $prosesser[] = proc_open([PHP_BINARY, '-c', (string) php_ini_loaded_file(), '-S', '127.0.0.1:' . $p, '-t', $rot, $rot . '/tests/nettleser/ruter.php'],
+        [0 => ['pipe', 'r'], 1 => ['file', $logg, 'a'], 2 => ['file', $logg, 'a']], $pp, $rot);
+    fclose($pp[0]);
+}
+$klar = true;
+foreach ($porter as $p) {
+    $denne = false;
+    for ($v = 0; $v < 60; $v++) { $f = @fsockopen('127.0.0.1', $p, $e1, $e2, 0.1); if ($f) { fclose($f); $denne = true; break; } usleep(50000); }
+    $klar = $klar && $denne;
+}
+$port = $porter[0];
 
-/** @return array{0:int,1:mixed,2:string} status, json, rå */
-function kall(string $sti, ?array $data, string $token = '', string $metode = ''): array
+function forbered(string $sti, ?array $data, string $token, int $port): CurlHandle
 {
-    global $port;
     $c = curl_init('http://127.0.0.1:' . $port . $sti);
     $hode = ['Origin: ' . Config::nettsted()];
     if ($token !== '') { $hode[] = 'Cookie: lissom_sesjon=' . $token; }
@@ -132,11 +155,35 @@ function kall(string $sti, ?array $data, string $token = '', string $metode = ''
     }
     $valg[CURLOPT_HTTPHEADER] = $hode;
     curl_setopt_array($c, $valg);
-    $raa = (string) curl_exec($c);
-    $kode = (int) curl_getinfo($c, CURLINFO_RESPONSE_CODE);
+    return $c;
+}
+function svar(CurlHandle $c, string $raa): array
+{
     $hl = (int) curl_getinfo($c, CURLINFO_HEADER_SIZE);
+    return [(int) curl_getinfo($c, CURLINFO_RESPONSE_CODE), json_decode(substr($raa, $hl), true), substr($raa, 0, $hl)];
+}
+/** @return array{0:int,1:mixed,2:string} status, json, rå */
+function kall(string $sti, ?array $data, string $token = ''): array
+{
+    global $port;
+    $c = forbered($sti, $data, $token, $port);
+    $raa = (string) curl_exec($c);
+    $s = svar($c, $raa);
     curl_close($c);
-    return [$kode, json_decode(substr($raa, $hl), true), substr($raa, 0, $hl)];
+    return $s;
+}
+/** To kall samtidig, hvert til sin server. */
+function samtidig(array $a, array $b, string $token): array
+{
+    global $porter;
+    $m = curl_multi_init();
+    $h = [forbered($a[0], $a[1], $token, $porter[0]), forbered($b[0], $b[1], $token, $porter[1])];
+    foreach ($h as $c) { curl_multi_add_handle($m, $c); }
+    do { curl_multi_exec($m, $aktiv); if ($aktiv) { curl_multi_select($m, 0.05); } } while ($aktiv);
+    $ut = [];
+    foreach ($h as $c) { $ut[] = svar($c, (string) curl_multi_getcontent($c)); curl_multi_remove_handle($m, $c); curl_close($c); }
+    curl_multi_close($m);
+    return $ut;
 }
 $K = '/api/kasse/kasse.php';
 $P = '/api/kasse/pin.php';
@@ -154,25 +201,34 @@ $nyttMedlem = static function (array $felt) use (&$medlemmer, $tag): int {
     return $id;
 };
 $antallBetalinger = static fn(): int => (int) DB::verdi('SELECT COUNT(*) FROM payments');
-$nokkel = static fn(): string => Vipps::uuid();
-$oppgjor = static fn(): array => Kasse::oppgjor();
+$oppgjor = static fn(): array => KasseKurv::oppgjor();
+$vlogg = __DIR__ . '/.falsk-vipps.jsonl';
+$vippsKall = static function (callable $hva) use ($vlogg): array {
+    return is_file($vlogg) ? array_values(array_filter(array_map(static fn($l) => json_decode($l, true), file($vlogg)), $hva)) : [];
+};
 
 try {
-    sjekk('HTTP-server klar', $klar);
-    sjekk('migrasjon 263 er kjørt', Kasse::klar());
+    sjekk('HTTP-serverne klare', $klar);
+    sjekk('migrasjon 263 er kjørt', KasseTilgang::klar());
+    sjekk('migrasjon 264 er kjørt (kassekvittering_sms)',
+        DB::verdi("SELECT kanal FROM notification_templates WHERE navn = 'kassekvittering_sms'") === 'sms');
     DB::kjor("INSERT INTO content_blocks (nokkel, verdi) VALUES ('Vis/kasse', 'ja') ON DUPLICATE KEY UPDATE verdi = 'ja'");
 
     // ── Testdata ───────────────────────────────────────────────────────
     $passord = 'kasse-test-' . bin2hex(random_bytes(4));
     $kasse = $nyttMedlem(['navn' => $tag . ' iPad', 'rolle' => 'kasse', 'brukernavn' => strtolower($tag) . '-ipad',
         'passord_hash' => password_hash($passord, PASSWORD_DEFAULT)]);
-    $monica = $nyttMedlem(['navn' => $tag . ' Monica', 'rolle' => 'medlem']);
-    $anne = $nyttMedlem(['navn' => $tag . ' Anne', 'rolle' => 'medlem']);
+    $monica = $nyttMedlem(['navn' => $tag . ' Monica', 'rolle' => 'medlem', 'brukernavn' => strtolower($tag) . '-monica']);
+    $anne = $nyttMedlem(['navn' => $tag . ' Anne', 'rolle' => 'medlem', 'brukernavn' => strtolower($tag) . '-anne']);
+    $per = $nyttMedlem(['navn' => $tag . ' Per', 'rolle' => 'medlem', 'brukernavn' => strtolower($tag) . '-per']);
     $vanlig = $nyttMedlem(['navn' => $tag . ' Vanlig', 'rolle' => 'medlem']);
-    $pinM = (string) random_int(1000, 4999);
-    $pinA = (string) random_int(5000, 9999);
-    Kasse::settPin($monica, $pinM);
-    Kasse::settPin($anne, $pinA);
+    $admin = $nyttMedlem(['navn' => $tag . ' Admin', 'rolle' => 'admin']);
+    $pinM = '1' . random_int(100, 999);
+    $pinA = '5' . random_int(100, 999);
+    $pinP = '8' . random_int(100, 999);
+    KasseTilgang::settPin($monica, $pinM);
+    KasseTilgang::settPin($anne, $pinA);
+    KasseTilgang::settPin($per, $pinP);
 
     $oslo = new DateTimeZone('Europe/Oslo');
     $start = (new DateTimeImmutable('today 12:00', $oslo))->setTimezone(new DateTimeZone('UTC'));
@@ -188,8 +244,8 @@ try {
         'status' => 'planlagt']);
     $popBooking = static function (string $navn, string $betaling) use ($popKurs, $popOkt, $tag): int {
         $b = DB::settInn('bookings', ['course_id' => $popKurs, 'course_session_id' => $popOkt, 'gjest_navn' => $tag . ' ' . $navn,
-            'gjest_epost' => strtolower($tag) . '-' . strtolower($navn) . '@example.com', 'antall' => 2, 'belop_ore' => 20000,
-            'status' => 'betalt', 'depositum_ore' => 20000]);
+            'gjest_epost' => strtolower($tag) . '-' . strtolower($navn) . '@example.com', 'gjest_telefon' => '+4799887766',
+            'antall' => 2, 'belop_ore' => 20000, 'status' => 'betalt', 'depositum_ore' => 20000]);
         if ($betaling === 'vipps') {
             $p = DB::settInn('payments', ['vipps_reference' => $tag . '-DEP-' . $b, 'type' => 'epayment', 'formal' => 'booking',
                 'belop_ore' => 20000, 'status' => 'betalt', 'idempotency_key' => Vipps::uuid(), 'booking_id' => $b]);
@@ -212,6 +268,21 @@ try {
 
     $kasseToken = $sesjon($kasse, 'passord', 720);
     $vanligToken = $sesjon($vanlig, 'vipps');
+    $adminToken = $sesjon($admin, 'passord');
+
+    /**
+     * Kurven regnet av serveren, med nøkler og forventet beløp per del slik
+     * iPaden sender dem.
+     */
+    $kjop = static function (array $kurv, array $betaler) use ($K, &$kasseToken): array {
+        $s = kall($K, ['handling' => 'regn', 'kurv' => $kurv, 'betaler' => $betaler], $kasseToken);
+        $deler = $s[1]['deler'] ?? [];
+        return ['kurv' => $kurv, 'betaler' => $betaler,
+                'nokler' => array_combine(array_column($deler, 'id'), array_map(static fn() => Vipps::uuid(), $deler)) ?: [],
+                'forventet' => array_combine(array_column($deler, 'id'), array_column($deler, 'sumOre')) ?: [],
+                'regn' => $s];
+    };
+    $send = static fn(array $k): array => ['kurv' => $k['kurv'], 'betaler' => $k['betaler'], 'nokler' => $k['nokler'], 'forventet' => $k['forventet']];
 
     // ══ A: Tilgang ══════════════════════════════════════════════════════
     echo "\n── A: tilgang ──\n";
@@ -242,8 +313,7 @@ try {
 
     // ══ B: PIN ══════════════════════════════════════════════════════════
     echo "\n── B: PIN ──\n";
-    $feilPin = $pinM === '0000' ? '0001' : str_pad((string) (((int) $pinM + 1) % 10000), 4, '0', STR_PAD_LEFT);
-    if ($feilPin === $pinA) { $feilPin = '0000'; }
+    $feilPin = '0' . random_int(100, 999);
     $s = kall($P, ['handling' => 'pin', 'pin' => $feilPin], $kasseToken);
     sjekk('feil PIN avvises', $s[0] === 400 && ($s[1]['feilPin'] ?? false) === true, $tekst($s));
     $s = kall($P, ['handling' => 'pin', 'pin' => $pinM], $kasseToken);
@@ -266,55 +336,81 @@ try {
     $s = kall($K, null, $kasseToken);
     sjekk('«Lås» låser kassa', $s[0] === 423, $tekst($s));
     $f = '';
-    try { Kasse::settPin($anne, $pinM); } catch (RuntimeException $e) { $f = $e->getMessage(); }
+    try { KasseTilgang::settPin($anne, $pinM); } catch (RuntimeException $e) { $f = $e->getMessage(); }
     sjekk('samme PIN for to personer nektes', $f === 'Den PIN-en bruker en annen. Velg en annen.', $f);
     $f = '';
-    try { Kasse::settPin($kasse, '1234'); } catch (RuntimeException $e) { $f = $e->getMessage(); }
+    try { KasseTilgang::settPin($kasse, '1234'); } catch (RuntimeException $e) { $f = $e->getMessage(); }
     sjekk('kassekontoen kan ikke ha PIN', str_starts_with($f, 'Kassekontoen kan ikke ha PIN'), $f);
+    $f = '';
+    try { KasseTilgang::settPin($vanlig, '4321'); } catch (RuntimeException $e) { $f = $e->getMessage(); }
+    sjekk('et medlem uten innlogging kan ikke få PIN', $f === 'Bare brukere med innlogging kan ha kasse-PIN.', $f);
     sjekk('PIN-en lagres bare som hash', !str_contains((string) DB::verdi('SELECT kasse_pin_hash FROM members WHERE id = :i', ['i' => $monica]), $pinM));
+
+    // Fjern tilgang under Brukere: PIN-en går, og kassa låses der Per står.
+    kall($P, ['handling' => 'pin', 'pin' => $pinP], $kasseToken);
+    $s = kall($K, null, $kasseToken);
+    sjekk('Per låser opp', $s[0] === 200 && ($s[1]['person']['navn'] ?? '') === $tag . ' Per', $tekst($s));
+    DB::settInn('payments', ['vipps_reference' => $tag . '-HIST-' . $per, 'type' => 'manuell', 'formal' => 'medlemskap', 'member_id' => $per,
+        'belop_ore' => 100, 'status' => 'betalt', 'idempotency_key' => Vipps::uuid()]);   // historikk: raden blir stående
+    $s = kall('/api/admin/brukere.php', ['handling' => 'slett', 'id' => $per], $adminToken);
+    sjekk('admin fjerner tilgangen til Per', $s[0] === 200, $tekst($s));
+    sjekk('… kasse-PIN-en er fjernet', DB::verdi('SELECT kasse_pin_hash FROM members WHERE id = :i', ['i' => $per]) === null);
+    $s = kall($K, null, $kasseToken);
+    sjekk('… kassa der Per sto, er låst (423)', $s[0] === 423, $tekst($s));
+    $s = kall($P, ['handling' => 'pin', 'pin' => $pinP], $kasseToken);
+    sjekk('… og PIN-en hans avvises', $s[0] === 400, $tekst($s));
+    // Også om PIN-en skulle stå igjen: uten tilgang slipper den ikke inn.
+    DB::oppdater('members', ['kasse_pin_hash' => password_hash($pinP, PASSWORD_DEFAULT)], ['id' => $per]);
+    $s = kall($P, ['handling' => 'pin', 'pin' => $pinP], $kasseToken);
+    sjekk('PIN uten tilgang (ikke under Brukere) avvises', $s[0] === 400, $tekst($s));
+    DB::oppdater('members', ['kasse_pin_hash' => null], ['id' => $per]);
     kall($P, ['handling' => 'pin', 'pin' => $pinM], $kasseToken);
 
     // ══ C: beløpene regnes på serveren ═══════════════════════════════════
     echo "\n── C: beløpene regnes på serveren ──\n";
     $kurvKari = ['bookingId' => $kari, 'pop' => [['nivaaId' => $niv['Liten']['id'], 'gjenstand' => '', 'antall' => 1],
         ['nivaaId' => $niv['Stor']['id'], 'gjenstand' => '', 'antall' => 1]]];
-    $s = kall($K, ['handling' => 'regn', 'kurv' => $kurvKari, 'betaler' => ['bookingId' => $kari]], $kasseToken);
-    sjekk('Kari: Liten 500 + Stor 850 − 200 betalt ved booking = 1 150 kr', $s[0] === 200 && ($s[1]['sumOre'] ?? 0) === 115000, $tekst($s));
+    $kk = $kjop($kurvKari, ['bookingId' => $kari]);
+    $s = $kk['regn'];
+    sjekk('Kari: Liten 500 + Stor 850 − 200 betalt ved booking = 1 150 kr', $s[0] === 200 && ($s[1]['sumOre'] ?? 0) === 115000
+        && ($s[1]['deler'][0]['id'] ?? '') === 'booking:' . $kari, $tekst($s));
     $linjer = array_column($s[1]['deler'][0]['linjer'] ?? [], 'ore', 'tekst');
     sjekk('… med linja «Betalt ved booking» −200 kr', ($linjer['Betalt ved booking'] ?? 0) === -20000, json_encode($linjer, JSON_UNESCAPED_UNICODE));
     $for = $antallBetalinger();
-    $n1 = $nokkel();
-    $s = kall($K, ['handling' => 'betal', 'kurv' => $kurvKari, 'betaler' => ['bookingId' => $kari], 'maate' => 'Kontant',
-        'nokler' => [$n1], 'forventetOre' => 100], $kasseToken);
+    $feilBelop = $send($kk);
+    $feilBelop['forventet'] = ['booking:' . $kari => 100];
+    $s = kall($K, ['handling' => 'betal', 'maate' => 'Kontant'] + $feilBelop, $kasseToken);
     sjekk('feil forventet beløp (nettleseren sier 1 kr): 409, ingenting registrert', $s[0] === 409 && $antallBetalinger() === $for
         && DB::verdi('SELECT gjenstander_ore FROM bookings WHERE id = :i', ['i' => $kari]) === null, $tekst($s));
     $oppFor = $oppgjor();
-    $s = kall($K, ['handling' => 'betal', 'kurv' => $kurvKari, 'betaler' => ['bookingId' => $kari], 'maate' => 'Kontant',
-        'nokler' => [$n1], 'forventetOre' => 115000], $kasseToken);
+    $s = kall($K, ['handling' => 'betal', 'maate' => 'Kontant'] + $send($kk), $kasseToken);
     $b = DB::en('SELECT status, belop_ore, gjenstander_ore FROM bookings WHERE id = :i', ['i' => $kari]);
     $rad = DB::en("SELECT * FROM payments WHERE booking_id = :b AND type = 'manuell' AND annullert_at IS NULL ORDER BY id DESC LIMIT 1", ['b' => $kari]);
     sjekk('Kontant 1 150 kr: én manuell rad på 115000 øre, registrert av Monica', $s[0] === 200 && (int) $rad['belop_ore'] === 115000
         && $rad['maate'] === 'Kontant' && (int) $rad['registrert_av'] === $monica, $tekst($s) . ' ' . json_encode($rad));
     sjekk('… gjenstandene slått inn (1 350 kr) og bookingen betalt', (int) $b['gjenstander_ore'] === 135000
         && (int) $b['belop_ore'] === 135000 && $b['status'] === 'betalt', json_encode($b));
-    sjekk('… svaret har kvittering på e-post (Kari har adresse)', ($s[1]['kvitteringValg']['epost'] ?? false) === true, $tekst($s));
+    sjekk('… svaret har betalingsraden og kvittering på e-post (Kari har adresse)',
+        ($s[1]['betalinger'] ?? []) === [(int) $rad['id']] && ($s[1]['kvitteringValg']['epost'] ?? false) === true, $tekst($s));
+    sjekk('… ingen SMS-kvittering når SMS ikke er satt opp', ($s[1]['kvitteringValg']['sms'] ?? true) === false, $tekst($s));
+    $kariBetalinger = $s[1]['betalinger'] ?? [];
     $antall = $antallBetalinger();
-    $s = kall($K, ['handling' => 'betal', 'kurv' => $kurvKari, 'betaler' => ['bookingId' => $kari], 'maate' => 'Kontant',
-        'nokler' => [$n1], 'forventetOre' => 115000], $kasseToken);
-    sjekk('samme nøkkel en gang til: ingen ny betaling (eller 409 fordi det er betalt)', $antallBetalinger() === $antall, $tekst($s));
+    $s = kall($K, ['handling' => 'betal', 'maate' => 'Kontant'] + $send($kk), $kasseToken);
+    sjekk('samme nøkler en gang til: ingen ny betaling', $antallBetalinger() === $antall, $tekst($s));
     $oppEtter = $oppgjor();
     sjekk('Dagens oppgjør: kontant +1 150 kr', $oppEtter['kontantOre'] - $oppFor['kontantOre'] === 115000,
         ($oppEtter['kontantOre'] - $oppFor['kontantOre']) . '');
 
     $kurvVare = ['varer' => [['id' => $produkt, 'antall' => 2, 'prisOre' => 100]]];
-    $s = kall($K, ['handling' => 'regn', 'kurv' => $kurvVare, 'betaler' => []], $kasseToken);
-    sjekk('varer: prisen fra basen (2 × 290 = 580 kr), ikke nettleserens 1 kr', ($s[1]['sumOre'] ?? 0) === 58000, $tekst($s));
+    $kv = $kjop($kurvVare, []);
+    sjekk('varer: prisen fra basen (2 × 290 = 580 kr), ikke nettleserens 1 kr', ($kv['regn'][1]['sumOre'] ?? 0) === 58000
+        && ($kv['regn'][1]['deler'][0]['id'] ?? '') === 'ordre', $tekst($kv['regn']));
     $s = kall($K, ['handling' => 'regn', 'kurv' => ['varer' => [['id' => $produkt, 'antall' => 5]]], 'betaler' => []], $kasseToken);
     sjekk('mer enn lageret (5 av 3) avvises', $s[0] === 400 && str_contains((string) ($s[1]['feil'] ?? ''), 'bare 3 igjen'), $tekst($s));
     $oppFor = $oppgjor();
-    $n2 = $nokkel();
-    $s = kall($K, ['handling' => 'betal', 'kurv' => $kurvVare, 'betaler' => [], 'maate' => 'Vipps', 'nokler' => [$n2], 'forventetOre' => 58000], $kasseToken);
-    $ordre = DB::en("SELECT o.* FROM orders o JOIN payments p ON p.order_id = o.id WHERE p.idempotency_key = :k", ['k' => Kasse::radNokkel($n2, 1)]);
+    $s = kall($K, ['handling' => 'betal', 'maate' => 'Vipps'] + $send($kv), $kasseToken);
+    $ordre = DB::en("SELECT o.* FROM orders o JOIN payments p ON p.order_id = o.id WHERE p.idempotency_key = :k",
+        ['k' => Kasse::radNokkel($kv['nokler']['ordre'], 1)]);
     sjekk('«Vipps-nummer»: én ordre D- på 580 kr, kontantkunde = «Salg over disk»', $s[0] === 200 && $ordre !== null
         && str_starts_with((string) $ordre['ordrenr'], 'D-') && (int) $ordre['sum_ore'] === 58000 && $ordre['kunde_navn'] === 'Salg over disk',
         $tekst($s) . ' ' . json_encode($ordre));
@@ -346,24 +442,23 @@ try {
 
     // ══ E: Vipps-QR ═════════════════════════════════════════════════════
     echo "\n── E: Vipps-QR ──\n";
-    $vlogg = __DIR__ . '/.falsk-vipps.jsonl';
     $linjerFor = is_file($vlogg) ? count(file($vlogg)) : 0;
     $sett('.betaling-status', 'CREATED');
     DB::oppdater('products', ['lager' => 3], ['id' => $produkt]);
-    $kurvQ = ['varer' => [['id' => $produkt, 'antall' => 1]]];
-    $n3 = $nokkel();
-    $q = ['handling' => 'qr', 'kurv' => $kurvQ, 'betaler' => [], 'del' => 0, 'nokler' => [$n3], 'forventetOre' => 29000];
+    $kq = $kjop(['varer' => [['id' => $produkt, 'antall' => 1]]], []);
+    $q = ['handling' => 'qr', 'del' => 'ordre'] + $send($kq);
     $s = kall($K, $q, $kasseToken);
     $ref = (string) ($s[1]['poll']['referanse'] ?? '');
     $p = DB::en('SELECT * FROM payments WHERE vipps_reference = :r', ['r' => $ref]);
-    sjekk('QR for varen: KQ-referanse, bilde, betaling «venter» på 290 kr med nøkkelen fra iPaden', $s[0] === 200
-        && str_starts_with($ref, 'KQ-') && str_starts_with((string) ($s[1]['qr'] ?? ''), 'data:image/svg+xml') && $p !== null
-        && $p['status'] === 'venter' && (int) $p['belop_ore'] === 29000 && $p['idempotency_key'] === strtolower($n3), $tekst($s));
-    $kallVipps = array_values(array_filter(array_map(static fn($l) => json_decode($l, true), array_slice(file($vlogg), $linjerFor)),
+    sjekk('QR for varen: KQ-referanse for iPaden, bilde, betaling «venter» på 290 kr med nøkkelen fra iPaden', $s[0] === 200
+        && preg_match('/^KQ-[0-9a-f]{8}-\d{6}-/', $ref) === 1 && str_starts_with((string) ($s[1]['qr'] ?? ''), 'data:image/svg+xml')
+        && $p !== null && $p['status'] === 'venter' && (int) $p['belop_ore'] === 29000 && $p['idempotency_key'] === strtolower($kq['nokler']['ordre']),
+        $tekst($s));
+    $opprett = array_values(array_filter(array_map(static fn($l) => json_decode($l, true), array_slice(file($vlogg), $linjerFor)),
         static fn($k) => ($k['metode'] ?? '') === 'POST' && ($k['sti'] ?? '') === '/epayment/v1/payments' && ($k['kropp']['reference'] ?? '') === $ref));
-    sjekk('… Vipps fikk userFlow QR, 29000 øre og samme Idempotency-Key', count($kallVipps) === 1
-        && ($kallVipps[0]['kropp']['userFlow'] ?? '') === 'QR' && ($kallVipps[0]['kropp']['amount']['value'] ?? 0) === 29000
-        && ($kallVipps[0]['nokkel'] ?? '') === strtolower($n3), json_encode($kallVipps));
+    sjekk('… Vipps fikk userFlow QR, 29000 øre og samme Idempotency-Key', count($opprett) === 1
+        && ($opprett[0]['kropp']['userFlow'] ?? '') === 'QR' && ($opprett[0]['kropp']['amount']['value'] ?? 0) === 29000
+        && ($opprett[0]['nokkel'] ?? '') === strtolower($kq['nokler']['ordre']), json_encode($opprett));
     $for = $antallBetalinger();
     $s = kall($K, $q, $kasseToken);
     sjekk('samme QR igjen (dobbelttrykk): samme referanse, ingen ny betaling', ($s[1]['poll']['referanse'] ?? '') === $ref && $antallBetalinger() === $for, $tekst($s));
@@ -372,31 +467,56 @@ try {
     DB::kjor('UPDATE payments SET updated_at = DATE_SUB(UTC_TIMESTAMP(), INTERVAL 1 MINUTE) WHERE vipps_reference = :r', ['r' => $ref]);
     $s = kall($K, ['handling' => 'status', 'poll' => ['referanse' => $ref]], $kasseToken);
     $o = DB::en('SELECT status FROM orders WHERE payment_id = :p', ['p' => (int) $p['id']]);
-    sjekk('status hentes fra Vipps: betalt, ordren betalt', $s[0] === 200 && ($s[1]['betalt'] ?? false) === true && ($o['status'] ?? '') === 'betalt', $tekst($s));
+    sjekk('status hentes fra Vipps: betalt, ordren betalt, betalingsraden i svaret', $s[0] === 200 && ($s[1]['betalt'] ?? false) === true
+        && ($o['status'] ?? '') === 'betalt' && ($s[1]['betalingId'] ?? 0) === (int) $p['id'], $tekst($s));
     sjekk('… og lageret trekkes når pengene er inne (3 → 2)', (int) DB::verdi('SELECT lager FROM products WHERE id = :i', ['i' => $produkt]) === 2);
 
-    // Kontant etter en QR som venter: QR-en stoppes først.
+    // Samme kurv: QR vises, «Tilbake», Kontant (nøklene beholdes).
     $sett('.betaling-status', 'CREATED');
-    $n4 = $nokkel();
-    $s = kall($K, ['handling' => 'qr', 'kurv' => $kurvQ, 'betaler' => [], 'del' => 0, 'nokler' => [$n4], 'forventetOre' => 29000], $kasseToken);
+    $k4 = $kjop(['varer' => [['id' => $produkt, 'antall' => 1]]], []);
+    $s = kall($K, ['handling' => 'qr', 'del' => 'ordre'] + $send($k4), $kasseToken);
     $ref4 = (string) ($s[1]['poll']['referanse'] ?? '');
-    $s = kall($K, ['handling' => 'betal', 'kurv' => $kurvQ, 'betaler' => [], 'maate' => 'Kontant', 'nokler' => [$n4], 'forventetOre' => 29000], $kasseToken);
+    $s = kall($K, ['handling' => 'betal', 'maate' => 'Kontant'] + $send($k4), $kasseToken);
     $p4 = DB::en('SELECT id, status FROM payments WHERE vipps_reference = :r', ['r' => $ref4]);
     $o4 = DB::en('SELECT status FROM orders WHERE payment_id = :p', ['p' => (int) $p4['id']]);
-    $avbrutt = array_filter(array_map(static fn($l) => json_decode($l, true), file($vlogg)),
-        static fn($k) => ($k['sti'] ?? '') === '/epayment/v1/payments/' . $ref4 . '/cancel' && ($k['kropp']['cancelTransactionOnly'] ?? false) === true);
+    $avbrutt = $vippsKall(static fn($k) => ($k['sti'] ?? '') === '/epayment/v1/payments/' . $ref4 . '/cancel' && ($k['kropp']['cancelTransactionOnly'] ?? false) === true);
     $manuell = DB::en('SELECT o.ordrenr, o.sum_ore FROM payments p JOIN orders o ON o.id = p.order_id WHERE p.idempotency_key = :k',
-        ['k' => Kasse::radNokkel($n4, 1)]);
-    sjekk('kontant etter QR: QR-en stoppes hos Vipps (cancelTransactionOnly) og QR-ordren kanselleres', $s[0] === 200
+        ['k' => Kasse::radNokkel($k4['nokler']['ordre'], 1)]);
+    sjekk('QR → Tilbake → Kontant (samme kurv): QR-en stoppes hos Vipps og QR-ordren kanselleres', $s[0] === 200
         && count($avbrutt) === 1 && $p4['status'] === 'avbrutt' && ($o4['status'] ?? '') === 'kansellert', $tekst($s) . ' ' . json_encode([$p4, $o4]));
     sjekk('… og kontanten står som én D-ordre på 290 kr', $manuell !== null && str_starts_with((string) $manuell['ordrenr'], 'D-')
         && (int) $manuell['sum_ore'] === 29000, json_encode($manuell));
 
-    // Påmeldingen: QR for det som står igjen (KursstartKrav).
+    // Kurven endres etter «Tilbake» (nye nøkler): den gamle QR-en stoppes likevel.
+    $k5 = $kjop(['varer' => [['id' => $produkt, 'antall' => 1]]], []);
+    $s = kall($K, ['handling' => 'qr', 'del' => 'ordre'] + $send($k5), $kasseToken);
+    $ref5 = (string) ($s[1]['poll']['referanse'] ?? '');
+    $k6 = $kjop(['fritt' => ['150']], []);
+    $s = kall($K, ['handling' => 'betal', 'maate' => 'Kontant'] + $send($k6), $kasseToken);
+    $p5 = DB::en('SELECT id, status FROM payments WHERE vipps_reference = :r', ['r' => $ref5]);
+    $o5 = DB::en('SELECT status FROM orders WHERE payment_id = :p', ['p' => (int) $p5['id']]);
+    sjekk('QR → Tilbake → endret kurv → Kontant: den gamle QR-en stoppes og ordren kanselleres (ingen dobbel betaling)',
+        $s[0] === 200 && $p5['status'] === 'avbrutt' && ($o5['status'] ?? '') === 'kansellert'
+        && count($vippsKall(static fn($k) => ($k['sti'] ?? '') === '/epayment/v1/payments/' . $ref5 . '/cancel')) === 1,
+        $tekst($s) . ' ' . json_encode([$p5, $o5]));
+    // … og har kunden rukket å betale den gamle, tas det ikke betalt en gang til.
+    $k7 = $kjop(['varer' => [['id' => $produkt, 'antall' => 1]]], []);
+    $s = kall($K, ['handling' => 'qr', 'del' => 'ordre'] + $send($k7), $kasseToken);
+    $ref7 = (string) ($s[1]['poll']['referanse'] ?? '');
+    $sett('.betaling-status', 'AUTHORIZED');
+    $for = $antallBetalinger();
+    $k8 = $kjop(['fritt' => ['200']], []);
+    $s = kall($K, ['handling' => 'betal', 'maate' => 'Kontant'] + $send($k8), $kasseToken);
+    sjekk('… betalte kunden den gamle QR-en: 409, kontanten registreres ikke', $s[0] === 409 && $antallBetalinger() === $for
+        && DB::verdi('SELECT status FROM payments WHERE vipps_reference = :r', ['r' => $ref7]) === 'betalt', $tekst($s));
+
+    // Påmelding med QR, så varene med QR i samme kurv.
     $sett('.betaling-status', 'CREATED');
-    $kurvT = ['bookingId' => $kursBooking];
-    $s = kall($K, ['handling' => 'qr', 'kurv' => $kurvT, 'betaler' => ['bookingId' => $kursBooking], 'del' => 0,
-        'nokler' => [$nokkel()], 'forventetOre' => 149000], $kasseToken);
+    DB::oppdater('products', ['lager' => 3], ['id' => $produkt]);
+    $kt = $kjop(['bookingId' => $kursBooking, 'varer' => [['id' => $produkt, 'antall' => 1]]], ['bookingId' => $kursBooking]);
+    sjekk('Torhild + leire: to deler, 1 490 + 290 kr', ($kt['forventet']['booking:' . $kursBooking] ?? 0) === 149000
+        && ($kt['forventet']['ordre'] ?? 0) === 29000, json_encode($kt['forventet']));
+    $s = kall($K, ['handling' => 'qr', 'del' => 'booking:' . $kursBooking] + $send($kt), $kasseToken);
     $ks = DB::en("SELECT * FROM payments WHERE booking_id = :b AND vipps_reference LIKE 'KS-QR-%'", ['b' => $kursBooking]);
     sjekk('Torhild: KS-QR på 1 490 kr (KursstartKrav::visQr)', $s[0] === 200 && $ks !== null && (int) $ks['belop_ore'] === 149000
         && $ks['status'] === 'venter' && ($s[1]['poll']['bookingId'] ?? 0) === $kursBooking, $tekst($s));
@@ -404,34 +524,68 @@ try {
     DB::kjor('UPDATE payments SET updated_at = DATE_SUB(UTC_TIMESTAMP(), INTERVAL 1 MINUTE) WHERE id = :i', ['i' => (int) $ks['id']]);
     $s = kall($K, ['handling' => 'status', 'poll' => ['bookingId' => $kursBooking]], $kasseToken);
     sjekk('… betalt når Vipps sier ja, og påmeldingen er betalt', ($s[1]['betalt'] ?? false) === true
+        && ($s[1]['betalingId'] ?? 0) === (int) $ks['id']
         && DB::verdi('SELECT status FROM bookings WHERE id = :i', ['i' => $kursBooking]) === 'betalt', $tekst($s));
+    $sett('.betaling-status', 'CREATED');
+    $s = kall($K, ['handling' => 'qr', 'del' => 'ordre'] + $send($kt), $kasseToken);
+    sjekk('… så varene med QR i samme kurv: går gjennom (ikke 409), 290 kr', $s[0] === 200 && ($s[1]['betalt'] ?? true) === false
+        && ($s[1]['belop'] ?? '') === KasseKurv::kr(29000), $tekst($s));
+    $s = kall($K, ['handling' => 'qr', 'del' => 'booking:' . $kursBooking] + $send($kt), $kasseToken);
+    sjekk('… og påmeldingen svarer betalt om den spørres igjen', $s[0] === 200 && ($s[1]['betalt'] ?? false) === true, $tekst($s));
 
     // Paint on Pots med beløp ved booking via Vipps: resten kan tas med QR.
-    $sett('.betaling-status', 'CREATED');
-    $kurvV = ['bookingId' => $vippsGjest, 'pop' => [['nivaaId' => $niv['Liten']['id'], 'antall' => 2]]];
-    $s = kall($K, ['handling' => 'qr', 'kurv' => $kurvV, 'betaler' => ['bookingId' => $vippsGjest], 'del' => 0,
-        'nokler' => [$nokkel()], 'forventetOre' => 80000], $kasseToken);
+    $kv2 = $kjop(['bookingId' => $vippsGjest, 'pop' => [['nivaaId' => $niv['Liten']['id'], 'antall' => 2]]], ['bookingId' => $vippsGjest]);
+    $s = kall($K, ['handling' => 'qr', 'del' => 'booking:' . $vippsGjest] + $send($kv2), $kasseToken);
     $ks = DB::en("SELECT * FROM payments WHERE booking_id = :b AND vipps_reference LIKE 'KS-QR-%'", ['b' => $vippsGjest]);
     sjekk('Vipps-depositum: QR for resten, 2 × Liten − 200 = 800 kr', $s[0] === 200 && $ks !== null && (int) $ks['belop_ore'] === 80000, $tekst($s));
+
+    // Samtidige trykk: qr() og betal() for samme del, hver til sin server.
+    $sett('.betaling-status', 'CREATED');
+    $ks2 = $kjop(['fritt' => ['333']], []);
+    $svar2 = samtidig([$K, ['handling' => 'qr', 'del' => 'ordre'] + $send($ks2)], [$K, ['handling' => 'betal', 'maate' => 'Kontant'] + $send($ks2)], $kasseToken);
+    $n0 = strtolower($ks2['nokler']['ordre']);
+    $radene = DB::alle('SELECT type, status FROM payments WHERE idempotency_key IN (:a, :b)', ['a' => $n0, 'b' => Kasse::radNokkel($n0, 1)]);
+    $betalt = array_filter($radene, static fn($r) => in_array($r['status'], ['betalt', 'autorisert'], true));
+    $venter = array_filter($radene, static fn($r) => in_array($r['status'], ['opprettet', 'venter'], true));
+    sjekk('samtidige qr() og betal() for samme del: nøyaktig ett oppgjør, ingen QR igjen som venter',
+        count($betalt) === 1 && count($venter) === 0, json_encode([$svar2[0][0], $svar2[1][0], $radene]));
 
     // ══ F: kvittering ═══════════════════════════════════════════════════
     echo "\n── F: kvittering ──\n";
     $for = (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE ref_type = 'booking' AND ref_id = :b", ['b' => $kari]);
-    $s = kall($K, ['handling' => 'kvittering', 'kanal' => 'epost', 'mal' => [['type' => 'booking', 'id' => $kari]]], $kasseToken);
-    $nye = DB::alle("SELECT kanal, mottaker, mal FROM notifications WHERE ref_type = 'booking' AND ref_id = :b ORDER BY id", ['b' => $kari]);
-    $nye = array_slice($nye, $for);
+    $s = kall($K, ['handling' => 'kvittering', 'kanal' => 'epost', 'betalinger' => $kariBetalinger, 'betaler' => ['bookingId' => $kari]], $kasseToken);
+    $nye = array_slice(DB::alle("SELECT kanal, mottaker, mal FROM notifications WHERE ref_type = 'booking' AND ref_id = :b ORDER BY id", ['b' => $kari]), $for);
     sjekk('kvittering på e-post: én e-post i kø til Kari, ingen beskjed til verkstedet', $s[0] === 200 && count($nye) === 1
         && $nye[0]['kanal'] === 'epost' && str_contains((string) $nye[0]['mottaker'], '-kari@example.com'), $tekst($s) . ' ' . json_encode($nye));
-    $s = kall($K, ['handling' => 'kvittering', 'kanal' => 'epost', 'mal' => [['type' => 'booking', 'id' => $vippsGjest + 999999]]], $kasseToken);
+    $s = kall($K, ['handling' => 'kvittering', 'kanal' => 'epost', 'betalinger' => [$depId], 'betaler' => ['bookingId' => $ola]], $kasseToken);
     sjekk('kvittering for noe som ikke er betalt i kassa i dag, nektes', $s[0] === 404, $tekst($s));
+    // SMS: settes opp bare for testen (ingenting sendes, køen ryddes).
+    foreach (['sveve_bruker' => 'kassetest', 'sveve_passord' => 'kassetest', 'sms_leverandor' => 'sveve'] as $n => $v) {
+        DB::kjor('INSERT INTO innstillinger (nokkel, verdi) VALUES (:n, :v) ON DUPLICATE KEY UPDATE verdi = VALUES(verdi)', ['n' => $n, 'v' => $v]);
+    }
+    $s = kall($K, ['handling' => 'kvitteringValg', 'betaler' => ['bookingId' => $kari], 'betalinger' => $kariBetalinger], $kasseToken);
+    sjekk('med SMS satt opp og mobil: «Kvittering på SMS» kan velges', ($s[1]['sms'] ?? false) === true, $tekst($s));
+    $s = kall($K, ['handling' => 'kvittering', 'kanal' => 'sms', 'betalinger' => $kariBetalinger, 'betaler' => ['bookingId' => $kari]], $kasseToken);
+    $sms = DB::en("SELECT kanal, mottaker, mal, tekst FROM notifications WHERE ref_type = 'payment' AND ref_id = :p AND mal = 'kassekvittering_sms'",
+        ['p' => (int) ($kariBetalinger[0] ?? 0)]);
+    $d = new DateTimeImmutable('now', $oslo);
+    $mnd = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember'];
+    $ventet = 'Takk for handelen hos Lissom! Betalt 1' . "\u{a0}" . '150' . "\u{a0}" . 'kr med kontant ' . (int) $d->format('j') . '. '
+        . $mnd[(int) $d->format('n') - 1] . '. Hilsen oss i Lissom';
+    sjekk('SMS-kvitteringen ligger i kø med beløp, måte og dato', $s[0] === 200 && $sms !== null && $sms['kanal'] === 'sms'
+        && normaliser_telefon((string) $sms['mottaker']) === normaliser_telefon('+4799887766')
+        && str_replace([' ', "\u{a0}"], ' ', trim((string) $sms['tekst'])) === str_replace([' ', "\u{a0}"], ' ', $ventet),
+        $tekst($s) . ' ' . json_encode($sms, JSON_UNESCAPED_UNICODE));
+    $s = kall($K, ['handling' => 'kvitteringValg', 'betaler' => [], 'betalinger' => $kariBetalinger], $kasseToken);
+    sjekk('kontantkunden får ingen SMS- eller e-postkvittering', ($s[1]['sms'] ?? true) === false && ($s[1]['epost'] ?? true) === false, $tekst($s));
 
     // ══ B (til slutt): for mange PIN-forsøk ═════════════════════════════
     echo "\n── B: for mange PIN-forsøk ──\n";
     $siste = 0;
-    for ($i = 0; $i < Kasse::PIN_FORSOK + 1; $i++) {
+    for ($i = 0; $i < KasseTilgang::PIN_FORSOK + 1; $i++) {
         $siste = kall($P, ['handling' => 'pin', 'pin' => $feilPin], $kasseToken)[0];
     }
-    sjekk('etter ' . Kasse::PIN_FORSOK . ' forsøk: 429', $siste === 429, (string) $siste);
+    sjekk('etter ' . KasseTilgang::PIN_FORSOK . ' forsøk: 429', $siste === 429, (string) $siste);
 
     $ferdig = true;
 } catch (Throwable $e) {

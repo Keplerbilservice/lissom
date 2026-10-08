@@ -237,7 +237,7 @@ if (!$bruker) {
 if ($handling === 'kassepin') {
     $pin = Foresporsel::tekst('pin');
     try {
-        Kasse::settPin((int) $id, $pin === '' ? null : $pin);
+        KasseTilgang::settPin((int) $id, $pin === '' ? null : $pin);
     } catch (RuntimeException $e) {
         Svar::feil($e->getMessage());
     }
@@ -341,6 +341,10 @@ if ($handling === 'slett') {
     if ($bruker['rolle'] === 'admin' && $antallAdmin() <= 1) {
         Svar::feil('Dette er den siste admin-brukeren.');
     }
+
+    // Kasse-PIN-en går med tilgangen, og står personen i kassa nå, låses
+    // den (kontrolløren 8. oktober 2026).
+    KasseTilgang::fjernFor((int) $id);
 
     // Har personen historikk, slettes ikke raden — bookinger og betalinger er
     // bokforingspliktige, og fremmednoklene maa fortsatt peke et sted. Da

@@ -6509,13 +6509,18 @@
                     ]
                 },
                 {
-                    "fil": "app/lib/kasse.php",
+                    "fil": "app/lib/kassetilgang.php",
                     "finnes": [
                         "public const LAAS_MINUTTER = 5;",
                         "['n' => 'Vis/kasse']",
                         "Svar::feil('Kassa er låst.', 423, ['laast' => true]);",
-                        "password_hash($pin, PASSWORD_DEFAULT)",
-                        "'Beløpet er endret til ' . self::kr($sum) . '. Se over kurven og prøv igjen.'",
+                        "password_hash($pin, PASSWORD_DEFAULT)"
+                    ]
+                },
+                {
+                    "fil": "app/lib/kasse.php",
+                    "finnes": [
+                        "'Beløpet er endret til ' . KasseKurv::kr($sum) . '. Se over kurven og prøv igjen.'",
                         "' · Annullert: betalte ikke ved booking (kassa)'"
                     ]
                 },
@@ -6557,6 +6562,63 @@
                     "finnes": [
                         "MODIFY rolle ENUM('medlem', 'admin', 'regnskap', 'kasse')",
                         "ADD COLUMN IF NOT EXISTS kasse_pin_hash"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "kasse-ipad-kontroll-sms-20261008",
+            "dato": "2026-10-08",
+            "hva": "Kontrolløren (STOPP 267a748) og eierens SMS-kvittering: nøklene per del beholdes så lenge kurven er den samme, og alle QR-koder fra iPaden som venter stoppes hos Vipps før kontant/annen måte og før en ny QR (ingen dobbel betaling etter «Tilbake»); delene har faste id-er, så en påmelding betalt med QR ikke stopper varene; lås per nøkkel mellom qr() og betal(); «Fjern tilgang» fjerner kasse-PIN og låser kassa, og bare personer under Brukere kan bruke PIN; kassa delt i KasseTilgang, KasseKurv og Kasse. SMS-kvittering fra kassa (godkjent tekst): «Takk for handelen hos Lissom! Betalt {belop} med {maate} {dato}. Hilsen oss i Lissom», mal kassekvittering_sms (migrasjon 264), vises som «Kvittering på SMS» når kunden har mobil og SMS er satt opp; den fulle kvitteringen går på e-post.",
+            "hvor": "app/lib/kasse.php, app/lib/kassekurv.php, app/lib/kassetilgang.php, api/kasse/kasse.php, api/admin/brukere.php, admin-ny/kasse.js, app/lib/maler.php, db/migrations/264_kassekvittering_sms.sql",
+            "kode": [
+                {
+                    "fil": "app/lib/kasse.php",
+                    "finnes": [
+                        "private static function stoppOktensQr(array $unntatt): void",
+                        "'kasse:' . strtolower($nokkel)",
+                        "Varsel::mal('kassekvittering_sms', ['telefon' => $tlf], [",
+                        "if ($d['type'] === 'booking' && (int) $d['sumOre'] === 0) {"
+                    ]
+                },
+                {
+                    "fil": "app/lib/kassekurv.php",
+                    "finnes": [
+                        "'id' => 'booking:' . $bid",
+                        "['id' => 'ordre'] + self::ordreDel("
+                    ]
+                },
+                {
+                    "fil": "app/lib/kassetilgang.php",
+                    "finnes": [
+                        "public static function fjernFor(int $medlemId): void",
+                        "public static function harTilgang(array $m): bool"
+                    ]
+                },
+                {
+                    "fil": "api/admin/brukere.php",
+                    "finnes": [
+                        "KasseTilgang::fjernFor((int) $id);"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kasse.js",
+                    "finnes": [
+                        "if(salg.noklerSig!==sig){salg.nokler={};salg.noklerSig=sig;}",
+                        "'Kvittering på SMS'"
+                    ]
+                },
+                {
+                    "fil": "app/lib/maler.php",
+                    "finnes": [
+                        "'kassekvittering_sms' => ["
+                    ]
+                },
+                {
+                    "fil": "db/migrations/264_kassekvittering_sms.sql",
+                    "finnes": [
+                        "'Takk for handelen hos Lissom! Betalt {belop} med {maate} {dato}. Hilsen oss i Lissom'",
+                        "-- godkjent av eieren: 2026-10-08"
                     ]
                 }
             ]

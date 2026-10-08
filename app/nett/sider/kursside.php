@@ -348,6 +348,12 @@ if ($popNivaer !== []) {
             . '</div>';
     }
     $prisTopp .= '<div style="margin-top: var(--space-3); font-size: var(--text-sm); color: var(--text-body);">Glasur og brenning er med i prisen</div></div>';
+    // Prisene bare ett sted (eieren, 8. oktober 2026): hele lista står under
+    // Priser lenger ned; over datoene bare «Fra 500 kr» (laveste nivå).
+    $popListe = $prisTopp;
+    $laveste = min(array_map(static fn(array $n): int => (int) ($n['prisOre'] ?? 0), $popNivaer));
+    $prisTopp = '<div style="display: flex; align-items: baseline; gap: 8px 10px; margin-bottom: var(--space-6); flex-wrap: wrap;"><span style="font-family: var(--font-display); font-weight: 800; font-size: min(var(--text-4xl), 10vw); color: var(--text-heading); white-space: nowrap;" class="lx-pris">' . $e('Fra ' . PopPris::kr($laveste)) . '</span><span style="font-size: var(--text-sm); color: var(--text-muted);">' . $e($prisNote) . '</span></div>'
+        . '<div style="margin: -12px 0 var(--space-6); font-size: var(--text-sm); color: var(--text-body);">Glasur og brenning er med i prisen</div>';
 }
 $h .= '<div class="lx-kurs-boks" style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-8); position: sticky; top: 104px;">'
     . $prisTopp
@@ -537,9 +543,7 @@ if ($erPop) {
     $faq = [];
     if ($popNivaer !== []) {
         // Prisnivaaene, ikke beloepet ved booking (eieren, 8. oktober 2026).
-        $faq[] = ['q' => 'Hva koster Paint on Pots?', 'a' => trim('Prisen er per gjenstand: '
-            . implode(', ', array_map(static fn(array $n): string => $n['navn'] . ' ' . str_replace("\u{a0}", ' ', (string) $n['pris']), $popNivaer))
-            . '. Glasur og brenning er med i prisen. ' . $innh('Paint on Pots/4/Brødtekst'))];
+        $faq[] = ['q' => 'Hva koster Paint on Pots?', 'a' => trim('Fra ' . str_replace("\u{a0}", ' ', PopPris::kr($laveste)) . ' per gjenstand. Glasur og brenning er med i prisen. ' . $innh('Paint on Pots/4/Brødtekst'))];
     } elseif ($pris !== '' && !$gratis) {
         $prisSvar = str_starts_with($pris, 'Fra ')
             ? 'Prisen er fra ' . mb_substr($pris, 4) . ' og avhenger av gjenstanden du velger.'
@@ -589,7 +593,7 @@ if ($erPop) {
         $h .= '<div style="' . $boks . '">'
             . $kicker($innh('Paint on Pots/4/Kicker'))
             . $h2($innh('Paint on Pots/4/Overskrift'))
-            . str_replace('margin-bottom: var(--space-6);', 'margin-bottom: var(--space-4); max-width: 46ch;', $prisTopp)
+            . str_replace('margin-bottom: var(--space-6);', 'margin-bottom: var(--space-4); max-width: 46ch;', $popListe)
             . $avsnitt($innh('Paint on Pots/4/Brødtekst'))
             . '</div>';
     } elseif ($pris !== '' && !$gratis) {

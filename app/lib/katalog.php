@@ -208,7 +208,7 @@ final class Katalog
                 'avbestillingTimer' => isset($k['avbestilling_timer']) ? (int) $k['avbestilling_timer'] : null,
                 'popNivaer'         => (int) ($k['depositum'] ?? 0) === 1
                     ? array_map(static fn(array $n): array => [
-                        'navn' => $n['navn'], 'pris' => $n['pris'], 'gjenstander' => $n['gjenstander'],
+                        'navn' => $n['navn'], 'pris' => $n['pris'], 'prisOre' => $n['prisOre'], 'gjenstander' => $n['gjenstander'],
                     ], PopPris::nivaer())
                     : [],
                 'om'      => $k['beskrivelse'],

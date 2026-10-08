@@ -6810,6 +6810,22 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "pop-pris-ett-sted-20261008",
+            "dato": "2026-10-08",
+            "hva": "Eieren, 8. oktober 2026 (valg 1): prisene på Paint on Pots bare ett sted. Over datoene: «Fra 500 kr» (laveste prisnivå) per gjenstand + «Glasur og brenning er med i prisen». Hele nivålista bare under Priser. «Hva koster Paint on Pots?» svarer «Fra 500 kr per gjenstand» uten lista.",
+            "hvor": "lissom.no/kurs/paint-on-pots",
+            "kode": [
+                {
+                    "fil": "app/nett/sider/kursside.php",
+                    "finnes": [
+                        "$popListe = $prisTopp;",
+                        "$e('Fra ' . PopPris::kr($laveste))",
+                        "' per gjenstand. Glasur og brenning er med i prisen. '"
+                    ]
+                }
+            ]
         }
     ]
 }

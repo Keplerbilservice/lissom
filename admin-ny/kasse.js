@@ -85,6 +85,22 @@ async function visIdag(){
  rot.replaceChildren(topp('Lissom Kasse · '+data.dato,...personValg()),el('div',{class:'k-a'},venstreEl,kurvEl));
  if(kursVist){try{kursVist=await kall('kasse.php?okt='+kursVist.oktId);}catch(e){kursVist=null;}}
  tegnVenstre();await visSalg();lytt();
+ await taFraAdmin();
+}
+// «Ta betalt» i ny admin (eieren 09.10.2026): /kasse?booking=<id> legger påmeldingen i kurven med det som står igjen,
+// uansett dato, når kassa er låst opp. Er kassa alt åpen, kommer bookingen som en melding (NA.tilKassa i ny-admin/felles.js),
+// så et salg som er i gang ikke forsvinner. Alt betalt, Vipps pågår eller ikke funnet: beskjed, og ingenting i kurven.
+let fraAdmin=(()=>{const n=Number(new URLSearchParams(location.search).get('booking'));return Number.isInteger(n)&&n>0?n:0;})();
+if(fraAdmin){try{history.replaceState(null,'',location.pathname+location.hash);}catch(e){}}
+addEventListener('message',ev=>{if(ev.origin!==location.origin)return;const n=Number(ev.data&&ev.data.kasseBooking);if(!Number.isInteger(n)||n<=0)return;fraAdmin=n;if(person&&venstreEl&&venstreEl.isConnected)taFraAdmin();});
+async function taFraAdmin(){
+ const id=fraAdmin;if(!id||!person)return;fraAdmin=0;
+ if(ikkeNaa())return;
+ let r;
+ try{r=await kall('kasse.php?booking='+id);}catch(e){if(e.stille){fraAdmin=id;return;}ark(e.message,lukk=>[el('div',{class:'k-rad-knapper'},pille('Lukk',lukk,'fylt'))]);return;}
+ const k=r.idag?data.kurs.find(x=>x.oktId===r.oktId):null;
+ if(k)await apneKurs(k);
+ await nyttSalg({bookingId:r.bookingId,navn:r.navn,oktId:r.oktId});
 }
 function lytt(){stoppListe();listeTimer=setTimeout(async()=>{listeTimer=null;if(!person||!venstreEl||!venstreEl.isConnected)return;try{if(kursVist)kursVist=await kall('kasse.php?okt='+kursVist.oktId);else data=await kall('kasse.php');tegnVenstre();}catch(e){if(e.stille)return;if(e.status===404){kursVist=null;tegnVenstre();}}lytt();},15000);}
 async function oppdaterListe(){try{if(kursVist)kursVist=await kall('kasse.php?okt='+kursVist.oktId);data=await kall('kasse.php');}catch(e){if(e.stille)return;if(e.status===404)kursVist=null;}tegnVenstre();}

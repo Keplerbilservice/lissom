@@ -196,8 +196,7 @@
           ${kan(p) ? `<div class="mott-valg" role="group" aria-label="Oppmøte for ${esc(p.navn)}">
             <button type="button" data-mott="${p.id}" data-v="ja" aria-pressed="false" ${mottKan(p) ? '' : 'disabled title="Endres på kurssiden"'}>Møtt</button>
             <button type="button" class="nei" data-mott="${p.id}" data-v="nei" aria-pressed="${valg.get(p.id) === 'nei'}">Ikke møtt</button></div>` : ''}
-          ${p.ub && !NA.erMobil() ? '<a class="knapp liten" href="/kasse">Ta betalt</a>' : ''}</div>`).join('') : '<p class="tom">Ingen påmeldte.</p>'}</div>
-      ${liste.some(p => p.ub) && !NA.erMobil() ? '<small>«Ta betalt» åpner kassa. Personen står under «Dagens kurs» der.</small>' : ''}
+          ${p.ub && !NA.erMobil() ? `<button class="knapp liten" type="button" data-kasse="${p.id}">Ta betalt</button>` : ''}</div>`).join('') : '<p class="tom">Ingen påmeldte.</p>'}</div>
       <div class="ark-fot"><button class="knapp" type="button" data-lukk>Avbryt</button><button class="knapp hoved" type="button" data-igang disabled>Kurset er i gang</button></div>`);
     const igang = inn.querySelector('[data-igang]');
     const sjekk = () => { igang.disabled = !liste.filter(kan).every(p => valg.has(p.id)); };
@@ -209,6 +208,8 @@
         inn.querySelectorAll(`[data-mott="${id}"]`).forEach(x => x.setAttribute('aria-pressed', String(x === b)));
         return sjekk();
       }
+      // «Ta betalt»: kassa med personen og det som står igjen i kurven (eieren 09.10.2026).
+      if (b.dataset.kasse) { NA.tilKassa(Number(b.dataset.kasse)); return NA.toast('Kassa er åpnet.'); }
       if (b.dataset.igang === undefined) return;
       b.disabled = true;
       const feil = [];

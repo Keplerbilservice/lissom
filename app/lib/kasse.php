@@ -66,7 +66,7 @@ final class Kasse
 
     public static function betalteIkke(int $bookingId, int $personId): array
     {
-        $b = KasseKurv::dagensBooking($bookingId);
+        $b = KasseKurv::booking($bookingId);
         if ($b === null || !KasseKurv::erPop($b)) {
             throw new RuntimeException('Fant ikke Paint on Pots-bookingen i dag.');
         }
@@ -1138,7 +1138,7 @@ final class Kasse
     {
         $bid = (int) ($poll['bookingId'] ?? 0);
         if ($bid > 0) {
-            if (KasseKurv::dagensBooking($bid) === null) {
+            if (KasseKurv::booking($bid) === null) {
                 throw new RuntimeException('Fant ikke påmeldingen.', 404);
             }
             foreach (DB::alle(

@@ -1184,7 +1184,10 @@ switch ($handling) {
             ['o' => $oktId]
         );
 
-        DB::oppdater('course_sessions', ['status' => 'avlyst'], ['id' => $oktId]);
+        // Tidspunktet (migrasjon 271): bare datoer avlyst herfra gir kunden
+        // «Velg ny dato» / «Få pengene tilbake» paa Min side (9. oktober 2026).
+        DB::oppdater('course_sessions', ['status' => 'avlyst']
+            + (DB::harKolonne('course_sessions', 'avlyst_at') ? ['avlyst_at' => gmdate('Y-m-d H:i:s')] : []), ['id' => $oktId]);
 
         // ── De som ventet paa denne kvelden ─────────────────────────────
         //
@@ -1391,6 +1394,11 @@ switch ($handling) {
         }
 
         DB::oppdater('course_sessions', ['status' => 'planlagt'], ['id' => $oktId]);
+        // Tidspunktet for avlysningen tas bort (migrasjon 271): datoen gir ikke
+        // lenger kunden valgene paa Min side.
+        if (DB::harKolonne('course_sessions', 'avlyst_at')) {
+            DB::oppdater('course_sessions', ['avlyst_at' => null], ['id' => $oktId]);
+        }
         revider('dato_gjenopprettet', 'course_session', $oktId, []);
 
         $paa = (int) DB::verdi(
@@ -1544,7 +1552,8 @@ switch ($handling) {
         );
 
         if ($pameldte > 0) {
-            DB::oppdater('course_sessions', ['status' => 'avlyst'], ['id' => $oktId]);
+            DB::oppdater('course_sessions', ['status' => 'avlyst']
+                + (DB::harKolonne('course_sessions', 'avlyst_at') ? ['avlyst_at' => gmdate('Y-m-d H:i:s')] : []), ['id' => $oktId]);
             revider('dato_avlyst', 'course_session', $oktId, ['pameldte' => $pameldte, 'via' => 'veiviser']);
             Svar::ok([
                 'slettet' => false,

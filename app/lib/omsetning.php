@@ -15,6 +15,17 @@ declare(strict_types=1);
 final class Omsetning
 {
     /** @return list<array<string,mixed>> */
+    /**
+     * Penger gitt tilbake for haand og foert i kassa den dagen
+     * (Booking::tilbakebetalIKassa): manuell rad uten beloep inn, med det som
+     * gikk ut som refundert. Teller som minus paa sin maate den dagen.
+     */
+    public static function erUtbetaling(array $r): bool
+    {
+        return (string) ($r['type'] ?? '') === 'manuell' && (int) ($r['belop_ore'] ?? 0) === 0
+            && (int) ($r['refundert_ore'] ?? 0) > 0;
+    }
+
     public static function rader(string $fraUtc, string $tilUtc): array
     {
         $gavekortFelt = DB::harKolonne('payments', 'gavekort_ore')

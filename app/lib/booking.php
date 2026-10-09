@@ -3561,13 +3561,94 @@ final class Booking
     }
 
     /**
+     * Penger gitt tilbake for haand, foert i kassa den dagen det skjer.
+     *
+     * Eieren, 9. oktober 2026 («Betalt tilbake» paa en avlyst dato): trekk
+     * beloepet fra kontant i kassa og vis det i dagsoppgjoeret; annen maate
+     * (kort/Vipps i verkstedet) som egen linje. Den opprinnelige betalingen
+     * staar urort, saa dagen den kom inn er den samme som foer.
+     *
+     * Raden: type manuell, belop_ore 0 og refundert_ore = det som gikk ut,
+     * status delvis_refundert — samme regnestykke som alle refusjoner
+     * (belop − refundert), saa Omsetning, dagsoppgjoeret og kassa regner den
+     * som minus paa sin maate den dagen (Omsetning::erUtbetaling kjenner den
+     * igjen). Én rad per maate plassen ble betalt med; stemmer ikke delene med
+     * beloepet, én rad paa den stoerste. Unik noekkel per plass og maate, saa
+     * samme utbetaling aldri foeres to ganger.
+     *
+     * Kalles inne i en transaksjon. @return int id paa den foerste raden
+     */
+    public static function tilbakebetalIKassa(int $bookingId, int $belopOre, ?int $adminId, string $kommentar): int
+    {
+        if ($belopOre <= 0) {
+            throw new RuntimeException('Ingenting å betale tilbake.');
+        }
+        $deler = [];
+        foreach (self::betalingerFor($bookingId)['rader'] as $r) {
+            if ((string) $r['type'] === 'manuell' && $r['annullert_at'] === null
+                && (string) $r['status'] === 'betalt' && (int) $r['belop_ore'] > 0) {
+                $m = trim((string) ($r['maate'] ?? '')) ?: 'Kontant';
+                $deler[$m] = ($deler[$m] ?? 0) + (int) $r['belop_ore'] - (int) $r['refundert_ore'];
+            }
+        }
+        if ($deler === [] || array_sum($deler) !== $belopOre) {
+            arsort($deler);
+            $deler = [(string) (array_key_first($deler) ?? 'Kontant') => $belopOre];
+        }
+        $medlem = DB::verdi('SELECT member_id FROM bookings WHERE id = :b', ['b' => $bookingId]);
+        $forste = 0;
+        foreach ($deler as $maate => $ore) {
+            if ($ore <= 0) {
+                continue;
+            }
+            $felt = [
+                'vipps_reference' => 'MANUELL-' . Vipps::nyReferanse('K'),
+                'type'            => 'manuell',
+                'formal'          => 'booking',
+                'member_id'       => $medlem !== null ? (int) $medlem : null,
+                'maate'           => mb_substr($maate, 0, 32),
+                'kommentar'       => mb_substr($kommentar, 0, 300),
+                'belop_ore'       => 0,
+                'refundert_ore'   => $ore,
+                'status'          => 'delvis_refundert',
+                'idempotency_key' => 'tilbake:' . $bookingId . ':' . substr(hash('sha256', $maate), 0, 16),
+            ];
+            if (DB::harKolonne('payments', 'booking_id')) {
+                $felt['booking_id'] = $bookingId;
+            }
+            if (DB::harKolonne('payments', 'registrert_av') && $adminId !== null && $adminId > 0) {
+                $felt['registrert_av'] = $adminId;
+            }
+            $id = DB::settInn('payments', $felt);
+            $forste = $forste ?: $id;
+        }
+        return $forste;
+    }
+
+    /**
+     * Er datoen avlyst av Lissom slik at kunden faar valgene paa Min side?
+     *
+     * Bare datoer avlyst etter migrasjon 271 (avlyst_at satt av «Avlys dato»).
+     * Eldre avlyste datoer ble ordnet for haand og oppfoerer seg som foer —
+     * ellers kunne de gitt en refusjon til (kontrolloeren 9. oktober 2026).
+     */
+    public static function avlystAvLissom(?string $status, ?string $avlystAt): bool
+    {
+        return $status === 'avlyst' && $avlystAt !== null && $avlystAt !== '';
+    }
+
+    /** «cs.avlyst_at» i en SELECT, eller NULL uten migrasjon 271. */
+    public static function avlystAtFelt(string $cs): string
+    {
+        return DB::harKolonne('course_sessions', 'avlyst_at') ? "{$cs}.avlyst_at" : 'NULL AS avlyst_at';
+    }
+
+    /**
      * Hva som kan gis tilbake paa én plass, delt etter vei.
      *
-     * Samme deling som api/avbestill.php gjoer (den er ikke flyttet hit, saa
-     * vedtakssjekkene paa den staar). Min side (avlyst dato, eieren 9. oktober
-     * 2026) viser «Du får … kr tilbake» foer kunden trykker, og det tallet maa
-     * vaere det samme som avbestillingen faktisk gir — tests/avlyst-dato.php
-     * holder de to opp mot hverandre (Vipps, gavekort, ikke betalt, kontant).
+     * Sto i api/avbestill.php og er flyttet hit (kontrolloeren 9. oktober
+     * 2026: ingen kopi). Avbestillingen bruker den, og Min side (avlyst dato)
+     * viser «Du får … kr tilbake» av det samme tallet foer kunden trykker.
      *
      *   vipps     Vipps-betalinger som kan refunderes dit (betalt/delvis)
      *   manuell   kontant/kort i kassa: tilbake for haand
@@ -3627,13 +3708,16 @@ final class Booking
      * den nye datoen maa ha plass (samme laaser som et kjoep, ledigePlasser
      * med laas). Kaster RuntimeException med kode 409.
      *
-     * Samme kontroll som «flytt» i api/admin/pamelding.php (der staar den
-     * inline, med vedtakssjekker paa seg). Brukes av Min side naar Lissom har
-     * avlyst datoen (api/avlyst-plass.php).
+     * Brukes av «flytt» i api/admin/pamelding.php og av Min side naar Lissom
+     * har avlyst datoen (api/avlyst-plass.php).
+     *
+     * Maaldatoen leses paa nytt under laas: en avlyst dato tas aldri imot
+     * (kontrolloeren 9. oktober 2026). Med $somKunde ogsaa reglene for
+     * booking: samme kurs, planlagt, kurset publisert og ikke passert.
      *
      * @param array<string,mixed> $b paameldingen slik den ble lest
      */
-    public static function sjekkFlytting(int $id, array $b, int $tilOkt): void
+    public static function sjekkFlytting(int $id, array $b, int $tilOkt, bool $somKunde = false): void
     {
         $naa = DB::en(
             'SELECT status, course_session_id, antall, belop_ore, payment_id, betalt_maate,
@@ -3652,7 +3736,23 @@ final class Booking
             throw new RuntimeException('Påmeldingen ble endret i mellomtiden. Last siden på nytt.', 409);
         }
         $trenger = max(1, (int) $b['antall']);
+        // ledigePlasser() under laaser oekta, kurset og ressursen; maaldatoen
+        // leses etterpaa, med laasen holdt til transaksjonen er ferdig.
         $ledige = self::ledigePlasser($tilOkt, true);
+        $maal = DB::en(
+            'SELECT cs.status, cs.start_tid, cs.course_id, c.status AS kurs_status
+               FROM course_sessions cs JOIN courses c ON c.id = cs.course_id
+              WHERE cs.id = :o FOR UPDATE',
+            ['o' => $tilOkt]
+        );
+        if ($maal === null || (string) $maal['status'] === 'avlyst') {
+            throw new RuntimeException('Den datoen er avlyst.', 409);
+        }
+        if ($somKunde && ((int) $maal['course_id'] !== (int) ($b['course_id'] ?? 0)
+            || (string) $maal['status'] !== 'planlagt' || (string) $maal['kurs_status'] !== 'publisert'
+            || strtotime((string) $maal['start_tid'] . ' UTC') <= time())) {
+            throw new RuntimeException('Denne datoen kan ikke velges.', 409);
+        }
         if ($ledige < $trenger) {
             throw new RuntimeException($ledige <= 0
                 ? 'Den datoen er full.'

@@ -42,7 +42,7 @@ $les = static function () use ($bookingId, $medlem): ?array {
                 ' . (DB::harKolonne('bookings', 'rabatt_prosent') ? 'b.rabatt_prosent' : '0 AS rabatt_prosent') . ',
                 COALESCE(m.navn, b.gjest_navn) AS navn,
                 COALESCE(m.epost, b.gjest_epost) AS epost,
-                cs.start_tid AS fra_tid, cs.status AS okt_status, c.tittel
+                cs.start_tid AS fra_tid, cs.status AS okt_status, ' . Booking::avlystAtFelt('cs') . ', c.tittel
            FROM bookings b
            JOIN course_sessions cs ON cs.id = b.course_session_id
            JOIN courses c ON c.id = b.course_id
@@ -57,7 +57,8 @@ $b = $les();
 if ($b === null) {
     Svar::feil('Fant ikke plassen din.', 404);
 }
-if ((string) $b['okt_status'] !== 'avlyst') {
+// Bare datoer avlyst etter migrasjon 271 (avlyst_at), som paa Min side.
+if (!Booking::avlystAvLissom($b['okt_status'] ?? null, $b['avlyst_at'] ?? null)) {
     Svar::feil('Denne datoen er ikke avlyst.', 409);
 }
 $trenger = max(1, (int) $b['antall']);
@@ -112,11 +113,14 @@ if ($handling === 'bytt') {
         DB::iTransaksjon(static function () use ($b, $tilOkt, $okt, $bookingId): void {
             // Samme kontroll som flytting i admin: paameldingen laases og maa
             // staa som den ble lest, og datoen maa ha plass (med laas).
-            Booking::sjekkFlytting($bookingId, $b, $tilOkt);
+            // Maaldatoen leses paa nytt under laas (samme kurs, planlagt,
+            // publisert, ikke passert, aldri avlyst).
+            Booking::sjekkFlytting($bookingId, $b, $tilOkt, true);
             // Datoen maa fortsatt vaere avlyst — ble den gjenopprettet mens
             // kunden valgte, staar plassen der den sto.
-            $status = (string) DB::verdi('SELECT status FROM course_sessions WHERE id = :o', ['o' => (int) $b['course_session_id']]);
-            if ($status !== 'avlyst') {
+            $fra = DB::en('SELECT status, ' . Booking::avlystAtFelt('cs') . ' FROM course_sessions cs WHERE cs.id = :o FOR UPDATE',
+                ['o' => (int) $b['course_session_id']]);
+            if (!Booking::avlystAvLissom($fra['status'] ?? null, $fra['avlyst_at'] ?? null)) {
                 throw new RuntimeException('Denne datoen er ikke avlyst.', 409);
             }
             DB::oppdater('bookings', [

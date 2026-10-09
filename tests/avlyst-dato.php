@@ -16,6 +16,12 @@
  *      på kortet), ikke betalt (bare frigjort), kontant (sak i Må gjøres,
  *      «Betalt tilbake» tar den bort). Ikke avlyst under 2 dager: ingenting.
  *   E  Dobbeltklikk på to servere samtidig: én refusjon, aldri dobbel.
+ *   F  «Betalt tilbake» føres i kassa den dagen (eieren 9. oktober 2026):
+ *      kontant trekkes fra kontant i kassa og dagsoppgjøret (egen linje,
+ *      i balanse), annen måte som egen linje; dobbelttrykk gir én føring.
+ *   G  Kontrolløren: datoer avlyst før migrasjon 271 og gjenopprettede
+ *      datoer oppfører seg som før; bytt + refusjon i to faner samtidig gir
+ *      aldri full refusjon på en flyttet plass.
  *
  * Ekte endepunkter (to PHP-servere) mot en isolert testbase, og
  * tests/falsk-vipps.mjs som Vipps. Ingen ekte betaling, e-post eller SMS:
@@ -382,12 +388,66 @@ try {
     };
     $s = $maa();
     sjekk('… «Tilbakebetal 500 kr til Kim Kontant …» i Må gjøres', $s !== null && $s['tittel'] === "Tilbakebetal 500\u{a0}kr til Kim Kontant " . $tag && $s['gruppe'] === 'Betaling', json_encode($s, JSON_UNESCAPED_UNICODE));
-    $r = kall('/api/admin/pamelding.php', ['handling' => 'tilbakebetalt', 'id' => $bKim], $adminT);
-    sjekk('«Betalt tilbake»', $r[0] === 200 && $maa() === null, $tekst($r));
-    $r = kall('/api/admin/pamelding.php', ['handling' => 'tilbakebetalt', 'id' => $bKim], $adminT);
-    sjekk('… to ganger: 409', $r[0] === 409, $tekst($r));
     $r = kall('/api/admin/pamelding.php', ['handling' => 'tilbakebetalt', 'id' => $bKim], $kimT);
-    sjekk('… ikke for kunden (404)', $r[0] === 404, $tekst($r));
+    sjekk('… «Betalt tilbake» ikke for kunden (404)', $r[0] === 404, $tekst($r));
+
+    echo "\n── F  «Betalt tilbake» føres i kassa og dagsoppgjøret ───────────\n";
+    $idag = (new DateTimeImmutable('now', $oslo))->format('Y-m-d');
+    $dagsopp = static function () use ($adminT, $idag): array {
+        $r = kall('/api/admin/dagsoppgjor.php?dato=' . $idag, null, $adminT);
+        $b = array_values(array_filter($r[1]['bilag'] ?? [], static fn($x) => $x['dato'] === $idag))[0] ?? ['linjer' => [], 'inn' => [], 'balanse' => true];
+        $l = []; foreach ($b['linjer'] as $x) { $l[$x['hva']] = (int) $x['belopOre']; }
+        $i = []; foreach ($b['inn'] as $x) { $i[$x['maate']] = (int) $x['belopOre']; }
+        return ['linjer' => $l, 'inn' => $i, 'balanse' => (bool) $b['balanse']];
+    };
+    $kasse = static function (): array {
+        $o = KasseKurv::oppgjor();
+        $r = []; foreach ($o['rader'] as $x) { $r[$x['navn']] = (int) $x['ore']; }
+        return $r + ['_kontant' => (int) $o['kontantOre'], '_total' => (int) $o['totalOre']];
+    };
+    $forK = $kasse(); $forD = $dagsopp();
+    $radFor = (int) DB::verdi('SELECT COUNT(*) FROM payments WHERE booking_id = :b', ['b' => $bKim]);
+    [$x, $y] = samtidig(['/api/admin/pamelding.php', ['handling' => 'tilbakebetalt', 'id' => $bKim]],
+        ['/api/admin/pamelding.php', ['handling' => 'tilbakebetalt', 'id' => $bKim]], $adminT);
+    $koder = [$x[0], $y[0]]; sort($koder);
+    sjekk('dobbelttrykk «Betalt tilbake» på to servere: én 200 og én 409', $koder === [200, 409], $tekst($x) . ' | ' . $tekst($y));
+    sjekk('… saken er borte fra Må gjøres', $maa() === null);
+    $ut = DB::alle("SELECT * FROM payments WHERE booking_id = :b AND type = 'manuell' AND belop_ore = 0", ['b' => $bKim]);
+    sjekk('… nøyaktig én utbetaling i kassa: Kontant 50000', count($ut) === 1 && (int) $ut[0]['refundert_ore'] === 50000
+        && $ut[0]['maate'] === 'Kontant' && (int) DB::verdi('SELECT COUNT(*) FROM payments WHERE booking_id = :b', ['b' => $bKim]) === $radFor + 1, json_encode($ut));
+    sjekk('… koblet til saken', (int) DB::verdi('SELECT payment_id FROM avlyst_tilbakebetal WHERE booking_id = :b', ['b' => $bKim]) === (int) ($ut[0]['id'] ?? -1));
+    $etK = $kasse(); $etD = $dagsopp();
+    sjekk('kassa i dag: kontant 500 kr lavere, totalen 500 kr lavere', $etK['_kontant'] - $forK['_kontant'] === -50000 && $etK['_total'] - $forK['_total'] === -50000,
+        json_encode([$forK, $etK]));
+    sjekk('dagsoppgjøret: egen linje «Kurs og events – tilbakebetalt» −500 og «Kontant (tilbakebetalt)» −500, i balanse',
+        ($etD['linjer']['Kurs og events – tilbakebetalt'] ?? 0) - ($forD['linjer']['Kurs og events – tilbakebetalt'] ?? 0) === -50000
+        && ($etD['inn']['Kontant (tilbakebetalt)'] ?? 0) - ($forD['inn']['Kontant (tilbakebetalt)'] ?? 0) === -50000 && $etD['balanse'],
+        json_encode([$forD, $etD], JSON_UNESCAPED_UNICODE));
+    sjekk('… den opprinnelige kontantbetalingen står urørt', (int) DB::verdi("SELECT COUNT(*) FROM payments WHERE booking_id = :b AND type = 'manuell' AND belop_ore = 50000 AND status = 'betalt' AND COALESCE(refundert_ore, 0) = 0", ['b' => $bKim]) === 1);
+    $r = kall('/api/admin/pamelding.php', ['handling' => 'tilbakebetalt', 'id' => $bKim], $adminT);
+    sjekk('… et tredje trykk: 409, ingen ny føring', $r[0] === 409 && count(DB::alle('SELECT id FROM payments WHERE booking_id = :b AND belop_ore = 0', ['b' => $bKim])) === 1, $tekst($r));
+    $csv = (static function () use ($adminT, $idag, $port): string {
+        $c = curl_init('http://127.0.0.1:' . $port . '/api/admin/dagsoppgjor.php?dato=' . $idag . '&csv=ja');
+        curl_setopt_array($c, [CURLOPT_RETURNTRANSFER => true, CURLOPT_HTTPHEADER => ['Cookie: lissom_sesjon=' . $adminT]]);
+        $t = (string) curl_exec($c); curl_close($c); return $t;
+    })();
+    sjekk('… CSV-en har «Tilbakebetalt · Kontant»', str_contains($csv, 'Tilbakebetalt · Kontant'));
+
+    // Annen måte (Vipps i verkstedet): egen linje i kassa, ikke trukket fra kontant.
+    $vera = $nyttMedlem('Vera'); $veraT = $sesjon($vera);
+    $bVera = $plass($vera, $sAvl);
+    Booking::manuellBetaling($bVera, 50000, 'Vipps i verkstedet', $vera, $admin, 'Testdata');
+    Booking::settBetaltStatus($bVera);
+    $r = kall($B, ['bookingId' => $bVera], $veraT);
+    sjekk('Vipps i verkstedet: avbestilt, sak i Må gjøres', $r[0] === 200 && (int) DB::verdi('SELECT belop_ore FROM avlyst_tilbakebetal WHERE booking_id = :b', ['b' => $bVera]) === 50000, $tekst($r));
+    $forK = $kasse(); $forD = $dagsopp();
+    $r = kall('/api/admin/pamelding.php', ['handling' => 'tilbakebetalt', 'id' => $bVera], $adminT);
+    $etK = $kasse(); $etD = $dagsopp();
+    sjekk('… «Betalt tilbake»: egen linje «Tilbakebetalt, annen måte» −500, kontant urørt', $r[0] === 200
+        && ($etK['Tilbakebetalt, annen måte'] ?? 0) - ($forK['Tilbakebetalt, annen måte'] ?? 0) === -50000
+        && $etK['_kontant'] === $forK['_kontant'] && $etK['_total'] - $forK['_total'] === -50000, json_encode([$forK, $etK], JSON_UNESCAPED_UNICODE));
+    sjekk('… dagsoppgjøret: «Vipps (tilbakebetalt)» −500, i balanse',
+        ($etD['inn']['Vipps (tilbakebetalt)'] ?? 0) - ($forD['inn']['Vipps (tilbakebetalt)'] ?? 0) === -50000 && $etD['balanse'], json_encode($etD['inn'], JSON_UNESCAPED_UNICODE));
 
     $r = kall($B, ['bookingId' => $bNina], $ninaT);
     sjekk('kontroll: ikke avlyst, 21 timer før: ingenting tilbake og intet Vipps-kall', $r[0] === 200
@@ -401,6 +461,50 @@ try {
     sjekk('… refundert 50000, ikke mer', (int) DB::verdi('SELECT refundert_ore FROM payments WHERE id = :i', ['i' => $pDag]) === 50000);
     $r = kall($B, ['bookingId' => $bDag], $dagT);
     sjekk('… et tredje trykk: 409', $r[0] === 409 && count($refusjoner($refDag)) === 1, $tekst($r));
+
+    echo "\n── G  Kontrolløren: gamle avlysninger, gjenoppretting, to faner ──\n";
+    sjekk('«Avlys dato» lagrer tidspunktet (avlyst_at)', DB::verdi('SELECT avlyst_at FROM course_sessions WHERE id = :i', ['i' => $sAvl]) !== null);
+    // Avlyst før migrasjon 271 (ingen avlyst_at): som før.
+    $sGml = DB::settInn('course_sessions', ['course_id' => $kid, 'start_tid' => $om(22), 'status' => 'avlyst', 'kapasitet' => 10]);
+    $ola = $nyttMedlem('Ola'); $olaT = $sesjon($ola);
+    $bOla = $plass($ola, $sGml); [$pOla, $refOla] = $vippsBetaling($ola, $bOla, 50000);
+    $r = kall('/api/mine-plasser.php', null, $olaT);
+    $p = $finn($r, $bOla);
+    sjekk('gammel avlyst dato: Min side som før (ikke «Avlyst», ingen valg)', $p !== null && $p['status'] !== 'Avlyst' && empty($p['avlyst']), json_encode($p, JSON_UNESCAPED_UNICODE));
+    $r = kall($A, ['handling' => 'datoer', 'bookingId' => $bOla], $olaT);
+    sjekk('… «Velg ny dato» avvist (409)', $r[0] === 409, $tekst($r));
+    $r = kall($V, ['handling' => 'avlyst', 'oktId' => $sGml], $adminT);
+    sjekk('… ingen «Kurset er avlyst» (409)', $r[0] === 409, $tekst($r));
+    $r = kall($B, ['bookingId' => $bOla], $olaT);
+    sjekk('… avbestilling under 2 dager: 0 kr, intet Vipps-kall, ingen sak', $r[0] === 200 && ($r[1]['refunderes'] ?? '') === Booking::kroner(0)
+        && $refusjoner($refOla) === [] && DB::verdi('SELECT booking_id FROM avlyst_tilbakebetal WHERE booking_id = :b', ['b' => $bOla]) === null, $tekst($r));
+
+    // Avlyst og gjenopprettet: som før.
+    $sGjen = DB::settInn('course_sessions', ['course_id' => $kid, 'start_tid' => $om(23), 'status' => 'planlagt', 'kapasitet' => 10]);
+    $tor = $nyttMedlem('Tor'); $torT = $sesjon($tor);
+    $bTor = $plass($tor, $sGjen); [$pTor, $refTor] = $vippsBetaling($tor, $bTor, 50000);
+    kall('/api/admin/kurs.php', ['handling' => 'avlys', 'oktId' => $sGjen], $adminT);
+    $r = kall('/api/admin/kurs.php', ['handling' => 'gjenopprett', 'oktId' => $sGjen], $adminT);
+    sjekk('gjenopprettet: avlyst_at tatt bort', $r[0] === 200 && DB::verdi('SELECT avlyst_at FROM course_sessions WHERE id = :i', ['i' => $sGjen]) === null, $tekst($r));
+    $r = kall($B, ['bookingId' => $bTor], $torT);
+    sjekk('… avbestilling under 2 dager: 0 kr, intet Vipps-kall', $r[0] === 200 && ($r[1]['refunderes'] ?? '') === Booking::kroner(0) && $refusjoner($refTor) === [], $tekst($r));
+
+    // To faner: «Bytt» til en dato om 30 timer og «Få pengene tilbake» samtidig.
+    $sNaer = DB::settInn('course_sessions', ['course_id' => $kid, 'start_tid' => $om(30), 'status' => 'planlagt', 'kapasitet' => 10]);
+    foreach ([1, 2, 3] as $runde) {
+        $siv = $nyttMedlem('Siv' . $runde); $sivT = $sesjon($siv);
+        $bSiv = $plass($siv, $sAvl); [$pSiv, $refSiv] = $vippsBetaling($siv, $bSiv, 50000);
+        [$x, $y] = samtidig([$A, ['handling' => 'bytt', 'bookingId' => $bSiv, 'oktId' => $sNaer]], [$B, ['bookingId' => $bSiv]], $sivT);
+        $st = DB::en('SELECT b.status, b.course_session_id, p.refundert_ore FROM bookings b JOIN payments p ON p.id = :p WHERE b.id = :b', ['p' => $pSiv, 'b' => $bSiv]);
+        $flyttet = (int) $st['course_session_id'] === $sNaer;
+        $refundert = (int) $st['refundert_ore'];
+        // Flyttet først: refusjonen regnes etter den nye datoen (30 t → 0).
+        $ok1 = $flyttet
+            ? ($refundert === 0 && count($refusjoner($refSiv)) === 0)
+            : ($refundert === 50000 && count($refusjoner($refSiv)) === 1 && in_array($st['status'], ['refundert', 'avbestilt'], true));
+        sjekk('to faner samtidig, runde ' . $runde . ': aldri full refusjon på en flyttet plass (' . ($flyttet ? 'flyttet' : 'refundert') . ')', $ok1,
+            $tekst($x) . ' | ' . $tekst($y) . ' | ' . json_encode($st));
+    }
 
     $ferdig = true;
 } catch (Throwable $e) {

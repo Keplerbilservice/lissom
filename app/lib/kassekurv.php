@@ -1076,7 +1076,7 @@ final class KasseKurv
     public static function oppgjor(): array
     {
         [$fra, $til] = self::dagen();
-        $sum = ['Vipps' => 0, 'Kontant' => 0, 'Annen' => 0, 'Gavekort' => 0];
+        $sum = ['Vipps' => 0, 'Kontant' => 0, 'Annen' => 0, 'Gavekort' => 0, 'Tilbake' => 0];
         foreach (Omsetning::rader($fra, $til) as $r) {
             $penger = (int) $r['belop_ore'] - (int) ($r['refundert_ore'] ?? 0);
             $sum['Gavekort'] += (int) ($r['gavekort_ore'] ?? 0);
@@ -1088,7 +1088,12 @@ final class KasseKurv
                 $m = (string) ($r['betalt_maate'] ?? '');
             }
             if ($m === 'Kontant') {
+                // Kontant gitt tilbake for haand trekkes fra kontant i kassa
+                // (eieren 9. oktober 2026, avlyst dato).
                 $sum['Kontant'] += $penger;
+            } elseif (Omsetning::erUtbetaling($r)) {
+                // Annen maate gitt tilbake for haand: egen linje.
+                $sum['Tilbake'] += $penger;
             } elseif ((string) ($r['type'] ?? '') === 'manuell') {
                 $sum['Annen'] += $penger;
             } else {
@@ -1100,10 +1105,13 @@ final class KasseKurv
             ['navn' => 'Kontant', 'ore' => $sum['Kontant']],
             ['navn' => 'Betalt på annen måte', 'ore' => $sum['Annen']],
         ];
+        if ($sum['Tilbake'] !== 0) {
+            $rader[] = ['navn' => 'Tilbakebetalt, annen måte', 'ore' => $sum['Tilbake']];
+        }
         if ($sum['Gavekort'] > 0) {
             $rader[] = ['navn' => 'Gavekort', 'ore' => $sum['Gavekort']];
         }
-        $total = $sum['Vipps'] + $sum['Kontant'] + $sum['Annen'];
+        $total = $sum['Vipps'] + $sum['Kontant'] + $sum['Annen'] + $sum['Tilbake'];
         $endringer = KasseJustering::idag();
         return [
             // Endret pris og rabatt i kassa i dag: hvem, hva og hvorfor.

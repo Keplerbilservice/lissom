@@ -192,7 +192,11 @@ foreach ($rader as $r) {
     $dager[$d] = $dager[$d] ?? ['inntekt' => [], 'inn' => [], 'antall' => 0];
     $dager[$d]['antall']++;
 
-    $f = (string) $r['formal'];
+    // Penger gitt tilbake for haand (avlyst dato, «Betalt tilbake»): egen
+    // linje den dagen de gikk ut, minus paa inntekten og paa maaten — samme
+    // konto og motkonto, saa bilaget gaar i balanse (eieren 9. oktober 2026).
+    $utbetaling = Omsetning::erUtbetaling($r);
+    $f = (string) $r['formal'] . ($utbetaling ? '|tilbake' : '');
     // Salg av et gavekort er ikke inntekt. Det er gjeld til den som eier
     // kortet, og blir inntekt foerst den dagen det loeses inn — paa den
     // kontoen det da brukes til.
@@ -200,7 +204,7 @@ foreach ($rader as $r) {
 
     // Pengene inn, og gavekortet som ble brukt. Gavekortet er ingen
     // innbetaling: det trekker ned gjelden fra den dagen kortet ble solgt.
-    $m = $maate($r);
+    $m = $maate($r) . ($utbetaling ? ' (tilbakebetalt)' : '');
     if ($penger !== 0) {
         $dager[$d]['inn'][$m] = ($dager[$d]['inn'][$m] ?? 0) + $penger;
     }
@@ -221,8 +225,13 @@ foreach ($dager as $d => $v) {
     $linjer = [];
     $sum = 0;
 
-    foreach ($v['inntekt'] as $formal => $ore) {
+    foreach ($v['inntekt'] as $formalNokkel => $ore) {
+        $tilbake = str_ends_with((string) $formalNokkel, '|tilbake');
+        $formal = $tilbake ? substr((string) $formalNokkel, 0, -8) : (string) $formalNokkel;
         $o = $OPPSETT[$formal] ?? ['navn' => $formal, 'konto' => '', 'mva' => ''];
+        if ($tilbake) {
+            $o['navn'] .= ' – tilbakebetalt';
+        }
         $konto = $o['konto'] !== '' ? trim((string) Config::hent($o['konto'], '')) : '';
         $mva   = $o['mva'] !== ''   ? trim((string) Config::hent($o['mva'], ''))   : '';
 
@@ -243,7 +252,8 @@ foreach ($dager as $d => $v) {
 
     $inn = [];
     foreach ($v['inn'] as $m => $ore) {
-        $konto = trim((string) Config::hent($MOTKONTO[$m] ?? '', ''));
+        $grunn = (string) preg_replace('/ \(tilbakebetalt\)$/', '', (string) $m);
+        $konto = trim((string) Config::hent($MOTKONTO[$grunn] ?? '', ''));
         if ($konto === '' && !in_array('Motkonto ' . $m, $manglerKonto, true)) {
             $manglerKonto[] = 'Motkonto ' . $m;
         }
@@ -303,7 +313,9 @@ if (Foresporsel::tekst('csv') === 'ja') {
                             ? ($i['maate'] === 'Gavekort (gitt)'
                                 ? 'Gavekort innløst · gitt bort'
                                 : 'Gavekort innløst')
-                            : 'Innbetalt · ' . $i['maate']], ';', '"', '');
+                            : (str_ends_with($i['maate'], ' (tilbakebetalt)')
+                                ? 'Tilbakebetalt · ' . substr($i['maate'], 0, -16)
+                                : 'Innbetalt · ' . $i['maate'])], ';', '"', '');
         }
     }
     if ($ut === []) {

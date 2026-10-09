@@ -33664,7 +33664,8 @@ class Component extends DCLogic {
     // ubetalt-varselet dekker resten. Ingen gjetning her.
     const a = this.state.minAvtale || null;
     const betaltTil = (a && a.betaltTil) || '';
-    const plasser = (this.state.minePlasser || []).filter(p => !p.kursbevis && (this.state.avbestilt || []).indexOf(p.tittel) === -1);
+    // Avlyste datoer er ikke «Neste kurs» (eieren 9. oktober 2026).
+    const plasser = (this.state.minePlasser || []).filter(p => !p.kursbevis && !p.avlyst && (this.state.avbestilt || []).indexOf(p.tittel) === -1);
     // Paa PC staar Verkstedet naa og medlemskapsflisen ogsaa ved undersidene
     // (venstre kolonne); paa mobil skjuler CSS dem der.
     const verksted = medlem;
@@ -33745,7 +33746,8 @@ class Component extends DCLogic {
     const forste = interne[0] || null;
 
     // Neste kurs for kursdeltakere: den foerste kommende plassen.
-    const plasser = (this.state.minePlasser || []).filter(p => !p.kursbevis && (this.state.avbestilt || []).indexOf(p.tittel) === -1);
+    // Avlyste datoer er ikke «Neste kurs» (eieren 9. oktober 2026).
+    const plasser = (this.state.minePlasser || []).filter(p => !p.kursbevis && !p.avlyst && (this.state.avbestilt || []).indexOf(p.tittel) === -1);
     const neste = plasser[0] || null;
 
     const chat = (this.state.chat || []).filter(m => !m.slettet);

@@ -53,20 +53,36 @@ $id       = Foresporsel::heltall('id');
 // Avlyst dato, kunden valgte pengene tilbake, og plassen var betalt kontant
 // eller med kort i kassa (eieren, GO 9. oktober 2026). Saken «Tilbakebetal X
 // kr til NN» i Må gjøres staar til noen trykker «Betalt tilbake» her.
+//
+// Eieren, samme dag: utbetalingen foeres i kassa. Den blir en rad i payments
+// den dagen den skjer (Booking::tilbakebetalIKassa): kontant trekkes fra
+// kontant i kassa og dagsoppgjoeret, annen maate staar som egen linje. Saken
+// laases og merkes i samme transaksjon, saa et dobbelttrykk gir én foering.
 if ($handling === 'tilbakebetalt') {
-    if (!DB::harTabell('avlyst_tilbakebetal')) {
-        Svar::feil('Dette krever en oppdatering av databasen. Kjør vedlikeholdet fra menyen nederst til venstre.', 503);
+    if (!DB::harTabell('avlyst_tilbakebetal') || !DB::harKolonne('avlyst_tilbakebetal', 'payment_id')) {
+        Svar::feil('Kjør oppdateringene først.', 503);
     }
-    $n = DB::kjor(
-        'UPDATE avlyst_tilbakebetal SET ferdig_at = UTC_TIMESTAMP(), ferdig_av = :a
-          WHERE booking_id = :b AND ferdig_at IS NULL',
-        ['a' => (int) $admin['id'], 'b' => $id]
-    )->rowCount();
-    if ($n !== 1) {
-        Svar::feil('Denne er alt merket som betalt tilbake.', 409);
+    try {
+        $r = DB::iTransaksjon(static function () use ($id, $admin): array {
+            $sak = DB::en('SELECT * FROM avlyst_tilbakebetal WHERE booking_id = :b FOR UPDATE', ['b' => $id]);
+            if ($sak === null || $sak['ferdig_at'] !== null) {
+                throw new RuntimeException('Denne er alt merket som betalt tilbake.', 409);
+            }
+            $pid = Booking::tilbakebetalIKassa($id, (int) $sak['belop_ore'], (int) $admin['id'], 'Tilbakebetalt: avlyst dato');
+            DB::kjor(
+                'UPDATE avlyst_tilbakebetal SET ferdig_at = UTC_TIMESTAMP(), ferdig_av = :a, payment_id = :p
+                  WHERE booking_id = :b AND ferdig_at IS NULL',
+                ['a' => (int) $admin['id'], 'p' => $pid, 'b' => $id]
+            );
+            return ['belop' => (int) $sak['belop_ore'], 'pid' => $pid];
+        });
+    } catch (RuntimeException $e) {
+        if ($e->getCode() !== 409) {
+            throw $e;
+        }
+        Svar::feil($e->getMessage(), 409);
     }
-    $belop = (int) DB::verdi('SELECT belop_ore FROM avlyst_tilbakebetal WHERE booking_id = :b', ['b' => $id]);
-    revider('avlyst_tilbakebetalt', 'booking', $id, ['belop_ore' => $belop]);
+    revider('avlyst_tilbakebetalt', 'booking', $id, ['belop_ore' => $r['belop'], 'betaling' => $r['pid']]);
     Svar::ok(['beskjed' => 'Merket som betalt tilbake.']);
 }
 
@@ -425,29 +441,9 @@ if ($handling === 'flytt') {
             // Alt prisen og plassbehovet ble regnet av, maa staa som da det
             // ble lest. Endret noen antall, beloep, rabatt eller status i
             // mellomtiden, avvises flyttingen heller enn aa skrive over det.
-            $naa = DB::en(
-                'SELECT status, course_session_id, antall, belop_ore, payment_id, betalt_maate,
-                        ' . (DB::harKolonne('bookings', 'rabatt_prosent') ? 'rabatt_prosent' : '0 AS rabatt_prosent') . '
-                   FROM bookings WHERE id = :i FOR UPDATE',
-                ['i' => $id]
-            );
-            if ($naa === null || (string) $naa['status'] === 'avbestilt'
-                || (string) $naa['status'] !== (string) $b['status']
-                || (int) $naa['course_session_id'] !== (int) $b['course_session_id']
-                || (int) $naa['antall'] !== (int) $b['antall']
-                || (int) $naa['belop_ore'] !== (int) $b['belop_ore']
-                || (int) ($naa['payment_id'] ?? 0) !== (int) ($b['payment_id'] ?? 0)
-                || (string) ($naa['betalt_maate'] ?? '') !== (string) ($b['betalt_maate'] ?? '')
-                || (float) $naa['rabatt_prosent'] !== (float) $b['rabatt_prosent']) {
-                throw new RuntimeException('Påmeldingen ble endret i mellomtiden. Last siden på nytt.', 409);
-            }
-            $ledige = Booking::ledigePlasser($tilOkt, true);
-            if ($ledige < $trenger) {
-                throw new RuntimeException($ledige <= 0
-                    ? 'Den datoen er full.'
-                    : 'Det er bare ' . $ledige . ' plass' . ($ledige === 1 ? '' : 'er')
-                      . ' igjen, og denne påmeldingen trenger ' . $trenger . '.', 409);
-            }
+            // Plassen maa finnes, og datoen kan ikke vaere avlyst — lest under
+            // laas. Samme kontroll som Min side (Booking::sjekkFlytting).
+            Booking::sjekkFlytting($id, $b, $tilOkt);
 
             // Kurset foelger datoen. Flyttes noen til et annet kurs, skal
             // paameldingen hore til det kurset — ellers staar den i feil liste.

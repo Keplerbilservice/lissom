@@ -342,11 +342,13 @@ if ($handling === 'avlyst') {
         // faktisk er avlyst, og teksten bygges fra raden under laasen.
         DB::verdi('SELECT id FROM course_sessions WHERE id = :i FOR UPDATE', ['i' => $oktId]);
         $rad = DB::en(
-            "SELECT cs.id, cs.start_tid, cs.slutt_tid, cs.status, c.tittel
+            "SELECT cs.id, cs.start_tid, cs.slutt_tid, cs.status, " . Booking::avlystAtFelt('cs') . ", c.tittel
                FROM course_sessions cs JOIN courses c ON c.id = cs.course_id WHERE cs.id = :i",
             ['i' => $oktId]
         );
-        if ($rad === null || (string) $rad['status'] !== 'avlyst') {
+        // Bare datoer avlyst etter migrasjon 271: teksten lover valgene paa
+        // Min side, og de finnes bare da.
+        if ($rad === null || !Booking::avlystAvLissom($rad['status'] ?? null, $rad['avlyst_at'] ?? null)) {
             $pdo->rollBack();
             Svar::feil('Datoen er ikke avlyst. Ingen fikk beskjed.', 409);
         }

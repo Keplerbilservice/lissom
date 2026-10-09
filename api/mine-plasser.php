@@ -76,9 +76,12 @@ $bilder = static function (int $bookingId): array {
     );
 };
 
+// Naar Lissom avlyste datoen (migrasjon 271). Uten den: ingen avlyst-valg.
+$avlystFelt = Booking::avlystAtFelt('cs');
+
 $bookinger = DB::alle(
     "SELECT b.id, b.course_id, b.antall, b.status, b.belop_ore, b.created_at, {$bevisFelt} {$depFelt}
-            c.tittel, c.tema, cs.start_tid, cs.slutt_tid, cs.status AS okt_status, b.payment_id,
+            c.tittel, c.tema, cs.start_tid, cs.slutt_tid, cs.status AS okt_status, {$avlystFelt}, b.payment_id,
             p.vipps_reference
        FROM bookings b
        JOIN courses c ON c.id = b.course_id
@@ -110,7 +113,9 @@ foreach ($bookinger as $b) {
     // tilbake (api/avlyst-plass.php og api/avbestill.php, uansett tid igjen).
     // Ingen avbestilling etter fristen og intet kursbevis for en dato som
     // ikke ble holdt.
-    if ((string) ($b['okt_status'] ?? '') === 'avlyst') {
+    // Bare datoer avlyst etter migrasjon 271; eldre avlyste datoer ble
+    // ordnet for haand og vises som foer (kontrolloeren 9. oktober 2026).
+    if (Booking::avlystAvLissom($b['okt_status'] ?? null, $b['avlyst_at'] ?? null)) {
         $plasser[] = [
             'id'            => (int) $b['id'],
             'tittel'        => $b['tittel'],

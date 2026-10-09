@@ -10,6 +10,12 @@
  * samme dag: medlemmer og deltakere kan tegne selv, egne tavler ser bare de
  * selv og admin, og admin kan dele sine tavler.
  *
+ * Eieren, 9. oktober 2026: «skisseverktøy, jeg vil ikke se medlemmenes
+ * skisser, kun min egen». Admin ser og åpner derfor bare tavler admin selv
+ * eier (eier_id = innlogget), også fra /ny-admin › Hurtig › Skisseverktøy.
+ * En medlemstavle er «finnes ikke» (404) for admin, også med direkte id.
+ * Ingen data er slettet; tavlene ligger der for eierne sine.
+ *
  * Den første modulen etter «moduler nå»: egen side (skisser.html), eget API
  * (api/skisser.php, api/admin/skisser.php), egne tabeller (migrasjon 236) og
  * egne brytere. Ingenting her brukes av resten av systemet, så går det i
@@ -124,7 +130,7 @@ final class Skisser
 
     /**
      * Tavlene denne personen ser: sine egne, og det admin har delt med en
-     * gruppe hen er med i. Admin ser alle.
+     * gruppe hen er med i. Admin ser bare sine egne (eieren 09.10).
      *
      * @param array<string,mixed> $m
      * @return list<array<string,mixed>>
@@ -136,7 +142,8 @@ final class Skisser
                   FROM skisser s
              LEFT JOIN members mb ON mb.id = s.eier_id';
         if (self::erAdmin($m)) {
-            $rader = DB::alle($sql . ' ORDER BY s.updated_at DESC, s.id DESC');
+            $rader = DB::alle($sql . ' WHERE s.eier_id = :m ORDER BY s.updated_at DESC, s.id DESC',
+                ['m' => (int) $m['id']]);
         } else {
             $vilkaar = ['s.eier_id = :m'];
             if (self::forMedlemmer() && self::erMedlem($m)) {
@@ -180,25 +187,26 @@ final class Skisser
      */
     public static function kanSe(array $r, array $m): bool
     {
-        if (self::erAdmin($m)) {
-            return true;
-        }
         if ((int) ($r['eier_id'] ?? 0) === (int) $m['id']) {
             return true;
+        }
+        // Eieren 09.10: admin ser bare sine egne tavler, ikke medlemmenes.
+        if (self::erAdmin($m)) {
+            return false;
         }
         return ((int) $r['delt_medlemmer'] === 1 && self::forMedlemmer() && self::erMedlem($m))
             || ((int) $r['delt_deltakere'] === 1 && !self::erMedlem($m) && self::forDeltakere() && self::erDeltaker($m));
     }
 
     /**
-     * Bare eieren og admin endrer. En delt tavle er til å se på.
+     * Bare eieren endrer. En delt tavle er til å se på.
      *
      * @param array<string,mixed> $r
      * @param array<string,mixed> $m
      */
     public static function kanEndre(array $r, array $m): bool
     {
-        return self::erAdmin($m) || (int) ($r['eier_id'] ?? 0) === (int) $m['id'];
+        return (int) ($r['eier_id'] ?? 0) === (int) $m['id'];
     }
 
     /**
@@ -368,8 +376,8 @@ final class Skisser
     }
 
     /**
-     * Deling. Bare admin, og bare på tavler admin eier: et medlems egen
-     * tavle er privat, også for admin å dele videre.
+     * Deling. Bare admin, og bare på tavler admin selv eier: et medlems egen
+     * tavle finnes ikke for admin (eieren 09.10).
      *
      * @param array<string,mixed> $m
      */
@@ -379,12 +387,8 @@ final class Skisser
             throw new DomainException('Bare verkstedet kan dele tavler.');
         }
         $r = DB::en('SELECT * FROM skisser WHERE id = :i', ['i' => $skisseId]);
-        if ($r === null) {
+        if ($r === null || (int) ($r['eier_id'] ?? 0) !== (int) $m['id']) {
             throw new DomainException('Fant ikke tavla.');
-        }
-        $eier = $r['eier_id'] === null ? null : DB::en('SELECT rolle FROM members WHERE id = :i', ['i' => (int) $r['eier_id']]);
-        if ($eier !== null && (string) $eier['rolle'] !== 'admin') {
-            throw new DomainException('Tavla er medlemmets egen, og kan ikke deles.');
         }
         DB::kjor('UPDATE skisser SET delt_medlemmer = :a, delt_deltakere = :b WHERE id = :i',
             ['a' => $medlemmer ? 1 : 0, 'b' => $deltakere ? 1 : 0, 'i' => $skisseId]);

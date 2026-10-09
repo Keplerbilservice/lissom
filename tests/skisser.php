@@ -6,6 +6,8 @@
  * Eieren, 30. september 2026: medlemmer og kursdeltakere kan tegne selv;
  * egne tavler ser bare de selv og admin; admin kan dele sine tavler.
  * Bryterne er av fra start, og av betyr at serveren også stopper.
+ * Eieren, 9. oktober 2026: admin ser bare sine egne tavler, ikke medlemmenes
+ * (404 også med direkte id).
  *
  * Kjor:  php tests/skisser.php
  */
@@ -116,8 +118,13 @@ sjekk('A ser ikke tavla til B', !in_array($tB, $idListe($a), true));
 sjekk('A får ikke hente tavla til B', Skisser::hent($tB, $a) === null);
 sjekk('A får ikke lagre på tavla til B', str_contains(kaster(static fn() => Skisser::lagreSide($tB, 1, '{"objects":[]}', $a)), 'Fant ikke'));
 sjekk('A får ikke slette tavla til B', kaster(static fn() => Skisser::slett($tB, $a)) !== '' && DB::en('SELECT id FROM skisser WHERE id = :i', ['i' => $tB]) !== null);
-sjekk('admin ser begge', in_array($tA, $idListe($admin), true) && in_array($tB, $idListe($admin), true));
-sjekk('admin kan ikke dele en medlemstavle', kaster(static fn() => Skisser::del($tA, true, false, $admin)) !== '');
+sjekk('admin ser ikke medlemmenes tavler i lista', !in_array($tA, $idListe($admin), true) && !in_array($tB, $idListe($admin), true));
+sjekk('admin får ikke hente en medlemstavle med direkte id', Skisser::hent($tA, $admin) === null);
+sjekk('admin får ikke lagre på en medlemstavle', str_contains(kaster(static fn() => Skisser::lagreSide($tA, 1, '{"objects":[]}', $admin)), 'Fant ikke'));
+sjekk('admin får ikke gi nytt navn til en medlemstavle', str_contains(kaster(static fn() => Skisser::giNavn($tA, 'x', $admin)), 'Fant ikke'));
+sjekk('admin får ikke slette en medlemstavle', kaster(static fn() => Skisser::slett($tA, $admin)) !== '' && DB::en('SELECT id FROM skisser WHERE id = :i', ['i' => $tA]) !== null);
+sjekk('admin ser ikke versjonene til en medlemstavle', Skisser::versjoner($tA, 1, $admin) === []);
+sjekk('admin kan ikke dele en medlemstavle', str_contains(kaster(static fn() => Skisser::del($tA, true, false, $admin)), 'Fant ikke'));
 sjekk('et medlem kan ikke dele', kaster(static fn() => Skisser::del($tA, true, true, $a)) !== '');
 
 // ── Lagring og versjoner ──────────────────────────────────────────────
@@ -145,6 +152,10 @@ sjekk('siste side kan ikke slettes', kaster(static fn() => Skisser::slettSide($t
 
 // ── Admin deler en tavle ──────────────────────────────────────────────
 $tV = Skisser::ny($admin, 'Verkstedets');
+sjekk('admin ser sin egen tavle', in_array($tV, $idListe($admin), true) && Skisser::hent($tV, $admin) !== null
+    && Skisser::hent($tV, $admin)['kanEndre'] === true);
+$admin2 = $person('admin', 'aktiv');
+sjekk('en annen admin ser ikke tavla', !in_array($tV, $idListe($admin2), true) && Skisser::hent($tV, $admin2) === null);
 sjekk('udelt: A ser ikke verkstedets tavle', !in_array($tV, $idListe($a), true));
 Skisser::del($tV, true, false, $admin);
 sjekk('delt med medlemmer: A ser den', in_array($tV, $idListe($a), true));
@@ -163,7 +174,7 @@ Skisser::leggTilBilde($tA, $fil, $a);
 sjekk('eieren ser bildet', Skisser::kanSeBilde($fil, $a));
 sjekk('B ser ikke bildet', !Skisser::kanSeBilde($fil, $b));
 sjekk('uten innlogging ser ingen bildet', !Skisser::kanSeBilde($fil, null));
-sjekk('admin ser bildet', Skisser::kanSeBilde($fil, $admin));
+sjekk('admin ser ikke bildet på en medlemstavle', !Skisser::kanSeBilde($fil, $admin));
 sjekk('B kan ikke legge bilde på tavla til A', kaster(static fn() => Skisser::leggTilBilde($tA, bin2hex(random_bytes(16)) . '.jpg', $b)) !== '');
 
 // ── Modulen av: alt stopper ───────────────────────────────────────────
@@ -182,12 +193,12 @@ sjekk('api/admin/skisser.php stopper med 403 når modulen er av',
 sjekk('api/admin/skisser.php krever admin', str_contains($apiAdmin, '$admin = krev_admin();'));
 
 // ── Rydd opp ──────────────────────────────────────────────────────────
-foreach ([$tA, $tB, $tV] as $id) {
-    try { Skisser::slett($id, $admin + ['rolle' => 'admin']); } catch (Throwable $e) { /* alt borte */ }
+foreach ([[$tA, $a], [$tB, $b], [$tV, $admin]] as [$id, $eier]) {
+    try { Skisser::slett($id, $eier); } catch (Throwable $e) { /* alt borte */ }
 }
 $bryter('skisser', 'nei'); // slett() trenger ikke modulen, men sett bryterne tilbake
 foreach ($lagret as $k => $v) { $bryter($k, $v); }
-$ids = array_map(static fn($m) => (int) $m['id'], [$admin, $a, $b, $gjest, $deltaker]);
+$ids = array_map(static fn($m) => (int) $m['id'], [$admin, $admin2, $a, $b, $gjest, $deltaker, $medDeltaker]);
 DB::kjor('DELETE FROM bookings WHERE member_id IN (' . implode(',', $ids) . ')');
 DB::kjor('DELETE FROM payments WHERE member_id IN (' . implode(',', $ids) . ')');
 DB::kjor('DELETE FROM members WHERE id IN (' . implode(',', $ids) . ')');

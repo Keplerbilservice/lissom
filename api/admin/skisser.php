@@ -1,6 +1,7 @@
 <?php
 /**
- * Skisser i admin: alle tavler, og deling med medlemmer og kursdeltakere.
+ * Skisser i admin: bare admins egne tavler (eieren 09.10), og deling av dem
+ * med medlemmer og kursdeltakere.
  *
  * Se app/lib/skisser.php. Bryteren for hele modulen (Vis/skisser) står under
  * ⊙ Synlighet; av betyr 403 også her.

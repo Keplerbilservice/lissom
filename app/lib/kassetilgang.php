@@ -162,6 +162,22 @@ final class KasseTilgang
         return $person;
     }
 
+    /**
+     * Personen med denne PIN-en — samme kontroll som kassa (finnPin), men uten
+     * kassekontoen og uten å låse opp kassa. Messevisningen (app/lib/messe.php,
+     * eieren 9. oktober 2026: «samme PIN som kassen»). null = feil PIN, feil
+     * format eller migrasjon 263 ikke kjørt.
+     *
+     * @return array{id:int, navn:string}|null
+     */
+    public static function personForPin(string $pin): ?array
+    {
+        if (!self::klar() || preg_match('/^\d{4}$/', $pin) !== 1) {
+            return null;
+        }
+        return self::finnPin($pin);
+    }
+
     public static function laas(): void
     {
         $h = Sesjon::tokenHash();

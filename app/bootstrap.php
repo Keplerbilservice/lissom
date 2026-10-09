@@ -103,6 +103,7 @@ spl_autoload_register(static function (string $klasse): void {
         'Omsetning' => 'omsetning.php',
         'Vaktdata' => 'vaktdata.php',
         'Medlemsordre' => 'medlemsordre.php',
+        'Messe' => 'messe.php',
         'Aktivitet' => 'aktivitet.php',
         'Oppmote' => 'oppmote.php',
         'Oppsett' => 'oppsett.php',

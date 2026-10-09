@@ -36,6 +36,12 @@ RewriteRule ^ny-admin/?$ /ny-admin.html [L]
 # kassekontoen. Se app/lib/kasse.php.
 RewriteRule ^kasse/?$ /kasse.html [L]
 
+# Messevisningen for bedrifter på iPad og skjemaet bak QR-koden (eieren, GO
+# 9. oktober 2026). PIN-en er kassens; kontrollen ligger i messe.php og
+# api/messe.php. /bedrift er bedriftssiden på nettsida og går som før.
+RewriteRule ^messe/?$ /messe.php [L]
+RewriteRule ^bedrift/tilbud/?$ /bedrift-tilbud.php [L]
+
 # ── Det som ikke er nettsida, svarer 403 ───────────────────────────────
 #
 # Sikkerhetsskanning 13. september 2026, mot den ekte sida:

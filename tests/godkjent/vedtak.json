@@ -7884,6 +7884,82 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "messe-bedrift",
+            "dato": "2026-10-09",
+            "hva": "«legg dette ut på en link, med samme PIN som kassen»: /messe er messevisningen på iPad, låst med kassens PIN (sjekket på serveren, kapsel 30 dager), løkke 9 sek, trykk = meny, tilbake etter 30 sek, film med lyd, fullskjerm og våken skjerm, QR lokalt; skjemaet bak QR-koden (/bedrift/tilbud) sender til forespørslene («Må gjøres») med kvitteringen «Takk! Monica tar kontakt.». Bryter Vis/messe.",
+            "hvor": "lissom.no/messe og lissom.no/bedrift/tilbud",
+            "kode": [
+                {
+                    "fil": "app/lib/messe.php",
+                    "finnes": [
+                        "KasseTilgang::personForPin($pin)",
+                        "public const DAGER = 30;",
+                        "Feil PIN – prøv igjen"
+                    ]
+                },
+                {
+                    "fil": "app/nett/messe/visning.html",
+                    "finnes": [
+                        "const LOOP=9000, RETUR=30000;",
+                        "Håndlaget keramikk og kreative opplevelser for bedrifter.",
+                        "Grenseløs, Tønsberg.",
+                        "/vendor/qrcode-2.0.4.js",
+                        "navigator.wakeLock.request(\"screen\")",
+                        "/bedrift/tilbud"
+                    ],
+                    "ikkeFinnes": [
+                        "cdnjs",
+                        "fonts.googleapis",
+                        "class=\"ny\""
+                    ]
+                },
+                {
+                    "fil": "app/nett/messe/pin.html",
+                    "finnes": [
+                        "Skriv PIN-koden for messevisning",
+                        "/api/messe.php"
+                    ],
+                    "ikkeFinnes": [
+                        "1234"
+                    ]
+                },
+                {
+                    "fil": "app/nett/messe/bedrift.html",
+                    "finnes": [
+                        "Takk! Monica tar kontakt.",
+                        "Hva (f.eks. kopp, asjett)",
+                        "/api/foresporsel.php"
+                    ]
+                },
+                {
+                    "fil": ".htaccess",
+                    "finnes": [
+                        "RewriteRule ^messe/?$ /messe.php [L]",
+                        "RewriteRule ^bedrift/tilbud/?$ /bedrift-tilbud.php [L]"
+                    ]
+                }
+            ],
+            "live": [
+                {
+                    "sti": "/messe",
+                    "finnes": [
+                        "Skriv PIN-koden for messevisning",
+                        "noindex"
+                    ],
+                    "ikkeFinnes": [
+                        "Grenseløs, Tønsberg."
+                    ]
+                },
+                {
+                    "sti": "/bedrift/tilbud",
+                    "finnes": [
+                        "Be om tilbud",
+                        "Takk! Monica tar kontakt."
+                    ]
+                }
+            ]
         }
     ]
 }

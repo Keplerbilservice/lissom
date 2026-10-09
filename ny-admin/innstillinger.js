@@ -32,7 +32,7 @@
     ['Vis/dugnadutvalgte', 'Dugnad bare for utvalgte medlemmer', false], ['Vis/dugnad', 'Dugnad', true], ['Vis/dugnadoverforing', 'Overfør dugnadstimer', true],
     ['Vis/tilleggbarn', 'Ta med barn', true], ['Vis/kalenderark', 'Kalenderen: økt-ark, farger og merker', false],
     ['Vis/kursstart3', 'Start kurset i tre steg, med QR-betaling', false], ['Vis/kalendergjenta', 'Kalenderen: gjenta kursdatoer og dupliser til neste uke', false],
-    ['Vis/kalendermeny', 'Kalenderen: høyreklikk-menyer, dra og slipp, sideliste og dagsrapport', false], ['Vis/kasse', 'Kassa på iPad (/kasse)', false],
+    ['Vis/kalendermeny', 'Kalenderen: høyreklikk-menyer, dra og slipp, sideliste og dagsrapport', false], ['Vis/kasse', 'Kassa på iPad (/kasse)', false], ['Vis/messe', 'Messevisning på iPad (/messe) og skjemaet /bedrift/tilbud', true],
     ['Vis/magjoresmer', 'I dag: ovnen ferdig, kurs som fylles tregt, medlemmer ikke innom og mandagsoppsummering', true]];
   // Hver bryter står ett sted (designvokteren 08.10.2026): det som vises på Min side styres bare under Medlemssiden
   // (NA.minSideNokler fra medlemssiden.js), og Brytere-fanen har bare det som ikke står i en annen fane.

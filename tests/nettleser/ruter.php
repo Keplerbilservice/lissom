@@ -34,4 +34,7 @@ if (preg_match('~^/admin-ny/?$~', $sti)) { header('Content-Type: text/html; char
 // Den nye adminen (eieren 8. oktober 2026), samme omskriving som .htaccess.
 if (preg_match('~^/ny-admin/?$~', $sti)) { header('Content-Type: text/html; charset=UTF-8'); readfile($rot . '/ny-admin.html'); return true; }
 if (preg_match('~^/kasse/?$~', $sti)) { header('Content-Type: text/html; charset=UTF-8'); readfile($rot . '/kasse.html'); return true; }
+// Messevisningen og skjemaet bak QR-koden (eieren 9. oktober 2026), samme omskriving som .htaccess.
+if (preg_match('~^/messe/?$~', $sti)) { return $skript('/messe.php'); }
+if (preg_match('~^/bedrift/tilbud/?$~', $sti)) { return $skript('/bedrift-tilbud.php'); }
 require $rot . '/side.php';

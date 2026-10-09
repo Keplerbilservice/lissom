@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="nb"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#fbf6ee">
+<title>Be om tilbud | Lissom</title>
+<link rel="icon" href="/favicon.svg"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="/ds-fonts.css">
+<style>
+/* Skjemaet bak QR-koden på messevisningen (eieren, GO 9. oktober 2026). Sender til api/foresporsel.php som andre forespørsler. */
+:root{--ink:#4d1d12;--paper:#fbf6ee;--line:#e5d7c6;--yellow:#ffcf38;--muted:#765c50;--f-head:"Bitter",Georgia,serif;--f-body:"Alegreya Sans",system-ui,sans-serif;color-scheme:light}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--f-body)}
+main{max-width:520px;margin:0 auto;padding:20px 16px 40px}
+.topp img{height:34px;display:block}
+h1{font-family:var(--f-head);font-size:28px;margin:16px 0 4px;letter-spacing:-.02em}
+.ingress{margin:0 0 18px;color:var(--muted);font-size:17px}
+#bskjema label{display:grid;gap:5px;font-weight:700;font-size:16px;margin-bottom:14px}
+#bskjema input:not([type=checkbox]),#bskjema textarea{font:16px var(--f-body);padding:11px 12px;border:1px solid #c6b1a0;border-radius:10px;background:#fff;color:var(--ink);min-height:46px;width:100%}
+#bskjema textarea{min-height:90px;resize:vertical}
+#bskjema fieldset{border:0;padding:0;margin:0 0 14px;min-width:0}
+#bskjema legend{font-weight:700;font-size:16px;margin-bottom:6px;padding:0}
+.kryss{display:grid;gap:8px}
+.kryss label{display:flex!important;align-items:center;gap:10px;font-weight:600!important;background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:0!important;min-height:48px;cursor:pointer}
+.kryss input{width:22px;height:22px;accent-color:var(--ink);flex:none}
+.linje-topp{display:grid;grid-template-columns:1fr 84px 44px;gap:8px;font-size:14px;color:var(--muted);font-weight:700;margin-bottom:4px}
+.linje{display:grid;grid-template-columns:1fr 84px 44px;gap:8px;margin-bottom:8px}
+.linje input{min-height:46px;min-width:0}
+.linje button{border:1px solid var(--line);background:#fff;border-radius:10px;font-size:22px;color:var(--ink);cursor:pointer;min-height:46px;min-width:44px}
+.knapp{width:100%;min-height:50px;border:0;border-radius:12px;background:var(--yellow);color:var(--ink);font:800 18px var(--f-body);cursor:pointer;margin:6px 0 12px}
+.knapp.lys{background:#fff;border:1px dashed #c6b1a0;font-size:16px;min-height:46px}
+.knapp:disabled{opacity:.6}
+.svar{font-weight:700;color:#286548;min-height:1.2em;margin:0;font-size:17px}
+.svar.feil{color:#ad3425}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+</style></head>
+<body>
+<main>
+  <form id="bskjema" novalidate>
+    <div class="topp"><img src="/logo-lockup.svg" alt="Lissom"></div>
+    <h1>Be om tilbud</h1>
+    <p class="ingress">Fortell oss litt om dere, så tar Monica kontakt.</p>
+    <label for="b-navn">Navn<input id="b-navn" name="navn" autocomplete="name" maxlength="191" required></label>
+    <label for="b-bedrift">Bedrift<input id="b-bedrift" name="bedrift" autocomplete="organization" maxlength="191"></label>
+    <label for="b-tlf">Telefon<input id="b-tlf" name="telefon" type="tel" autocomplete="tel" maxlength="32" required></label>
+    <label for="b-epost">E-post<input id="b-epost" name="epost" type="email" autocomplete="email" maxlength="191" required></label>
+    <fieldset><legend>Hva er dere interessert i?</legend>
+      <div class="kryss">
+        <label><input type="checkbox" value="Servise" id="i-servise"> Servise</label>
+        <label><input type="checkbox" value="Firmagaver" id="i-gaver"> Firmagaver</label>
+        <label><input type="checkbox" value="Firmakveld / kurs" id="i-firmakveld"> Firmakveld / kurs</label>
+        <label><input type="checkbox" value="Medlemskap" id="i-medlemskap"> Medlemskap</label>
+      </div>
+    </fieldset>
+    <div id="linjer-boks" hidden>
+      <div class="linje-topp" aria-hidden="true"><span>Hva (f.eks. kopp, asjett)</span><span>Antall</span><span></span></div>
+      <div id="linjer"></div>
+      <button type="button" id="ny-linje" class="knapp lys">+ Legg til linje</button>
+    </div>
+    <label for="b-kommentar">Kommentar<textarea id="b-kommentar" rows="3" maxlength="1200" placeholder="F.eks. farge, tidspunkt, antall personer"></textarea></label>
+    <button type="submit" class="knapp" id="send">Send</button>
+    <p id="b-svar" class="svar" role="status" aria-live="polite"></p>
+  </form>
+</main>
+<script>
+(function(){
+  "use strict";
+  const $=s=>document.querySelector(s);
+  const linjer=$("#linjer"), boks=$("#linjer-boks");
+  let n=0;
+  const nyLinje=()=>{ n++; const d=document.createElement("div"); d.className="linje";
+    d.innerHTML=`<input aria-label="Hva (f.eks. kopp, asjett)" placeholder="Kopp, asjett …" maxlength="80"><input aria-label="Antall" type="number" min="1" max="100000" inputmode="numeric" placeholder="Antall"><button type="button" aria-label="Fjern linje">×</button>`;
+    d.querySelector("button").onclick=()=>{ d.remove(); if(!linjer.children.length) nyLinje(); };
+    linjer.appendChild(d); };
+  const visLinjer=()=>{ const paa=$("#i-servise").checked||$("#i-gaver").checked; boks.hidden=!paa; if(paa && !linjer.children.length) nyLinje(); };
+  ["#i-servise","#i-gaver"].forEach(id=>$(id).addEventListener("change",visLinjer));
+  $("#ny-linje").onclick=()=>{ nyLinje(); const s=linjer.lastElementChild.querySelector("input"); if(s) s.focus(); };
+
+  const svar=(t,feil)=>{ const p=$("#b-svar"); p.textContent=t; p.classList.toggle("feil",!!feil); };
+  let sender=false;
+  $("#bskjema").addEventListener("submit",async e=>{
+    e.preventDefault(); if(sender) return;
+    const v=id=>$(id).value.trim();
+    if(!v("#b-navn")||!v("#b-tlf")||!v("#b-epost")){ svar("Fyll inn navn, telefon og e-post.",true); return; }
+    const interesse=[...document.querySelectorAll(".kryss input:checked")].map(x=>x.value);
+    const hva=boks.hidden?[]:[...linjer.querySelectorAll(".linje")].map(l=>{ const [a,b]=l.querySelectorAll("input"); return [a.value.trim(),b.value.trim()]; }).filter(([a,b])=>a||b);
+    const deler=[];
+    if(v("#b-bedrift")) deler.push("Bedrift: "+v("#b-bedrift"));
+    deler.push("Telefon: "+v("#b-tlf"));
+    deler.push("Interessert i: "+(interesse.length?interesse.join(", "):"–"));
+    if(hva.length) deler.push("Hva og antall:\n"+hva.map(([a,b])=>"- "+(a||"?")+(b?": "+b:"")).join("\n"));
+    if(v("#b-kommentar")) deler.push("Kommentar:\n"+v("#b-kommentar"));
+    sender=true; $("#send").disabled=true; svar("",false);
+    try{
+      const r=await fetch("/api/foresporsel.php",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({navn:v("#b-navn"),kontakt:v("#b-epost"),telefon:v("#b-tlf"),
+          type:("Bedrift: "+(interesse.length?interesse.join(", "):"forespørsel")).slice(0,64),antall:"",melding:deler.join("\n\n").slice(0,2000)})});
+      const d=await r.json().catch(()=>({}));
+      if(!r.ok){ svar(d.feil||"Fikk ikke sendt. Prøv igjen om litt.",true); }
+      else { $("#bskjema").reset(); linjer.innerHTML=""; boks.hidden=true; svar("Takk! Monica tar kontakt.",false); }
+    }catch(err){ svar("Fikk ikke kontakt med serveren. Prøv igjen om litt.",true); }
+    sender=false; $("#send").disabled=false;
+  });
+})();
+</script>
+</body></html>

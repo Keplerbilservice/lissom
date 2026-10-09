@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="nb"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#fbf6ee">
+<title>Lissom messevisning</title>
+<link rel="icon" href="/favicon.svg"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="/ds-fonts.css">
+<style>
+/* PIN-skjermen til messevisningen (eieren, 9. oktober 2026). Samme PIN som kassa; kontrollen er på serveren (api/messe.php). */
+:root{--ink:#4d1d12;--paper:#fbf6ee;--line:#e5d7c6;--yellow:#ffcf38;--muted:#765c50;--f-body:"Alegreya Sans",system-ui,sans-serif;color-scheme:light}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--paper);color:var(--ink);font-family:var(--f-body);overflow:hidden;overscroll-behavior:none;touch-action:manipulation;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+#pin{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:16px}
+#pin img{height:46px}
+#pin p{margin:0;color:var(--muted);font-size:18px;min-height:1.4em;text-align:center}
+.prikker{display:flex;gap:14px}.prikker i{width:16px;height:16px;border-radius:50%;border:2px solid var(--ink)}.prikker i.fylt{background:var(--ink)}
+.tast{display:grid;grid-template-columns:repeat(3,72px);gap:12px}
+.tast button{height:72px;border-radius:50%;border:1px solid var(--line);background:#fff;color:var(--ink);font:700 28px var(--f-body);cursor:pointer}
+.tast button:active{background:var(--yellow)}
+.tast button:disabled{opacity:.5}
+button:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+</style></head>
+<body>
+<div id="pin" role="dialog" aria-label="Skriv PIN-kode">
+  <img src="/logo-lockup.svg" alt="Lissom">
+  <p id="pin-tekst" role="status">Skriv PIN-koden for messevisning</p>
+  <div class="prikker" id="prikker"><i></i><i></i><i></i><i></i></div>
+  <div class="tast" id="tast"></div>
+</div>
+<script>
+(function(){
+  const $=s=>document.querySelector(s);
+  let pin="", sender=false;
+  $("#tast").innerHTML=[1,2,3,4,5,6,7,8,9,"",0,"⌫"].map(t=>t===""?"<span></span>":`<button type="button" data-t="${t}" aria-label="${t==='⌫'?'Slett':t}">${t}</button>`).join("");
+  const tegn=()=>document.querySelectorAll("#prikker i").forEach((p,k)=>p.classList.toggle("fylt",k<pin.length));
+  const feil=t=>{ $("#pin-tekst").textContent=t; pin=""; setTimeout(tegn,250); };
+  async function send(){
+    sender=true; document.querySelectorAll("#tast button").forEach(b=>b.disabled=true);
+    try{
+      const r=await fetch("/api/messe.php",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({pin})});
+      const d=await r.json().catch(()=>({}));
+      if(r.ok){ location.reload(); return; }
+      feil(d.feilPin ? "Feil PIN – prøv igjen" : (d.feil || "Fikk ikke kontakt med serveren. Prøv igjen om litt."));
+    }catch(e){ feil("Fikk ikke kontakt med serveren. Prøv igjen om litt."); }
+    sender=false; document.querySelectorAll("#tast button").forEach(b=>b.disabled=false);
+  }
+  $("#tast").addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b||sender) return; const t=b.dataset.t;
+    if(t==="⌫") pin=pin.slice(0,-1); else if(pin.length<4) pin+=t; tegn();
+    if(pin.length===4) send(); });
+  tegn();
+})();
+</script>
+</body></html>

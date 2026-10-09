@@ -121,6 +121,7 @@ kjor "flytting, venteliste, portalrefusjon (L-7–L-9)" php tests/pamelding-flyt
 kjor "pengehull 1–4 (frys, Kassa/Forny, skyldig, endre/fjern)" php tests/pengehull.php
 kjor "kasse på iPad (tilgang, PIN, beløp på serveren, Vipps-QR)" php tests/kasse.php
 kjor "enkel kasse (dagens kurs, ny kunde, endret pris og rabatt)" php tests/kasse-enkel.php
+kjor "messevisning (kassens PIN) og bedriftsskjemaet" php tests/messe.php
 kjor "Ta betalt i ny admin → kassa (?booking=, alle datoer)" php tests/kasse-ta-betalt.php
 kjor "avlyst dato (Min side, refusjon, kassa, melding)" php tests/avlyst-dato.php
 kjor "refusjonsklient" node tests/refusjon-klient.mjs

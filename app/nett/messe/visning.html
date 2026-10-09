@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="nb"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#fbf6ee">
+<title>Lissom messevisning</title>
+<link rel="icon" href="/favicon.svg"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="/ds-fonts.css">
+<style>
+/* Messevisningen for bedrifter (eieren, GO 9. oktober 2026). Fasit: prototypen «messevisning.html».
+   iPad liggende og stående. Løkke 9 sek per side, trykk = meny, tilbake til løkka etter 30 sek uten berøring. */
+:root{
+  --ink:#4d1d12; --paper:#fbf6ee; --ground:#f4ebde; --line:#e5d7c6; --yellow:#ffcf38; --muted:#765c50;
+  --f-head:"Bitter",Georgia,serif; --f-body:"Alegreya Sans",system-ui,sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--paper);color:var(--ink);font-family:var(--f-body);overflow:hidden;overscroll-behavior:none;touch-action:manipulation;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.ipad{position:fixed;inset:0;height:100vh;height:100dvh;background:var(--paper);cursor:pointer;overflow:hidden}
+.topp{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:3.2vh 5vw;border-bottom:1px solid var(--line)}
+.topp img{height:clamp(26px,3.4vw,40px)}
+.topp span{font-size:clamp(12px,1.25vw,16px);letter-spacing:.14em;text-transform:uppercase;font-weight:800;color:var(--muted);text-align:right}
+.side{position:absolute;inset:13% 5% 15% 5%;display:none;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:5%;align-items:center;animation:inn .7s ease both}
+.side.vis{display:grid}
+@keyframes inn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.side{animation:none}}
+.kicker{font-size:clamp(12px,1.25vw,16px);letter-spacing:.16em;text-transform:uppercase;font-weight:800;color:var(--muted);display:flex;gap:10px;align-items:center}
+.kicker::before{content:"";width:28px;height:4px;border-radius:2px;background:var(--yellow)}
+h2{font-family:var(--f-head);font-size:clamp(30px,4.3vw,60px);line-height:1.03;letter-spacing:-.035em;margin:14px 0 0;text-wrap:balance}
+.ingress{font-size:clamp(18px,2.2vw,29px);line-height:1.4;color:#6a3d2f;margin:16px 0 0;max-width:30ch}
+.tilbud{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tilbud div{border:1px solid var(--line);background:#fff;border-radius:18px;padding:14px 18px;display:grid;gap:6px;min-width:0}
+.tilbud .topp-tilbud{background:var(--yellow);border-color:var(--yellow)}
+.tilbud .topp-tilbud small{color:var(--ink)}
+.tilbud b{font-family:var(--f-head);font-size:clamp(17px,1.8vw,24px)}
+.tilbud small{font-size:clamp(14px,1.35vw,18px);color:var(--muted);line-height:1.35}
+.fakta{display:grid;gap:12px;margin:0;padding:0;list-style:none}
+.fakta li{display:flex;gap:14px;align-items:baseline;font-size:clamp(18px,2.2vw,29px);padding-bottom:12px;border-bottom:1px solid var(--line)}
+.fakta li:last-child{border-bottom:0}
+.fakta li::before{content:"";flex:none;width:10px;height:10px;border-radius:50%;background:var(--yellow);transform:translateY(-2px)}
+.fakta.liten li{font-size:clamp(16px,1.8vw,23px);padding-bottom:8px}
+.fakta.liten{margin-top:18px;gap:8px}
+.hjerte{width:min(100%,420px);aspect-ratio:4/5;max-height:64vh;justify-self:center;border-radius:28px;overflow:hidden;box-shadow:0 18px 50px #4d1d1226;border:6px solid #fff}
+.hjerte img{width:100%;height:100%;object-fit:cover;object-position:50% 30%;display:block}
+.monica-navn{margin:14px 0 18px;font-size:clamp(18px,2.1vw,27px);color:var(--muted)}
+.monica-navn b{color:var(--ink);font-family:var(--f-head)}
+.foto{width:100%;justify-self:center}
+.foto img{width:100%;aspect-ratio:6/5;max-height:58vh;object-fit:cover;border-radius:24px;border:6px solid #fff;box-shadow:0 18px 50px #4d1d1226;display:block}
+.steg{display:grid;gap:12px;margin:0;padding:0;list-style:none;counter-reset:s}
+.steg li{counter-increment:s;display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px 18px;font-size:clamp(18px,2.2vw,28px)}
+.steg li::before{content:counter(s);width:1.9em;height:1.9em;border-radius:50%;background:var(--ink);color:var(--paper);font-weight:800;display:grid;place-items:center;font-size:.85em}
+.sitat{font-family:var(--f-head);font-size:clamp(26px,3.3vw,44px);line-height:1.15;margin:0;letter-spacing:-.02em}
+.side .sitat{margin-top:22px;font-size:clamp(22px,2.6vw,34px)}
+.sitat-av{margin-top:14px;font-size:clamp(17px,1.9vw,24px);color:var(--muted)}
+.kontakt{display:grid;grid-template-columns:auto 1fr;gap:28px;align-items:center}
+.qr-stor{background:#fff;border:1px solid var(--line);padding:14px;border-radius:18px;width:clamp(170px,20vw,240px)}
+.linjer{display:grid;gap:8px;font-size:clamp(17px,1.9vw,25px)}
+.linjer b{font-family:var(--f-head)}
+.qr-fast{position:absolute;right:4%;bottom:4%;display:flex;gap:10px;align-items:center;font-size:clamp(12px,1.2vw,15px);color:var(--muted);font-weight:700}
+.qr-fast .qr{background:#fff;border:1px solid var(--line);padding:6px;border-radius:12px;width:clamp(84px,9.5vw,118px)}
+.qr svg{display:block;width:100%;height:auto}
+.fremdrift{position:absolute;left:5%;bottom:5.5%;display:flex;gap:6px;width:min(320px,40%)}
+.fremdrift i{flex:1;height:4px;border-radius:2px;background:var(--line);overflow:hidden}
+.fremdrift i b{display:block;height:100%;width:0;background:var(--ink)}
+/* Stående iPad og smale skjermer: én kolonne, tekst over bilde. */
+@media (orientation:portrait),(max-width:760px){
+  .side{grid-template-columns:1fr;inset:12% 6% 17% 6%;align-content:center;gap:4vh}
+  h2{font-size:clamp(30px,5.6vw,60px)}
+  .ingress,.fakta li,.steg li{font-size:clamp(18px,3vw,29px)}
+  .fakta.liten li{font-size:clamp(16px,2.5vw,23px)}
+  .tilbud b{font-size:clamp(17px,2.6vw,24px)}.tilbud small{font-size:clamp(14px,2vw,18px)}
+  .foto img{max-height:30vh}
+  .hjerte{max-height:36vh;width:auto;height:36vh}
+  .kontakt{grid-template-columns:1fr;justify-items:start}
+  .qr-stor{width:clamp(170px,30vw,260px)}
+  .linjer{font-size:clamp(17px,2.8vw,25px)}
+  .topp span{font-size:clamp(11px,1.7vw,16px)}
+  .fremdrift{width:min(320px,45%)}
+  .qr-fast .qr{width:clamp(84px,13vw,118px)}
+}
+@media (max-height:520px){.side{overflow:auto}}
+/* meny */
+#meny{position:absolute;inset:0;z-index:4;background:#fbf6eef7;display:none;flex-direction:column;justify-content:center;align-items:center;gap:22px;padding:24px;cursor:default}
+#meny.apen{display:flex}
+#meny h3{font-family:var(--f-head);font-size:clamp(24px,3vw,40px);margin:0}
+.valg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;width:min(900px,100%)}
+@media (orientation:portrait),(max-width:760px){.valg{grid-template-columns:1fr 1fr}}
+.valg button{min-height:clamp(80px,12vh,120px);border-radius:18px;border:1px solid var(--line);background:#fff;color:var(--ink);font:800 clamp(18px,2vw,26px) var(--f-body);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:8px}
+.valg button.hoved{background:var(--yellow);border-color:var(--yellow)}
+.valg button small{font-weight:600;font-size:clamp(14px,1.5vw,18px);color:#6a3d2f}
+.menyknapper{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+.tilbake{background:none;border:1px solid var(--line);color:var(--ink);border-radius:999px;padding:12px 22px;font:700 17px var(--f-body);cursor:pointer;min-height:44px}
+.nedtelling{color:var(--muted);font-size:14px;min-height:1.2em}
+#storfilm{position:absolute;inset:0;z-index:6;background:#000;display:none;align-items:center;justify-content:center;cursor:default}
+#storfilm.apen{display:flex}
+#storfilm video{width:100%;height:100%;object-fit:contain;background:#000}
+#storfilm .tilbake{position:absolute;top:max(16px,env(safe-area-inset-top));right:16px;background:#fbf6ee}
+button:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+</style></head>
+<body>
+<div class="ipad" id="ipad">
+  <div class="topp"><img src="/logo-lockup.svg" alt="Lissom Keramikk"><span>Håndlaget keramikk · Teie, Tønsberg</span></div>
+
+  <section class="side vis" data-n="0">
+    <div><div class="kicker">Lissom Keramikk</div><h2>Håndlaget keramikk og kreative opplevelser for bedrifter.</h2><p class="ingress">Servise til restauranter og hoteller, firmagaver og keramikkurs for team.</p>
+      <ul class="fakta liten"><li>Servise i deres form og glasur</li><li>Firmagaver til ansatte og kunder</li><li>Kurs og firmakvelder i verkstedet</li><li>Medlemskap med tilgang til verkstedet</li></ul></div>
+    <div class="foto"><img src="/assets/messe/produkt-reklame.jpg" alt="Håndlaget tallerken fra Lissom" width="936" height="780"></div>
+  </section>
+
+  <section class="side" data-n="1">
+    <div><div class="kicker">Referanse</div><h2>Grenseløs, Tønsberg.</h2><p class="ingress">Eget servise til restauranten – fra første samtale til ferdig sett på bordet.</p>
+      <p class="sitat">«Alt rundt må fortelle den samme historien.»</p><div class="sitat-av">Marcos Scorza, Grenseløs</div></div>
+    <div class="foto"><img src="/assets/messe/samtale-mild.jpg" alt="Monica og Marcos Scorza i samtale på Grenseløs" width="1080" height="900" loading="lazy"></div>
+  </section>
+
+  <section class="side" data-n="2">
+    <div><div class="kicker">Kurs og medlemskap</div><h2>Samle teamet rundt leira.</h2><p class="ingress">Dreiing eller Paint on Pots i verkstedet på Teie. Ingen forkunnskaper trengs.</p></div>
+    <div class="tilbud">
+      <div class="topp-tilbud"><b>Firmakveld</b><small>Kurs for ansatte og kunder – fortell oss hvor mange dere er.</small></div>
+      <div class="topp-tilbud"><b>Faste kurs</b><small>Dreiing, håndbygging og Paint on Pots hele året.</small></div>
+      <div><b>Medlemskap</b><small>Tilgang til verkstedet døgnet rundt med egen dørkode.</small></div>
+      <div><b>Gavekort</b><small>Kurs som gave til ansatte og kunder.</small></div>
+    </div>
+  </section>
+
+  <section class="side" data-n="3">
+    <div><div class="kicker">Hvem er vi</div><h2>Et keramikkverksted på Teie.</h2>
+      <p class="monica-navn"><b>Monica</b> · keramiker og daglig leder</p>
+      <ul class="fakta"><li>Alt lages for hånd, fra leire til ferdig glasur</li><li>Kurs, medlemskap og produksjon under samme tak</li></ul></div>
+    <div class="hjerte"><img src="/assets/messe/monica-verksted.jpg" alt="Monica i verkstedet" width="960" height="1200" loading="lazy"></div>
+  </section>
+
+  <section class="side" data-n="4">
+    <div><div class="kicker">Slik jobber vi</div><h2>Fra idé til bord.</h2></div>
+    <ol class="steg"><li>Samtale og skisser</li><li>Prøver på form og glasur</li><li>Produksjon for hånd</li><li>Levering – og påfyll ved behov</li></ol>
+  </section>
+
+  <section class="side" data-n="5">
+    <div><div class="kicker">Ta kontakt</div><h2>Skann og be om tilbud.</h2><p class="ingress">Fyll inn navn og hva dere er interessert i – Monica tar kontakt.</p></div>
+    <div class="kontakt"><div class="qr-stor qr" data-qr aria-label="QR-kode til skjemaet" role="img"></div>
+      <div class="linjer"><b>lissom.no/bedrift</b><span>monica@lissom.no</span><span>94 13 46 01</span><span>Nordre Løkkevei 15, Teie</span></div></div>
+  </section>
+
+  <div class="fremdrift" id="fremdrift"></div>
+  <div class="qr-fast" id="qrfast"><span>Skann og be om tilbud</span><div class="qr" data-qr aria-label="QR-kode til skjemaet" role="img"></div></div>
+
+  <div id="meny" role="dialog" aria-label="Velg">
+    <h3>Hva vil du se?</h3>
+    <div class="valg">
+      <button type="button" data-hopp="0">Hva vi tilbyr<small>Servise, gaver, kurs</small></button>
+      <button type="button" data-hopp="1">Referanse<small>Grenseløs</small></button>
+      <button type="button" data-hopp="2">Kurs og medlemskap<small>For team og ansatte</small></button>
+      <button type="button" data-hopp="3">Hvem er vi<small>Monica og Lissom</small></button>
+      <button type="button" data-film>Se filmen<small>Fra leire til Grenseløs</small></button>
+      <button type="button" data-hopp="5" class="hoved">Be om tilbud<small>Skann QR-koden</small></button>
+    </div>
+    <div class="menyknapper">
+      <button type="button" class="tilbake" id="lukkmeny">Fortsett visningen</button>
+      <button type="button" class="tilbake" id="fullskjerm" hidden>Fullskjerm</button>
+    </div>
+    <span class="nedtelling" id="nedtelling"></span>
+  </div>
+  <div id="storfilm"><video id="storvideo" src="/assets/messe/grenselos.mp4" playsinline controls preload="none"></video><button type="button" class="tilbake" id="lukkfilm">Lukk filmen</button></div>
+</div>
+<script src="/vendor/qrcode-2.0.4.js"></script>
+<script>
+(function(){
+  "use strict";
+  const $=s=>document.querySelector(s);
+  const SIDER=[...document.querySelectorAll(".side")];
+  const LOOP=9000, RETUR=30000;
+  // QR-koden går til skjemaet på samme nettsted (lissom.no/bedrift/tilbud).
+  const SKJEMA=location.origin+"/bedrift/tilbud";
+  let i=0, modus="loop", neste=null, sist=Date.now();
+
+  // QR lages lokalt (vendor/qrcode-2.0.4.js), ingen CDN.
+  document.querySelectorAll("[data-qr]").forEach(q=>{
+    try{ const k=window.qrcode(0,"M"); k.addData(SKJEMA); k.make();
+      q.innerHTML=k.createSvgTag({cellSize:4,margin:0,scalable:true}).replace(/fill="black"/g,'fill="#4d1d12"'); }
+    catch(e){ q.textContent="lissom.no/bedrift"; }
+  });
+  $("#fremdrift").innerHTML=SIDER.map(()=>"<i><b></b></i>").join("");
+
+  // auto=true: løkka (9 sek, så neste). auto=false: valgt side, står til 30 sek uten berøring.
+  function vis(n,auto){
+    i=(n+SIDER.length)%SIDER.length;
+    SIDER.forEach((s,k)=>s.classList.toggle("vis",k===i));
+    $("#qrfast").style.visibility = i===SIDER.length-1 ? "hidden" : "visible";
+    const b=document.querySelectorAll(".fremdrift b");
+    b.forEach((x,k)=>{x.style.transition="none";x.style.width=k<i||(!auto&&k===i)?"100%":"0";});
+    clearTimeout(neste);
+    if(auto){
+      requestAnimationFrame(()=>requestAnimationFrame(()=>{b[i].style.transition="width "+(LOOP/1000)+"s linear";b[i].style.width="100%";}));
+      neste=setTimeout(()=>vis(i+1,true),LOOP);
+    }
+  }
+  function tilLoop(){ modus="loop"; $("#meny").classList.remove("apen"); $("#nedtelling").textContent=""; vis(i,true); }
+  function apneMeny(){ modus="meny"; clearTimeout(neste); sist=Date.now(); $("#meny").classList.add("apen"); tellNed(); }
+  function tellNed(){ const s=Math.max(0,Math.ceil((RETUR-(Date.now()-sist))/1000)); $("#nedtelling").textContent=`Går tilbake til visningen om ${s} sek.`; }
+
+  // Hver berøring nullstiller 30-sekunderen.
+  document.addEventListener("pointerdown",()=>{ sist=Date.now(); vaaken(); },{capture:true});
+  setInterval(()=>{
+    const ute=Date.now()-sist>=RETUR;
+    if(modus==="meny"){ if(ute) tilLoop(); else tellNed(); }
+    else if(modus==="valgt" && ute) tilLoop();
+    else if(modus==="film" && ute && $("#storvideo").paused) lukkFilm();
+  },1000);
+
+  $("#ipad").addEventListener("click",e=>{ if(e.target.closest("#meny,#storfilm")) return; if(modus==="loop"||modus==="valgt") apneMeny(); });
+  $("#lukkmeny").addEventListener("click",e=>{ e.stopPropagation(); tilLoop(); });
+  document.querySelectorAll("[data-hopp]").forEach(b=>b.addEventListener("click",e=>{ e.stopPropagation();
+    modus="valgt"; $("#meny").classList.remove("apen"); $("#nedtelling").textContent=""; vis(+b.dataset.hopp,false); }));
+
+  // Filmen i full størrelse, med lyd (startet av et trykk). Tilbake til løkka ved slutt eller feil.
+  const v=$("#storvideo");
+  function lukkFilm(){ try{ v.pause(); }catch(e){} $("#storfilm").classList.remove("apen"); tilLoop(); }
+  $("[data-film]").addEventListener("click",e=>{ e.stopPropagation();
+    modus="film"; clearTimeout(neste); $("#meny").classList.remove("apen"); $("#storfilm").classList.add("apen");
+    v.muted=false; try{ v.currentTime=0; }catch(_){}
+    const p=v.play(); if(p&&p.catch) p.catch(()=>setTimeout(()=>{ if(modus==="film"&&v.paused) lukkFilm(); },2500)); });
+  v.addEventListener("ended",lukkFilm);
+  v.addEventListener("error",()=>{ if(modus==="film") lukkFilm(); });
+  $("#lukkfilm").addEventListener("click",e=>{ e.stopPropagation(); lukkFilm(); });
+
+  // Fullskjerm der nettleseren kan (iPad: webkit-prefiks).
+  const rot=document.documentElement;
+  const kanFull=!!(document.fullscreenEnabled||document.webkitFullscreenEnabled);
+  const erFull=()=>!!(document.fullscreenElement||document.webkitFullscreenElement);
+  const fk=$("#fullskjerm");
+  if(kanFull){ fk.hidden=false;
+    fk.addEventListener("click",e=>{ e.stopPropagation();
+      if(erFull()){ (document.exitFullscreen||document.webkitExitFullscreen).call(document); }
+      else { const r=(rot.requestFullscreen||rot.webkitRequestFullscreen).call(rot); if(r&&r.catch) r.catch(()=>{}); } });
+  }
+
+  // Skjermen holdes våken der nettleseren kan (Wake Lock).
+  let laas=null;
+  async function vaaken(){
+    if(!("wakeLock" in navigator) || (laas && !laas.released) || document.visibilityState!=="visible") return;
+    try{ laas=await navigator.wakeLock.request("screen"); }catch(e){ laas=null; }
+  }
+  document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") vaaken(); });
+  vaaken();
+
+  vis(0,true);
+})();
+</script>
+</body></html>

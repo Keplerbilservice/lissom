@@ -153,7 +153,16 @@ final class Lager
      */
     public static function tilHandlelista(array $v): void
     {
-        $antall = self::aaBestille((int) $v['lager'], $v['lager_maks'] === null ? null : (int) $v['lager_maks']);
+        self::leggIHandlelista($v, self::aaBestille((int) $v['lager'], $v['lager_maks'] === null ? null : (int) $v['lager_maks']));
+    }
+
+    /**
+     * Samme linje med et valgt antall (/ny-admin › Varer › Handleliste, eieren 09.10.2026).
+     *
+     * @param array<string,mixed> $v raden fra products
+     */
+    public static function leggIHandlelista(array $v, int $antall): void
+    {
         if ($antall <= 0 || empty($v['leverandor_id']) || !self::harVerkstedslinjer()) {
             return;
         }
@@ -179,6 +188,93 @@ final class Lager
             'sendt_at'   => gmdate('Y-m-d H:i:s'),
         ]);
         revider('handleliste_verkstedet', 'product', (int) $v['id'], ['antall' => $antall]);
+    }
+
+    // ── Handlelista i /ny-admin › Varer (eieren 09.10.2026) ────────────────
+    //
+    // Verkstedets egne linjer (member_id NULL) som ikke er bestilt ennå —
+    // de samme linjene som «Bestill mer» og varsling under min legger inn,
+    // og som admin-ny › Handlelister sender med «Send bestilling».
+
+    /**
+     * @return list<array{linjeId:int,produktId:int,vare:string,antall:int,leverandor:string,lager:?int,min:?int,maks:?int}>
+     */
+    public static function verkstedLinjer(): array
+    {
+        if (!self::harVerkstedslinjer()) {
+            return [];
+        }
+        $grense = self::harGrense() ? 'p.lager_min, p.lager_maks' : 'NULL AS lager_min, NULL AS lager_maks';
+        return array_map(static fn($r) => [
+            'linjeId'    => (int) $r['id'],
+            'produktId'  => (int) $r['product_id'],
+            'vare'       => (string) $r['tittel'],
+            'antall'     => (int) $r['antall'],
+            'leverandor' => (string) ($r['leverandor'] ?? ''),
+            'lager'      => $r['lager'] === null ? null : (int) $r['lager'],
+            'min'        => $r['lager_min'] === null ? null : (int) $r['lager_min'],
+            'maks'       => $r['lager_maks'] === null ? null : (int) $r['lager_maks'],
+        ], DB::alle(
+            "SELECT h.id, h.product_id, h.antall, p.tittel, p.lager, {$grense}, l.navn AS leverandor
+               FROM handleliste_linjer h
+               JOIN products p ON p.id = h.product_id
+          LEFT JOIN leverandorer l ON l.id = p.leverandor_id
+              WHERE h.member_id IS NULL AND h.status = 'sendt' AND h.bestilt_at IS NULL
+           ORDER BY p.tittel, h.id"
+        ));
+    }
+
+    /** Fjerner én av verkstedets linjer som ikke er bestilt. Medlemmenes linjer røres ikke. */
+    public static function fjernVerkstedslinje(int $linjeId): bool
+    {
+        if (!self::harVerkstedslinjer()) {
+            return false;
+        }
+        return DB::kjor(
+            "DELETE FROM handleliste_linjer
+              WHERE id = :i AND member_id IS NULL AND status = 'sendt' AND bestilt_at IS NULL AND order_id IS NULL",
+            ['i' => $linjeId]
+        )->rowCount() === 1;
+    }
+
+    /**
+     * «Handlet»: linja er kjøpt inn. Den settes ferdig (bestilt og kommet) og
+     * antallet legges til lageret — i én transaksjon, og bare én gang.
+     *
+     * @return array{vare:string,antall:int,lager:?int}|null null = fant ikke linja
+     */
+    public static function handlet(int $linjeId): ?array
+    {
+        if (!self::harVerkstedslinjer()) {
+            return null;
+        }
+        return DB::iTransaksjon(static function () use ($linjeId): ?array {
+            $l = DB::en(
+                "SELECT h.id, h.product_id, h.antall, p.tittel FROM handleliste_linjer h
+                   JOIN products p ON p.id = h.product_id
+                  WHERE h.id = :i AND h.member_id IS NULL AND h.status = 'sendt' AND h.bestilt_at IS NULL
+                  FOR UPDATE",
+                ['i' => $linjeId]
+            );
+            if ($l === null) {
+                return null;
+            }
+            $sett = "status = 'ferdig', bestilt_at = NOW()" . (self::harLeireStatus() ? ', kommet_at = NOW()' : '');
+            $endret = DB::kjor(
+                "UPDATE handleliste_linjer SET {$sett}
+                  WHERE id = :i AND member_id IS NULL AND status = 'sendt' AND bestilt_at IS NULL",
+                ['i' => $linjeId]
+            )->rowCount();
+            if ($endret !== 1) {
+                return null;
+            }
+            // Bare lagerstyrte varer får antallet lagt til (NULL = ikke lagerstyrt).
+            DB::kjor('UPDATE products SET lager = lager + :n WHERE id = :p AND lager IS NOT NULL',
+                ['n' => (int) $l['antall'], 'p' => (int) $l['product_id']]);
+            $lager = DB::verdi('SELECT lager FROM products WHERE id = :p', ['p' => (int) $l['product_id']]);
+            revider('handleliste_handlet', 'product', (int) $l['product_id'], ['linje' => $linjeId, 'antall' => (int) $l['antall']]);
+            return ['vare' => (string) $l['tittel'], 'antall' => (int) $l['antall'], 'lager' => $lager === null ? null : (int) $lager];
+        });
     }
 
     /**

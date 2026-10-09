@@ -8,7 +8,9 @@
  *   POST handling=slett          fjern en vare
  *   POST handling=fyllPaa        { id, antall } legg varer som kom inn til lageret
  *   POST handling=taUt           { id }         ta én fra lageret, uten betaling
- *   POST handling=bestillMer     { id }         legg varen i handlelista (fyll opp til maks)
+ *   POST handling=bestillMer     { id, antall? } legg varen i handlelista (fyll opp til maks, eller antall)
+ *   POST handling=handlelisteFjern { linjeId }  fjern en av verkstedets linjer (ny-admin › Varer)
+ *   POST handling=handlet        { linjeId }    linja er kjoept inn: ferdig, og antallet legges paa lageret
  *
  * Prisen som settes her er den kunden faktisk trekkes. Nettleseren sender
  * aldri belop ved kjop — den sender hvilke varer, og serveren regner ut
@@ -90,6 +92,9 @@ if (Foresporsel::metode() === 'GET') {
     'litePaaLager' => Lager::bestillMer(),
     // Ta ut leire (eieren 04.10.2026).
     'taUtLeire'    => Lager::leireListe(),
+    // Handlelista i /ny-admin › Varer (eieren 09.10.2026): verkstedets linjer som ikke er bestilt.
+    'handleliste'    => Lager::verkstedLinjer(),
+    'harHandleliste' => Lager::harVerkstedslinjer(),
     ]);
 }
 
@@ -154,16 +159,46 @@ if ($handling === 'bestillMer') {
     if (empty($vare['leverandor_id'])) {
         Svar::feil('Velg leverandør på varen først.');
     }
-    $antall = Lager::aaBestille((int) $vare['lager'], isset($vare['lager_maks']) && $vare['lager_maks'] !== null ? (int) $vare['lager_maks'] : null);
+    // Eget antall fra handlelista i /ny-admin › Varer (eieren 09.10.2026). Uten: fyll opp til maks.
+    $valgt = array_key_exists('antall', Foresporsel::kropp()) ? Foresporsel::heltall('antall') : null;
+    if ($valgt !== null && ($valgt < 1 || $valgt > 65535)) {
+        Svar::feil('Skriv hvor mange som skal kjøpes.');
+    }
+    $antall = $valgt ?? Lager::aaBestille((int) $vare['lager'], isset($vare['lager_maks']) && $vare['lager_maks'] !== null ? (int) $vare['lager_maks'] : null);
     if ($antall <= 0) {
         Svar::feil('Sett «Fyll opp lageret til» på varen først.');
     }
     if (!Lager::harVerkstedslinjer()) {
         Svar::feil('Dette krever oppdatering 253. Kjør oppdateringene først.');
     }
-    Lager::tilHandlelista($vare);
+    $valgt === null ? Lager::tilHandlelista($vare) : Lager::leggIHandlelista($vare, $valgt);
     revider('vare_bestill_mer', 'product', $id, ['antall' => $antall]);
     Svar::ok(['id' => $id, 'antall' => $antall, 'beskjed' => 'Lagt i handlelista: ' . $antall . ' stk.']);
+}
+
+// ------------------------------------------------- handlelista i ny admin
+//
+// /ny-admin › Varer › Handleliste (eieren 09.10.2026): fjerne en linje og
+// krysse av som handlet. Bare verkstedets egne linjer (member_id NULL) som
+// ikke er bestilt — medlemmenes linjer styres fra Handlelister som foer.
+if ($handling === 'handlelisteFjern' || $handling === 'handlet') {
+    if (!Lager::harVerkstedslinjer()) {
+        Svar::feil('Dette krever oppdatering 253. Kjør oppdateringene først.');
+    }
+    $linje = Foresporsel::heltall('linjeId');
+    if ($handling === 'handlelisteFjern') {
+        if (!Lager::fjernVerkstedslinje($linje)) {
+            Svar::feil('Fant ikke linja i handlelista.');
+        }
+        revider('handleliste_fjernet', 'handleliste', $linje);
+        Svar::ok(['beskjed' => 'Fjernet fra handlelista.', 'handleliste' => Lager::verkstedLinjer()]);
+    }
+    $h = Lager::handlet($linje);
+    if ($h === null) {
+        Svar::feil('Fant ikke linja i handlelista.');
+    }
+    Svar::ok(['beskjed' => $h['lager'] === null ? 'Handlet.' : 'Handlet. Lageret er nå ' . $h['lager'] . '.',
+        'lager' => $h['lager'], 'handleliste' => Lager::verkstedLinjer()]);
 }
 
 // ------------------------------------------------------------------ ta ut

@@ -498,6 +498,11 @@ final class Kasse
             if ($stopp !== null) {
                 throw new RuntimeException($stopp, 409);
             }
+            // En Vipps-betaling som pågår ellers (nettsiden, Min side): ikke ta
+            // betalt ved siden av, under låsen (kontrolløren 9. oktober 2026).
+            if (KasseKurv::vippsPaaVei($bid)) {
+                throw new RuntimeException(KasseKurv::VIPPS_PAAGAR, 409);
+            }
             if ($d['pop'] !== []) {
                 PopPris::kassa($bid, $d['pop'], $person['id']);
             }
@@ -1081,6 +1086,23 @@ final class Kasse
     private static function qrBooking(array $d, array $person): array
     {
         $bid = (int) $d['bookingId'];
+        // En Vipps-betaling som pågår utenom kassa (nettsiden, Min side): ingen
+        // QR ved siden av. Låsen holdes til QR-en er laget (kontrolløren
+        // 9. oktober 2026); kassas egne QR-koder (KS-…) gjenbrukes som før.
+        KursstartKrav::laas($bid);
+        try {
+            if (KasseKurv::vippsPaaVei($bid, true)) {
+                throw new RuntimeException(KasseKurv::VIPPS_PAAGAR, 409);
+            }
+            return self::qrBookingLaast($d, $person);
+        } finally {
+            KursstartKrav::slipp($bid);
+        }
+    }
+
+    private static function qrBookingLaast(array $d, array $person): array
+    {
+        $bid = (int) $d['bookingId'];
         if ($d['pop'] !== []) {
             $naa = DB::verdi('SELECT gjenstander_ore FROM bookings WHERE id = :i', ['i' => $bid]);
             // Er gjenstandene alt slått inn med samme sum, er det et nytt
@@ -1138,7 +1160,7 @@ final class Kasse
     {
         $bid = (int) ($poll['bookingId'] ?? 0);
         if ($bid > 0) {
-            if (KasseKurv::dagensBooking($bid) === null) {
+            if (KasseKurv::booking($bid) === null) {
                 throw new RuntimeException('Fant ikke påmeldingen.', 404);
             }
             foreach (DB::alle(

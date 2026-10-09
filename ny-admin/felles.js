@@ -188,6 +188,18 @@
     return oversiktLofte;
   };
   NA.oppdaterTopp = () => NA.oversikt(true).catch(() => {});
+  /* «Ta betalt» (eieren 09.10.2026): kassa (/kasse) med påmeldingen og det som står igjen i kurven, for alle datoer.
+     Er kassa alt åpen i fanen «lissom-kasse», får den bookingen som en melding (admin-ny/kasse.js), så et salg
+     som er i gang der ikke lastes bort. Ellers åpnes /kasse?booking=<id>. */
+  NA.tilKassa = bookingId => {
+    const id = Number(bookingId); if (!Number.isInteger(id) || id <= 0) return;
+    const w = window.open('', 'lissom-kasse');
+    if (!w) { location.href = '/kasse?booking=' + id; return; }
+    let apen = false;
+    try { apen = w.location.origin === location.origin && /^\/kasse(\/|\.html)?$/.test(w.location.pathname); } catch {}
+    if (apen) { w.postMessage({kasseBooking: id}, location.origin); w.focus(); }
+    else w.location.href = '/kasse?booking=' + id;
+  };
   /* Det som står i «Må gjøres» (I dag): samme liste som menyens tall. Påmeldinger er «Til info» og teller ikke. */
   NA.maGjores = d => (d?.maGjores || []).filter(s => s.teller !== false && s.type !== 'pamelding');
   NA.antallMaa = d => NA.maGjores(d).length + (Number(d?.koer?.medlemsvarer) || 0);
@@ -204,7 +216,8 @@
   };
   NA.kjorOppdateringer = async function () {
     const d = await NA.oppdateringer(true);
-    if (!d || !d.mangler.length) { toast('Databasen er oppdatert. Ingenting å gjøre.'); return false; }
+    if (!d) { toast('Kunne ikke hente oppdateringene.'); return false; }
+    if (!d.mangler.length) { toast('Databasen er oppdatert. Ingenting å gjøre.'); return false; }
     if (!await NA.bekreft('Kjør databaseoppdateringer?', 'Kjør ' + d.mangler.length + ' oppdateringer og importer tilhørende dokumenter. Er du sikker?', 'Kjør oppdateringer')) return false;
     try {
       const r = await api('/api/migrer.php', {data: {kjor: 'ja'}});

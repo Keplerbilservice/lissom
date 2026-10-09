@@ -85,7 +85,30 @@ async function visIdag(){
  rot.replaceChildren(topp('Lissom Kasse · '+data.dato,...personValg()),el('div',{class:'k-a'},venstreEl,kurvEl));
  if(kursVist){try{kursVist=await kall('kasse.php?okt='+kursVist.oktId);}catch(e){kursVist=null;}}
  tegnVenstre();await visSalg();lytt();
+ await taFraAdmin();
 }
+// «Ta betalt» i ny admin (eieren 09.10.2026): /kasse?booking=<id> legger påmeldingen i kurven med det som står igjen,
+// uansett dato, når kassa er låst opp. Er kassa alt åpen, kommer bookingen som en melding (NA.tilKassa i ny-admin/felles.js),
+// så et salg som er i gang ikke forsvinner. Alt betalt, Vipps pågår eller ikke funnet: beskjed, og ingenting i kurven.
+let fraAdmin=(()=>{const n=Number(new URLSearchParams(location.search).get('booking'));return Number.isInteger(n)&&n>0?n:0;})();
+if(fraAdmin){try{history.replaceState(null,'',location.pathname+location.hash);}catch(e){}}
+addEventListener('message',ev=>{if(ev.origin!==location.origin)return;const n=Number(ev.data&&ev.data.kasseBooking);if(!Number.isInteger(n)||n<=0)return;fraAdmin=n;if(person&&venstreEl&&venstreEl.isConnected)taFraAdmin();});
+async function taFraAdmin(){
+ const id=fraAdmin;if(!id||!person)return;fraAdmin=0;
+ if(ikkeNaa())return;
+ let r;
+ try{r=await kall('kasse.php?booking='+id);}catch(e){if(e.stille){fraAdmin=id;return;}ark(e.message,lukk=>[el('div',{class:'k-rad-knapper'},pille('Lukk',lukk,'fylt'))]);return;}
+ // Ligger det varer i kurven, spør først (eieren 09.10.2026): «Ta dem med» eller «Fjern dem». Tom kurv: rett inn.
+ if(salg&&harVarer(salg)){
+  const valg=await new Promise(svar=>{const a=ark('Det ligger varer i kurven',lukk=>[el('div',{class:'k-rad-knapper'},pille('Ta dem med',()=>{lukk();svar('med');}),pille('Fjern dem',()=>{lukk();svar('fjern');}))]);a.addEventListener('click',ev=>{if(ev.target===a)svar(null);});});
+  if(!valg||ikkeNaa())return;
+  if(valg==='fjern'){stopPoll();salg=null;}
+ }
+ const k=r.idag?data.kurs.find(x=>x.oktId===r.oktId):null;
+ if(k)await apneKurs(k);
+ await nyttSalg({bookingId:r.bookingId,navn:r.navn,oktId:r.oktId});
+}
+const harVarer=s=>s.varer.size>0||s.fritt.length>0||s.gavekort.length>0||s.popUten.size>0||!!s.timepakke;
 function lytt(){stoppListe();listeTimer=setTimeout(async()=>{listeTimer=null;if(!person||!venstreEl||!venstreEl.isConnected)return;try{if(kursVist)kursVist=await kall('kasse.php?okt='+kursVist.oktId);else data=await kall('kasse.php');tegnVenstre();}catch(e){if(e.stille)return;if(e.status===404){kursVist=null;tegnVenstre();}}lytt();},15000);}
 async function oppdaterListe(){try{if(kursVist)kursVist=await kall('kasse.php?okt='+kursVist.oktId);data=await kall('kasse.php');}catch(e){if(e.stille)return;if(e.status===404)kursVist=null;}tegnVenstre();}
 
@@ -150,7 +173,7 @@ const laast=()=>!!salg&&(salg.vent||salg.betalt.size>0);
 const ikkeNaa=()=>{if(laast()){melding('Gjør ferdig betalingen først.');return true;}return false;};
 function kontantkunde(){if(ikkeNaa())return;const g=salg;salg=tomtSalg();salg.kontantkunde=true;if(g)beholdVarer(g);tegnVenstre();visSalg();}
 // Varene som alt er i kurven, blir med når kunden velges etterpå.
-function beholdVarer(g){salg.varer=g.varer;salg.fritt=g.fritt;salg.gavekort=g.gavekort;salg.popUten=g.popUten;salg.popGjester=g.popGjester;for(const [k,v] of g.priser)if(!k.startsWith('booking:'))salg.priser.set(k,v);salg.rabatt=g.rabatt;}
+function beholdVarer(g){salg.varer=g.varer;salg.fritt=g.fritt;salg.gavekort=g.gavekort;salg.timepakke=g.timepakke;salg.popUten=g.popUten;salg.popGjester=g.popGjester;for(const [k,v] of g.priser)if(!k.startsWith('booking:'))salg.priser.set(k,v);salg.rabatt=g.rabatt;}
 async function nyttSalg(fra){
  if(ikkeNaa())return;
  const g=salg;salg=tomtSalg();if(g)beholdVarer(g);salg.navn=fra.navn;salg.oktId=fra.oktId||null;

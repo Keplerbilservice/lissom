@@ -146,21 +146,28 @@ const tilGammel = (id, vis) => { location.href = '/admin-ny#kurs?kurs=' + encode
 H.kursRediger = b => tilGammel(+b.dataset.kurs);
 H.kursBilde = () => tilGammel(0, 'bilde');
 
-// Ta betalt. Dagens kurs: kassa (/kasse), der personen står under «Dagens kurs». En annen dato: den eksisterende
-// registreringen (pamelding.php status=betalt med betalingsmåte), som «Status og betaling» i gammel admin.
-// Ingen ny pengelogikk, og ingen beløp regnes her. Paint on Pots tas alltid i kassa (gjenstanden avgjør prisen).
+// Ta betalt (eieren 09.10.2026): kassa (/kasse) med personen og det som står igjen ferdig i kurven, for alle datoer.
+// Monica velger bare Vipps eller Kontant der. Beløpet regnes i kassa (api/kasse/kasse.php ?booking=), ikke her.
+const VIPPS_PAAGAR = 'En Vipps-betaling pågår for denne påmeldingen. Vent til den er ferdig.';
+H.taBetalt = b => {
+  const d = finnDelt(b.dataset.booking); if (!d) return;
+  // En Vipps-betaling som pågår (opprettet/venter) for påmeldingen: ikke ta betalt ved siden av (kassa sjekker det også).
+  if (d.vippsPaaVei) return toast(VIPPS_PAAGAR);
+  window.NA.tilKassa(d.bookingId);
+  return toast('Kassa er åpnet.');
+};
+// «Registrer betaling for hånd» (under personen): betaling tatt på annen måte. Den eksisterende registreringen
+// (pamelding.php status=betalt med betalingsmåte), som «Status og betaling» i gammel admin. Ingen ny pengelogikk.
+// Paint on Pots tas alltid i kassa (gjenstanden avgjør prisen).
 // Betalingsmåtene følger Booking::MAATER (Kontant, Vipps, Gratis; eieren tok Faktura ut 4. september) + Gavekort med kode.
 const TB_MAATER = ['Kontant', 'Vipps', 'Gavekort', 'Gratis'];
-H.taBetalt = b => {
+const kanForHaand = (d, kursId) => d.status === 'Ikke betalt' && !d.vippsPaaVei && !popUkjent() && !erPop(kursId);
+H.tbHaand = b => {
   const h = aktiv(), d = finnDelt(b.dataset.booking); if (!h || !d) return;
   // Uten Paint on Pots-oppsettet vet vi ikke om kurset tas i kassa: stopp heller enn å behandle det som et vanlig kurs.
   if (popUkjent()) return toast(POP_FEIL);
-  // En Vipps-betaling som pågår (opprettet/venter) for påmeldingen: ikke registrer en betaling ved siden av.
-  if (d.vippsPaaVei) return toast('En Vipps-betaling pågår for denne påmeldingen. Vent til den er ferdig.');
-  if (h.dato === idag() || erPop(h.kursId)) {
-    window.open('/kasse?booking=' + encodeURIComponent(d.bookingId), 'lissom-kasse');
-    return toast(h.dato === idag() ? 'Kassa er åpnet. Personen står under «Dagens kurs».' : 'Kassa er åpnet. Paint on Pots tas betalt i kassa når gjenstandene er valgt.');
-  }
+  if (d.vippsPaaVei) return toast(VIPPS_PAAGAR);
+  if (erPop(h.kursId)) return;
   KS.delt = d;
   // Delbetalt: det som gjenstår (kalender.php betaltOre, samme regnestykke som Booking::betalingerFor).
   const rest = Math.max(0, (d.belopOre || 0) - (d.betaltOre || 0));
@@ -242,7 +249,7 @@ H.deltaker = b => {
   ark(`<div class="ark-head"><h2>${esc(d.navn)}</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
    <p class="muted">${[d.tlf, d.epost].filter(Boolean).map(esc).join(' · ') || 'Ingen kontaktinfo'}${d.antall > 1 ? ` · ${d.antall} plasser` : ''} · ${merke(d, erPop(aktiv()?.kursId))}</p>
    ${d.merknad ? `<p class="sms">${esc(d.merknad)}</p>` : ''}
-   <div class="valgknapper"><button class="knapp" data-k="dRediger">Rediger påmelding (antall, rabatt)</button><button class="knapp" data-k="dBekreft">Send bekreftelse på nytt</button><button class="knapp" data-k="dFlytt">Flytt til annen dato</button><button class="knapp" data-k="dVente">Flytt til venteliste</button><button class="knapp rod" data-k="dSperr">Sperr kursbevis</button></div>`);
+   <div class="valgknapper"><button class="knapp" data-k="dRediger">Rediger påmelding (antall, rabatt)</button><button class="knapp" data-k="dBekreft">Send bekreftelse på nytt</button><button class="knapp" data-k="dFlytt">Flytt til annen dato</button><button class="knapp" data-k="dVente">Flytt til venteliste</button>${kanForHaand(d, aktiv()?.kursId) ? `<button class="knapp" data-k="tbHaand" data-booking="${d.bookingId}">Registrer betaling for hånd</button>` : ''}<button class="knapp rod" data-k="dSperr">Sperr kursbevis</button></div>`);
 };
 // Rabatt eller beløp: ett felt gjelder om gangen, og det andre låses (kontrolløren 09.10.2026). Før ble et innskrevet
 // beløp forkastet uten beskjed når rabatten også var endret. Rabatten: beløpet regnes som på serveren

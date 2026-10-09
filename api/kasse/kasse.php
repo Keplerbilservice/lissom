@@ -5,6 +5,9 @@
  *   GET                                   «I dag»: dagens kurs (kurs, ledigeKurs),
  *                                         påmeldte, varer, prisnivåer, oppgjøret
  *   GET ?okt=<id>                         ett av dagens kurs: de som ikke har betalt
+ *   GET ?booking=<id>                     «Ta betalt» i ny admin: påmeldingen til kurven
+ *                                         (alle datoer; 404 ikke funnet, 409 alt betalt
+ *                                         eller Vipps pågår)
  *   POST handling=person   { bookingId }  én person fra lista (Paint on Pots)
  *   POST handling=nyKunde  { navn, telefon, oktId?, antall? }  ny kunde, eventuelt
  *                                         med en plass på et av dagens kurs
@@ -35,6 +38,15 @@ $person = KasseTilgang::krevUlast();
 
 if (Foresporsel::metode() === 'GET') {
     // Ett av dagens kurs: de som ikke har betalt (iPaden spør hvert 15. sekund).
+    // «Ta betalt» i ny admin (/kasse?booking=<id>): påmeldingen som skal i kurven, uansett dato.
+    if (isset($_GET['booking'])) {
+        try {
+            Svar::json(KasseKurv::fraAdmin((int) $_GET['booking']));
+        } catch (RuntimeException $e) {
+            $kode = (int) $e->getCode();
+            Svar::feil($e->getMessage(), in_array($kode, [404, 409], true) ? $kode : 400);
+        }
+    }
     if (isset($_GET['okt'])) {
         try {
             Svar::json(KasseKurv::kurs((int) $_GET['okt']));

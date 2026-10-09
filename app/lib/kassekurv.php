@@ -39,27 +39,102 @@ final class KasseKurv
         return PopPris::kr($ore);
     }
 
-    /** Bookingen, når den hører til en økt i dag og er aktiv. */
-    public static function dagensBooking(int $bookingId): ?array
+    public const VIPPS_PAAGAR = 'En Vipps-betaling pågår for denne påmeldingen. Vent til den er ferdig.';
+
+    /**
+     * Bookingen, når den er aktiv og økta ikke er avlyst. Uansett dato: bare
+     * betalingsveien (person, kurven, betal, QR, status), så «Ta betalt» i ny
+     * admin kan ta betalt for alle datoer (eieren 9. oktober 2026, fraAdmin()).
+     * Alt annet i kassa bruker dagensBooking() (kontrolløren 9. oktober 2026).
+     */
+    public static function booking(int $bookingId): ?array
     {
-        [$fra, $til] = self::dagen();
         $pop = (DB::harKolonne('bookings', 'depositum_ore')
             ? 'b.depositum_ore, b.gjenstander_ore' : 'NULL AS depositum_ore, NULL AS gjenstander_ore')
             . (DB::harKolonne('bookings', 'kasse_rabatt_ore') ? ', b.kasse_rabatt_ore' : ', 0 AS kasse_rabatt_ore');
         return DB::en(
-            "SELECT b.id, b.status, b.belop_ore, b.antall, b.member_id, b.course_id, {$pop},
+            "SELECT b.id, b.status, b.belop_ore, b.antall, b.member_id, b.course_id, b.course_session_id, {$pop},
                     COALESCE(m.navn, b.gjest_navn) AS navn,
                     COALESCE(NULLIF(m.epost, ''), b.gjest_epost) AS epost,
                     COALESCE(NULLIF(m.telefon, ''), b.gjest_telefon) AS telefon,
                     c.tittel, cs.start_tid
                FROM bookings b
-               JOIN course_sessions cs ON cs.id = b.course_session_id
+               JOIN course_sessions cs ON cs.id = b.course_session_id AND cs.status <> 'avlyst'
                JOIN courses c ON c.id = b.course_id
           LEFT JOIN members m ON m.id = b.member_id
-              WHERE b.id = :i AND b.status IN ('betalt', 'reservert')
-                AND cs.start_tid >= :fra AND cs.start_tid < :til",
-            ['i' => $bookingId, 'fra' => $fra, 'til' => $til]
+              WHERE b.id = :i AND b.status IN ('betalt', 'reservert')",
+            ['i' => $bookingId]
         );
+    }
+
+    /** Bookingen, når den hører til en økt i dag (ikke avlyst) og er aktiv. */
+    public static function dagensBooking(int $bookingId): ?array
+    {
+        $b = self::booking($bookingId);
+        [$fra, $til] = self::dagen();
+        return $b !== null && (string) $b['start_tid'] >= $fra && (string) $b['start_tid'] < $til ? $b : null;
+    }
+
+    /**
+     * Pågår en Vipps-betaling for påmeldingen (opprettet/venter)? Samme vakt
+     * som «Ta betalt» og «endre» i admin (Booking::vippsPaaVeiSql). Med
+     * $utenKassa telles ikke kassa/kursstartens egne QR-koder (KS-…), som
+     * KursstartKrav stopper eller gjenbruker selv.
+     */
+    public static function vippsPaaVei(int $bookingId, bool $utenKassa = false): bool
+    {
+        if ($utenKassa) {
+            $bid = DB::harKolonne('payments', 'booking_id') ? ' OR p.booking_id = b.id' : '';
+            return (int) DB::verdi(
+                "SELECT EXISTS(SELECT 1 FROM payments p
+                                WHERE (p.id = b.payment_id{$bid}) AND p.status IN ('opprettet', 'venter')
+                                  AND COALESCE(p.vipps_reference, '') NOT LIKE 'KS-%')
+                   FROM bookings b WHERE b.id = :i",
+                ['i' => $bookingId]
+            ) === 1;
+        }
+        return (int) DB::verdi('SELECT ' . Booking::vippsPaaVeiSql('b') . ' FROM bookings b WHERE b.id = :i', ['i' => $bookingId]) === 1;
+    }
+
+    /**
+     * «Ta betalt» i ny admin (/kasse?booking=<id>, eieren 9. oktober 2026):
+     * påmeldingen som skal i kurven, uansett dato. Samme regel som «Dagens
+     * kurs» (deltakere(): skalBetale), og beløpet regnes som når personen
+     * velges der (person(), deler()). Alt betalt, Vipps pågår eller ikke
+     * funnet: en beskjed, og ingenting legges i kurven.
+     *
+     * @return array{bookingId:int, navn:string, oktId:int, idag:bool, skyldigOre:int}
+     */
+    public static function fraAdmin(int $bookingId): array
+    {
+        $b = $bookingId > 0 ? self::booking($bookingId) : null;
+        $rad = null;
+        if ($b !== null) {
+            foreach (self::deltakere((int) $b['course_session_id']) as $r) {
+                if ($r['bookingId'] === $bookingId) {
+                    $rad = $r;
+                    break;
+                }
+            }
+        }
+        if ($b === null || $rad === null) {
+            throw new RuntimeException('Fant ikke påmeldingen.', 404);
+        }
+        if (!$rad['skalBetale']) {
+            throw new RuntimeException('Påmeldingen er alt betalt.', 409);
+        }
+        if (self::vippsPaaVei($bookingId)) {
+            throw new RuntimeException(self::VIPPS_PAAGAR, 409);
+        }
+        [$fra, $til] = self::dagen();
+        $start = (string) $b['start_tid'];
+        return [
+            'bookingId'  => $bookingId,
+            'navn'       => (string) $rad['navn'],
+            'oktId'      => (int) $b['course_session_id'],
+            'idag'       => $start >= $fra && $start < $til,
+            'skyldigOre' => (int) $rad['skyldigOre'],
+        ];
     }
 
     /** Er bookingen Paint on Pots med beløp ved booking (kan slås inn i kassa)? */
@@ -356,7 +431,7 @@ final class KasseKurv
      */
     public static function person(int $bookingId): array
     {
-        $b = self::dagensBooking($bookingId);
+        $b = self::booking($bookingId);
         if ($b === null) {
             throw new RuntimeException('Fant ikke påmeldingen i dag.');
         }
@@ -385,7 +460,8 @@ final class KasseKurv
             // «Betalt ved booking»-raden: aldri mer enn beløpet ved booking.
             $ut['vedBookingOre'] = min((int) $bet['sum'], (int) $b['depositum_ore']);
             $ut['perPersonOre'] = (int) $b['antall'] > 0 ? intdiv((int) $b['depositum_ore'], (int) $b['antall']) : 0;
-            $ut['kanEndre'] = self::betaltVedBooking($bet['rader']) !== [];
+            // «Endre» → «Betalte ikke» bare for påmeldinger i dag (Kasse::betalteIkke, dagensBooking()).
+            $ut['kanEndre'] = self::betaltVedBooking($bet['rader']) !== [] && self::dagensBooking($bookingId) !== null;
         }
         return $ut;
     }
@@ -439,7 +515,7 @@ final class KasseKurv
         $bid = (int) ($betaler['bookingId'] ?? 0);
         $mid = (int) ($betaler['medlemId'] ?? 0);
         if ($bid > 0) {
-            $b = self::dagensBooking($bid);
+            $b = self::booking($bid);
             if ($b === null) {
                 throw new RuntimeException('Fant ikke personen i dagens liste.');
             }
@@ -512,7 +588,7 @@ final class KasseKurv
         // ── Påmeldingen ───────────────────────────────────────────────
         $bid = (int) ($kurv['bookingId'] ?? 0);
         if ($bid > 0) {
-            $b = self::dagensBooking($bid);
+            $b = self::booking($bid);
             if ($b === null) {
                 throw new RuntimeException('Fant ikke påmeldingen i dag.');
             }

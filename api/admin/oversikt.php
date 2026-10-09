@@ -1097,7 +1097,9 @@ $maGjores = (static function () use ($medlemsstatus, $nyeste): array {
         ) as $r) {
             $sak('Verksted', 'dugnad', (int) $r['id'],
                 $r['status'] === 'venter' ? 'Dugnad venter på godkjenning' : 'Dugnadstimer til godkjenning',
-                (string) $r['navn'] . ': ' . $kort($r['tekst'], 60), 'dugnad');
+                (string) $r['navn'] . ': ' . $kort($r['tekst'], 60), 'dugnad',
+                // Ny admin (eieren 09.10.2026): riktige knapper uten å lese tittelen.
+                ['status' => (string) $r['status']]);
         }
     });
 

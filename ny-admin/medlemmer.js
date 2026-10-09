@@ -89,6 +89,9 @@
     try { S.medlemmer = (await kall('medlemmer.php')).medlemmer || []; } catch (e) { toast(esc(e.message)); }
     tegnListe();
   }
+  /* «Må gjøres › Betaling» på mobil (eieren 09.10.2026): samme medlemsark som på PC, uten å bytte side
+     (Medlemmer er ikke en mobilside). Lista hentes først om den ikke er hentet. */
+  NA().arkMedlem = async id => { if (!S.medlemmer.length) await hentMedlemmer(); arkMedlem(Number(id)); };
 
   async function tegn(el, params) {
     S.el = el;

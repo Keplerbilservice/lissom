@@ -21,6 +21,8 @@ if (Foresporsel::metode() === 'GET') {
     Svar::json([
         'person'       => $p === null ? null : ['navn' => $p['navn']],
         'laasMinutter' => KasseTilgang::LAAS_MINUTTER,
+        // Innlogget admin (ikke kassekontoen): kassa viser «✕ Lukk» tilbake til ny admin (eieren 09.10.2026).
+        'admin'        => Sesjon::erAdmin() && !Sesjon::erKasse(),
     ]);
 }
 

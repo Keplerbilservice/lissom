@@ -189,16 +189,12 @@
   };
   NA.oppdaterTopp = () => NA.oversikt(true).catch(() => {});
   /* «Ta betalt» (eieren 09.10.2026): kassa (/kasse) med påmeldingen og det som står igjen i kurven, for alle datoer.
-     Er kassa alt åpen i fanen «lissom-kasse», får den bookingen som en melding (admin-ny/kasse.js), så et salg
-     som er i gang der ikke lastes bort. Ellers åpnes /kasse?booking=<id>. */
+     Kassa åpnes i samme vindu (eieren 09.10.2026), med fra=ny-admin og siden man kom fra, så «✕ Lukk» i kassa går
+     tilbake hit. */
+  NA.kasseAdresse = bookingId => '/kasse?' + (bookingId ? 'booking=' + bookingId + '&' : '') + 'fra=ny-admin&tilbake=' + encodeURIComponent(rute?.id || 'idag');
   NA.tilKassa = bookingId => {
     const id = Number(bookingId); if (!Number.isInteger(id) || id <= 0) return;
-    const w = window.open('', 'lissom-kasse');
-    if (!w) { location.href = '/kasse?booking=' + id; return; }
-    let apen = false;
-    try { apen = w.location.origin === location.origin && /^\/kasse(\/|\.html)?$/.test(w.location.pathname); } catch {}
-    if (apen) { w.postMessage({kasseBooking: id}, location.origin); w.focus(); }
-    else w.location.href = '/kasse?booking=' + id;
+    location.href = NA.kasseAdresse(id);
   };
   /* Det som står i «Må gjøres» (I dag): samme liste som menyens tall. Påmeldinger er «Til info» og teller ikke. */
   NA.maGjores = d => (d?.maGjores || []).filter(s => s.teller !== false && s.type !== 'pamelding');
@@ -299,7 +295,7 @@
     const aktiv = rute.id;
     const n = NA.sist ? NA.antallMaa(NA.sist) : 0;
     const navKnapp = ([id, navn, ic]) => id === 'kasse'
-      ? `<a class="nav" href="/kasse"><span class="ic">${ic}</span>${navn}</a>`
+      ? `<a class="nav" href="${esc(NA.kasseAdresse())}"><span class="ic">${ic}</span>${navn}</a>`
       : `<button class="nav" type="button" data-side="${id}" ${aktiv === id ? 'aria-current="page"' : ''}><span class="ic">${ic}</span>${navn}${id === 'idag' && n ? `<span class="tall">${n}</span>` : ''}</button>`;
     const meny = `<button class="brand" type="button" data-side="idag" aria-label="Lissom · til I dag">Lissom</button><div class="brand-note">Keramikk · admin</div>${MENY.map(navKnapp).join('')}
       <div class="hurtig-tittel">Hurtig</div>
@@ -314,7 +310,7 @@
     /* Bunnmenyen: på mobil bare I dag, Kalender og Kurs. På en smal PC-skjerm (zoom) alle sidene, så ingen blir borte. */
     const alle = !erMobil();
     const mobil = (alle ? [...MENY, ...BUNN] : MENY.filter(m => MOBIL.includes(m[0]))).map(([id, navn, ic]) => id === 'kasse'
-      ? `<a href="/kasse"><span aria-hidden="true">${ic}</span>${navn}</a>`
+      ? `<a href="${esc(NA.kasseAdresse())}"><span aria-hidden="true">${ic}</span>${navn}</a>`
       : `<button type="button" data-side="${id}" ${aktiv === id ? 'aria-current="page"' : ''}><span aria-hidden="true">${ic}</span>${navn}${id === 'idag' && n ? ` (${n})` : ''}</button>`).join('');
     $('#mobil').classList.toggle('alle', alle);
     if ($('#mobil')._html !== mobil) { $('#mobil').innerHTML = mobil; $('#mobil')._html = mobil; }

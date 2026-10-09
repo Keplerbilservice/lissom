@@ -34,13 +34,29 @@ document.addEventListener('pointerdown',aktiv,{passive:true});
 document.addEventListener('keydown',aktiv);
 async function laas(){clearTimeout(laasTimer);stopPoll();stoppListe();document.querySelectorAll('.k-ark').forEach(a=>a.remove());person=null;salg=null;try{await kall('pin.php',{handling:'laas'});}catch(e){}visPin();}
 
-function topp(tittel,...hoyre){return el('header',{class:'k-topp'},el('span',{class:'k-tittel',text:tittel}),el('div',{class:'k-valg'},...hoyre));}
+// «✕ Lukk» (eieren 09.10.2026): kassa åpnet fra ny admin (fra=ny-admin) eller av en innlogget admin går tilbake til /ny-admin,
+// til I dag eller siden i tilbake=. iPad-kassen (kassekontoen, uten fra=ny-admin) får ikke knappen og er som før.
+const sok=new URLSearchParams(location.search);
+const tilbakeSide=(s=>/^[a-z]{2,20}$/.test(s)?s:'idag')(sok.get('tilbake')||'');
+let fraNyAdmin=sok.get('fra')==='ny-admin';
+const lukkKnapp=()=>fraNyAdmin?pille('✕ Lukk',lukkKassa,'k-lukk'):null;
+async function lukkKassa(){
+ if(ikkeNaa())return;
+ // Uferdig salg i kurven: spør først (samme ark som ellers i kassa).
+ if(salg&&(harVarer(salg)||salg.bookingId||salg.pop.size>0)){
+  const ok=await new Promise(svar=>{const a=ark('Det ligger varer i kurven',lukk=>[el('div',{class:'k-rad-knapper'},pille('Lukk likevel',()=>{lukk();svar(true);},'fylt'),pille('Avbryt',()=>{lukk();svar(false);}))]);a.addEventListener('click',ev=>{if(ev.target===a)svar(false);});});
+  if(!ok||ikkeNaa())return;
+ }
+ stopPoll();stoppListe();
+ location.href='/ny-admin#'+tilbakeSide;
+}
+function topp(tittel,...hoyre){return el('header',{class:'k-topp'},el('span',{class:'k-tittel',text:tittel}),el('div',{class:'k-valg'},...hoyre,lukkKnapp()));}
 // «Dagens oppgjør» og «Lås» ligger i menyen ⋯ (eieren 08.10.2026).
 const personValg=()=>person?[el('span',{text:person.navn}),el('button',{type:'button',class:'k-pille k-meny','aria-label':'Meny',text:'⋯',onclick:meny})]:[];
 
 // ── Start ────────────────────────────────────────────────────────────
 async function start(){
- try{const s=await kall('pin.php');laasMs=(s.laasMinutter||5)*60*1000;person=s.person;if(person){aktiv();await visIdag();}else visPin();}
+ try{const s=await kall('pin.php');if(s.admin)fraNyAdmin=true;laasMs=(s.laasMinutter||5)*60*1000;person=s.person;if(person){aktiv();await visIdag();}else visPin();}
  catch(e){if(e.stille)return;if(e.status===404){visInnlogging('Denne kontoen har ikke tilgang til kassa.');return;}visBeskjed(e.message);}
 }
 function visBeskjed(tekst){rot.replaceChildren(topp('Lissom Kasse'),el('div',{class:'k-midt'},el('h1',{text:'Lissom Kasse'}),el('p',{text:tekst})));}
@@ -91,7 +107,7 @@ async function visIdag(){
 // uansett dato, når kassa er låst opp. Er kassa alt åpen, kommer bookingen som en melding (NA.tilKassa i ny-admin/felles.js),
 // så et salg som er i gang ikke forsvinner. Alt betalt, Vipps pågår eller ikke funnet: beskjed, og ingenting i kurven.
 let fraAdmin=(()=>{const n=Number(new URLSearchParams(location.search).get('booking'));return Number.isInteger(n)&&n>0?n:0;})();
-if(fraAdmin){try{history.replaceState(null,'',location.pathname+location.hash);}catch(e){}}
+if(fraAdmin){try{const q=new URLSearchParams(location.search);q.delete('booking');const t=q.toString();history.replaceState(null,'',location.pathname+(t?'?'+t:'')+location.hash);}catch(e){}}
 addEventListener('message',ev=>{if(ev.origin!==location.origin)return;const n=Number(ev.data&&ev.data.kasseBooking);if(!Number.isInteger(n)||n<=0)return;fraAdmin=n;if(person&&venstreEl&&venstreEl.isConnected)taFraAdmin();});
 async function taFraAdmin(){
  const id=fraAdmin;if(!id||!person)return;fraAdmin=0;

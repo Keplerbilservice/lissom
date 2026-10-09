@@ -217,7 +217,7 @@
         return sjekk();
       }
       // «Ta betalt»: kassa med personen og det som står igjen i kurven (eieren 09.10.2026).
-      if (b.dataset.kasse) { NA.tilKassa(Number(b.dataset.kasse)); return NA.toast('Kassa er åpnet.'); }
+      if (b.dataset.kasse) { NA.tilKassa(Number(b.dataset.kasse)); return; }
       if (b.dataset.igang === undefined) return;
       b.disabled = true;
       const feil = [];

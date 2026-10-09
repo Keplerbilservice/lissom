@@ -16,6 +16,7 @@
  *   6  Paint on Pots fram i tid: 2 × Liten − 200 kr betalt ved booking
  *   7  ikke funnet og ikke tilgang (uten innlogging, medlem, låst kassa)
  *   8  kassa ellers uendret: «Dagens kurs» er bare i dag
+ *  11  samme vindu og «✕ Lukk» tilbake til ny admin (eieren 09.10.2026)
  *
  * Ekte endepunkter (PHP-server) mot en isolert testbase, og
  * tests/falsk-vipps.mjs som Vipps. Ingen ekte betaling, e-post eller SMS.
@@ -447,6 +448,38 @@ try {
     DB::oppdater('bookings', ['payment_id' => $pI], ['id' => $popIdag]);
     $s = kall($K, ['handling' => 'person', 'bookingId' => $popIdag], $kasseToken);
     sjekk('4: … Paint on Pots i dag: «Endre» vises som før (kanEndre true)', $s[0] === 200 && ($s[1]['kanEndre'] ?? null) === true, $tekst($s));
+
+    // ══ 11: kassa i samme vindu med «✕ Lukk» (eieren 09.10.2026) ═══════
+    echo "
+── 11: samme vindu og ✕ Lukk ──
+";
+    $s = kall($P, null, $adminToken);
+    sjekk('11: pin.php GET som admin: admin=true (kassa viser «✕ Lukk»)', $s[0] === 200 && ($s[1]['admin'] ?? null) === true, $tekst($s));
+    $s = kall($P, null, $kasseToken);
+    sjekk('11: pin.php GET som kassekontoen: admin=false (iPad-kassen som før)', $s[0] === 200 && ($s[1]['admin'] ?? null) === false, $tekst($s));
+    $fj = str_replace("
+", "
+", (string) file_get_contents($rot . '/ny-admin/felles.js'));
+    $fra = strpos($fj, 'NA.tilKassa = bookingId =>');
+    $tk = $fra === false ? '' : substr($fj, $fra, (int) strpos($fj, "
+  };
+", $fra) - $fra);
+    sjekk('11: NA.tilKassa åpner kassa i samme vindu (ingen window.open / navngitt fane)', str_contains($tk, 'location.href = NA.kasseAdresse(id);')
+        && !str_contains($fj, "window.open('', 'lissom-kasse')"), $tk);
+    sjekk('11: adressen har booking, fra=ny-admin og tilbake=<siden>', str_contains($fj, "NA.kasseAdresse = bookingId => '/kasse?' + (bookingId ? 'booking=' + bookingId + '&' : '') + 'fra=ny-admin&tilbake=' + encodeURIComponent(rute?.id || 'idag');"));
+    sjekk('11: menypunktet «Kasse» bruker samme adresse (samme vindu)', substr_count($fj, 'href="${esc(NA.kasseAdresse())}"') === 2 && !str_contains($fj, 'href="/kasse"'));
+    $fra = strpos($js, 'async function lukkKassa()');
+    $lk = $fra === false ? '' : substr($js, $fra, (int) strpos($js, "
+}
+", $fra) - $fra);
+    sjekk('11: «✕ Lukk» bare fra ny admin eller for admin', str_contains($js, "let fraNyAdmin=sok.get('fra')==='ny-admin';")
+        && str_contains($js, "const lukkKnapp=()=>fraNyAdmin?pille('✕ Lukk',lukkKassa,'k-lukk'):null;") && str_contains($js, 'if(s.admin)fraNyAdmin=true;')
+        && str_contains($js, "el('div',{class:'k-valg'},...hoyre,lukkKnapp())"));
+    sjekk('11: uferdig salg: «Det ligger varer i kurven» med «Lukk likevel» / «Avbryt»', str_contains($lk, "ark('Det ligger varer i kurven'")
+        && str_contains($lk, "pille('Lukk likevel'") && str_contains($lk, "pille('Avbryt'") && str_contains($lk, 'if(!ok||ikkeNaa())return;')
+        && strpos($lk, 'if(ikkeNaa())return;') < strpos($lk, "ark('Det ligger"), $lk);
+    sjekk('11: går til /ny-admin#<tilbake> (I dag som standard)', str_contains($lk, "location.href='/ny-admin#'+tilbakeSide;")
+        && str_contains($js, "const tilbakeSide=(s=>/^[a-z]{2,20}$/.test(s)?s:'idag')(sok.get('tilbake')||'');"));
 
     $ferdig = true;
 } catch (Throwable $e) {

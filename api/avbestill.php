@@ -189,9 +189,27 @@ $claim = static function () use ($bookingId, $medlem, $b, &$harClaim, $gavedeler
     // Avlyst dato, betalt kontant/kort i kassa: en sak i «Må gjøres» i
     // /ny-admin («Tilbakebetal X kr til NN»). I samme transaksjon som
     // avbestillingen, og bare én per plass (primaernoekkel).
-    if ($avlystDato && $manuellOre > 0 && DB::harTabell('avlyst_tilbakebetal')) {
-        DB::kjor('INSERT IGNORE INTO avlyst_tilbakebetal (booking_id, belop_ore) VALUES (:b, :o)',
-            ['b' => $bookingId, 'o' => $manuellOre]);
+    //
+    // Beloepet regnes paa nytt under laasen paa paameldingen (UPDATE over),
+    // med laasende lesing av betalingene: annullering i admin
+    // (kursbetaling.php) tar den samme laasen, saa en kontantbetaling som
+    // annulleres samtidig, gir aldri en sak uten innbetaling. Er beloepet
+    // endret siden det ble lest, rulles alt tilbake (kontrolloeren runde 3).
+    if ($avlystDato) {
+        $manuellNaa = (int) DB::verdi(
+            "SELECT COALESCE(SUM(belop_ore), 0) FROM payments
+              WHERE (booking_id = :b OR id = :p) AND type = 'manuell' AND status = 'betalt'
+                AND annullert_at IS NULL AND belop_ore > 0
+                FOR UPDATE",
+            ['b' => $bookingId, 'p' => (int) ($b['payment_id'] ?? 0)]
+        );
+        if ($manuellNaa !== $manuellOre) {
+            throw new RuntimeException('Påmeldingen ble endret i mellomtiden. Last siden på nytt.', 409);
+        }
+        if ($manuellNaa > 0 && DB::harTabell('avlyst_tilbakebetal')) {
+            DB::kjor('INSERT IGNORE INTO avlyst_tilbakebetal (booking_id, belop_ore) VALUES (:b, :o)',
+                ['b' => $bookingId, 'o' => $manuellNaa]);
+        }
     }
     $harClaim = true;
 };

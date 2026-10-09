@@ -19,6 +19,9 @@
  *   F  «Betalt tilbake» føres i kassa den dagen (eieren 9. oktober 2026):
  *      kontant trekkes fra kontant i kassa og dagsoppgjøret (egen linje,
  *      i balanse), annen måte som egen linje; dobbelttrykk gir én føring.
+ *   H  Kontrolløren runde 3: annullering av kontantbetalingen i admin samtidig
+ *      med kundens «Få pengene tilbake» gir aldri en sak uten innbetaling;
+ *      «Betalt tilbake» avviser (409) når innbetalingen bak saken mangler.
  *   G  Kontrolløren: datoer avlyst før migrasjon 271 og gjenopprettede
  *      datoer oppfører seg som før; bytt + refusjon i to faner samtidig gir
  *      aldri full refusjon på en flyttet plass.
@@ -155,11 +158,11 @@ function kall(string $sti, ?array $data, string $token = ''): array
     return $s;
 }
 /** To kall samtidig, hvert til sin server. */
-function samtidig(array $a, array $b, string $token): array
+function samtidig(array $a, array $b, string $token, ?string $token2 = null): array
 {
     global $porter;
     $m = curl_multi_init();
-    $h = [forbered($a[0], $a[1], $token, $porter[0]), forbered($b[0], $b[1], $token, $porter[1])];
+    $h = [forbered($a[0], $a[1], $token, $porter[0]), forbered($b[0], $b[1], $token2 ?? $token, $porter[1])];
     foreach ($h as $c) { curl_multi_add_handle($m, $c); }
     do { curl_multi_exec($m, $aktiv); if ($aktiv) { curl_multi_select($m, 0.05); } } while ($aktiv);
     $ut = [];
@@ -535,6 +538,68 @@ try {
             : ($refundert === 50000 && count($refusjoner($refSiv)) === 1 && in_array($st['status'], ['refundert', 'avbestilt'], true));
         sjekk('to faner samtidig, runde ' . $runde . ': aldri full refusjon på en flyttet plass (' . ($flyttet ? 'flyttet' : 'refundert') . ')', $ok1,
             $tekst($x) . ' | ' . $tekst($y) . ' | ' . json_encode($st));
+    }
+
+    echo "\n── H  Kontrolløren runde 3: annullering mot «Få pengene tilbake» ──\n";
+    // (a) Saken finnes, men innbetalingen bak er borte: ingen føring.
+    $une = $nyttMedlem('Une'); $uneT = $sesjon($une);
+    $bUne = $plass($une, $sAvl);
+    $pUne = Booking::manuellBetaling($bUne, 50000, 'Kontant', $une, $admin, 'Testdata');
+    Booking::settBetaltStatus($bUne);
+    DB::oppdater('bookings', ['status' => 'avbestilt', 'avbestilt_at' => gmdate('Y-m-d H:i:s')], ['id' => $bUne]);
+    DB::settInn('avlyst_tilbakebetal', ['booking_id' => $bUne, 'belop_ore' => 50000]);
+    DB::oppdater('payments', ['status' => 'avbrutt', 'annullert_at' => gmdate('Y-m-d H:i:s')], ['id' => $pUne]);
+    $r = kall('/api/admin/pamelding.php', ['handling' => 'tilbakebetalt', 'id' => $bUne], $adminT);
+    sjekk('«Betalt tilbake» uten innbetaling bak saken: 409, ingen føring, saken står', $r[0] === 409
+        && (int) DB::verdi('SELECT COUNT(*) FROM payments WHERE booking_id = :b AND belop_ore = 0', ['b' => $bUne]) === 0
+        && DB::verdi('SELECT ferdig_at FROM avlyst_tilbakebetal WHERE booking_id = :b', ['b' => $bUne]) === null, $tekst($r));
+
+    // (b0) Annulleringen kommer mellom lesingen og avbestillingen (styrt):
+    // testen holder låsen på påmeldingen, kunden trykker (avbestill.php har
+    // lest 500 kr kontant og venter på låsen), betalingen annulleres, låsen
+    // slippes. Avbestillingen skal se annulleringen og ikke lage noen sak.
+    $vil = $nyttMedlem('Vil'); $vilT = $sesjon($vil);
+    $bVil = $plass($vil, $sAvl);
+    $pVil = Booking::manuellBetaling($bVil, 50000, 'Kontant', $vil, $admin, 'Testdata');
+    Booking::settBetaltStatus($bVil);
+    $pdo = DB::kobling();
+    $pdo->beginTransaction();
+    DB::verdi('SELECT id FROM bookings WHERE id = :b FOR UPDATE', ['b' => $bVil]);
+    $mh = curl_multi_init();
+    $ch = forbered($B, ['bookingId' => $bVil], $vilT, $porter[0]);
+    curl_multi_add_handle($mh, $ch);
+    $slutt = microtime(true) + 1.5;
+    do { curl_multi_exec($mh, $aktiv); curl_multi_select($mh, 0.05); } while ($aktiv && microtime(true) < $slutt);
+    DB::oppdater('payments', ['status' => 'avbrutt', 'annullert_at' => gmdate('Y-m-d H:i:s')], ['id' => $pVil]);
+    $pdo->commit();
+    do { curl_multi_exec($mh, $aktiv); if ($aktiv) { curl_multi_select($mh, 0.05); } } while ($aktiv);
+    $rv = [(int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE), json_decode((string) curl_multi_getcontent($ch), true)];
+    curl_multi_remove_handle($mh, $ch); curl_close($ch); curl_multi_close($mh);
+    sjekk('annullert mens kunden ventet på låsen: 409, ingen sak, plassen står', $rv[0] === 409
+        && DB::verdi('SELECT booking_id FROM avlyst_tilbakebetal WHERE booking_id = :b', ['b' => $bVil]) === null
+        && DB::verdi('SELECT status FROM bookings WHERE id = :b', ['b' => $bVil]) !== 'avbestilt', $tekst($rv));
+
+    // (b) Kappløpet: admin annullerer kontantbetalingen mens kunden trykker
+    // «Ja, gi meg pengene tilbake». Aldri både sak og annullert betaling.
+    $utfall = [];
+    foreach ([1, 2, 3, 4, 5, 6] as $runde) {
+        $rut = $nyttMedlem('Rut' . $runde); $rutT = $sesjon($rut);
+        $bRut = $plass($rut, $sAvl);
+        $pRut = Booking::manuellBetaling($bRut, 50000, 'Kontant', $rut, $admin, 'Testdata');
+        Booking::settBetaltStatus($bRut);
+        [$x, $y] = samtidig(['/api/admin/kursbetaling.php', ['handling' => 'annuller', 'betalingId' => $pRut]],
+            [$B, ['bookingId' => $bRut]], $adminT, $rutT);
+        $sak = DB::verdi('SELECT belop_ore FROM avlyst_tilbakebetal WHERE booking_id = :b', ['b' => $bRut]);
+        $annullert = DB::verdi('SELECT annullert_at FROM payments WHERE id = :i', ['i' => $pRut]) !== null;
+        $utfall[] = ($sak !== null ? 'sak' : '') . ($annullert ? 'annullert' : '');
+        $godt = !($sak !== null && $annullert) && ($sak === null || (int) $sak === 50000);
+        if ($sak !== null) {
+            $r = kall('/api/admin/pamelding.php', ['handling' => 'tilbakebetalt', 'id' => $bRut], $adminT);
+            $godt = $godt && $r[0] === 200
+                && (int) DB::verdi('SELECT COALESCE(SUM(refundert_ore), 0) FROM payments WHERE booking_id = :b AND belop_ore = 0', ['b' => $bRut]) === 50000;
+        }
+        sjekk('kappløp runde ' . $runde . ': aldri sak uten innbetaling (' . ($utfall[$runde - 1] ?: 'ingen av delene') . ')', $godt,
+            $tekst($x) . ' | ' . $tekst($y));
     }
 
     $ferdig = true;

@@ -3591,9 +3591,11 @@ final class Booking
      * status delvis_refundert — samme regnestykke som alle refusjoner
      * (belop − refundert), saa Omsetning, dagsoppgjoeret og kassa regner den
      * som minus paa sin maate den dagen (Omsetning::erUtbetaling kjenner den
-     * igjen). Én rad per maate plassen ble betalt med; stemmer ikke delene med
-     * beloepet, én rad paa den stoerste. Unik noekkel per plass og maate, saa
-     * samme utbetaling aldri foeres to ganger.
+     * igjen). Én rad per maate plassen ble betalt med, aldri mer enn det som
+     * faktisk er innbetalt for haand og staar: mangler innbetalingene, eller
+     * er de mindre enn beloepet (annullert i mellomtiden), avvises det med 409
+     * og ingenting foeres (kontrolloeren runde 3, 9. oktober 2026). Unik
+     * noekkel per plass og maate, saa samme utbetaling aldri foeres to ganger.
      *
      * Kalles inne i en transaksjon. @return int id paa den foerste raden
      */
@@ -3610,9 +3612,15 @@ final class Booking
                 $deler[$m] = ($deler[$m] ?? 0) + (int) $r['belop_ore'] - (int) $r['refundert_ore'];
             }
         }
-        if ($deler === [] || array_sum($deler) !== $belopOre) {
-            arsort($deler);
-            $deler = [(string) (array_key_first($deler) ?? 'Kontant') => $belopOre];
+        if (array_sum($deler) < $belopOre) {
+            throw new RuntimeException('Betalingen bak saken er annullert eller endret. Sjekk påmeldingen før pengene gis tilbake.', 409);
+        }
+        // Fordel beloepet paa maatene, stoerst foerst, aldri mer enn hver del.
+        arsort($deler);
+        $rest = $belopOre;
+        foreach ($deler as $m => $ore) {
+            $deler[$m] = min($ore, $rest);
+            $rest -= $deler[$m];
         }
         $medlem = DB::verdi('SELECT member_id FROM bookings WHERE id = :b', ['b' => $bookingId]);
         $forste = 0;

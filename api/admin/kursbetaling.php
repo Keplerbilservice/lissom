@@ -454,16 +454,45 @@ switch (Foresporsel::tekst('handling', 'registrer')) {
 
         $grunn = mb_substr(trim(Foresporsel::tekst('grunn')), 0, 300);
 
-        DB::oppdater('payments', [
-            // Raden blir staaende. «avbrutt» er statusen for en betaling som
-            // ikke gjelder lenger, og den finnes fra for.
-            'status'       => 'avbrutt',
-            'annullert_at' => gmdate('Y-m-d H:i:s'),
-            'annullert_av' => (int) $admin['id'],
-            'kommentar'    => $grunn !== ''
-                ? trim((string) ($p['kommentar'] ?? '') . ' · Annullert: ' . $grunn)
-                : $p['kommentar'],
-        ], ['id' => $betalingId]);
+        $annuller = static function () use ($p, $betalingId, $admin, $grunn): void {
+            DB::oppdater('payments', [
+                // Raden blir staaende. «avbrutt» er statusen for en betaling som
+                // ikke gjelder lenger, og den finnes fra for.
+                'status'       => 'avbrutt',
+                'annullert_at' => gmdate('Y-m-d H:i:s'),
+                'annullert_av' => (int) $admin['id'],
+                'kommentar'    => $grunn !== ''
+                    ? trim((string) ($p['kommentar'] ?? '') . ' · Annullert: ' . $grunn)
+                    : $p['kommentar'],
+            ], ['id' => $betalingId]);
+        };
+        if ($p['booking_id'] === null) {
+            $annuller();
+        } else {
+            // Samme radlaas som avbestillingen (api/avbestill.php) tar paa
+            // paameldingen: en kunde som faar pengene tilbake for en avlyst dato
+            // samtidig, ser enten betalingen eller annulleringen, aldri begge
+            // (kontrolloeren runde 3, 9. oktober 2026). Saken og betalingen
+            // leses paa nytt under laasen.
+            try {
+                DB::iTransaksjon(static function () use ($p, $betalingId, $annuller): void {
+                    DB::verdi('SELECT id FROM bookings WHERE id = :b FOR UPDATE', ['b' => (int) $p['booking_id']]);
+                    if (DB::harTabell('avlyst_tilbakebetal')
+                        && DB::verdi('SELECT booking_id FROM avlyst_tilbakebetal WHERE booking_id = :b FOR UPDATE', ['b' => (int) $p['booking_id']]) !== null) {
+                        throw new RuntimeException('Pengene for denne plassen er avklart for en avlyst dato (Må gjøres). Betalingen kan ikke annulleres.', 409);
+                    }
+                    if (DB::verdi('SELECT annullert_at FROM payments WHERE id = :i FOR UPDATE', ['i' => $betalingId]) !== null) {
+                        throw new RuntimeException('Denne er alt annullert.', 409);
+                    }
+                    $annuller();
+                });
+            } catch (RuntimeException $e) {
+                if ($e->getCode() !== 409) {
+                    throw $e;
+                }
+                Svar::feil($e->getMessage(), 409);
+            }
+        }
 
         // Var det en gavekortdel, gaar beloepet tilbake paa kortet. Ellers ville
         // en annullert del av et delt oppgjor spist av saldoen for ingenting.

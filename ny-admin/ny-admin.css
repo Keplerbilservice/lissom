@@ -272,6 +272,7 @@ dialog#ark::backdrop{background:#27110870}
 .leire-ant{display:inline-flex;align-items:center;gap:5px;flex:none;white-space:nowrap}
 .leire-ant span{min-width:18px;text-align:center;font-weight:700;color:var(--ink)}
 .leire-ant button{appearance:none;cursor:pointer;width:28px;height:28px;padding:0;border-radius:999px;border:2px solid var(--ink);background:var(--ground);color:var(--ink);font-weight:700;line-height:1}
+@media (pointer:coarse){.leire-ant{gap:8px}.leire-ant button{width:44px;height:44px;font-size:20px}}
 .leire-ant button:disabled{opacity:.4;cursor:default}
 .ant.stor button{width:48px;height:48px;border-radius:12px;border:1px solid var(--line);background:var(--ground);font-size:22px;font-weight:800}
 .ms-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:20px;align-items:start}

@@ -166,16 +166,17 @@ final class KasseTilgang
      * Personen med denne PIN-en — samme kontroll som kassa (finnPin), men uten
      * kassekontoen og uten å låse opp kassa. Messevisningen (app/lib/messe.php,
      * eieren 9. oktober 2026: «samme PIN som kassen»). null = feil PIN, feil
-     * format eller migrasjon 263 ikke kjørt.
+     * format eller migrasjon 263 ikke kjørt. «hash» er PIN-hashen som faktisk
+     * ble sjekket (samme spørring), så messekapselen signeres med den.
      *
-     * @return array{id:int, navn:string}|null
+     * @return array{id:int, navn:string, hash:string}|null
      */
     public static function personForPin(string $pin): ?array
     {
         if (!self::klar() || preg_match('/^\d{4}$/', $pin) !== 1) {
             return null;
         }
-        return self::finnPin($pin);
+        return self::finnPin($pin, 0, true);
     }
 
     public static function laas(): void
@@ -189,9 +190,9 @@ final class KasseTilgang
     /**
      * Personen med denne PIN-en, blant dem som fortsatt har tilgang.
      *
-     * @return array{id:int, navn:string}|null
+     * @return array{id:int, navn:string, hash?:string}|null
      */
-    private static function finnPin(string $pin, int $utenom = 0): ?array
+    private static function finnPin(string $pin, int $utenom = 0, bool $medHash = false): ?array
     {
         foreach (DB::alle(
             'SELECT id, navn, brukernavn, rolle, telefon, kasse_pin_hash FROM members
@@ -199,7 +200,8 @@ final class KasseTilgang
             ['u' => $utenom]
         ) as $m) {
             if (self::harTilgang($m) && password_verify($pin, (string) $m['kasse_pin_hash'])) {
-                return ['id' => (int) $m['id'], 'navn' => (string) $m['navn']];
+                $p = ['id' => (int) $m['id'], 'navn' => (string) $m['navn']];
+                return $medHash ? $p + ['hash' => (string) $m['kasse_pin_hash']] : $p;
             }
         }
         return null;

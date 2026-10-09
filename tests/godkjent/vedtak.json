@@ -7888,7 +7888,7 @@
         {
             "id": "messe-bedrift",
             "dato": "2026-10-09",
-            "hva": "«legg dette ut på en link, med samme PIN som kassen»: /messe er messevisningen på iPad, låst med kassens PIN (sjekket på serveren, kapsel 30 dager), løkke 9 sek, trykk = meny, tilbake etter 30 sek, film med lyd, fullskjerm og våken skjerm, QR lokalt; skjemaet bak QR-koden (/bedrift/tilbud) sender til forespørslene («Må gjøres») med kvitteringen «Takk! Monica tar kontakt.». Bryter Vis/messe.",
+            "hva": "«legg dette ut på en link, med samme PIN som kassen»: /messe er messevisningen på iPad, låst med kassens PIN (sjekket på serveren, kapsel 30 dager), løkke 9 sek, trykk = meny, tilbake etter 30 sek, film med lyd, fullskjerm og våken skjerm, QR lokalt; skjemaet bak QR-koden (/bedrift/tilbud) sender til forespørslene («Må gjøres») med kvitteringen «Takk! Monica tar kontakt.». Bryter Vis/messe. Rettet etter kontrolløren 9.10: grenser før PIN-sjekk (per IP/IPv6 /64, samlet, stengt etter 50 feil i timen), opak kapsel signert med app-hemmelighet + PIN-hash, telefonen fra skjemaet i meldingen (ikke enquiries.telefon), kontaktsiden viser lissom.no/bedrift/tilbud (eieren).",
             "hvor": "lissom.no/messe og lissom.no/bedrift/tilbud",
             "kode": [
                 {
@@ -7896,7 +7896,10 @@
                     "finnes": [
                         "KasseTilgang::personForPin($pin)",
                         "public const DAGER = 30;",
-                        "Feil PIN – prøv igjen"
+                        "Feil PIN – prøv igjen",
+                        "Rate::sjekk('messe-pin-alle', self::PIN_FORSOK_ALLE, 300, 'alle');",
+                        "public const STENG_ETTER_FEIL = 50;",
+                        "bin2hex(random_bytes(16))"
                     ]
                 },
                 {
@@ -7907,7 +7910,8 @@
                         "Grenseløs, Tønsberg.",
                         "/vendor/qrcode-2.0.4.js",
                         "navigator.wakeLock.request(\"screen\")",
-                        "/bedrift/tilbud"
+                        "/bedrift/tilbud",
+                        "<b>lissom.no/bedrift/tilbud</b>"
                     ],
                     "ikkeFinnes": [
                         "cdnjs",
@@ -7930,7 +7934,11 @@
                     "finnes": [
                         "Takk! Monica tar kontakt.",
                         "Hva (f.eks. kopp, asjett)",
-                        "/api/foresporsel.php"
+                        "/api/foresporsel.php",
+                        "<a class=\"pille\" href=\"/personvern\">Les mer om personvern</a>"
+                    ],
+                    "ikkeFinnes": [
+                        "telefon:v("
                     ]
                 },
                 {
@@ -7938,6 +7946,12 @@
                     "finnes": [
                         "RewriteRule ^messe/?$ /messe.php [L]",
                         "RewriteRule ^bedrift/tilbud/?$ /bedrift-tilbud.php [L]"
+                    ]
+                },
+                {
+                    "fil": "api/foresporsel.php",
+                    "ikkeFinnes": [
+                        "Foresporsel::tekst('telefon')"
                     ]
                 }
             ],

@@ -131,11 +131,17 @@ try {
     sjekk('… kapselen varer 30 dager, HttpOnly', preg_match('/Max-Age=(\d+)/i', $r[2], $mm) === 1 && abs((int) $mm[1] - 30 * 86400) < 120
         && stripos($r[2], 'httponly') !== false, $r[2]);
     sjekk('… PIN-en står ikke i kapselen', $k !== null && !str_contains($k, $pin . '.') && !str_contains($k, '.' . $pin));
+    sjekk('… kapselen er opak: utløp.nonce.signatur, ingen medlems-id', $k !== null
+        && preg_match('/^lissom_messe=\d{10}\.[a-f0-9]{32}\.[a-f0-9]{64}$/', $k) === 1 && !str_contains($k, '=' . $monica . '.'), (string) $k);
+    $r2 = kall('/api/messe.php', ['pin' => $pin]);
+    sjekk('… ny opplåsing gir en annen kapsel (tilfeldig nonce)', $kapsel($r2[2]) !== null && $kapsel($r2[2]) !== $k);
+    DB::kjor("DELETE FROM audit_log WHERE handling = 'messe_laast_opp' AND objekt_id = :m ORDER BY id DESC LIMIT 1", ['m' => $monica]);
     sjekk('… revidert (messe_laast_opp)', (int) DB::verdi("SELECT COUNT(*) FROM audit_log WHERE handling = 'messe_laast_opp' AND objekt_id = :m", ['m' => $monica]) === 1);
 
     $r = kall('/messe', null, (string) $k);
     sjekk('med kapselen: visningen', $r[0] === 200 && str_contains($r[3], 'Grenseløs, Tønsberg.') && str_contains($r[3], 'Hva vil du se?'), $tekst($r));
     sjekk('… QR lokalt (vendor), ingen CDN', str_contains($r[3], '/vendor/qrcode-2.0.4.js') && !str_contains($r[3], 'cdnjs') && !str_contains($r[3], 'fonts.googleapis'));
+    sjekk('… kontaktsiden viser lissom.no/bedrift/tilbud', str_contains($r[3], '<b>lissom.no/bedrift/tilbud</b>'));
     sjekk('… filmen og bildene fra assets/messe', str_contains($r[3], '/assets/messe/grenselos.mp4') && str_contains($r[3], '/assets/messe/monica-verksted.jpg'));
     sjekk('… ingen «NY»-merker eller prototypedeler', !str_contains($r[3], 'class="ny"') && !str_contains($r[3], 'Forslaget') && !str_contains($r[3], 'Ok, bygg det'));
     foreach (['assets/messe/grenselos.mp4', 'assets/messe/monica-verksted.jpg', 'assets/messe/monica-verksted.jpg.webp',
@@ -164,6 +170,36 @@ try {
     sjekk('for mange forsøk: 429', $siste === 429, (string) $siste);
     DB::kjor("DELETE FROM rate_limits WHERE nokkel LIKE 'messe-pin%'");
 
+    // Grensene sjekkes før PIN-en prøves (kontrolløren 9. oktober 2026).
+    KasseTilgang::settPin($monica, $pin);
+    $vindu = static fn(int $s): string => date('Y-m-d H:i:s', intdiv(time(), $s) * $s);
+    $sett = static fn(string $n, string $v, int $a) => DB::kjor('INSERT INTO rate_limits (nokkel, vindu_start, antall) VALUES (:n, :v, :a)
+        ON DUPLICATE KEY UPDATE antall = :a2', ['n' => $n, 'v' => $v, 'a' => $a, 'a2' => $a]);
+    $sett('messe-pin-alle:alle', $vindu(300), Messe::PIN_FORSOK_ALLE);
+    $r = kall('/api/messe.php', ['pin' => $pin]);
+    sjekk('samlet grense for alle: 429 også med riktig PIN', $r[0] === 429 && $kapsel($r[2]) === null, $tekst($r));
+    DB::kjor("DELETE FROM rate_limits WHERE nokkel LIKE 'messe-pin%'");
+    $sett('messe-pin-feil:alle', $vindu(3600), Messe::STENG_ETTER_FEIL - 1);
+    $r = kall('/api/messe.php', ['pin' => $feilPin]);
+    sjekk('feil nr. ' . Messe::STENG_ETTER_FEIL . ' i timen: 400', $r[0] === 400, $tekst($r));
+    $r = kall('/api/messe.php', ['pin' => $pin]);
+    sjekk('… så stengt ut timen: 429 «For mange forsøk. Vent 60 minutter og prøv igjen.» også med riktig PIN',
+        $r[0] === 429 && ($r[1]['feil'] ?? '') === 'For mange forsøk. Vent 60 minutter og prøv igjen.' && $kapsel($r[2]) === null, $tekst($r));
+    sjekk('… stengt uten å telle per IP (grensen sjekkes først)', (int) DB::verdi("SELECT SUM(antall) FROM rate_limits WHERE nokkel LIKE 'messe-pin:%'") === 1);
+    DB::kjor("DELETE FROM rate_limits WHERE nokkel LIKE 'messe-pin%'");
+    $ipNokkel = new ReflectionMethod(Messe::class, 'ipNokkel');
+    $_SERVER['REMOTE_ADDR'] = '2001:db8:1:2:3:4:5:6';
+    $a = $ipNokkel->invoke(null);
+    $_SERVER['REMOTE_ADDR'] = '2001:db8:1:2:ffff:4:5:7';
+    $b = $ipNokkel->invoke(null);
+    $_SERVER['REMOTE_ADDR'] = '203.0.113.9';
+    sjekk('IPv6 telles per /64, IPv4 per adresse', $a === '20010db800010002/64' && $a === $b && $ipNokkel->invoke(null) === '203.0.113.9', "$a $b");
+    unset($_SERVER['REMOTE_ADDR']);
+    $p = KasseTilgang::personForPin($pin);
+    sjekk('personForPin gir hashen den sjekket', $p !== null && password_verify($pin, (string) ($p['hash'] ?? ''))
+        && $p['hash'] === DB::verdi('SELECT kasse_pin_hash FROM members WHERE id = :i', ['i' => $monica]));
+    KasseTilgang::settPin($monica, null);
+
     echo "\n── B  /bedrift/tilbud lager forespørsel ───────────────────────\n";
     $r = kall('/bedrift/tilbud');
     sjekk('skjemaet: 200, noindex', $r[0] === 200 && str_contains($r[3], 'Be om tilbud') && stripos($r[2], 'X-Robots-Tag: noindex') !== false, $tekst($r));
@@ -172,6 +208,8 @@ try {
         sjekk('… har «' . $t . '»', str_contains($r[3], $t));
     }
     $r = kall('/bedrift');
+    sjekk('… telefonen sendes ikke som eget felt', !str_contains(kall('/bedrift/tilbud')[3], 'telefon:v('));
+    sjekk('… pille til personvernsiden', str_contains(kall('/bedrift/tilbud')[3], '<a class="pille" href="/personvern">Les mer om personvern</a>'));
     sjekk('/bedrift (bedriftssiden) er urørt', $r[0] === 200 && !str_contains($r[3], 'Fortell oss litt om dere, så tar Monica kontakt.'), $tekst($r));
 
     $epost = strtolower($tag) . '@firma.test';
@@ -182,7 +220,8 @@ try {
     $id = (int) ($r[1]['id'] ?? 0);
     if ($id > 0) { $foresp[] = $id; }
     $rad = DB::en('SELECT * FROM enquiries WHERE id = :i', ['i' => $id]) ?? [];
-    sjekk('… forespørselen lagret med e-post og telefon', ($rad['epost'] ?? '') === $epost && ($rad['telefon'] ?? '') === normaliser_telefon('94134601')
+    sjekk('… lagret med e-post; telefonen i meldingen, IKKE i enquiries.telefon (Min side-nøkkelen)', ($rad['epost'] ?? '') === $epost
+        && array_key_exists('telefon', $rad) && $rad['telefon'] === null && str_contains((string) ($rad['melding'] ?? ''), 'Telefon: 941 34 601')
         && ($rad['type'] ?? '') === 'Bedrift: Servise, Firmagaver' && str_contains((string) ($rad['melding'] ?? ''), '- kopp: 40')
         && ($rad['status'] ?? '') === 'ubesvart', json_encode($rad, JSON_UNESCAPED_UNICODE));
     sjekk('… e-post til verkstedet i køen (intern_ny_foresporsel), ikke sendt herfra',

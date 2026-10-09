@@ -98,12 +98,6 @@ if ($navn === '' || $kontakt === '') {
 $erEpost = filter_var($kontakt, FILTER_VALIDATE_EMAIL) !== false;
 $telefon = $erEpost ? '' : normaliser_telefon($kontakt);
 
-// Skjema med både e-post og telefon (bedriftsskjemaet på /bedrift/tilbud,
-// eieren 9. oktober 2026): telefonen lagres ved siden av e-posten.
-if ($erEpost) {
-    $telefon = normaliser_telefon(mb_substr(Foresporsel::tekst('telefon'), 0, 32));
-}
-
 if (!$erEpost && $telefon === '') {
     Svar::feil('Kontaktopplysningen ser ikke ut som en e-postadresse eller et telefonnummer.');
 }

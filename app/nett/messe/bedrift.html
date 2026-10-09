@@ -7,7 +7,8 @@
 <link rel="icon" href="/favicon.svg"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="stylesheet" href="/ds-fonts.css">
 <style>
-/* Skjemaet bak QR-koden på messevisningen (eieren, GO 9. oktober 2026). Sender til api/foresporsel.php som andre forespørsler. */
+/* Skjemaet bak QR-koden på messevisningen (eieren, GO 9. oktober 2026). Sender til api/foresporsel.php som andre forespørsler.
+   Telefonen står i meldingen, ikke i enquiries.telefon: den kolonnen kobler forespørsler til medlemmer på Min side (kontrolløren 9. oktober 2026). */
 :root{--ink:#4d1d12;--paper:#fbf6ee;--line:#e5d7c6;--yellow:#ffcf38;--muted:#765c50;--f-head:"Bitter",Georgia,serif;--f-body:"Alegreya Sans",system-ui,sans-serif;color-scheme:light}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
@@ -33,6 +34,7 @@ h1{font-family:var(--f-head);font-size:28px;margin:16px 0 4px;letter-spacing:-.0
 .knapp:disabled{opacity:.6}
 .svar{font-weight:700;color:#286548;min-height:1.2em;margin:0;font-size:17px}
 .svar.feil{color:#ad3425}
+.pille{display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border:1px solid var(--line);border-radius:999px;background:#fff;color:var(--ink);font-weight:700;font-size:15px;text-decoration:none;margin-top:6px}
 button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 </style></head>
 <body>
@@ -61,6 +63,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px soli
     <label for="b-kommentar">Kommentar<textarea id="b-kommentar" rows="3" maxlength="1200" placeholder="F.eks. farge, tidspunkt, antall personer"></textarea></label>
     <button type="submit" class="knapp" id="send">Send</button>
     <p id="b-svar" class="svar" role="status" aria-live="polite"></p>
+    <a class="pille" href="/personvern">Les mer om personvern</a>
   </form>
 </main>
 <script>
@@ -94,7 +97,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px soli
     sender=true; $("#send").disabled=true; svar("",false);
     try{
       const r=await fetch("/api/foresporsel.php",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({navn:v("#b-navn"),kontakt:v("#b-epost"),telefon:v("#b-tlf"),
+        body:JSON.stringify({navn:v("#b-navn"),kontakt:v("#b-epost"),
           type:("Bedrift: "+(interesse.length?interesse.join(", "):"forespørsel")).slice(0,64),antall:"",melding:deler.join("\n\n").slice(0,2000)})});
       const d=await r.json().catch(()=>({}));
       if(!r.ok){ svar(d.feil||"Fikk ikke sendt. Prøv igjen om litt.",true); }

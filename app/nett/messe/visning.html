@@ -139,7 +139,7 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
   <section class="side" data-n="5">
     <div><div class="kicker">Ta kontakt</div><h2>Skann og be om tilbud.</h2><p class="ingress">Fyll inn navn og hva dere er interessert i – Monica tar kontakt.</p></div>
     <div class="kontakt"><div class="qr-stor qr" data-qr aria-label="QR-kode til skjemaet" role="img"></div>
-      <div class="linjer"><b>lissom.no/bedrift</b><span>monica@lissom.no</span><span>94 13 46 01</span><span>Nordre Løkkevei 15, Teie</span></div></div>
+      <div class="linjer"><b>lissom.no/bedrift/tilbud</b><span>monica@lissom.no</span><span>94 13 46 01</span><span>Nordre Løkkevei 15, Teie</span></div></div>
   </section>
 
   <div class="fremdrift" id="fremdrift"></div>
@@ -178,7 +178,7 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
   document.querySelectorAll("[data-qr]").forEach(q=>{
     try{ const k=window.qrcode(0,"M"); k.addData(SKJEMA); k.make();
       q.innerHTML=k.createSvgTag({cellSize:4,margin:0,scalable:true}).replace(/fill="black"/g,'fill="#4d1d12"'); }
-    catch(e){ q.textContent="lissom.no/bedrift"; }
+    catch(e){ q.textContent="lissom.no/bedrift/tilbud"; }
   });
   $("#fremdrift").innerHTML=SIDER.map(()=>"<i><b></b></i>").join("");
 

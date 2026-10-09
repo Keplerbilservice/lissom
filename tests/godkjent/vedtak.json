@@ -8039,6 +8039,43 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "alt-i-ny-admin",
+            "dato": "2026-10-09",
+            "hva": "«hva skjer når et medlem vil dele et bilde på insta? … alt er med håper jeg?» — Ingen sak i I dag › Må gjøres i ny admin går lenger til «I gammel admin». Medlemsbidrag (bilde og video): ark med bildet/videoen, medlemmets tekst, «Legg ut på Instagram» og/eller «Galleriet på forsida» (ingenting valgt på forhånd), redigerbar bildetekst, «Fast bildetekst», «Forbedre bildet»/«Bruk det nye bildet» og Avvis (medlemsforslag.php, som admin-ny). Dugnad: Godkjenn jobb/Avslå og Godkjenn timer/Avvis timer med «Svar til medlemmet» (dugnad.php). Leirebestilling: «Neste leirebestilling» med frist, pris per stk., Send bestilling og Krev inn med Vipps (handlelister.php). Chat: tråden, svar og lest (/api/chat.php). Innboks: kommentarene som venter med AI-forslaget, Svar/Nytt forslag/Ferdig (meta.php). Feilmelding: «Les detaljer» viser selve meldingen. Betaling på mobil: samme medlemsark som på PC. Medlemssalg uendret (samme medlemssalg.php som admin-ny).",
+            "kode": [
+                {
+                    "fil": "ny-admin/idag.js",
+                    "finnes": [
+                        "case 'bidrag': return arkBidrag(s);",
+                        "Legg ut på Instagram",
+                        "Galleriet på forsida",
+                        "handling: 'bruk-bilde'",
+                        "case 'dugnad': return arkDugnad(s, b.dataset.h);",
+                        "case 'leire': return arkLeire(s);",
+                        "case 'chat': return arkChat(s);",
+                        "case 'innboks': return arkInnboks(s);",
+                        "case 'feil': return arkFeil(s);",
+                        "knapp('Til medlemmet', 'medlem-ark', true"
+                    ],
+                    "ikkeFinnes": [
+                        "knapp('Godkjenn til galleriet'"
+                    ]
+                },
+                {
+                    "fil": "ny-admin/medlemmer.js",
+                    "finnes": [
+                        "NA().arkMedlem = async id =>"
+                    ]
+                },
+                {
+                    "fil": "api/admin/oversikt.php",
+                    "finnes": [
+                        "['status' => (string) $r['status']]"
+                    ]
+                }
+            ]
         }
     ]
 }

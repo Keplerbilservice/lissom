@@ -637,6 +637,211 @@ try {
         && str_contains($fj, "localeCompare(String(b.tittel), 'nb-NO')")
         && str_contains($fc, '.leire-bilde{width:52px;height:52px') && str_contains($fc, '.leire-ant button{'));
 
+    // ── Q Eieren 09.10.2026: alt i ny admin — ingen sak i «Må gjøres» går til gammel admin ──
+    // Samme endepunkter som admin-ny. Ingen ekte Instagram (Meta er ikke koblet i testen), ingen e-post/SMS ut
+    // (alt havner i køen, og køen ryddes).
+    $q = ['forslag' => [], 'filer' => [], 'dugnad' => [], 'lev' => 0, 'vare' => 0, 'linjer' => [], 'chat' => [], 'kommentar' => '', 'feil' => 0, 'salg' => [],
+          'mal' => DB::verdi("SELECT verdi FROM content_blocks WHERE nokkel = 'Marked/Medlemsforslag mal'"),
+          'frist' => DB::verdi("SELECT verdi FROM innstillinger WHERE nokkel = 'leirebestilling_frist'")];
+    $saker = static function () use ($tA): array { $o = kall('/api/admin/oversikt.php', null, $tA); return $o[1]['maGjores'] ?? []; };
+    $harSak = static fn(array $l, string $type, int $id = -1): ?array => array_values(array_filter($l, static fn($s) => $s['type'] === $type && ($id < 0 || (int) $s['id'] === $id)))[0] ?? null;
+    try {
+        $fq = $fil('ny-admin/idag.js');
+        // Hver sakstype oversikt.php lager har en egen handling i ny admin; «I gammel admin» er bare igjen for ukjente typer.
+        $typer = [];
+        preg_match_all("/\\\$sak\\('[^']*', '([a-z]+)'/", $fil('api/admin/oversikt.php'), $mm);
+        foreach (array_unique($mm[1]) as $t) { if (!in_array($t, ['pamelding', 'taut'], true) && !str_contains($fq, '      ' . $t . ': () =>')) { $typer[] = $t; } }
+        sjekk('Q hver sakstype i «Må gjøres» har egen handling i ny admin (ingen faller til «I gammel admin»)', $typer === [] && count($mm[1]) >= 15, implode(',', $typer));
+        sjekk('Q «I gammel admin» brukes bare som reserve for ukjente typer', substr_count($fq, '${gammel}') === 0 && substr_count($fq, '? gammel') === 0
+            && substr_count($fq, '+ gammel') === 0 && str_contains($fq, '}[s.type] || (() => gammel)'));
+        sjekk('Q Betaling på mobil åpner medlemsarket (NA.arkMedlem fra medlemmer.js), ikke gammel admin',
+            str_contains($fq, "knapp('Til medlemmet', 'medlem-ark', true") && str_contains($fil('ny-admin/medlemmer.js'), 'NA().arkMedlem = async id =>'));
+
+        // ── Medlemsbidrag ──────────────────────────────────────────────
+        sjekk('Q Instagram er ikke koblet i testen (ingen ekte publisering)', !Meta::klarForInstagram());
+        $nyttForslag = static function (string $type, string $tekst) use ($vanlig, &$q): int {
+            $navn = bin2hex(random_bytes(16)) . ($type === 'bilde' ? '.jpg' : '.mp4');
+            file_put_contents(Bilder::mappe('forslag') . '/' . $navn, $type === 'bilde' ? base64_decode('/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=') : 'ikke-video');
+            $q['filer'][] = Bilder::mappe('forslag') . '/' . $navn;
+            $id = DB::settInn('medlemsforslag', ['member_id' => $vanlig, 'type' => $type, 'fil' => $navn, 'tekst' => $tekst, 'status' => 'venter']);
+            $q['forslag'][] = $id;
+            return $id;
+        };
+        $fb = $nyttForslag('bilde', $tag . ' Ny bolle');
+        $fv = $nyttForslag('video', $tag . ' Dreievideo');
+        $fa = $nyttForslag('bilde', $tag . ' Skal avvises');
+        $l = $saker();
+        sjekk('Q bidrag: bilde og video står i Må gjøres', $harSak($l, 'bidrag', $fb) !== null && $harSak($l, 'bidrag', $fv) !== null);
+        $mf = kall('/api/admin/medlemsforslag.php', null, $tA);
+        $rb = array_values(array_filter($mf[1]['venter'] ?? [], static fn($r) => (int) $r['id'] === $fb))[0] ?? null;
+        sjekk('Q bidrag: arket får bildet, medlemmets tekst, bildeteksten og den faste linja', $mf[0] === 200 && $rb !== null && str_starts_with($rb['fil'], '/api/bilde.php?forslag=')
+            && $rb['tekst'] === $tag . ' Ny bolle' && $rb['bildetekst'] !== '' && array_key_exists('mal', $mf[1]), $vis($mf));
+        $ingen = kall('/api/admin/medlemsforslag.php', ['handling' => 'godkjenn', 'id' => $fb, 'instagram' => '0', 'galleri' => '0'], $tA);
+        sjekk('Q bidrag: ingenting valgt gir feil (ingenting er valgt på forhånd)', $ingen[0] === 400 && str_contains((string) ($ingen[1]['feil'] ?? ''), 'Velg Instagram'), $vis($ingen));
+        $mal = kall('/api/admin/medlemsforslag.php', ['handling' => 'mal', 'tekst' => $tag . ' fast linje'], $tA);
+        $mf2 = kall('/api/admin/medlemsforslag.php', null, $tA);
+        sjekk('Q bidrag: «Fast bildetekst» lagres (mal)', $mal[0] === 200 && ($mf2[1]['mal'] ?? '') === $tag . ' fast linje', $vis($mal));
+        // «Bruk det nye bildet»: et forbedret bilde fra biblioteket (gemini.php forbedreForslag lager det; her lagt inn direkte).
+        $art = bin2hex(random_bytes(16)) . '.jpg';
+        copy($q['filer'][0], Bilder::mappe('artikler') . '/' . $art);
+        $q['filer'][] = Bilder::mappe('artikler') . '/' . $art;
+        $bruk = kall('/api/admin/medlemsforslag.php', ['handling' => 'bruk-bilde', 'id' => $fb, 'url' => '/api/bilde.php?artikkel=' . $art], $tA);
+        $etter = DB::en('SELECT fil, fil_original FROM medlemsforslag WHERE id = :i', ['i' => $fb]);
+        if (is_string($etter['fil'] ?? null)) { $q['filer'][] = Bilder::mappe('forslag') . '/' . $etter['fil']; }
+        sjekk('Q bidrag: «Bruk det nye bildet» bytter fila og tar vare på originalen', $bruk[0] === 200 && $etter['fil'] !== basename($q['filer'][0])
+            && $etter['fil_original'] === basename($q['filer'][0]), $vis($bruk));
+        $vg = kall('/api/admin/medlemsforslag.php', ['handling' => 'godkjenn', 'id' => $fv, 'instagram' => '0', 'galleri' => '1'], $tA);
+        sjekk('Q bidrag: video kan ikke legges i galleriet', $vg[0] === 400 && (string) DB::verdi('SELECT status FROM medlemsforslag WHERE id = :i', ['i' => $fv]) === 'venter', $vis($vg));
+        $vi = kall('/api/admin/medlemsforslag.php', ['handling' => 'godkjenn', 'id' => $fv, 'instagram' => '1', 'galleri' => '0', 'tekst' => 'Redigert tekst'], $tA);
+        sjekk('Q bidrag: video til Instagram uten kobling gir feil og står fortsatt og venter (ingenting lagt ut)', $vi[0] === 400
+            && (string) DB::verdi('SELECT status FROM medlemsforslag WHERE id = :i', ['i' => $fv]) === 'venter'
+            && (string) DB::verdi('SELECT lenke FROM medlemsforslag WHERE id = :i', ['i' => $fv]) === '', $vis($vi));
+        $gg = kall('/api/admin/medlemsforslag.php', ['handling' => 'godkjenn', 'id' => $fb, 'instagram' => '0', 'galleri' => '1'], $tA);
+        $gr = DB::en('SELECT status, galleri FROM medlemsforslag WHERE id = :i', ['i' => $fb]);
+        sjekk('Q bidrag: «Galleriet på forsida» alene legger bildet i galleriet', $gg[0] === 200 && $gr['status'] === 'galleri' && (int) $gr['galleri'] === 1, $vis($gg));
+        $av = kall('/api/admin/medlemsforslag.php', ['handling' => 'avvis', 'id' => $fa], $tA);
+        sjekk('Q bidrag: Avvis tar det bort og sletter fila', $av[0] === 200 && (string) DB::verdi('SELECT status FROM medlemsforslag WHERE id = :i', ['i' => $fa]) === 'avvist'
+            && !is_file($q['filer'][2]), $vis($av));
+        $l = $saker();
+        sjekk('Q bidrag: de behandlede er ute av Må gjøres, videoen venter fortsatt', $harSak($l, 'bidrag', $fb) === null && $harSak($l, 'bidrag', $fa) === null && $harSak($l, 'bidrag', $fv) !== null);
+
+        // ── Dugnad ─────────────────────────────────────────────────────
+        $nyDugnad = static function (string $status, array $mer = []) use ($vanlig, $tag, &$q): int {
+            $id = DB::settInn('dugnad', $mer + ['member_id' => $vanlig, 'tekst' => $tag . ' rydde hylla ' . $status, 'status' => $status]);
+            $q['dugnad'][] = $id;
+            return $id;
+        };
+        $d1 = $nyDugnad('venter'); $d2 = $nyDugnad('venter');
+        $d3 = $nyDugnad('til_godkjenning', ['inn_tid' => gmdate('Y-m-d H:i:s', time() - 7200), 'ut_tid' => gmdate('Y-m-d H:i:s', time() - 1800), 'minutter' => 88]);
+        $d4 = $nyDugnad('til_godkjenning', ['inn_tid' => gmdate('Y-m-d H:i:s', time() - 7200), 'ut_tid' => gmdate('Y-m-d H:i:s', time() - 1800), 'minutter' => 30]);
+        $l = $saker();
+        sjekk('Q dugnad: sakene har status (riktige knapper uten å lese tittelen)', ($harSak($l, 'dugnad', $d1)['status'] ?? '') === 'venter' && ($harSak($l, 'dugnad', $d3)['status'] ?? '') === 'til_godkjenning');
+        $dg = kall('/api/admin/dugnad.php', null, $tA);
+        $r3 = array_values(array_filter($dg[1]['dugnader'] ?? [], static fn($r) => (int) $r['id'] === $d3))[0] ?? null;
+        sjekk('Q dugnad: arket får forslaget til timer (stemplet tid rundet til kvarter)', $dg[0] === 200 && $r3 !== null && $r3['forslagTimer'] !== '', $vis($dg));
+        $g1 = kall('/api/admin/dugnad.php', ['handling' => 'godkjenn', 'id' => $d1, 'svar' => 'Velkommen'], $tA);
+        $a2 = kall('/api/admin/dugnad.php', ['handling' => 'avslaa', 'id' => $d2, 'svar' => ''], $tA);
+        $g3 = kall('/api/admin/dugnad.php', ['handling' => 'godkjenn_tid', 'id' => $d3, 'timer' => '1.5', 'svar' => ''], $tA);
+        $a4 = kall('/api/admin/dugnad.php', ['handling' => 'avvis_tid', 'id' => $d4, 'svar' => 'For kort'], $tA);
+        $st = static fn(int $id): array => DB::en('SELECT status, svar, godkjent_minutter FROM dugnad WHERE id = :i', ['i' => $id]) ?? [];
+        sjekk('Q dugnad: Godkjenn jobb (med svar) og Avslå', $g1[0] === 200 && $st($d1)['status'] === 'godkjent' && $st($d1)['svar'] === 'Velkommen'
+            && $a2[0] === 200 && $st($d2)['status'] === 'avslatt', $vis($g1) . ' / ' . $vis($a2));
+        sjekk('Q dugnad: Godkjenn timer (1,5 t = 90 min) og Avvis timer', $g3[0] === 200 && $st($d3)['status'] === 'ferdig' && (int) $st($d3)['godkjent_minutter'] === 90
+            && $a4[0] === 200 && $st($d4)['status'] === 'avvist', $vis($g3) . ' / ' . $vis($a4));
+        $l = $saker();
+        sjekk('Q dugnad: alle fire er ute av Må gjøres', array_filter($q['dugnad'], static fn($id) => $harSak($l, 'dugnad', $id) !== null) === []);
+
+        // ── Leirebestilling ────────────────────────────────────────────
+        $q['lev'] = DB::settInn('leverandorer', ['navn' => $tag . ' Leirhuset', 'epost' => strtolower($tag) . '-lev@example.com', 'bestillingsmaate' => 'epost']);
+        $q['vare'] = DB::settInn('products', ['tittel' => $tag . ' Steintøyleire', 'pris_ore' => 29000, 'status' => 'publisert', 'leverandor_id' => $q['lev'], 'artikkelnr' => 'T-1']);
+        $q['linjer'][] = DB::settInn('handleliste_linjer', ['member_id' => $vanlig, 'product_id' => $q['vare'], 'antall' => 2, 'status' => 'sendt', 'sendt_at' => gmdate('Y-m-d H:i:s')]);
+        sjekk('Q leire: saken står i Må gjøres', $harSak($saker(), 'leire') !== null);
+        $hl = kall('/api/admin/handlelister.php', null, $tA);
+        $lev = array_values(array_filter($hl[1]['leire']['neste'] ?? [], static fn($r) => (int) $r['id'] === $q['lev']))[0] ?? null;
+        sjekk('Q leire: arket får leverandøren, vara, antall og hvem (handlelister.php leire)', $hl[0] === 200 && $lev !== null && ($lev['varer'][0]['antall'] ?? 0) === 2
+            && ($lev['varer'][0]['hvem'][0]['antall'] ?? 0) === 2 && ($lev['varer'][0]['pris'] ?? 'x') === '', $vis($hl));
+        $utenPris = kall('/api/admin/handlelister.php', ['handling' => 'bestill', 'leverandorId' => $q['lev']], $tA);
+        sjekk('Q leire: Send bestilling uten pris stoppes', $utenPris[0] === 400 && str_contains((string) ($utenPris[1]['feil'] ?? ''), 'mangler pris'), $vis($utenPris));
+        $pr = kall('/api/admin/handlelister.php', ['handling' => 'pris', 'produktId' => $q['vare'], 'kroner' => '150'], $tA);
+        $fr = kall('/api/admin/handlelister.php', ['handling' => 'frist', 'dato' => date('Y-m-d', strtotime('+5 days'))], $tA);
+        sjekk('Q leire: pris per stk. og frist lagres', $pr[0] === 200 && (int) DB::verdi('SELECT pris_ore FROM handleliste_linjer WHERE id = :i', ['i' => $q['linjer'][0]]) === 15000
+            && $fr[0] === 200 && Lager::leireFrist()['dato'] === date('Y-m-d', strtotime('+5 days')), $vis($pr) . ' / ' . $vis($fr));
+        $be = kall('/api/admin/handlelister.php', ['handling' => 'bestill', 'leverandorId' => $q['lev']], $tA);
+        sjekk('Q leire: Send bestilling markerer linjene som bestilt og legger e-posten til leverandøren i køen', $be[0] === 200
+            && DB::verdi('SELECT bestilt_at FROM handleliste_linjer WHERE id = :i', ['i' => $q['linjer'][0]]) !== null && $ko('leverandor', $q['lev']) === 1, $vis($be));
+        $hl2 = kall('/api/admin/handlelister.php', null, $tA);
+        sjekk('Q leire: leverandøren er ute av «Neste leirebestilling»', array_filter($hl2[1]['leire']['neste'] ?? [], static fn($r) => (int) $r['id'] === $q['lev']) === []);
+
+        // ── Medlemschat ────────────────────────────────────────────────
+        $q['chat'][] = DB::settInn('chat_meldinger', ['member_id' => $vanlig, 'tekst' => $tag . ' Er ovnen ledig?']);
+        $cs = $harSak($saker(), 'chat');
+        sjekk('Q chat: uleste står i Må gjøres med siste id', $cs !== null && (int) ($cs['siste'] ?? 0) >= $q['chat'][0]);
+        $ch = kall('/api/chat.php', null, $tA);
+        sjekk('Q chat: arket viser tråden (api/chat.php)', $ch[0] === 200 && in_array($tag . ' Er ovnen ledig?', array_column($ch[1]['meldinger'] ?? [], 'tekst'), true), $vis($ch));
+        $sv = kall('/api/chat.php', ['tekst' => $tag . ' Ja, fra kl. 12'], $tA);
+        if (($sv[1]['id'] ?? 0) > 0) { $q['chat'][] = (int) $sv[1]['id']; }
+        sjekk('Q chat: Monica svarer i samme rom', $sv[0] === 200 && (int) DB::verdi('SELECT member_id FROM chat_meldinger WHERE id = :i', ['i' => (int) ($sv[1]['id'] ?? 0)]) === $admin, $vis($sv));
+        $le = kall('/api/chat.php', ['handling' => 'lest', 'siste' => (int) ($sv[1]['siste'] ?? $cs['siste'] ?? 0)], $tA);
+        sjekk('Q chat: lest tar saken ut av Må gjøres', $le[0] === 200 && $harSak($saker(), 'chat') === null, $vis($le));
+
+        // ── Innboks (Instagram/Facebook) ───────────────────────────────
+        if (DB::harTabell('meta_kommentarer')) {
+            $q['kommentar'] = strtolower($tag) . '-k1';
+            DB::settInn('meta_kommentarer', ['kommentar_id' => $q['kommentar'], 'kanal' => 'Instagram', 'klasse' => 'venter', 'status' => 'venter', 'kommentar' => 'Når er neste kurs?', 'forslag' => 'Se lissom.no/kurs']);
+            sjekk('Q innboks: saken står i Må gjøres', $harSak($saker(), 'innboks') !== null);
+            $ib = kall('/api/admin/meta.php', ['handling' => 'kommentarer'], $tA);
+            $kr = array_values(array_filter($ib[1]['poster'] ?? [], static fn($c) => $c['id'] === $q['kommentar']))[0] ?? null;
+            sjekk('Q innboks: arket får kommentaren og AI-forslaget', $ib[0] === 200 && $kr !== null && $kr['status'] === 'venter' && $kr['forslag'] === 'Se lissom.no/kurs', $vis($ib));
+            $sk = kall('/api/admin/meta.php', ['handling' => 'svarKommentar', 'id' => $q['kommentar'], 'kanal' => 'Instagram', 'tekst' => 'Hei!'], $tA);
+            sjekk('Q innboks: Svar uten Meta-kobling gir feil og kommentaren venter fortsatt (ingenting lagt ut)', $sk[0] >= 400
+                && (string) DB::verdi('SELECT status FROM meta_kommentarer WHERE kommentar_id = :i', ['i' => $q['kommentar']]) === 'venter', $vis($sk));
+            $is = kall('/api/admin/meta.php', ['handling' => 'ikkeSvar', 'id' => $q['kommentar'], 'kanal' => 'Instagram'], $tA);
+            sjekk('Q innboks: Ferdig (ikke svar) tar den ut av Må gjøres', $is[0] === 200 && $harSak($saker(), 'innboks') === null, $vis($is));
+        }
+
+        // ── Feilmelding ────────────────────────────────────────────────
+        $q['feil'] = DB::settInn('feilrapporter', ['slag' => 'melding', 'status' => 'ny', 'melding' => $tag . ' Knappen virker ikke', 'feiltekst' => 'TypeError: x is null',
+            'side' => '/minside', 'skjerm' => '390x844', 'member_id' => $vanlig, 'fingeravtrykk' => substr(hash('sha256', $tag . 'feil'), 0, 32), 'sist_sett' => gmdate('Y-m-d H:i:s')]);
+        sjekk('Q feil: saken står i Må gjøres', $harSak($saker(), 'feil', $q['feil']) !== null);
+        $fr2 = kall('/api/admin/feilrapporter.php', null, $tA);
+        $fe = array_values(array_filter($fr2[1]['rapporter'] ?? [], static fn($r) => (int) $r['id'] === $q['feil']))[0] ?? null;
+        sjekk('Q feil: arket viser selve feilmeldingen (melding, feiltekst, side, skjerm, hvem)', $fr2[0] === 200 && $fe !== null && $fe['melding'] === $tag . ' Knappen virker ikke'
+            && $fe['feiltekst'] === 'TypeError: x is null' && $fe['side'] === '/minside' && $fe['skjerm'] === '390x844' && $fe['navn'] === $tag . ' Kari', $vis($fr2));
+        $lo = kall('/api/admin/feilrapporter.php', ['handling' => 'status', 'id' => $q['feil'], 'status' => 'lukket'], $tA);
+        sjekk('Q feil: Løst lukker den og tar den ut av Må gjøres', $lo[0] === 200 && $harSak($saker(), 'feil', $q['feil']) === null, $vis($lo));
+
+        // ── Betaling (medlem): medlemsarket henter medlemmet fra medlemmer.php ──
+        $me = kall('/api/admin/medlemmer.php', null, $tA);
+        sjekk('Q betaling: medlemmer.php gir medlemmet til arket', $me[0] === 200 && in_array($vanlig, array_map('intval', array_column($me[1]['medlemmer'] ?? [], 'id')), true), $vis($me));
+
+        // ── Medlemssalg: Godkjenn/Avslå gjør det samme som admin-ny (samme endepunkt) ──
+        $nyttSalg = static function (string $tittel) use ($vanlig, &$q): int {
+            $id = DB::settInn('member_sales', ['member_id' => $vanlig, 'tittel' => $tittel, 'pris_ore' => 45000, 'vippsnummer' => '12345678', 'status' => 'til_godkjenning']);
+            $q['salg'][] = $id;
+            return $id;
+        };
+        DB::oppdater('members', ['epost' => strtolower($tag) . '-kari@example.com'], ['id' => $vanlig]);
+        $s1 = $nyttSalg($tag . ' Krus'); $s2 = $nyttSalg($tag . ' Fat');
+        $ms = kall('/api/admin/medlemssalg.php', ['handling' => 'godkjenn', 'id' => $s1], $tA);
+        $offentlig = kall('/api/medlemssalg.php', null);
+        sjekk('Q medlemssalg: Godkjenn publiserer varen i butikken og gir selgeren beskjed (køen)', $ms[0] === 200
+            && (string) DB::verdi('SELECT status FROM member_sales WHERE id = :i', ['i' => $s1]) === 'publisert'
+            && in_array($s1, array_map('intval', array_column($offentlig[1]['varer'] ?? [], 'id')), true) && $ko('medlemssalg', $s1) === 1, $vis($ms) . ' / ' . $vis($offentlig));
+        $ma = kall('/api/admin/medlemssalg.php', ['handling' => 'avvis', 'id' => $s2, 'grunn' => ''], $tA);
+        $offentlig2 = kall('/api/medlemssalg.php', null);
+        sjekk('Q medlemssalg: Avslå (grunn valgfri) tar den ikke ut i butikken og gir selgeren beskjed', $ma[0] === 200
+            && (string) DB::verdi('SELECT status FROM member_sales WHERE id = :i', ['i' => $s2]) === 'avvist'
+            && !in_array($s2, array_map('intval', array_column($offentlig2[1]['varer'] ?? [], 'id')), true) && $ko('medlemssalg', $s2) === 1, $vis($ma));
+        sjekk('Q medlemssalg: ny admin bruker samme handlinger som admin-ny (godkjenn/avvis på medlemssalg.php)',
+            str_contains($fq, "kall('medlemssalg.php', {handling: 'godkjenn', id: Number(b.dataset.id)}") && str_contains($fq, "NA.api('medlemssalg.php', {data: {handling: 'avvis', id, grunn:"));
+    } finally {
+        $ider = static fn(array $a): string => implode(',', array_map('intval', $a ?: [0]));
+        foreach ([
+            'DELETE FROM medlemsforslag WHERE id IN (' . $ider($q['forslag']) . ')',
+            'DELETE FROM dugnad WHERE id IN (' . $ider($q['dugnad']) . ')',
+            "DELETE FROM notifications WHERE ref_type = 'dugnad' AND ref_id IN (" . $ider($q['dugnad']) . ')',
+            'DELETE FROM handleliste_linjer WHERE id IN (' . $ider($q['linjer']) . ')',
+            "DELETE FROM notifications WHERE ref_type = 'leverandor' AND ref_id = " . (int) $q['lev'],
+            'DELETE FROM products WHERE id = ' . (int) $q['vare'],
+            'DELETE FROM leverandorer WHERE id = ' . (int) $q['lev'],
+            'DELETE FROM chat_meldinger WHERE id IN (' . $ider($q['chat']) . ')',
+            'DELETE FROM feilrapporter WHERE id = ' . (int) $q['feil'],
+            "DELETE FROM notifications WHERE ref_type = 'medlemssalg' AND ref_id IN (" . $ider($q['salg']) . ')',
+            'DELETE FROM member_sales WHERE id IN (' . $ider($q['salg']) . ')',
+        ] as $sql) {
+            try { DB::kjor($sql); } catch (Throwable $e) { echo '  (opprydding Q: ' . $e->getMessage() . ")\n"; }
+        }
+        try { if (DB::harTabell('chat_lest')) { DB::kjor('DELETE FROM chat_lest WHERE member_id = :m', ['m' => $admin]); } } catch (Throwable $e) {}
+        try { if ($q['kommentar'] !== '') { DB::kjor('DELETE FROM meta_kommentarer WHERE kommentar_id = :i', ['i' => $q['kommentar']]); } } catch (Throwable $e) {}
+        try {
+            $q['mal'] === null ? DB::kjor("DELETE FROM content_blocks WHERE nokkel = 'Marked/Medlemsforslag mal'")
+                : DB::kjor("UPDATE content_blocks SET verdi = :v WHERE nokkel = 'Marked/Medlemsforslag mal'", ['v' => $q['mal']]);
+            $q['frist'] === null ? DB::kjor("DELETE FROM innstillinger WHERE nokkel = 'leirebestilling_frist'")
+                : DB::kjor("UPDATE innstillinger SET verdi = :v WHERE nokkel = 'leirebestilling_frist'", ['v' => $q['frist']]);
+        } catch (Throwable $e) { echo '  (opprydding Q: ' . $e->getMessage() . ")\n"; }
+        foreach ($q['filer'] as $f) { if (is_file($f)) { @unlink($f); } }
+    }
+
     $ferdig = true;
 } catch (Throwable $e) {
     sjekk('uventet feil', false, $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());

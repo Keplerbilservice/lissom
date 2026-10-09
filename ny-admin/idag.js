@@ -107,12 +107,18 @@
       henvendelse: () => knapp('Ferdig', 'besvart', false, `data-k="${k}"`) + knapp('Svar', 'svar', true, `data-k="${k}"`),
       soknad: () => knapp('Godkjenn', 'soknad', true, `data-k="${k}"`),
       frys: () => knapp('Avslå', 'frys-avslag', false, `data-k="${k}"`) + knapp('Godkjenn frys', 'frys-godkjenn', true, `data-k="${k}"`),
-      bidrag: () => s.bilde ? knapp('Avvis', 'bidrag-avvis', false, `data-k="${k}"`) + knapp('Godkjenn til galleriet', 'bidrag-godkjenn', true, `data-k="${k}"`) : gammel,
-      betaling: () => NA.erMobil() ? gammel : `<button class="knapp liten hoved" type="button" data-medlem="${Number(s.id)}">Til medlemmet</button>`,
+      /* Eieren 09.10.2026: alt i ny admin. Bidraget, dugnaden, leira, chatten, innboksen og feilmeldingen åpnes i et ark her. */
+      bidrag: () => knapp('Avvis', 'bidrag-avvis', false, `data-k="${k}"`) + knapp('Godkjenn', 'bidrag', true, `data-k="${k}"`),
+      betaling: () => NA.erMobil() ? knapp('Til medlemmet', 'medlem-ark', true, `data-k="${k}"`) : `<button class="knapp liten hoved" type="button" data-medlem="${Number(s.id)}">Til medlemmet</button>`,
+      dugnad: () => (dugnadTid(s) ? knapp('Avvis timer', 'dugnad', false, `data-k="${k}" data-h="avvis_tid"`) + knapp('Godkjenn timer', 'dugnad', true, `data-k="${k}" data-h="godkjenn_tid"`)
+        : knapp('Avslå', 'dugnad', false, `data-k="${k}" data-h="avslaa"`) + knapp('Godkjenn jobb', 'dugnad', true, `data-k="${k}" data-h="godkjenn"`)),
+      leire: () => knapp('Åpne bestillingen', 'leire', true, `data-k="${k}"`),
+      chat: () => knapp('Marker som lest', 'chat-lest', false, `data-k="${k}"`) + knapp('Svar', 'chat', true, `data-k="${k}"`),
+      innboks: () => knapp('Svar', 'innboks', true, `data-k="${k}"`),
       venteliste: () => knapp('Tilby plassen til ' + esc(s.fornavn || 'første på lista'), 'venteliste', true, `data-k="${k}"`),
       henting: () => knapp('Send «Klar til henting»', 'henting', true, `data-k="${k}"`),
       lager: () => knapp('Bestill mer', 'bestill', true, `data-k="${k}"`),
-      feil: () => knapp('Løst', 'feil-lost', false, `data-k="${k}"`) + gammel,
+      feil: () => knapp('Løst', 'feil-lost', false, `data-k="${k}"`) + knapp('Les detaljer', 'feil', true, `data-k="${k}"`),
       /* Avlyst dato, betalt kontant/kort i kassa (eieren 09.10.2026): verkstedet gir pengene tilbake og merker det her. */
       tilbakebetal: () => knapp('Betalt tilbake', 'tilbakebetalt', true, `data-k="${k}"`),
     }[s.type] || (() => gammel);
@@ -265,6 +271,260 @@
       catch (err) { NA.toast(esc(err.message)); e.target.disabled = false; }
     };
   }
+  /* ── Alt i ny admin (eieren 09.10.2026) ─────────────────────────────────
+     Samme endepunkter og regler som admin-ny, ingen egne kopier:
+       Medlemsbidrag  medlemsforslag.php (godkjenn {instagram, galleri, tekst}, avvis, mal, bruk-bilde) og
+                      gemini.php forbedreForslag — som markedstillegg.js og bildeforslag.js. Ingenting er valgt på forhånd.
+       Dugnad         dugnad.php godkjenn/avslaa/godkjenn_tid/avvis_tid med «Svar til medlemmet» — som volunteering().
+       Leirebestilling handlelister.php (leire: frist, bestill, krav, pris) — som leirebestilling.js.
+       Chat           /api/chat.php (tråden, svar, lest) — som chat.js.
+       Innboks        meta.php kommentarer/svarKommentar/nyttForslag/ikkeSvar — som inbox() i marked.js.
+       Feilmelding    feilrapporter.php — samme visning som «Les detaljer» i Feilmeldinger. */
+  const feilArk = (tittel, e) => NA.apneArk(NA.arkHode(esc(tittel)) + `<p class="feil">${esc(e.message || e)}</p>`);
+  const laster = tittel => NA.apneArk(NA.arkHode(esc(tittel)) + '<p class="laster">Henter …</p>');
+  /* Bekreftelsen i samme ark (arket lukkes ikke imellom, så Avbryt går tilbake til saken). Samme ordlyd som NA.bekreft. */
+  const sporHer = (tittel, tekst, ja) => new Promise(svar => {
+    const inn = NA.apneArk(`${NA.arkHode(esc(tittel))}<p>${esc(tekst)}</p><div class="ark-fot"><button class="knapp" type="button" data-nei>Avbryt</button><button class="knapp hoved" type="button" data-ja>${esc(ja)}</button></div>`);
+    inn.onclick = e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.ja !== undefined) svar(true); else if (b.dataset.nei !== undefined) svar(false); };
+  });
+  const dugnadTid = s => (s.status ? s.status !== 'venter' : /timer/i.test(String(s.tittel)));
+
+  /* Medlemsbidrag: bildet (eller videoen), medlemmets tekst, hvor det skal ut, bildeteksten og den faste linja. */
+  async function arkBidrag(s, tilstand = null) {
+    if (!tilstand) laster('Medlemsbidrag');
+    let d;
+    try { d = await NA.api('medlemsforslag.php'); } catch (e) { feilArk('Medlemsbidrag', e); return; }
+    const r = (d.venter || []).find(x => x.id === Number(s.id));
+    if (!r) { NA.apneArk(NA.arkHode('Medlemsbidrag') + '<p class="tom">Alt er gjort. Fint!</p>'); gjort.add(nokkel(s)); oppdater(true).catch(() => {}); return; }
+    const t = tilstand || {instagram: false, galleri: false, tekst: r.bildetekst, nytt: null};
+    const bilde = r.type === 'bilde';
+    const inn = NA.apneArk(`${NA.arkHode('Medlemsbidrag · ' + esc(r.navn))}
+      ${bilde ? `<img class="ark-bilde" src="${esc(r.fil)}" alt="${esc(r.tittel || 'Medlemmets keramikk')}">` : `<video class="ark-bilde" src="${esc(r.fil)}" controls playsinline></video>`}
+      ${r.tekst ? `<div class="sms">${esc(r.tekst)}${r.instagram ? `<br><small>${esc(r.instagram)}</small>` : ''}</div>` : ''}
+      ${bilde ? (t.nytt ? `<div class="kort-head" style="margin-top:14px"><h3>Nytt forslag</h3><small>Kostnad: ${esc(t.nytt.kostnad)}</small></div>
+          <img class="ark-bilde" src="${esc(t.nytt.url.startsWith('/') ? t.nytt.url : '/' + t.nytt.url)}" alt="${esc(r.tittel || 'Medlemmets keramikk')}">
+          <div class="valgknapper"><button class="knapp hoved" type="button" data-bruk>Bruk det nye bildet</button></div>`
+        : '<div class="valgknapper" style="margin-top:10px"><button class="knapp" type="button" data-forbedre>Forbedre bildet</button></div>') : ''}
+      <div style="margin-top:14px">
+        <label class="velg-rad"><input type="checkbox" data-hvor="instagram" ${t.instagram ? 'checked' : ''}><span><b>Legg ut på Instagram</b></span></label>
+        ${bilde ? `<label class="velg-rad"><input type="checkbox" data-hvor="galleri" ${t.galleri ? 'checked' : ''}><span><b>Galleriet på forsida</b></span></label>` : ''}
+      </div>
+      <label class="felt"><small>Bildetekst</small><textarea id="bd-tekst">${esc(t.tekst)}</textarea></label>
+      <details style="margin-top:10px"><summary>Fast bildetekst</summary>
+        <label class="felt"><small>Tekst</small><textarea id="bd-mal" data-ikke-endret>${esc(d.mal || '')}</textarea></label>
+        <div class="valgknapper"><button class="knapp" type="button" data-mal>Lagre</button></div></details>
+      <div class="ark-fot"><button class="knapp rod" type="button" data-avvis>Avvis</button><button class="knapp hoved" type="button" data-godkjenn ${t.instagram || t.galleri ? '' : 'disabled'}>Godkjenn</button></div>`);
+    const les = () => ({instagram: !!inn.querySelector('[data-hvor="instagram"]')?.checked, galleri: !!inn.querySelector('[data-hvor="galleri"]')?.checked,
+      tekst: inn.querySelector('#bd-tekst').value, nytt: t.nytt});
+    inn.onchange = () => { const v = les(); inn.querySelector('[data-godkjenn]').disabled = !v.instagram && !v.galleri; };
+    inn.onclick = async e => {
+      const b = e.target.closest('button'); if (!b || b.disabled) return;
+      if (b.dataset.godkjenn !== undefined) {
+        const v = les();
+        if (!v.instagram && !v.galleri) { NA.toast('Velg hvor innholdet skal vises.'); return; }
+        if (!await sporHer('Publiser innholdet?', 'Publiser innholdet fra ' + r.navn + ' ' + [v.instagram ? 'på Instagram' : null, v.galleri ? 'i galleriet' : null].filter(Boolean).join(' og ') + '.', 'Publiser')) return arkBidrag(s, v);
+        laster('Medlemsbidrag');
+        try {
+          const svar = await NA.api('medlemsforslag.php', {data: {handling: 'godkjenn', id: r.id, instagram: v.instagram ? '1' : '0', galleri: v.galleri ? '1' : '0', ...(v.instagram ? {tekst: v.tekst} : {})}});
+          NA.lukkArk(true); ferdig(nokkel(s), svar.beskjed || 'Godkjent.');
+        } catch (err) { NA.toast(esc(err.message)); arkBidrag(s, v); }
+        return;
+      }
+      if (b.dataset.avvis !== undefined) {
+        const v = les();
+        if (!await sporHer('Avvis', 'Avvis bidraget. Opplastingen slettes.', 'Avvis')) return arkBidrag(s, v);
+        try { const svar = await NA.api('medlemsforslag.php', {data: {handling: 'avvis', id: r.id}}); NA.lukkArk(true); ferdig(nokkel(s), svar.beskjed || 'Bidraget er avvist.'); }
+        catch (err) { NA.toast(esc(err.message)); arkBidrag(s, v); }
+        return;
+      }
+      if (b.dataset.mal !== undefined) {
+        const tekst = inn.querySelector('#bd-mal').value.trim();
+        if (!tekst) { NA.toast('Den faste teksten kan ikke være tom.'); return; }
+        b.disabled = true;
+        try { await NA.api('medlemsforslag.php', {data: {handling: 'mal', tekst}}); NA.toast('Lagret.'); } catch (err) { NA.toast(esc(err.message)); }
+        b.disabled = false;
+        return;
+      }
+      if (b.dataset.forbedre !== undefined) {
+        const v = les();
+        if (!await sporHer('Lag bildeforslag?', 'Lag et nytt bilde av ' + r.navn + ' sitt bidrag med AI. Dette bruker AI-budsjettet. Du velger etterpå om bildet skal brukes.', 'Lag forslag')) return arkBidrag(s, v);
+        laster('Medlemsbidrag');
+        try { const g = await NA.api('gemini.php', {data: {handling: 'forbedreForslag', id: r.id}}); arkBidrag(s, {...v, nytt: {url: g.url, kostnad: g.kostnad}}); }
+        catch (err) { NA.toast(esc(err.message)); arkBidrag(s, v); }
+        return;
+      }
+      if (b.dataset.bruk !== undefined) {
+        const v = les();
+        b.disabled = true;
+        try { const svar = await NA.api('medlemsforslag.php', {data: {handling: 'bruk-bilde', id: r.id, url: t.nytt.url}}); NA.toast(esc(svar.beskjed || 'Bildet er byttet.')); arkBidrag(s, {...v, nytt: null}); }
+        catch (err) { NA.toast(esc(err.message)); b.disabled = false; }
+      }
+    };
+  }
+
+  /* Dugnad: godkjenn eller avslå jobben, godkjenn eller avvis timene. «Svar til medlemmet» som i admin-ny. */
+  const DUGNAD = {godkjenn: ['Godkjenn jobb', true], avslaa: ['Avslå', false], godkjenn_tid: ['Godkjenn timer', true], avvis_tid: ['Avvis timer', false]};
+  async function arkDugnad(s, h) {
+    const [tittel, hoved] = DUGNAD[h] || DUGNAD.godkjenn;
+    laster(tittel);
+    let r;
+    try { r = ((await NA.api('dugnad.php')).dugnader || []).find(x => x.id === Number(s.id)); } catch (e) { feilArk(tittel, e); return; }
+    if (!r) { NA.apneArk(NA.arkHode(esc(tittel)) + '<p class="tom">Alt er gjort. Fint!</p>'); gjort.add(nokkel(s)); oppdater(true).catch(() => {}); return; }
+    const tid = [r.dag, r.inn && r.ut ? r.inn + '–' + r.ut : r.inn, r.varighet].filter(Boolean).join(' · ');
+    const inn = NA.apneArk(`${NA.arkHode(esc(tittel))}
+      <div class="sms"><b>${esc(r.navn)}:</b> ${esc(r.tekst)}${tid ? `<br><small>${esc(tid)}</small>` : ''}</div>
+      ${h === 'godkjenn_tid' ? `<label class="felt"><small>Godkjente timer</small><input id="dg-timer" type="number" min="0.25" step="0.25" value="${esc(String(r.forslagTimer).replace(',', '.'))}"></label>` : ''}
+      <label class="felt"><small>Svar til medlemmet</small><textarea id="dg-svar">${esc(r.svar)}</textarea></label>
+      <p class="muted">Et svar kan utløse beskjed til medlemmet.</p>
+      <div class="ark-fot"><button class="knapp" type="button" data-lukk>Avbryt</button><button class="knapp ${hoved ? 'hoved' : 'rod'}" type="button" data-dg>${esc(tittel)}</button></div>`);
+    inn.querySelector('[data-dg]').onclick = async e => {
+      const data = {handling: h, id: r.id, svar: inn.querySelector('#dg-svar').value.trim()};
+      if (h === 'godkjenn_tid') data.timer = inn.querySelector('#dg-timer').value;
+      e.target.disabled = true;
+      try { const svar = await NA.api('dugnad.php', {data}); NA.lukkArk(true); ferdig(nokkel(s), svar.beskjed || 'Oppdatert.'); }
+      catch (err) { NA.toast(esc(err.message)); e.target.disabled = false; }
+    };
+  }
+
+  /* Neste leirebestilling: frist, per leverandør varene og hvem som har bestilt, frakten, «Send bestilling» og «Krev inn med Vipps». */
+  async function arkLeire(s) {
+    laster('Neste leirebestilling');
+    let L;
+    try { L = (await NA.api('handlelister.php')).leire; } catch (e) { feilArk('Neste leirebestilling', e); return; }
+    if (!L) { feilArk('Neste leirebestilling', 'Kunne ikke hente opplysningene.'); return; }
+    if (!L.neste.length) { gjort.add(nokkel(s)); oppdater(true).catch(() => {}); }
+    const vare = v => `<div class="rad"><div class="tekst"><b>${esc(v.navn)}</b><small>${esc([v.antall + ' stk.', v.pris ? v.pris + ' per stk.' : ''].filter(Boolean).join(' · '))}</small>
+        <span>${v.hvem.map(x => `<span class="merke">${esc(x.navn + ' ' + x.antall)}</span>`).join(' ')}</span></div>
+        ${v.pris ? '' : `<span class="merke gul">Pris mangler</span><label class="felt" style="max-width:150px"><small>Pris per stk. (kr)</small><input type="number" min="0" step="0.01" inputmode="decimal" data-pris="${Number(v.produktId)}"></label><button class="knapp liten" type="button" data-lagrepris="${Number(v.produktId)}">Lagre</button>`}</div>`;
+    const inn = NA.apneArk(`${NA.arkHode('Neste leirebestilling')}
+      <div class="rad"><label class="felt" style="flex:1"><small>Frist</small><input type="date" id="lb-frist" value="${esc(L.frist.dato)}"></label>
+        <button class="knapp liten" type="button" data-frist>${L.frist.dato ? 'Endre frist' : 'Sett frist'}</button></div>
+      ${L.neste.length ? L.neste.map(r => `<section data-leverandor="${Number(r.id)}" style="margin-top:16px"><h3>${esc(r.navn)}</h3>${r.varer.map(vare).join('')}
+          <p class="muted">${r.frakt ? esc(`Frakt ${r.frakt}, delt på ${r.deltPaa}.`) : 'Frakt er ikke satt.'}</p>
+          <div class="valgknapper"><button class="knapp hoved" type="button" data-bestill="${Number(r.id)}">Send bestilling</button></div></section>`).join('')
+        : '<p class="tom">Ingen varer venter på neste bestilling.</p>'}
+      <div class="ark-fot"><button class="knapp" type="button" data-lukk>Avbryt</button>${L.neste.length ? '<button class="knapp" type="button" data-krav>Krev inn med Vipps</button>' : ''}</div>`);
+    const lagre = async (b, data) => {
+      b.disabled = true;
+      try { const r = await NA.api('handlelister.php', {data}); NA.toast(esc(r.beskjed || 'Oppdatert.')); arkLeire(s); }
+      catch (err) { NA.toast(esc(err.message)); b.disabled = false; }
+    };
+    inn.onclick = async e => {
+      const b = e.target.closest('button'); if (!b || b.disabled) return;
+      if (b.dataset.frist !== undefined) return lagre(b, {handling: 'frist', dato: inn.querySelector('#lb-frist').value || ''});
+      if (b.dataset.lagrepris) {
+        const v = inn.querySelector(`[data-pris="${b.dataset.lagrepris}"]`).value.trim();
+        if (v === '') { NA.toast('Skriv prisen først.'); return; }
+        return lagre(b, {handling: 'pris', produktId: Number(b.dataset.lagrepris), kroner: v});
+      }
+      if (b.dataset.bestill) {
+        const r = L.neste.find(x => x.id === Number(b.dataset.bestill)); if (!r) return;
+        if (!await sporHer('Send bestilling', `Send bestillingen til ${r.navn} (${r.epost}). Linjene markeres som bestilt.`, 'Send bestilling')) return arkLeire(s);
+        laster('Neste leirebestilling');
+        try { const svar = await NA.api('handlelister.php', {data: {handling: 'bestill', leverandorId: r.id}}); NA.toast(esc(svar.beskjed || 'Oppdatert.')); }
+        catch (err) { NA.toast(esc(err.message)); }
+        return arkLeire(s);
+      }
+      if (b.dataset.krav !== undefined) {
+        if (!await sporHer('Krev inn med Vipps', 'Send betalingskrav til medlemmene som ikke allerede har fått krav. Kontroller priser og frakt først.', 'Send betalingskrav')) return arkLeire(s);
+        laster('Neste leirebestilling');
+        try { const svar = await NA.api('handlelister.php', {data: {handling: 'krav'}}); NA.toast(esc(svar.beskjed || 'Oppdatert.')); }
+        catch (err) { NA.toast(esc(err.message)); }
+        return arkLeire(s);
+      }
+    };
+  }
+
+  /* Medlemschatten: tråden, svarfeltet og «lest» (det som står framme er lest, som i chat.js). */
+  async function arkChat(s) {
+    laster('Medlemschat');
+    let d;
+    try { d = await NA.api('/api/chat.php'); } catch (e) { feilArk('Medlemschat', e); return; }
+    const lest = siste => NA.api('/api/chat.php', {data: {handling: 'lest', siste}}).then(() => { gjort.add(nokkel(s)); }).catch(() => {});
+    const melding = m => `<div class="chat-m ${m.egen ? 'egen' : ''}"><small>${esc(m.navn)} ${esc(m.tid)}</small><span${m.slettet ? ' class="slettet"' : ''}>${esc(m.tekst)}</span></div>`;
+    const inn = NA.apneArk(`${NA.arkHode('Medlemschat')}
+      <div class="chat-trad" id="chat-trad">${(d.meldinger || []).map(melding).join('') || '<p class="tom">Ingen meldinger.</p>'}</div>
+      <label class="felt"><small>Synlig for alle medlemmer</small><textarea id="chat-tekst" maxlength="500" placeholder="Skriv"></textarea></label>
+      <div class="ark-fot"><button class="knapp" type="button" data-lukk>Avbryt</button><button class="knapp hoved" type="button" data-send>Send</button></div>`);
+    const trad = inn.querySelector('#chat-trad');
+    trad.scrollTop = trad.scrollHeight;
+    lest(d.siste || 0);
+    inn.querySelector('[data-send]').onclick = async e => {
+      const felt = inn.querySelector('#chat-tekst'), tekst = felt.value.trim();
+      if (!tekst) { felt.focus(); return; }
+      e.target.disabled = true;
+      try {
+        const r = await NA.api('/api/chat.php', {data: {tekst}});
+        felt.value = ''; NA.arkEndret(false);
+        const ny = await NA.api('/api/chat.php');
+        trad.innerHTML = (ny.meldinger || []).map(melding).join('');
+        trad.scrollTop = trad.scrollHeight;
+        lest(ny.siste || r.siste || 0);
+      } catch (err) { NA.toast(esc(err.message)); }
+      e.target.disabled = false;
+    };
+  }
+
+  /* Innboksen: kommentarene som venter, med AI-forslaget i svarfeltet. «Svar» legger svaret ut, «Ferdig» lar den stå uten svar. */
+  async function arkInnboks(s) {
+    laster('Innboks · SoMe');
+    let r;
+    try { r = await NA.api('meta.php', {data: {handling: 'kommentarer'}}); } catch (e) { feilArk('Innboks · SoMe', e); return; }
+    const venter = (r.poster || []).filter(c => c.status === 'venter');
+    if (!venter.length) { gjort.add(nokkel(s)); oppdater(true).catch(() => {}); }
+    const aiPaa = r.autosvarPaa !== false;
+    const inn = NA.apneArk(`${NA.arkHode('Innboks · SoMe')}
+      ${aiPaa && r.aiFeil ? '<p class="feil">AI-svarene står stille: AI svarer ikke nå. Kommentarene venter til det virker igjen.</p>' : ''}
+      ${venter.length ? venter.map((c, i) => `<section class="kort" style="margin-top:12px" data-i="${i}">
+          <span class="type">${esc(c.kanal)}</span><b>${esc(c.navn || c.fra || 'Kommentar')}</b>${c.paa ? `<small class="muted"> · På: ${esc(c.paa)}</small>` : ''}
+          <p>${esc(c.tekst || c.message || '')}</p>
+          <label class="felt"><small>Forslag fra AI</small><textarea data-svar="${i}">${esc(c.forslag || '')}</textarea></label>
+          <div class="valgknapper"><button class="knapp hoved" type="button" data-publiser="${i}">Svar</button>${aiPaa ? `<button class="knapp" type="button" data-nytt="${i}">Nytt forslag</button>` : ''}<button class="knapp" type="button" data-ferdig="${i}">Ferdig</button></div></section>`).join('')
+        : '<p class="tom">Alt er gjort. Fint!</p>'}`);
+    inn.onclick = async e => {
+      const b = e.target.closest('button'); if (!b || b.disabled) return;
+      const i = b.dataset.publiser ?? b.dataset.nytt ?? b.dataset.ferdig; if (i === undefined) return;
+      const c = venter[Number(i)]; const felt = inn.querySelector(`[data-svar="${i}"]`);
+      if (b.dataset.nytt !== undefined) {
+        b.disabled = true;
+        try { const d = await NA.api('meta.php', {data: {handling: 'nyttForslag', id: c.id}}); felt.value = d.forslag || ''; } catch (err) { NA.toast(esc(err.message)); }
+        b.disabled = false; return;
+      }
+      if (b.dataset.ferdig !== undefined) {
+        b.disabled = true;
+        try { await NA.api('meta.php', {data: {handling: 'ikkeSvar', id: c.id, kanal: c.kanal}}); } catch (err) { NA.toast(esc(err.message)); }
+        return arkInnboks(s);
+      }
+      const tekst = felt.value.trim();
+      if (!tekst) { felt.focus(); return; }
+      if (!await sporHer('Publiser svar?', `Legg svaret ut på ${c.kanal}.`, 'Publiser svar')) return arkInnboks(s);
+      laster('Innboks · SoMe');
+      try { const d = await NA.api('meta.php', {data: {handling: 'svarKommentar', id: c.id, kanal: c.kanal, tekst}}); NA.toast(esc(d.beskjed || 'Oppdatert.')); }
+      catch (err) { NA.toast(esc(err.message)); }
+      arkInnboks(s);
+    };
+  }
+
+  /* Feilmeldingen slik den kom inn: meldingen, feilteksten, siden, skjermen og skjermbildet. */
+  async function arkFeil(s) {
+    laster('Feilrapport');
+    let r;
+    try { r = ((await NA.api('feilrapporter.php')).rapporter || []).find(x => x.id === Number(s.id)); } catch (e) { feilArk('Feilrapport', e); return; }
+    if (!r) { NA.apneArk(NA.arkHode('Feilrapport') + '<p class="tom">Alt er gjort. Fint!</p>'); gjort.add(nokkel(s)); oppdater(true).catch(() => {}); return; }
+    const inn = NA.apneArk(`${NA.arkHode('Feilrapport')}
+      ${r.melding ? `<div class="sms">«${esc(r.melding)}»</div>` : ''}
+      ${r.feiltekst ? `<pre style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(r.feiltekst)}</pre>` : ''}
+      <p class="muted">${esc([r.side, r.nettleser, r.skjerm].filter(Boolean).join(' · '))}</p>
+      ${r.navn || r.kontakt ? `<p class="muted">${esc([r.navn, r.kontakt].filter(Boolean).join(' · '))}</p>` : ''}
+      ${r.bilde ? `<img class="ark-bilde" src="${esc(r.bilde)}" alt="Vedlagt skjermbilde">` : ''}
+      <div class="ark-fot"><button class="knapp" type="button" data-lukk>Avbryt</button><button class="knapp hoved" type="button" data-lost>Løst</button></div>`);
+    inn.querySelector('[data-lost]').onclick = async e => {
+      e.target.disabled = true;
+      try { const svar = await NA.api('feilrapporter.php', {data: {handling: 'status', id: r.id, status: 'lukket'}}); NA.lukkArk(true); ferdig(nokkel(s), svar.beskjed || 'Merket som løst.'); }
+      catch (err) { NA.toast(esc(err.message)); e.target.disabled = false; }
+    };
+  }
+
   async function gjor(b) {
     const g = b.dataset.gjor, s = b.dataset.k ? finnSak(b.dataset.k) : null;
     const kall = async (sti, data, tekst) => { b.disabled = true; try { const r = await NA.api(sti, {data}); ferdig(s ? nokkel(s) : b.dataset.nok, r.beskjed || tekst); } catch (e) { NA.toast(esc(e.message)); b.disabled = false; } };
@@ -281,7 +541,14 @@
         return kall('soknader.php', {id, vedtak: 'godkjent'}, 'Søknaden er godkjent.');
       case 'frys-godkjenn': return kall('frys.php', {handling: 'godkjenn', id}, 'Frysen er godkjent.');
       case 'frys-avslag': return kall('frys.php', {handling: 'avslag', id}, 'Frysen er avslått.');
-      case 'bidrag-godkjenn': return kall('medlemsforslag.php', {handling: 'godkjenn', id, instagram: '0', galleri: '1'}, 'Godkjent til galleriet.');
+      case 'bidrag': return arkBidrag(s);
+      case 'medlem-ark': return NA.arkMedlem ? NA.arkMedlem(id) : NA.gaTil('medlemmer', {person: id});
+      case 'dugnad': return arkDugnad(s, b.dataset.h);
+      case 'leire': return arkLeire(s);
+      case 'chat': return arkChat(s);
+      case 'chat-lest': return kall('/api/chat.php', {handling: 'lest', siste: Number(s.siste) || 0}, 'Merket som lest.');
+      case 'innboks': return arkInnboks(s);
+      case 'feil': return arkFeil(s);
       case 'bidrag-avvis':
         if (!await NA.bekreft('Avvis', 'Avvis bidraget. Opplastingen slettes.', 'Avvis')) return;
         return kall('medlemsforslag.php', {handling: 'avvis', id}, 'Bidraget er avvist.');

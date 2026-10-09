@@ -280,3 +280,11 @@ dialog#ark::backdrop{background:#27110870}
 @media (max-width:1000px){.ms-grid{grid-template-columns:1fr}.ms-forhånd{position:static}}
 @media (max-width:900px){.mer{grid-template-columns:1fr 1fr}.meld-rad{grid-template-columns:64px minmax(0,1fr) 1fr 1fr}.meld-rad>.knapp{grid-column:1/-1}.meld-topp{display:none}}
 @media (max-width:600px){.mer{grid-template-columns:1fr}}
+/* Må gjøres i ny admin (eieren 09.10.2026): bildet i bidrag/feilmelding og chattråden i arket. */
+.ark-bilde{display:block;max-width:100%;max-height:320px;object-fit:contain;border-radius:12px;margin:0 auto 12px;background:var(--ground)}
+.chat-trad{display:grid;gap:8px;max-height:45dvh;overflow-y:auto;margin-bottom:12px}
+.chat-m{display:grid;gap:3px;justify-items:start}
+.chat-m.egen{justify-items:end}
+.chat-m>span{display:inline-block;max-width:min(520px,92%);padding:8px 14px;border-radius:14px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere;background:var(--ground)}
+.chat-m.egen>span{background:var(--ink);color:var(--paper)}
+.chat-m>span.slettet{font-style:italic}

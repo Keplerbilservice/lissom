@@ -94,7 +94,7 @@
     henting: 'Klar til henting', leire: 'Leirebestilling', dugnad: 'Dugnad', lager: 'Lager', chat: 'Chat', innboks: 'Innboks', feil: 'Feilmelding',
     tilbakebetal: 'Avlyst dato'};
   const knapp = (tekst, gjor, hoved, ekstra = '') => `<button class="knapp liten ${hoved ? 'hoved' : ''}" type="button" data-gjor="${gjor}" ${ekstra}>${tekst}</button>`;
-  /* Databaseoppdateringer som venter (eieren 09.10.2026). Samme knapp som Mer › Vedlikehold. */
+  /* Databaseoppdateringer som venter (eieren 09.10.2026). Samme knapp som Innstillinger › Oppdateringer. */
   const radMigr = n => `<div class="rad"><div class="tekst"><span class="type">Vedlikehold</span><b>${n} ${n === 1 ? 'databaseoppdatering venter' : 'databaseoppdateringer venter'}</b><small>${esc(migr.mangler.join(' · '))}</small></div><div class="knapper">${knapp('Kjør oppdateringer', 'migrer', true)}</div></div>`;
   function radSalg(x) {
     return `<div class="rad"><div class="tekst"><span class="type">Medlemssalg</span><b>${esc(x.medlem)} vil selge ${esc(x.tittel)}</b><small>${esc([x.pris, x.antall ? x.antall + ' stk' : '', x.dato].filter(Boolean).join(' · '))}</small></div>

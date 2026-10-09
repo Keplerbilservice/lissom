@@ -18,7 +18,7 @@
   const toast = h => NA().toast(h);
   const registrer = (id, opp) => { const f = NA().registrerSide; if (typeof f === 'function') f(id, opp); else document.addEventListener('DOMContentLoaded', () => registrer(id, opp), { once: true }); };
 
-  const FANER = ['Meldinger', 'Varsler', 'Innlogging', 'Kurs', 'Medlemskap', 'Priser', 'Betaling', 'Brytere'];
+  const FANER = ['Meldinger', 'Varsler', 'Innlogging', 'Kurs', 'Medlemskap', 'Priser', 'Betaling', 'Brytere', 'Oppdateringer'];
   // Samme liste og standardverdier som «Synlighet» i admin-ny/innhold-og-kurs.js.
   const FLAGG = [['Banner/pa', 'Banneret under toppbildet', true], ['Vis/salgsuke', 'Salgskampanjen', true], ['Vis/kursvelger', 'Kursvelger i toppen', true],
     ['Vis/sok', 'Søk på nettsiden', true], ['Vis/referanser', 'Referanser på forsiden', true], ['Vis/anmeldelser', 'Google-anmeldelser', true],
@@ -135,6 +135,18 @@
       </section>`;
   }
 
+  /* Databaseoppdateringer (eieren 09.10.2026: «jeg vil ha oppdatering under innstillinger»). Samme api/migrer.php og
+     NA.kjorOppdateringer som saken i «Må gjøres». Flyttet hit fra Mer, så den ikke står to steder. */
+  function fanOppdateringer() {
+    const m = S.migr === undefined ? null : S.migr;
+    if (S.migr === undefined) return '<section class="kort"><p class="laster">Henter …</p></section>';
+    return `<section class="kort"><div class="kort-head"><h2>Databaseoppdateringer</h2></div>
+      ${m === null ? '<p class="feil">Kunne ikke hente oppdateringene.</p>'
+        : m.length ? `<p>${m.length} ${m.length === 1 ? 'oppdatering venter' : 'oppdateringer venter'}.</p>${m.map(f => `<div class="rad"><div class="tekst"><b>${esc(f)}</b></div></div>`).join('')}
+          <div style="margin-top:14px"><button class="knapp hoved" type="button" data-inn-kjor>Kjør oppdateringer</button></div>`
+        : '<p>Databasen er oppdatert. Ingenting å gjøre.</p>'}</section>`;
+  }
+
   function innholdFane() {
     switch (S.fane) {
       case 'Meldinger': return fanMeldinger(false);
@@ -144,6 +156,7 @@
       case 'Medlemskap': return fanMedlemskap() + manglerBoks('Medlemskap');
       case 'Priser': return fanPriser() + manglerBoks('Priser');
       case 'Betaling': return fanFlagg(FANE_FLAGG.Betaling) + manglerBoks('Betaling');
+      case 'Oppdateringer': return fanOppdateringer();
       default: return fanFlagg(null);
     }
   }
@@ -163,6 +176,7 @@
     }
     if (['Kurs', 'Medlemskap', 'Betaling', 'Brytere'].includes(S.fane)) jobber.push(kall('innhold.php').then(d => { S.innhold = d.innhold || {}; }));
     if ((S.fane === 'Medlemskap' || S.fane === 'Priser') && !S.medl) jobber.push(kall('medlemmer.php').then(d => { S.medl = { planer: d.planer || [], timepakke: d.timepakke || {} }; }));
+    if (S.fane === 'Oppdateringer') jobber.push(NA().oppdateringer(true).then(d => { S.migr = d ? d.mangler : null; }));
     if (S.fane === 'Priser' && S.fraktOre === null) jobber.push(kall('produkter.php').then(d => { S.fraktOre = Number(d.fraktOre || 0); }));
     try { await Promise.all(jobber); } catch (e) { toast(esc(e.message)); }
     if (!S.ark) tegnFane();
@@ -177,6 +191,13 @@
     const hh = NA().hentHvert;
     if (typeof hh === 'function') hh(15000, () => { if (el.isConnected && S.el === el && !S.opptatt && !S.ark) hent(); });
   }
+
+  document.addEventListener('click', async e => {
+    const k = e.target.closest('[data-inn-kjor]'); if (!k) return;
+    k.disabled = true;
+    if (await NA().kjorOppdateringer()) { NA().oppdaterTopp?.(); }
+    S.migr = undefined; tegnFane(); hent();
+  });
 
   // ── Tekst og tid ───────────────────────────────────────────────────────
   function arkTekst(navn) {

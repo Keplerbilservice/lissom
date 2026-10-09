@@ -206,7 +206,7 @@
 
   /* ── databaseoppdateringer (eieren 09.10.2026) ────────────────────────
      Samme endepunkt og samme regel som Vedlikehold i admin-ny (administrasjon.js maintenance()): api/migrer.php viser
-     hva som venter (GET) og kjører det med kjor=ja (POST). Vises under Mer › Vedlikehold og som en sak i «Må gjøres». */
+     hva som venter (GET) og kjører det med kjor=ja (POST). Vises under Innstillinger › Oppdateringer og som en sak i «Må gjøres». */
   let migrerLofte = null, migrerTid = 0;
   NA.oppdateringer = function (tving) {
     if (!tving && migrerLofte && Date.now() - migrerTid < 60000) return migrerLofte;

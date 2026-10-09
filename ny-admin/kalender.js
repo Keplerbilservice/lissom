@@ -746,7 +746,7 @@ export async function arkSerie({start, enDato = false, kursId = 0} = {}) {
   // Ingen forhåndsvalg (eierens regel): klokkeslett, hvor ofte, hvor lenge og skoleferiene velges hver gang.
   Object.assign(SE, {kursId: forste?.id || 0, holderId: forste?.kursholderId || 0, fra: '', til: '',
     plasser: forste?.kapasitet || '', pris: forste ? String(forste.pris) : '', start: start || pluss(idag(), 1),
-    gjentas: enDato ? 1 : 0, varighet: enDato ? -1 : null, egen: '', ferier: new Set(), enDato});
+    gjentas: enDato ? 1 : 0, varighet: enDato ? -1 : null, egen: '', ferier: new Set(), hoppFerier: false, enDato});
   tegnSerie();
 }
 function sluttDato() {
@@ -787,8 +787,9 @@ function tegnSerie() {
    ${erPop(SE.kursId) ? popPrisliste() : ''}
    ${SE.enDato ? '' : `<div><small>Hvor lenge</small><div class="valgknapper" style="margin-top:6px">${VARIGHET.map((v, i) => `<button class="knapp ${SE.varighet === i ? 'valgt-knapp' : ''}" data-k="seVarighet" data-i="${i}" aria-pressed="${SE.varighet === i}">${v[0]}</button>`).join('')}</div>
      ${VARIGHET[SE.varighet]?.[2] === 'egen' ? `<label class="en-felt"><small>Siste dato</small><input type="date" id="se-egen" value="${esc(SE.egen)}"></label>` : ''}</div>
-   <div><small>Hopp over skoleferier (Vestfold)</small>${ferier.length ? `<div class="ferier">${ferier.map(f => `<label class="ferie"><input type="checkbox" data-ferie="${f.fra}" ${SE.ferier.has(f.fra) ? 'checked' : ''}> <span><b>${esc(f.navn)}</b><small>${kortDato(f.fra)}${f.til !== f.fra ? '–' + kortDato(f.til) : ''}</small></span></label>`).join('')}</div>` : '<p class="muted">Ingen skoleferier i perioden.</p>'}
-     <small>Datoene er fra skoleruta til Vestfold fylkeskommune.</small></div>`}
+   <div><label class="ferie hopp-ferier"><input type="checkbox" id="se-hopp-ferier" ${SE.hoppFerier ? 'checked' : ''}> <span><b>Hopp over skoleferier</b><small>Vestfold – du velger hvilke</small></span></label>
+     ${SE.hoppFerier ? (ferier.length ? `<div class="ferier">${ferier.map(f => `<label class="ferie"><input type="checkbox" data-ferie="${f.fra}" ${SE.ferier.has(f.fra) ? 'checked' : ''}> <span><b>${esc(f.navn)}</b><small>${kortDato(f.fra)}${f.til !== f.fra ? '–' + kortDato(f.til) : ''}</small></span></label>`).join('')}</div>` : '<p class="muted">Ingen skoleferier i perioden.</p>') : ''}
+     ${SE.hoppFerier ? '<small>Datoene er fra skoleruta til Vestfold fylkeskommune.</small>' : ''}</div>`}
    ${klar ? `<div><small>${aktive} ${aktive === 1 ? 'kursdag blir laget' : 'kurskvelder blir laget'}${D.length > aktive ? `, ${D.length - aktive} hoppes over` : ''}</small>
      <div class="seriedatoer">${D.map(([d, fe]) => `<span class="sd ${fe ? 'hopp' : ''}" title="${esc(fe || '')}">${fmt(d)}${fe ? ` · ${esc(fe)}` : ''}</span>`).join('')}</div></div>`
      : '<p class="muted">Velg kurs, klokkeslett' + (SE.enDato ? '' : ', hvor ofte og hvor lenge') + ', så vises datoene.</p>'}
@@ -806,6 +807,9 @@ H.seVarighet = b => { lesSerie(); SE.varighet = +b.dataset.i; tegnSerie(); };
 document.addEventListener('change', e => {
   const t = e.target;
   if (t.dataset?.ferie) { lesSerie(); t.checked ? SE.ferier.add(t.dataset.ferie) : SE.ferier.delete(t.dataset.ferie); tegnSerie(); return; }
+  // Eieren 09.10.2026: «la meg få mulighet til å huke av hopp over skoleferier, så det er valgfritt». Av som standard;
+  // huker du av, velges alle feriene i perioden, og du kan ta bort enkeltferier.
+  if (t.id === 'se-hopp-ferier') { lesSerie(); SE.hoppFerier = t.checked; SE.ferier = new Set(t.checked ? (FERIER || []).map(f => f.fra) : []); tegnSerie(); return; }
   if (t.id === 'se-kurs') {
     lesSerie(); const k = (KURS?.kurs || []).find(x => x.id === SE.kursId);
     if (k) { SE.plasser = k.kapasitet || ''; SE.pris = String(k.pris); SE.holderId = k.kursholderId || 0; }

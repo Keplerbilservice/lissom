@@ -13,6 +13,7 @@
     ['Markedsføring', 'Nyhetsbrev, SMS, kampanjer', '/admin-ny#marked'],
     ['Vedtak', 'Regler og priser', null],
     ['Eksport', 'Regnskap og lister', '/admin-ny#regnskap'],
+    ['Vedlikehold', 'Databaseoppdateringer', 'vedlikehold'],
     ['Gammel admin', 'Reserve', '/admin-ny'],
   ];
 
@@ -23,7 +24,21 @@
         : `<button disabled title="Vedtakslista ligger i koden (tests/godkjent/vedtak.json) og vises ikke på nett ennå"><b>${esc(t)}</b><small>Ikke på nett ennå</small></button>`).join('')}</div>`;
   }
 
-  document.addEventListener('click', e => { const b = e.target.closest('[data-mer-gaa]'); if (b) location.href = b.dataset.merGaa; });
+  /* Vedlikehold (eieren 09.10.2026): det som venter fra api/migrer.php, og «Kjør oppdateringer» (NA.kjorOppdateringer). */
+  async function arkVedlikehold() {
+    const N = NA();
+    N.apneArk(N.arkHode('Vedlikehold') + '<p class="laster">Henter …</p>');
+    const d = await N.oppdateringer(true);
+    const m = d ? d.mangler : null;
+    const inn = N.apneArk(`${N.arkHode('Vedlikehold')}
+      <div class="kort-head"><h3>Databaseoppdateringer</h3></div>
+      ${m === null ? '<p class="feil">Kunne ikke hente oppdateringene.</p>' : `<p>${m.length} oppdateringer venter.</p>${m.map(f => `<div class="rad"><div class="tekst"><b>${esc(f)}</b></div></div>`).join('')}`}
+      <div class="ark-fot"><button class="knapp" type="button" data-lukk>Lukk</button>${m && m.length ? '<button class="knapp hoved" type="button" data-kjor>Kjør oppdateringer</button>' : ''}</div>`);
+    const k = inn.querySelector('[data-kjor]');
+    if (k) k.onclick = async () => { k.disabled = true; if (await N.kjorOppdateringer()) { N.oppdaterTopp(); } };
+  }
+
+  document.addEventListener('click', e => { const b = e.target.closest('[data-mer-gaa]'); if (!b) return; if (b.dataset.merGaa === 'vedlikehold') arkVedlikehold(); else location.href = b.dataset.merGaa; });
 
   registrer('mer', { tittel: 'Mer', ikon: '…', tegn, mobil: false });
 })();

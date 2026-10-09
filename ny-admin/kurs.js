@@ -142,9 +142,9 @@ H.kursAvlys = () => arkFlytt([aktiv()], true);
 H.kursSteng = () => stengOkt(aktiv());
 H.kursKopier = () => kopierOkt(aktiv());
 // Kursoppsettet og bildet redigeres fortsatt i gammel admin. Kurs-id-en sendes med i adressen.
-const tilGammel = id => { location.href = '/admin-ny#kurs?kurs=' + encodeURIComponent(id || aktiv()?.kursId || ''); };
+const tilGammel = (id, vis) => { location.href = '/admin-ny#kurs?kurs=' + encodeURIComponent(id || aktiv()?.kursId || '') + (vis ? '&vis=' + vis : ''); };
 H.kursRediger = b => tilGammel(+b.dataset.kurs);
-H.kursBilde = () => tilGammel();
+H.kursBilde = () => tilGammel(0, 'bilde');
 
 // Ta betalt. Dagens kurs: kassa (/kasse), der personen står under «Dagens kurs». En annen dato: den eksisterende
 // registreringen (pamelding.php status=betalt med betalingsmåte), som «Status og betaling» i gammel admin.

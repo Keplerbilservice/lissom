@@ -192,6 +192,30 @@
   NA.maGjores = d => (d?.maGjores || []).filter(s => s.teller !== false && s.type !== 'pamelding');
   NA.antallMaa = d => NA.maGjores(d).length + (Number(d?.koer?.medlemsvarer) || 0);
 
+  /* ── databaseoppdateringer (eieren 09.10.2026) ────────────────────────
+     Samme endepunkt og samme regel som Vedlikehold i admin-ny (administrasjon.js maintenance()): api/migrer.php viser
+     hva som venter (GET) og kjører det med kjor=ja (POST). Vises under Mer › Vedlikehold og som en sak i «Må gjøres». */
+  let migrerLofte = null, migrerTid = 0;
+  NA.oppdateringer = function (tving) {
+    if (!tving && migrerLofte && Date.now() - migrerTid < 60000) return migrerLofte;
+    migrerTid = Date.now();
+    migrerLofte = api('/api/migrer.php').then(d => ({mangler: d.mangler || []})).catch(() => { migrerTid = 0; return null; });
+    return migrerLofte;
+  };
+  NA.kjorOppdateringer = async function () {
+    const d = await NA.oppdateringer(true);
+    if (!d || !d.mangler.length) { toast('Databasen er oppdatert. Ingenting å gjøre.'); return false; }
+    if (!await NA.bekreft('Kjør databaseoppdateringer?', 'Kjør ' + d.mangler.length + ' oppdateringer og importer tilhørende dokumenter. Er du sikker?', 'Kjør oppdateringer')) return false;
+    try {
+      const r = await api('/api/migrer.php', {data: {kjor: 'ja'}});
+      const feil = (r.kjort_naa || []).filter(x => x.status !== 'ok');
+      if (feil.length || (r.import?.feil || []).length) throw Error('Oppdateringen stoppet: ' + [...feil.map(x => x.fil + ' · ' + x.feil), ...(r.import?.feil || [])].join(' · '));
+      toast('<b>' + (r.kjort_naa || []).length + ' oppdateringer gjennomført.</b>');
+    } catch (e) { toast(esc(e.message)); }
+    await NA.oppdateringer(true);
+    return true;
+  };
+
   /* ── ruting ──────────────────────────────────────────────────────────── */
   function lesRute() {
     const h = location.hash.replace(/^#/, '');
@@ -264,7 +288,7 @@
     const navKnapp = ([id, navn, ic]) => id === 'kasse'
       ? `<a class="nav" href="/kasse"><span class="ic">${ic}</span>${navn}</a>`
       : `<button class="nav" type="button" data-side="${id}" ${aktiv === id ? 'aria-current="page"' : ''}><span class="ic">${ic}</span>${navn}${id === 'idag' && n ? `<span class="tall">${n}</span>` : ''}</button>`;
-    const meny = `<div class="brand">Lissom</div><div class="brand-note">Keramikk · admin</div>${MENY.map(navKnapp).join('')}
+    const meny = `<button class="brand" type="button" data-side="idag" aria-label="Lissom · til I dag">Lissom</button><div class="brand-note">Keramikk · admin</div>${MENY.map(navKnapp).join('')}
       <div class="hurtig-tittel">Hurtig</div>
       ${hurtigValgt().map(h => `<button class="nav hurtig" type="button" data-hurtig="${h[0]}"><span class="ic">${h[2]}</span>${h[1]}</button>`).join('')}
       <button class="nav hurtig tilpass" type="button" data-hurtig="tilpass"><span class="ic">＋</span>Tilpass</button>

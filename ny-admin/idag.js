@@ -23,6 +23,7 @@
   let ovn = null;
   let salg = [], salgTid = 0;
   let kal = new Map(); // oktId → økta fra kalender.php (i dag)
+  let migr = null; // databaseoppdateringer som venter (NA.oppdateringer, api/migrer.php)
   const gjort = new Set();
   const nokkel = s => s.type + ':' + s.id;
 
@@ -58,6 +59,7 @@
     const sett = d.settPaaServer ? new Set() : settLes();
     const maa = NA.maGjores(d).filter(s => s.type !== 'taut' && !gjort.has(nokkel(s)));
     const salgIgjen = salg.filter(x => !gjort.has('salg:' + x.id));
+    const nMigr = migr?.mangler?.length || 0;
     const info = (d.maGjores || []).filter(s => s.type === 'pamelding' && !gjort.has(nokkel(s)) && !(s.ider || [s.id]).every(i => sett.has(i)));
     const dato = new Date().toLocaleDateString('nb-NO', {weekday: 'long', day: 'numeric', month: 'long'});
     const hurtig = NA.hurtig();
@@ -82,7 +84,7 @@
         </div>
         <section class="kort" aria-label="Må gjøres">
           <div class="kort-head"><h2>Må gjøres</h2></div>
-          ${maa.length || salgIgjen.length ? salgIgjen.map(radSalg).join('') + maa.map(radSak).join('') : '<p class="tom">Alt er gjort. Fint!</p>'}
+          ${maa.length || salgIgjen.length || nMigr ? (nMigr ? radMigr(nMigr) : '') + salgIgjen.map(radSalg).join('') + maa.map(radSak).join('') : '<p class="tom">Alt er gjort. Fint!</p>'}
           <div class="kort-head" style="margin:22px 0 4px"><h3>Til info</h3><small>Forsvinner av seg selv etter 3 dager</small></div>
           ${info.length ? info.map(s => `<div class="rad"><div class="tekst"><span class="type">Ny påmelding</span><b>${esc(String(s.tittel).replace(/^Ny påmelding: /, ''))}</b><small>${esc(s.under)}</small></div><button class="knapp liten" type="button" data-utfort="${esc(nokkel(s))}">Utført</button></div>`).join('') : '<p class="tom">Ingen nye.</p>'}
         </section>
@@ -91,6 +93,8 @@
   const TYPE = {henvendelse: 'Forespørsel', soknad: 'Medlemssøknad', frys: 'Frys', bidrag: 'Medlemsbidrag', betaling: 'Betaling', venteliste: 'Venteliste',
     henting: 'Klar til henting', leire: 'Leirebestilling', dugnad: 'Dugnad', lager: 'Lager', chat: 'Chat', innboks: 'Innboks', feil: 'Feilmelding'};
   const knapp = (tekst, gjor, hoved, ekstra = '') => `<button class="knapp liten ${hoved ? 'hoved' : ''}" type="button" data-gjor="${gjor}" ${ekstra}>${tekst}</button>`;
+  /* Databaseoppdateringer som venter (eieren 09.10.2026). Samme knapp som Mer › Vedlikehold. */
+  const radMigr = n => `<div class="rad"><div class="tekst"><span class="type">Vedlikehold</span><b>${n} ${n === 1 ? 'databaseoppdatering venter' : 'databaseoppdateringer venter'}</b><small>${esc(migr.mangler.join(' · '))}</small></div><div class="knapper">${knapp('Kjør oppdateringer', 'migrer', true)}</div></div>`;
   function radSalg(x) {
     return `<div class="rad"><div class="tekst"><span class="type">Medlemssalg</span><b>${esc(x.medlem)} vil selge ${esc(x.tittel)}</b><small>${esc([x.pris, x.antall ? x.antall + ' stk' : '', x.dato].filter(Boolean).join(' · '))}</small></div>
       <div class="knapper">${knapp('Avslå', 'salg-avvis', false, `data-id="${x.id}"`)}${knapp('Godkjenn', 'salg-godkjenn', true, `data-id="${x.id}"`)}</div></div>`;
@@ -115,7 +119,8 @@
   /* ── oppdatering ─────────────────────────────────────────────────────── */
   async function oppdater(tving) {
     const d = await NA.oversikt(tving);
-    await Promise.all([hentOvn(), hentSalg(d), hentKal(d)]);
+    const [m] = await Promise.all([NA.oppdateringer ? NA.oppdateringer() : null, hentOvn(), hentSalg(d), hentKal(d)]);
+    migr = m;
     tegn(d);
   }
   const ferdig = (nok, tekst) => { gjort.add(nok); if (tekst) NA.toast(esc(tekst)); salgTid = 0; oppdater(true).catch(() => {}); };
@@ -261,6 +266,7 @@
     const kall = async (sti, data, tekst) => { b.disabled = true; try { const r = await NA.api(sti, {data}); ferdig(s ? nokkel(s) : b.dataset.nok, r.beskjed || tekst); } catch (e) { NA.toast(esc(e.message)); b.disabled = false; } };
     if (g === 'salg-godkjenn') { b.dataset.nok = 'salg:' + b.dataset.id; return kall('medlemssalg.php', {handling: 'godkjenn', id: Number(b.dataset.id)}, 'Salget er godkjent.'); }
     if (g === 'salg-avvis') return avvisSalg(Number(b.dataset.id));
+    if (g === 'migrer') { b.disabled = true; await NA.kjorOppdateringer(); return oppdater(true).catch(() => {}); }
     if (!s) return;
     const id = Number(s.id);
     switch (g) {

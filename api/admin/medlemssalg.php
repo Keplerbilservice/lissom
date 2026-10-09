@@ -6,6 +6,8 @@
  *   POST handling=godkjenn    { id }
  *   POST handling=avvis       { id, grunn }
  *   POST handling=skjul       { id }
+ *   POST handling=slett       { id }
+ *   POST handling=endre       { id, tittel, beskrivelse, pris, kategori, antall }  (ny-admin › Varer, 09.10.2026)
  *
  * Varen vises ikke i butikken for noen har sett paa den. Det er verkstedets
  * navn den henger under, og et bilde eller en pris kan vaere feil.
@@ -26,6 +28,8 @@ $hent = static fn(): array => array_map(static fn($r) => [
     'medlem'   => $r['medlemsnavn'] ?: 'Ukjent medlem',
     'bilde'    => $r['bilde'] ? '/api/bilde.php?salg=' . rawurlencode((string) $r['bilde']) : null,
     'pris'     => Booking::kroner((int) $r['pris_ore']),
+    // Hele kroner til «Rediger» i /ny-admin › Varer (09.10.2026).
+    'prisKr'   => intdiv((int) $r['pris_ore'], 100),
     'kategori' => $r['kategori'] ?: 'Annet',
     'antall'   => (int) $r['antall'],
     'vipps'    => $r['vippsnummer'],
@@ -121,6 +125,31 @@ switch (Foresporsel::tekst('handling')) {
         DB::kjor('DELETE FROM member_sales WHERE id = :i', ['i' => $id]);
         revider('medlemssalg_slettet', 'member_sale', $id, ['tittel' => $rad['tittel']]);
         Svar::ok(['salg' => $hent(), 'beskjed' => $rad['tittel'] . ' er slettet.']);
+
+    // Rediger fra /ny-admin › Varer › Medlemskolleksjon (eieren 09.10.2026).
+    // Statusen og selgerens Vipps-nummer roeres ikke; prisen er i hele kroner.
+    case 'endre':
+        $tittel = trim(mb_substr(Foresporsel::tekst('tittel'), 0, 191));
+        $pris = Foresporsel::heltall('pris');
+        $antall = Foresporsel::heltall('antall', 1);
+        if ($tittel === '') {
+            Svar::feil('Varen må ha et navn.');
+        }
+        if ($pris < 0 || $pris > 100000) {
+            Svar::feil('Prisen må være mellom 0 og 100 000 kroner.');
+        }
+        if ($antall < 1 || $antall > 999) {
+            Svar::feil('Antallet må være mellom 1 og 999.');
+        }
+        DB::oppdater('member_sales', [
+            'tittel'      => $tittel,
+            'beskrivelse' => trim(Foresporsel::tekst('beskrivelse')) ?: null,
+            'pris_ore'    => $pris * 100,
+            'kategori'    => trim(mb_substr(Foresporsel::tekst('kategori'), 0, 32)) ?: null,
+            'antall'      => $antall,
+        ], ['id' => $id]);
+        revider('medlemssalg_endret', 'member_sale', $id, ['tittel' => $tittel]);
+        Svar::ok(['salg' => $hent(), 'beskjed' => $tittel . ' er lagret.']);
 
     default:
         Svar::feil('Ukjent handling.');

@@ -617,6 +617,26 @@ try {
         str_contains($fil('ny-admin/kurs.js'), "tilGammel(0, 'bilde')")
         && str_contains($fil('admin-ny/app.js'), "params().get('kurs')") && str_contains($fil('admin-ny/app.js'), "pv==='bilde'"));
 
+    // ── P Eieren 09.10.2026: Uttak leire lik leira på Min side (bilde, navn, pris, − antall +) ──
+    if (DB::harKolonne('products', 'leire')) {
+        $leireP = DB::settInn('products', ['tittel' => $tag . ' Uttaksleire', 'pris_ore' => 29000, 'lager' => 3, 'status' => 'publisert',
+            'kategori' => 'Materialer', 'kun_medlemmer' => 1, 'leire' => 1, 'bilde' => 'bilder/leire-test.jpg']);
+        $lp = kall('/api/admin/produkter.php', null, $tA);
+        $rad = null;
+        foreach ($lp[1]['varer'] ?? [] as $v) { if ((int) $v['id'] === $leireP) { $rad = $v; } }
+        sjekk('P produkter.php gir leira i internbutikken med bilde, pris og lager (det uttaket viser)', $lp[0] === 200 && $rad !== null
+            && $rad['leire'] === true && $rad['kunMedlemmer'] === true && $rad['bilde'] === 'bilder/leire-test.jpg' && (int) $rad['lager'] === 3 && (int) $rad['pris'] === 290, $vis($lp));
+        $tu = kall('/api/admin/produkter.php', ['handling' => 'taUt', 'id' => $leireP], $tA);
+        sjekk('P Ta ut trekker én pose fra lageret (3 → 2)', $tu[0] === 200 && (int) DB::verdi('SELECT lager FROM products WHERE id = :i', ['i' => $leireP]) === 2, $vis($tu));
+    }
+    $fj = $fil('ny-admin/felles.js');
+    $fc = $fil('ny-admin/ny-admin.css');
+    sjekk('P Uttak leire tegner Min side-raden: bilde (background-image), navn, pris · lager og − antall + per leire, sortert på navn',
+        str_contains($fj, '<div class="leirerad" data-vare=') && str_contains($fj, 'class="leire-bilde"') && str_contains($fj, 'background-image:url(')
+        && str_contains($fj, "· \${Number(x.lager)} på lager") && str_contains($fj, 'class="leire-ant"') && str_contains($fj, "handling: 'taUt'")
+        && str_contains($fj, "localeCompare(String(b.tittel), 'nb-NO')")
+        && str_contains($fc, '.leire-bilde{width:52px;height:52px') && str_contains($fc, '.leire-ant button{'));
+
     $ferdig = true;
 } catch (Throwable $e) {
     sjekk('uventet feil', false, $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());

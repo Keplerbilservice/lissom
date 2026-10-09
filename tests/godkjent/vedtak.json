@@ -7976,6 +7976,30 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "uttak-leire-som-minside",
+            "dato": "2026-10-09",
+            "hva": "«uttak leire på admin er ikke lik som på Min side som jeg ba om? med bilder etc» — Uttak leire i ny admin (Hurtig og flisen på mobil) har samme rad som leira på Min side: produktbilde 52 px, navn, pris · lager og − antall + per leire, sortert på navn. Bare leire i internbutikken med lager (ikke kladd). Uttaket går fortsatt med produkter.php taUt, én per pose, uten betaling.",
+            "kode": [
+                {
+                    "fil": "ny-admin/felles.js",
+                    "finnes": [
+                        "<div class=\"leirerad\" data-vare=",
+                        "class=\"leire-bilde\"",
+                        "· ${Number(x.lager)} på lager",
+                        "class=\"leire-ant\"",
+                        "api('produkter.php', {data: {handling: 'taUt', id: v.id}})",
+                        "localeCompare(String(b.tittel), 'nb-NO')"
+                    ]
+                },
+                {
+                    "fil": "ny-admin/ny-admin.css",
+                    "finnes": [
+                        ".leire-bilde{width:52px;height:52px;flex:none;border-radius:9px;"
+                    ]
+                }
+            ]
         }
     ]
 }

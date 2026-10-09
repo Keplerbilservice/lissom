@@ -262,6 +262,17 @@ dialog#ark::backdrop{background:#27110870}
 .radknapp:hover{background:var(--ground)}
 .rad.markert{background:var(--yellow-soft);border-radius:10px;padding-left:10px;padding-right:10px}
 .ant.stor{display:flex;align-items:center;gap:12px}
+/* Uttak leire: samme rad som leira på Min side (.lx-leirerad, eieren 09.10.2026): bilde 52 px, navn, pris, − antall +. */
+.leire-liste{display:grid}
+.leirerad{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);min-width:0}
+.leire-bilde{width:52px;height:52px;flex:none;border-radius:9px;background:var(--ground) center/cover no-repeat}
+.leire-tekst{flex:1;min-width:0}
+.leire-tekst b{display:block;font-size:15px;color:var(--ink);overflow-wrap:anywhere}
+.leire-tekst small{display:block;font-size:13px;color:var(--muted)}
+.leire-ant{display:inline-flex;align-items:center;gap:5px;flex:none;white-space:nowrap}
+.leire-ant span{min-width:18px;text-align:center;font-weight:700;color:var(--ink)}
+.leire-ant button{appearance:none;cursor:pointer;width:28px;height:28px;padding:0;border-radius:999px;border:2px solid var(--ink);background:var(--ground);color:var(--ink);font-weight:700;line-height:1}
+.leire-ant button:disabled{opacity:.4;cursor:default}
 .ant.stor button{width:48px;height:48px;border-radius:12px;border:1px solid var(--line);background:var(--ground);font-size:22px;font-weight:800}
 .ms-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:20px;align-items:start}
 .ms-forhånd{position:sticky;top:96px}

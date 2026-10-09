@@ -445,37 +445,48 @@
 
   /* ── hurtig: uttak leire, skisseverktøy, tilpass ─────────────────────── */
   /* Uttak leire (eieren 08.10.2026): det som faktisk ligger i internbutikken. Leirevarene fra produkter.php
-     (merket leire, i internbutikken, med lager, ikke kladd). Velg vare og antall; hver pose trekkes med den
-     eksisterende «Ta ut» (produkter.php handling=taUt, én om gangen, uten betaling). Ingen faste leiretyper her. */
+     (merket leire, i internbutikken, med lager, ikke kladd). Hver pose trekkes med den eksisterende «Ta ut»
+     (produkter.php handling=taUt, én om gangen, uten betaling). Ingen faste leiretyper her.
+     Eieren 09.10.2026: «lik som på Min side … med bilder». Samme rader som leira på Min side (Handleliste ›
+     Leire, .lx-leirerad): bilde 52 px, navn, pris (+ lager her), − antall + per leire, sortert på navn. */
   const leireVarer = d => (d.varer || []).filter(v => v.leire && v.kunMedlemmer && v.lager !== null && v.status !== 'kladd');
+  const leireSortert = d => leireVarer(d).sort((a, b) => String(a.tittel).localeCompare(String(b.tittel), 'nb-NO'));
+  const leireBilde = b => { b = String(b || '').trim(); return !b ? '' : /^https?:\/\//.test(b) ? b : '/' + b.replace(/^\/+/, ''); };
   NA.uttakLeire = async function () {
     apneArk(arkHode('Uttak leire') + '<p class="laster">Henter leira …</p>');
     let varer;
-    try { varer = leireVarer(await api('produkter.php')); } catch (e) { apneArk(arkHode('Uttak leire') + `<p class="feil">${esc(e.message)}</p>`); return; }
-    let valgt = 0, antall = 1;
+    try { varer = leireSortert(await api('produkter.php')); } catch (e) { apneArk(arkHode('Uttak leire') + `<p class="feil">${esc(e.message)}</p>`); return; }
+    let ant = {};
+    const sum = () => varer.reduce((s, x) => s + (ant[x.id] || 0), 0);
     const tegn = () => {
-      const v = varer.find(x => x.id === valgt);
-      if (v && antall > v.lager) antall = Math.max(1, v.lager);
+      varer.forEach(x => { if ((ant[x.id] || 0) > x.lager) ant[x.id] = Math.max(0, x.lager); });
+      const n = sum();
       const inn = apneArk(`${arkHode('Uttak leire')}
-      ${varer.length ? `<div class="hgruppe"><div class="type">Velg leire</div><div class="valgknapper">${varer.map(x => `<button class="knapp ${x.id === valgt ? 'hoved' : ''}" type="button" data-leire="${Number(x.id)}" aria-pressed="${x.id === valgt}" ${x.lager > 0 ? '' : 'disabled'}>${esc(x.tittel)} · ${Number(x.lager)} på lager</button>`).join('')}</div></div>
-        <div class="hgruppe"><div class="type">Antall</div><div class="ant stor"><button type="button" data-ant="-1" aria-label="Færre" ${!v || antall <= 1 ? 'disabled' : ''}>−</button><b id="leire-ant" style="font-size:24px;min-width:2ch;text-align:center">${antall}</b><button type="button" data-ant="1" aria-label="Flere" ${!v || antall >= v.lager ? 'disabled' : ''}>+</button></div></div>`
+      ${varer.length ? `<div class="leire-liste">${varer.map(x => { const a = ant[x.id] || 0; const bilde = leireBilde(x.bilde); return `<div class="leirerad" data-vare="${Number(x.id)}">
+          <div class="leire-bilde"${bilde ? ` style="background-image:url('${esc(bilde.replace(/['"()\s]/g, encodeURIComponent))}')"` : ''} role="img" aria-label="${esc(x.tittel)}"></div>
+          <div class="leire-tekst"><b>${esc(x.tittel)}</b><small>${kr(x.pris * 100)} · ${Number(x.lager)} på lager</small></div>
+          <span class="leire-ant"><button type="button" data-ant="-1" data-id="${Number(x.id)}" aria-label="Færre" ${a <= 0 ? 'disabled' : ''}>−</button><span>${a}</span><button type="button" data-ant="1" data-id="${Number(x.id)}" aria-label="Flere" ${a >= x.lager ? 'disabled' : ''}>+</button></span>
+        </div>`; }).join('')}</div>`
         : '<p class="tom">Ingen leire i internbutikken. Merk varen som leire og internt under Varer.</p>'}
       <small>Fra lageret, uten betaling. Lageret oppdateres med en gang.</small>
-      <div class="ark-fot"><button class="knapp" type="button" data-lukk>Lukk</button>${varer.length ? `<button class="knapp hoved" type="button" data-taut ${v ? '' : 'disabled'}>Ta ut ${antall}</button>` : ''}</div>`);
+      <div class="ark-fot"><button class="knapp" type="button" data-lukk>Lukk</button>${varer.length ? `<button class="knapp hoved" type="button" data-taut ${n ? '' : 'disabled'}>Ta ut ${n}</button>` : ''}</div>`);
       inn.onclick = async e => {
         const b = e.target.closest('button'); if (!b) return;
-        if (b.dataset.leire) { valgt = Number(b.dataset.leire); antall = 1; return tegn(); }
-        if (b.dataset.ant) { antall = Math.max(1, antall + Number(b.dataset.ant)); return tegn(); }
-        if (b.dataset.taut === undefined || !v) return;
+        if (b.dataset.ant) { const id = Number(b.dataset.id); ant[id] = Math.max(0, (ant[id] || 0) + Number(b.dataset.ant)); return tegn(); }
+        if (b.dataset.taut === undefined || !sum()) return;
         b.disabled = true;
-        let tatt = 0, feil = '';
-        for (let i = 0; i < antall; i++) {
-          try { await api('produkter.php', {data: {handling: 'taUt', id: v.id}}); tatt++; } catch (err) { feil = err.message; break; }
+        const tatt = [], feil = [];
+        for (const v of varer) {
+          let t = 0;
+          for (let i = 0; i < (ant[v.id] || 0); i++) {
+            try { await api('produkter.php', {data: {handling: 'taUt', id: v.id}}); t++; } catch (err) { feil.push(err.message); break; }
+          }
+          if (t) tatt.push([v, t]);
         }
-        try { varer = leireVarer(await api('produkter.php')); } catch {}
-        const naa = varer.find(x => x.id === v.id);
-        toast(tatt ? `<b>Tatt ut ${tatt} × ${esc(v.tittel)}.</b>${naa ? ' Lageret er nå ' + Number(naa.lager) + '.' : ''}${feil ? ' ' + esc(feil) : ''}` : esc(feil || 'Fikk ikke tatt ut.'));
-        antall = 1; tegn();
+        try { varer = leireSortert(await api('produkter.php')); } catch {}
+        const lager = v => { const naa = varer.find(x => x.id === v.id); return naa ? ' Lageret er nå ' + Number(naa.lager) + '.' : ''; };
+        toast(tatt.length ? tatt.map(([v, t]) => `<b>Tatt ut ${t} × ${esc(v.tittel)}.</b>${lager(v)}`).join(' ') + (feil.length ? ' ' + esc(feil[0]) : '') : esc(feil[0] || 'Fikk ikke tatt ut.'));
+        ant = {}; tegn();
       };
     };
     tegn();

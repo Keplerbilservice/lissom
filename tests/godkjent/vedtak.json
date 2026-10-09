@@ -8126,6 +8126,38 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "handleliste-krav-laas-og-sperre",
+            "dato": "2026-10-09",
+            "hva": "Kontrolløren sa STOPP (09.10.2026): «Krev inn med Vipps» får lås (GET_LOCK) og tar linjene med «order_id IS NULL» i samme transaksjon som ordren — ett krav per linje også fra to faner/admins; nøkkelen står på betalingsraden og samme referanse og nøkkel sendes igjen når Vipps ikke svarte. «Send bestilling» er sperret til alle med pris har fått krav (og Vipps har svart). Ny admin viser hvem som fikk krav og hvem som feilet med grunnen. Dugnad sier at medlemmet får e-post. Medlemssalg Godkjenn spør først med samme tekst som admin-ny.",
+            "hvor": "api/admin/handlelister.php (admin-ny og ny admin), /ny-admin › I dag",
+            "kode": [
+                {
+                    "fil": "api/admin/handlelister.php",
+                    "finnes": [
+                        "handleliste_laas(0, 'Kravene sendes alt fra en annen fane eller av en annen admin. Vent litt og prøv igjen.');",
+                        "'UPDATE handleliste_linjer SET order_id = :o WHERE order_id IS NULL AND id IN ('",
+                        "throw new RuntimeException('Linjene ble krevd inn av noe annet imens.', 409);",
+                        "WHERE p.status = 'opprettet' AND p.vipps_reference LIKE 'HL-%'",
+                        "$sperre = handleliste_kravsperre($leverandorId, $levSql, (string) $lev['navn']);",
+                        "'Send Vipps-kravet før bestillingen til ' . $levNavn . '. Ikke krevd inn ennå: '",
+                        "handleliste_laas(10, 'Vipps-kravene sendes akkurat nå. Vent litt og prøv igjen.');"
+                    ]
+                },
+                {
+                    "fil": "ny-admin/idag.js",
+                    "finnes": [
+                        "return kravResultat(s, svar);",
+                        "<b>${esc(f.navn)}</b><small>${esc(f.grunn)}</small>",
+                        "r.epost ? 'Medlemmet får e-post om dette.' : 'Medlemmet har ingen e-post — svaret står på Min side.'",
+                        "NA.bekreft('Godkjenn og publiser', `Publiser varen ${b.dataset.tittel || ''}. Selgeren kan få beskjed.`, 'Godkjenn og publiser')"
+                    ],
+                    "ikkeFinnes": [
+                        "Et svar kan utløse beskjed til medlemmet."
+                    ]
+                }
+            ]
         }
     ]
 }

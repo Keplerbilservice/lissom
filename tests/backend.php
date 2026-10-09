@@ -19693,7 +19693,8 @@ sjekk('… og kravet blir en ordre med en betaling, ett per medlem',
     str_contains($hlAdmin, "DB::settInn('orders', [")
     && str_contains($hlAdmin, "'formal'          => 'ordre',")
     && str_contains($hlAdmin, "Vipps::opprettBetaling(")
-    && str_contains($hlAdmin, "                \$telefon,\n                true\n            );"));
+    // Kontrolløren 09.10.2026: nøkkelen fra betalingsraden sendes med, så et nytt forsøk er samme krav.
+    && str_contains($hlAdmin, "            \$telefon,\n            true,\n            \$nokkel\n        );"));
 // Gaar Vipps i vasken, skal det ikke ligge igjen en ordre som ingen har bedt
 // om. Maalt: kravet feilet mot en tjener uten Vipps-noekler, og det sto null
 // ordrer igjen etterpaa.

@@ -276,7 +276,10 @@ function handleliste_bilde(): array
                 'navn'     => (string) $l['medlemsnavn'],
                 'harTlf'   => trim((string) ($l['telefon'] ?? '')) !== '',
                 'varerOre' => 0,
-                'kravSendt'=> false,
+                // kravSendt: alt med pris har krav. harKrav: noe har det
+                // (da er et nytt krav et tillegg uten frakt, se handleliste_krev_inn).
+                'kravSendt'=> true,
+                'harKrav'  => false,
                 // Verkstedets eget lager (member_id NULL, migrasjon 253):
                 // med i frakten, men uten gebyr og uten Vipps-krav.
                 'intern'   => $l['member_id'] === null,
@@ -284,7 +287,9 @@ function handleliste_bilde(): array
         }
         $medlemmer[$n]['varerOre'] += (int) $l['pris_ore'] * (int) $l['antall'];
         if ($l['order_id'] !== null) {
-            $medlemmer[$n]['kravSendt'] = true;
+            $medlemmer[$n]['harKrav'] = true;
+        } else {
+            $medlemmer[$n]['kravSendt'] = false;
         }
     }
     // Frakten: det admin skrev inn for leverandoeren, delt likt paa alle som
@@ -816,130 +821,25 @@ if ($handling === 'nyleverandor') {
 // hun staar foran skjermen. Salgsenheten maa ha lov til det; har den ikke
 // det, sier Vipps fra, og meldingen sendes videre som den er.
 if ($handling === 'krav') {
-    $sperre = handleliste_fraktsperre();
-    if ($sperre !== null) {
-        Svar::feil($sperre);
+    // Låsen (kontrolløren 09.10.2026): to faner eller to admins som trykker
+    // samtidig, skal aldri gi to Vipps-krav. Ett kravløp om gangen, og
+    // «Send bestilling» venter på det samme (se handleliste_laas()).
+    handleliste_laas(0, 'Kravene sendes alt fra en annen fane eller av en annen admin. Vent litt og prøv igjen.');
+    try {
+        $ut = handleliste_krev_inn();
+    } finally {
+        handleliste_slipp();
     }
-    $bilde = handleliste_bilde();
-    $gebyr = handleliste_gebyr();
-    $sendt = [];
-    $feilet = [];
-
-    foreach ($bilde['medlemmer'] as $m) {
-        if ($m['kravSendt'] || $m['sumOre'] <= 0 || !empty($m['intern'])) {
-            continue;
-        }
-        $medlemId = (int) $m['medlemId'];
-        $telefon = (string) DB::verdi('SELECT telefon FROM members WHERE id = :i', ['i' => $medlemId]);
-        if (trim($telefon) === '') {
-            $feilet[] = $m['navn'] . ': mangler telefonnummer.';
-            continue;
-        }
-
-        $linjer = DB::alle(
-            "SELECT h.id, h.antall, h.pris_ore, COALESCE(p.tittel, h.tekst) AS tittel, p.id AS pid
-               FROM handleliste_linjer h LEFT JOIN products p ON p.id = h.product_id
-              WHERE h.member_id = :m AND h.status = 'sendt'
-                AND h.pris_ore IS NOT NULL AND h.order_id IS NULL",
-            ['m' => $medlemId]
-        );
-        if ($linjer === []) {
-            continue;
-        }
-
-        $referanse = Vipps::nyReferanse('HL');
-        $ordrenr = 'H-' . gmdate('ymd') . '-' . strtoupper(bin2hex(random_bytes(3)));
-        $sum = (int) $m['sumOre'];
-
-        $ordreId = DB::iTransaksjon(static function () use ($sum, $m, $ordrenr, $referanse, $linjer, $gebyr, $medlemId): int {
-            $betalingId = DB::settInn('payments', [
-                'vipps_reference' => $referanse,
-                'type'            => 'epayment',
-                'formal'          => 'ordre',
-                'member_id'       => $medlemId,
-                'belop_ore'       => $sum,
-                'status'          => 'opprettet',
-                'idempotency_key' => Vipps::uuid(),
-            ]);
-            $id = DB::settInn('orders', [
-                'ordrenr'      => $ordrenr,
-                'member_id'    => $medlemId,
-                'kunde_navn'   => (string) $m['navn'],
-                'sum_ore'      => $sum,
-                'status'       => 'ny',
-                'betalt_maate' => 'Vipps',
-                'payment_id'   => $betalingId,
-            ]);
-            if (DB::harKolonne('payments', 'order_id')) {
-                DB::oppdater('payments', ['order_id' => $id], ['id' => $betalingId]);
-            }
-            foreach ($linjer as $l) {
-                DB::settInn('order_lines', [
-                    'order_id'   => $id,
-                    'product_id' => $l['pid'] === null ? null : (int) $l['pid'],
-                    'tittel'     => (string) $l['tittel'],
-                    'antall'     => (int) $l['antall'],
-                    'pris_ore'   => (int) $l['pris_ore'],
-                ]);
-            }
-            if ((int) ($m['fraktOre'] ?? 0) > 0) {
-                DB::settInn('order_lines', [
-                    'order_id'   => $id,
-                    'product_id' => null,
-                    'tittel'     => 'Andel av frakt',
-                    'antall'     => 1,
-                    'pris_ore'   => (int) $m['fraktOre'],
-                ]);
-            }
-            if ((int) $m['gebyrOre'] > 0) {
-                DB::settInn('order_lines', [
-                    'order_id'   => $id,
-                    'product_id' => null,
-                    'tittel'     => 'Administrasjonsgebyr ' . rtrim(rtrim(number_format($gebyr, 1, ',', ''), '0'), ',') . ' %',
-                    'antall'     => 1,
-                    'pris_ore'   => (int) $m['gebyrOre'],
-                ]);
-            }
-            return $id;
-        });
-
-        try {
-            Vipps::opprettBetaling(
-                $referanse,
-                $sum,
-                Vipps::beskrivelse('Handleliste — Lissom Keramikk', (string) $m['navn']),
-                Config::nettsted() . '/api/betaling-retur.php?ref=' . rawurlencode($referanse),
-                $telefon,
-                true
-            );
-        } catch (Throwable $e) {
-            DB::kjor('DELETE FROM order_lines WHERE order_id = :o', ['o' => $ordreId]);
-            $pid = DB::verdi('SELECT payment_id FROM orders WHERE id = :o', ['o' => $ordreId]);
-            DB::kjor('DELETE FROM orders WHERE id = :o', ['o' => $ordreId]);
-            if ($pid) { DB::kjor('DELETE FROM payments WHERE id = :p', ['p' => $pid]); }
-            logg_feil('Fikk ikke sendt handlelistekrav til medlem ' . $medlemId, $e);
-            $feilet[] = $m['navn'] . ': ' . $e->getMessage();
-            continue;
-        }
-
-        DB::oppdater('payments', ['status' => 'venter'], ['vipps_reference' => $referanse]);
-        DB::kjor(
-            'UPDATE handleliste_linjer SET order_id = :o WHERE id IN ('
-            . implode(',', array_map(static fn($l) => (int) $l['id'], $linjer)) . ')',
-            ['o' => $ordreId]
-        );
-        revider('handleliste_krav', 'order', $ordreId, ['medlem' => $medlemId, 'belop' => $sum]);
-        $sendt[] = $m['navn'];
+    if (isset($ut['sperre'])) {
+        Svar::feil($ut['sperre']);
     }
-
-    Svar::ok(handleliste_bilde() + [
-        'sendt'  => $sendt,
-        'feilet' => $feilet,
-    ]);
+    Svar::ok(handleliste_bilde() + $ut);
 }
 
 // ------------------------------------------------------- bestillingen ut
 if ($handling === 'bestill') {
+    // Samme lås som kravet: bestillingen går aldri midt i et kravløp.
+    handleliste_laas(10, 'Vipps-kravene sendes akkurat nå. Vent litt og prøv igjen.');
     $leverandorId = Foresporsel::heltall('leverandorId');
     $lev = DB::en('SELECT * FROM leverandorer WHERE id = :i', ['i' => $leverandorId]);
     if ($lev === null) {
@@ -984,6 +884,11 @@ if ($handling === 'bestill') {
     $sperre = handleliste_fraktsperre($leverandorId);
     if ($sperre !== null) {
         Svar::feil($sperre);
+    }
+    // Kravet først (kontrolløren 9. oktober 2026): ellers får medlemmene aldri krav.
+    $sperre = handleliste_kravsperre($leverandorId, $levSql, (string) $lev['navn']);
+    if ($sperre !== null) {
+        Svar::feil($sperre, 409);
     }
 
     $perMedlem = [];
@@ -1056,4 +961,309 @@ function handleliste_varetekst(array $perMedlem): string
         $ut .= "\n";
     }
     return rtrim($ut);
+}
+
+/**
+ * Låsen for kravet og bestillingen (GET_LOCK, per database). Kontrolløren,
+ * 9. oktober 2026: «Krev inn med Vipps» fra to faner eller to admins ga to
+ * krav. Kravløpet venter ikke (0 s) — holder noen låsen, er det samme løpet
+ * alt i gang. «Send bestilling» venter litt, så den aldri går midt i et
+ * kravløp. Låsen slippes av seg selv når forespørselen er ferdig.
+ */
+function handleliste_laas(int $sekunder, string $opptatt): void
+{
+    if ((int) DB::verdi("SELECT GET_LOCK(CONCAT('handleliste-krav:', DATABASE()), {$sekunder})") !== 1) {
+        Svar::feil($opptatt, 409);
+    }
+}
+
+function handleliste_slipp(): void
+{
+    DB::verdi("SELECT RELEASE_LOCK(CONCAT('handleliste-krav:', DATABASE()))");
+}
+
+/**
+ * Kravløpet. Kalles bare med låsen holdt. Ett krav per linje, uansett:
+ *
+ *  - Linjene tas i samme transaksjon som ordren lages, med «order_id IS NULL»
+ *    i UPDATE. Har noe annet tatt én av dem imens, rulles alt tilbake, og
+ *    ingenting sendes til Vipps.
+ *  - Idempotensnøkkelen står på betalingsraden. Svarte ikke Vipps, blir raden
+ *    stående «opprettet» med linjene på seg, og neste trykk sender samme
+ *    referanse og samme nøkkel — Vipps lager ikke et nytt krav.
+ *  - Et klart nei fra Vipps (4xx) første gang: kravet finnes ikke der.
+ *    Ordren og raden fjernes, og linjene slippes til neste forsøk.
+ *  - Kom det linjer etter at medlemmet fikk krav (leire valgt etterpå), får hun
+ *    et tilleggskrav på dem: varene og gebyret. Frakten var med i det første.
+ *
+ * @return array{sendt:list<string>, feilet:list<array{navn:string,grunn:string}>, beskjed:string}|array{sperre:string}
+ */
+function handleliste_krev_inn(): array
+{
+    $sperre = handleliste_fraktsperre();
+    if ($sperre !== null) {
+        return ['sperre' => $sperre];
+    }
+    // Bildet regnes under låsen, så frakt og gebyr er det som står nå.
+    $bilde = handleliste_bilde();
+    $gebyr = handleliste_gebyr();
+    $sendt = [];
+    $feilet = [];
+
+    // 1) Krav vi laget, men der Vipps ikke svarte: samme referanse og nøkkel igjen.
+    foreach (DB::alle(
+        "SELECT p.vipps_reference, p.idempotency_key, p.belop_ore, p.member_id, o.id AS order_id,
+                COALESCE(m.navn, o.kunde_navn) AS navn, m.telefon
+           FROM payments p
+           JOIN orders o ON o.payment_id = p.id
+      LEFT JOIN members m ON m.id = p.member_id
+          WHERE p.status = 'opprettet' AND p.vipps_reference LIKE 'HL-%'
+            AND EXISTS (SELECT 1 FROM handleliste_linjer h WHERE h.order_id = o.id)
+          ORDER BY p.id"
+    ) as $u) {
+        $navn = (string) $u['navn'];
+        $r = handleliste_vipps((string) $u['vipps_reference'], (int) $u['belop_ore'], $navn,
+            trim((string) ($u['telefon'] ?? '')), (string) $u['idempotency_key']);
+        if ($r['ok']) {
+            revider('handleliste_krav', 'order', (int) $u['order_id'], ['medlem' => (int) $u['member_id'], 'belop' => (int) $u['belop_ore'], 'igjen' => true]);
+            $sendt[] = $navn;
+        } else {
+            // Et nei nå sier ikke at det første forsøket ikke laget kravet.
+            // Raden og linjene blir stående, og bestillingen venter på dem.
+            $feilet[] = ['navn' => $navn, 'grunn' => $r['klartNei']
+                ? 'Kravet er uavklart hos Vipps. Sjekk betalingen i Vipps før noe annet gjøres.'
+                : $r['grunn']];
+        }
+    }
+
+    // 2) Nye krav: det som ikke har krav ennå.
+    foreach ($bilde['medlemmer'] as $m) {
+        // Verkstedets eget lager betaler ikke med Vipps (vedtak butikk-ta-ut-og-verkstedets-handleliste).
+        if ($m['sumOre'] <= 0 || !empty($m['intern'])) {
+            continue;
+        }
+        $medlemId = (int) $m['medlemId'];
+        $navn = (string) $m['navn'];
+        $linjer = DB::alle(
+            "SELECT h.id, h.antall, h.pris_ore, COALESCE(p.tittel, h.tekst) AS tittel, p.id AS pid
+               FROM handleliste_linjer h LEFT JOIN products p ON p.id = h.product_id
+              WHERE h.member_id = :m AND h.status = 'sendt'
+                AND h.pris_ore IS NOT NULL AND h.order_id IS NULL
+              ORDER BY h.id",
+            ['m' => $medlemId]
+        );
+        if ($linjer === []) {
+            continue;
+        }
+        $varer = 0;
+        foreach ($linjer as $l) {
+            $varer += (int) $l['pris_ore'] * (int) $l['antall'];
+        }
+        $tillegg = !empty($m['harKrav']);
+        if (!$tillegg && $varer !== (int) $m['varerOre']) {
+            $feilet[] = ['navn' => $navn, 'grunn' => 'Lista ble endret imens. Ingenting er sendt. Prøv igjen.'];
+            continue;
+        }
+        $gebyrOre = $tillegg ? (int) round($varer * $gebyr / 100) : (int) $m['gebyrOre'];
+        $fraktOre = $tillegg ? 0 : (int) ($m['fraktOre'] ?? 0);
+        $sum = $varer + $gebyrOre + $fraktOre;
+        if ($sum <= 0) {
+            continue;
+        }
+        $telefon = trim((string) DB::verdi('SELECT telefon FROM members WHERE id = :i', ['i' => $medlemId]));
+        if ($telefon === '') {
+            $feilet[] = ['navn' => $navn, 'grunn' => 'Mangler telefonnummer.'];
+            continue;
+        }
+        if ($sum < Vipps::MINSTE_BELOP_ORE) {
+            $feilet[] = ['navn' => $navn, 'grunn' => 'Beløpet er under én krone. Vipps godtar det ikke.'];
+            continue;
+        }
+
+        $referanse = Vipps::nyReferanse('HL');
+        $nokkel = Vipps::uuid();
+        $ordrenr = 'H-' . gmdate('ymd') . '-' . strtoupper(bin2hex(random_bytes(3)));
+        try {
+            $ordreId = DB::iTransaksjon(static function () use ($sum, $navn, $ordrenr, $referanse, $nokkel, $linjer, $gebyr, $gebyrOre, $fraktOre, $medlemId): int {
+                $betalingId = DB::settInn('payments', [
+                    'vipps_reference' => $referanse,
+                    'type'            => 'epayment',
+                    'formal'          => 'ordre',
+                    'member_id'       => $medlemId,
+                    'belop_ore'       => $sum,
+                    'status'          => 'opprettet',
+                    'idempotency_key' => $nokkel,
+                ]);
+                $id = DB::settInn('orders', [
+                    'ordrenr'      => $ordrenr,
+                    'member_id'    => $medlemId,
+                    'kunde_navn'   => $navn,
+                    'sum_ore'      => $sum,
+                    'status'       => 'ny',
+                    'betalt_maate' => 'Vipps',
+                    'payment_id'   => $betalingId,
+                ]);
+                if (DB::harKolonne('payments', 'order_id')) {
+                    DB::oppdater('payments', ['order_id' => $id], ['id' => $betalingId]);
+                }
+                foreach ($linjer as $l) {
+                    DB::settInn('order_lines', [
+                        'order_id'   => $id,
+                        'product_id' => $l['pid'] === null ? null : (int) $l['pid'],
+                        'tittel'     => (string) $l['tittel'],
+                        'antall'     => (int) $l['antall'],
+                        'pris_ore'   => (int) $l['pris_ore'],
+                    ]);
+                }
+                if ($fraktOre > 0) {
+                    DB::settInn('order_lines', [
+                        'order_id'   => $id,
+                        'product_id' => null,
+                        'tittel'     => 'Andel av frakt',
+                        'antall'     => 1,
+                        'pris_ore'   => $fraktOre,
+                    ]);
+                }
+                if ($gebyrOre > 0) {
+                    DB::settInn('order_lines', [
+                        'order_id'   => $id,
+                        'product_id' => null,
+                        'tittel'     => 'Administrasjonsgebyr ' . rtrim(rtrim(number_format($gebyr, 1, ',', ''), '0'), ',') . ' %',
+                        'antall'     => 1,
+                        'pris_ore'   => $gebyrOre,
+                    ]);
+                }
+                // Linjene tas her, i samme transaksjon. Bare de som er ledige.
+                $tatt = DB::kjor(
+                    'UPDATE handleliste_linjer SET order_id = :o WHERE order_id IS NULL AND id IN ('
+                    . implode(',', array_map(static fn($l) => (int) $l['id'], $linjer)) . ')',
+                    ['o' => $id]
+                )->rowCount();
+                if ($tatt !== count($linjer)) {
+                    throw new RuntimeException('Linjene ble krevd inn av noe annet imens.', 409);
+                }
+                return $id;
+            });
+        } catch (Throwable $e) {
+            logg_feil('Handlelistekravet til medlem ' . $medlemId . ' ble ikke laget', $e);
+            $feilet[] = ['navn' => $navn, 'grunn' => (int) $e->getCode() === 409
+                ? 'Lista ble endret imens. Ingenting er sendt. Prøv igjen.'
+                : 'Fikk ikke lagret kravet. Ingenting er sendt.'];
+            continue;
+        }
+
+        $r = handleliste_vipps($referanse, $sum, $navn, $telefon, $nokkel);
+        if ($r['ok']) {
+            revider('handleliste_krav', 'order', $ordreId, ['medlem' => $medlemId, 'belop' => $sum, 'tillegg' => $tillegg]);
+            $sendt[] = $navn;
+            continue;
+        }
+        if ($r['klartNei']) {
+            // Kravet finnes ikke hos Vipps. Alt tas bort, og linjene er ledige igjen.
+            DB::iTransaksjon(static function () use ($ordreId, $referanse): void {
+                DB::kjor('UPDATE handleliste_linjer SET order_id = NULL WHERE order_id = :o', ['o' => $ordreId]);
+                DB::kjor('DELETE FROM order_lines WHERE order_id = :o', ['o' => $ordreId]);
+                DB::kjor('DELETE FROM orders WHERE id = :o', ['o' => $ordreId]);
+                DB::kjor("DELETE FROM payments WHERE vipps_reference = :r AND status = 'opprettet'", ['r' => $referanse]);
+            });
+        }
+        $feilet[] = ['navn' => $navn, 'grunn' => $r['grunn']];
+    }
+
+    return ['sendt' => $sendt, 'feilet' => $feilet, 'beskjed' => handleliste_kravbeskjed($sendt, $feilet)];
+}
+
+/**
+ * Ber Vipps om kravet (PUSH_MESSAGE). Samme nøkkel ved nytt forsøk.
+ * Grunnen er bare norsk; Vipps sin tekst (med MSN) står i feilloggen.
+ *
+ * @return array{ok:bool, klartNei:bool, grunn:string}
+ */
+function handleliste_vipps(string $referanse, int $sum, string $navn, string $telefon, string $nokkel): array
+{
+    try {
+        Vipps::opprettBetaling(
+            $referanse,
+            $sum,
+            Vipps::beskrivelse('Handleliste — Lissom Keramikk', $navn),
+            Config::nettsted() . '/api/betaling-retur.php?ref=' . rawurlencode($referanse),
+            $telefon,
+            true,
+            $nokkel
+        );
+    } catch (Throwable $e) {
+        $kode = (int) $e->getCode();
+        logg_feil('Handlelistekravet ' . $referanse . ' gikk ikke (HTTP ' . $kode . ')', $e);
+        if ($kode >= 400 && $kode < 500) {
+            $nekt = str_contains($e->getMessage(), 'PUSH_MESSAGE') || str_contains($e->getMessage(), '5080');
+            return ['ok' => false, 'klartNei' => true, 'grunn' => $nekt
+                ? 'Vipps nekter salgsenheten å sende betalingskrav.'
+                : 'Vipps sa nei (svarte ' . $kode . ').'];
+        }
+        return ['ok' => false, 'klartNei' => false,
+            'grunn' => 'Fikk ikke svar fra Vipps. Trykk «Krev inn med Vipps» igjen — kravet sendes ikke to ganger.'];
+    }
+    DB::kjor("UPDATE payments SET status = 'venter' WHERE vipps_reference = :r AND status = 'opprettet'", ['r' => $referanse]);
+    return ['ok' => true, 'klartNei' => false, 'grunn' => ''];
+}
+
+/**
+ * Én setning til admin-ny (toast) og ny admin: hvem fikk krav, hvem feilet og hvorfor.
+ *
+ * @param list<string> $sendt
+ * @param list<array{navn:string,grunn:string}> $feilet
+ */
+function handleliste_kravbeskjed(array $sendt, array $feilet): string
+{
+    if ($sendt === [] && $feilet === []) {
+        return 'Ingen nye krav å sende. Alle med pris har fått krav.';
+    }
+    $deler = [];
+    if ($sendt !== []) {
+        $deler[] = 'Krav sendt til ' . implode(', ', $sendt) . '.';
+    }
+    if ($feilet !== []) {
+        $deler[] = 'Ikke sendt: ' . implode('; ', array_map(static fn($f) => $f['navn'] . ' — ' . $f['grunn'], $feilet));
+    }
+    return implode(' ', $deler);
+}
+
+/**
+ * Kravet før bestillingen (kontrolløren 9. oktober 2026). Bestillingen gjør
+ * linjene ferdige, og kravløpet tar bare linjer som venter — sendes bestillingen
+ * først, får medlemmene aldri krav. Null = alt har krav.
+ */
+function handleliste_kravsperre(int $leverandorId, string $levSql, string $levNavn): ?string
+{
+    $utenKrav = DB::alle(
+        "SELECT DISTINCT m.navn
+           FROM handleliste_linjer h
+      LEFT JOIN products p ON p.id = h.product_id
+           JOIN members m ON m.id = h.member_id
+          WHERE h.status = 'sendt' AND {$levSql} = :l AND h.bestilt_at IS NULL
+            AND h.pris_ore > 0 AND h.order_id IS NULL
+          ORDER BY m.navn",
+        ['l' => $leverandorId]
+    );
+    if ($utenKrav !== []) {
+        return 'Send Vipps-kravet før bestillingen til ' . $levNavn . '. Ikke krevd inn ennå: '
+            . implode(', ', array_column($utenKrav, 'navn')) . '.';
+    }
+    $uavklart = DB::alle(
+        "SELECT DISTINCT m.navn
+           FROM handleliste_linjer h
+      LEFT JOIN products p ON p.id = h.product_id
+           JOIN orders o ON o.id = h.order_id
+           JOIN payments pa ON pa.id = o.payment_id
+           JOIN members m ON m.id = h.member_id
+          WHERE h.status = 'sendt' AND {$levSql} = :l AND h.bestilt_at IS NULL
+            AND pa.status = 'opprettet'
+          ORDER BY m.navn",
+        ['l' => $leverandorId]
+    );
+    if ($uavklart !== []) {
+        return 'Vipps har ikke bekreftet kravet til ' . implode(', ', array_column($uavklart, 'navn'))
+            . '. Trykk «Krev inn med Vipps» igjen før bestillingen sendes.';
+    }
+    return null;
 }

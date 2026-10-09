@@ -658,7 +658,11 @@ try {
             str_contains($fq, "knapp('Til medlemmet', 'medlem-ark', true") && str_contains($fil('ny-admin/medlemmer.js'), 'NA().arkMedlem = async id =>'));
 
         // ── Medlemsbidrag ──────────────────────────────────────────────
-        sjekk('Q Instagram er ikke koblet i testen (ingen ekte publisering)', !Meta::klarForInstagram());
+        // Kontrolløren 09.10.2026: er Meta koblet i basen testen går mot, hoppes kallene som kan publisere
+        // eller svare over — aldri ekte publisering fra en test.
+        $metaKoblet = Meta::klarForInstagram() || Meta::klarForFacebook();
+        if ($metaKoblet) { echo "  HOPP  Meta er koblet i denne basen: Instagram-/Facebook-kallene hoppes over
+"; }
         $nyttForslag = static function (string $type, string $tekst) use ($vanlig, &$q): int {
             $navn = bin2hex(random_bytes(16)) . ($type === 'bilde' ? '.jpg' : '.mp4');
             file_put_contents(Bilder::mappe('forslag') . '/' . $navn, $type === 'bilde' ? base64_decode('/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=') : 'ikke-video');
@@ -692,10 +696,12 @@ try {
             && $etter['fil_original'] === basename($q['filer'][0]), $vis($bruk));
         $vg = kall('/api/admin/medlemsforslag.php', ['handling' => 'godkjenn', 'id' => $fv, 'instagram' => '0', 'galleri' => '1'], $tA);
         sjekk('Q bidrag: video kan ikke legges i galleriet', $vg[0] === 400 && (string) DB::verdi('SELECT status FROM medlemsforslag WHERE id = :i', ['i' => $fv]) === 'venter', $vis($vg));
-        $vi = kall('/api/admin/medlemsforslag.php', ['handling' => 'godkjenn', 'id' => $fv, 'instagram' => '1', 'galleri' => '0', 'tekst' => 'Redigert tekst'], $tA);
-        sjekk('Q bidrag: video til Instagram uten kobling gir feil og står fortsatt og venter (ingenting lagt ut)', $vi[0] === 400
-            && (string) DB::verdi('SELECT status FROM medlemsforslag WHERE id = :i', ['i' => $fv]) === 'venter'
-            && (string) DB::verdi('SELECT lenke FROM medlemsforslag WHERE id = :i', ['i' => $fv]) === '', $vis($vi));
+        if (!$metaKoblet) {
+            $vi = kall('/api/admin/medlemsforslag.php', ['handling' => 'godkjenn', 'id' => $fv, 'instagram' => '1', 'galleri' => '0', 'tekst' => 'Redigert tekst'], $tA);
+            sjekk('Q bidrag: video til Instagram uten kobling gir feil og står fortsatt og venter (ingenting lagt ut)', $vi[0] === 400
+                && (string) DB::verdi('SELECT status FROM medlemsforslag WHERE id = :i', ['i' => $fv]) === 'venter'
+                && (string) DB::verdi('SELECT lenke FROM medlemsforslag WHERE id = :i', ['i' => $fv]) === '', $vis($vi));
+        }
         $gg = kall('/api/admin/medlemsforslag.php', ['handling' => 'godkjenn', 'id' => $fb, 'instagram' => '0', 'galleri' => '1'], $tA);
         $gr = DB::en('SELECT status, galleri FROM medlemsforslag WHERE id = :i', ['i' => $fb]);
         sjekk('Q bidrag: «Galleriet på forsida» alene legger bildet i galleriet', $gg[0] === 200 && $gr['status'] === 'galleri' && (int) $gr['galleri'] === 1, $vis($gg));
@@ -746,6 +752,17 @@ try {
         $fr = kall('/api/admin/handlelister.php', ['handling' => 'frist', 'dato' => date('Y-m-d', strtotime('+5 days'))], $tA);
         sjekk('Q leire: pris per stk. og frist lagres', $pr[0] === 200 && (int) DB::verdi('SELECT pris_ore FROM handleliste_linjer WHERE id = :i', ['i' => $q['linjer'][0]]) === 15000
             && $fr[0] === 200 && Lager::leireFrist()['dato'] === date('Y-m-d', strtotime('+5 days')), $vis($pr) . ' / ' . $vis($fr));
+        // Kontrolløren 09.10.2026: «Send bestilling» før kravet gir aldri krav. Sperret med navnet på den som mangler krav.
+        $foer = kall('/api/admin/handlelister.php', ['handling' => 'bestill', 'leverandorId' => $q['lev']], $tA);
+        sjekk('Q leire: Send bestilling før Vipps-kravet er sperret (navnet står i meldingen, ingenting bestilt, ingen e-post)', $foer[0] === 409
+            && str_contains((string) ($foer[1]['feil'] ?? ''), 'Send Vipps-kravet før bestillingen') && str_contains((string) ($foer[1]['feil'] ?? ''), $tag . ' Kari')
+            && DB::verdi('SELECT bestilt_at FROM handleliste_linjer WHERE id = :i', ['i' => $q['linjer'][0]]) === null && $ko('leverandor', $q['lev']) === 0, $vis($foer));
+        // Kravet som om det var sendt (ingen Vipps i denne testen — kravflyten mot den falske Vippsen er tests/handleliste-krav.php).
+        $q['betaling'] = DB::settInn('payments', ['vipps_reference' => 'HL-' . $tag, 'type' => 'epayment', 'formal' => 'ordre', 'member_id' => $vanlig,
+            'belop_ore' => 30000, 'status' => 'venter', 'idempotency_key' => Vipps::uuid()]);
+        $q['ordre'] = DB::settInn('orders', ['ordrenr' => 'H-' . $tag, 'member_id' => $vanlig, 'kunde_navn' => $tag . ' Kari', 'sum_ore' => 30000,
+            'status' => 'ny', 'betalt_maate' => 'Vipps', 'payment_id' => $q['betaling']]);
+        DB::oppdater('handleliste_linjer', ['order_id' => $q['ordre']], ['id' => $q['linjer'][0]]);
         $be = kall('/api/admin/handlelister.php', ['handling' => 'bestill', 'leverandorId' => $q['lev']], $tA);
         sjekk('Q leire: Send bestilling markerer linjene som bestilt og legger e-posten til leverandøren i køen', $be[0] === 200
             && DB::verdi('SELECT bestilt_at FROM handleliste_linjer WHERE id = :i', ['i' => $q['linjer'][0]]) !== null && $ko('leverandor', $q['lev']) === 1, $vis($be));
@@ -772,9 +789,11 @@ try {
             $ib = kall('/api/admin/meta.php', ['handling' => 'kommentarer'], $tA);
             $kr = array_values(array_filter($ib[1]['poster'] ?? [], static fn($c) => $c['id'] === $q['kommentar']))[0] ?? null;
             sjekk('Q innboks: arket får kommentaren og AI-forslaget', $ib[0] === 200 && $kr !== null && $kr['status'] === 'venter' && $kr['forslag'] === 'Se lissom.no/kurs', $vis($ib));
-            $sk = kall('/api/admin/meta.php', ['handling' => 'svarKommentar', 'id' => $q['kommentar'], 'kanal' => 'Instagram', 'tekst' => 'Hei!'], $tA);
-            sjekk('Q innboks: Svar uten Meta-kobling gir feil og kommentaren venter fortsatt (ingenting lagt ut)', $sk[0] >= 400
-                && (string) DB::verdi('SELECT status FROM meta_kommentarer WHERE kommentar_id = :i', ['i' => $q['kommentar']]) === 'venter', $vis($sk));
+            if (!$metaKoblet) {
+                $sk = kall('/api/admin/meta.php', ['handling' => 'svarKommentar', 'id' => $q['kommentar'], 'kanal' => 'Instagram', 'tekst' => 'Hei!'], $tA);
+                sjekk('Q innboks: Svar uten Meta-kobling gir feil og kommentaren venter fortsatt (ingenting lagt ut)', $sk[0] >= 400
+                    && (string) DB::verdi('SELECT status FROM meta_kommentarer WHERE kommentar_id = :i', ['i' => $q['kommentar']]) === 'venter', $vis($sk));
+            }
             $is = kall('/api/admin/meta.php', ['handling' => 'ikkeSvar', 'id' => $q['kommentar'], 'kanal' => 'Instagram'], $tA);
             sjekk('Q innboks: Ferdig (ikke svar) tar den ut av Må gjøres', $is[0] === 200 && $harSak($saker(), 'innboks') === null, $vis($is));
         }
@@ -814,6 +833,15 @@ try {
             && !in_array($s2, array_map('intval', array_column($offentlig2[1]['varer'] ?? [], 'id')), true) && $ko('medlemssalg', $s2) === 1, $vis($ma));
         sjekk('Q medlemssalg: ny admin bruker samme handlinger som admin-ny (godkjenn/avvis på medlemssalg.php)',
             str_contains($fq, "kall('medlemssalg.php', {handling: 'godkjenn', id: Number(b.dataset.id)}") && str_contains($fq, "NA.api('medlemssalg.php', {data: {handling: 'avvis', id, grunn:"));
+        // Kontrolløren 09.10.2026: resultatet av kravet, dugnadteksten og bekreftelsen på medlemssalg.
+        sjekk('Q leire: ny admin viser hvem som fikk krav og hvem som feilet, med grunnen (escapet), ikke bare «Oppdatert.»',
+            str_contains($fq, 'return kravResultat(s, svar);') && str_contains($fq, '<b>${esc(n)}</b>') && str_contains($fq, '<b>${esc(f.navn)}</b><small>${esc(f.grunn)}</small>')
+            && !str_contains($fq, "{data: {handling: 'krav'}}); NA.toast("));
+        sjekk('Q dugnad: arket sier at medlemmet får e-post (eller at svaret står på Min side uten e-post)',
+            str_contains($fq, "r.epost ? 'Medlemmet får e-post om dette.' : 'Medlemmet har ingen e-post — svaret står på Min side.'") && !str_contains($fq, 'Et svar kan utløse beskjed'));
+        sjekk('Q medlemssalg: Godkjenn spør først, med samme tekst som admin-ny',
+            str_contains($fq, "NA.bekreft('Godkjenn og publiser', `Publiser varen \${b.dataset.tittel || ''}. Selgeren kan få beskjed.`, 'Godkjenn og publiser')")
+            && str_contains($fq, 'data-tittel="${esc(x.tittel)}"'));
     } finally {
         $ider = static fn(array $a): string => implode(',', array_map('intval', $a ?: [0]));
         foreach ([
@@ -821,6 +849,9 @@ try {
             'DELETE FROM dugnad WHERE id IN (' . $ider($q['dugnad']) . ')',
             "DELETE FROM notifications WHERE ref_type = 'dugnad' AND ref_id IN (" . $ider($q['dugnad']) . ')',
             'DELETE FROM handleliste_linjer WHERE id IN (' . $ider($q['linjer']) . ')',
+            'UPDATE payments SET order_id = NULL WHERE id = ' . (int) ($q['betaling'] ?? 0),
+            'DELETE FROM orders WHERE id = ' . (int) ($q['ordre'] ?? 0),
+            'DELETE FROM payments WHERE id = ' . (int) ($q['betaling'] ?? 0),
             "DELETE FROM notifications WHERE ref_type = 'leverandor' AND ref_id = " . (int) $q['lev'],
             'DELETE FROM products WHERE id = ' . (int) $q['vare'],
             'DELETE FROM leverandorer WHERE id = ' . (int) $q['lev'],

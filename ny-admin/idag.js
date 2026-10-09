@@ -98,7 +98,7 @@
   const radMigr = n => `<div class="rad"><div class="tekst"><span class="type">Vedlikehold</span><b>${n} ${n === 1 ? 'databaseoppdatering venter' : 'databaseoppdateringer venter'}</b><small>${esc(migr.mangler.join(' · '))}</small></div><div class="knapper">${knapp('Kjør oppdateringer', 'migrer', true)}</div></div>`;
   function radSalg(x) {
     return `<div class="rad"><div class="tekst"><span class="type">Medlemssalg</span><b>${esc(x.medlem)} vil selge ${esc(x.tittel)}</b><small>${esc([x.pris, x.antall ? x.antall + ' stk' : '', x.dato].filter(Boolean).join(' · '))}</small></div>
-      <div class="knapper">${knapp('Avslå', 'salg-avvis', false, `data-id="${x.id}"`)}${knapp('Godkjenn', 'salg-godkjenn', true, `data-id="${x.id}"`)}</div></div>`;
+      <div class="knapper">${knapp('Avslå', 'salg-avvis', false, `data-id="${x.id}"`)}${knapp('Godkjenn', 'salg-godkjenn', true, `data-id="${x.id}" data-tittel="${esc(x.tittel)}"`)}</div></div>`;
   }
   function radSak(s) {
     const k = esc(nokkel(s));
@@ -375,7 +375,7 @@
       <div class="sms"><b>${esc(r.navn)}:</b> ${esc(r.tekst)}${tid ? `<br><small>${esc(tid)}</small>` : ''}</div>
       ${h === 'godkjenn_tid' ? `<label class="felt"><small>Godkjente timer</small><input id="dg-timer" type="number" min="0.25" step="0.25" value="${esc(String(r.forslagTimer).replace(',', '.'))}"></label>` : ''}
       <label class="felt"><small>Svar til medlemmet</small><textarea id="dg-svar">${esc(r.svar)}</textarea></label>
-      <p class="muted">Et svar kan utløse beskjed til medlemmet.</p>
+      <p class="muted">${r.epost ? 'Medlemmet får e-post om dette.' : 'Medlemmet har ingen e-post — svaret står på Min side.'}</p>
       <div class="ark-fot"><button class="knapp" type="button" data-lukk>Avbryt</button><button class="knapp ${hoved ? 'hoved' : 'rod'}" type="button" data-dg>${esc(tittel)}</button></div>`);
     inn.querySelector('[data-dg]').onclick = async e => {
       const data = {handling: h, id: r.id, svar: inn.querySelector('#dg-svar').value.trim()};
@@ -428,11 +428,23 @@
       if (b.dataset.krav !== undefined) {
         if (!await sporHer('Krev inn med Vipps', 'Send betalingskrav til medlemmene som ikke allerede har fått krav. Kontroller priser og frakt først.', 'Send betalingskrav')) return arkLeire(s);
         laster('Neste leirebestilling');
-        try { const svar = await NA.api('handlelister.php', {data: {handling: 'krav'}}); NA.toast(esc(svar.beskjed || 'Oppdatert.')); }
-        catch (err) { NA.toast(esc(err.message)); }
-        return arkLeire(s);
+        let svar;
+        try { svar = await NA.api('handlelister.php', {data: {handling: 'krav'}}); }
+        catch (err) { NA.toast(esc(err.message)); return arkLeire(s); }
+        return kravResultat(s, svar);
       }
     };
+  }
+
+  /* Resultatet av «Krev inn med Vipps»: hvem fikk krav, hvem ikke og hvorfor (kontrolløren 09.10.2026). */
+  function kravResultat(s, svar) {
+    const sendt = svar.sendt || [], feilet = svar.feilet || [];
+    const inn = NA.apneArk(`${NA.arkHode('Krev inn med Vipps')}
+      ${sendt.length ? `<h3>Krav sendt</h3>${sendt.map(n => `<div class="rad" data-sendt><div class="tekst"><b>${esc(n)}</b></div><span class="merke gronn">Sendt</span></div>`).join('')}` : ''}
+      ${feilet.length ? `<h3>Ikke sendt</h3>${feilet.map(f => `<div class="rad" data-feilet><div class="tekst"><b>${esc(f.navn)}</b><small>${esc(f.grunn)}</small></div><span class="merke rod">Ikke sendt</span></div>`).join('')}` : ''}
+      ${sendt.length || feilet.length ? '' : '<p class="tom">Ingen nye krav å sende. Alle med pris har fått krav.</p>'}
+      <div class="ark-fot"><button class="knapp hoved" type="button" data-tilbake>Tilbake til bestillingen</button></div>`);
+    inn.querySelector('[data-tilbake]').onclick = () => arkLeire(s);
   }
 
   /* Medlemschatten: tråden, svarfeltet og «lest» (det som står framme er lest, som i chat.js). */
@@ -528,7 +540,10 @@
   async function gjor(b) {
     const g = b.dataset.gjor, s = b.dataset.k ? finnSak(b.dataset.k) : null;
     const kall = async (sti, data, tekst) => { b.disabled = true; try { const r = await NA.api(sti, {data}); ferdig(s ? nokkel(s) : b.dataset.nok, r.beskjed || tekst); } catch (e) { NA.toast(esc(e.message)); b.disabled = false; } };
-    if (g === 'salg-godkjenn') { b.dataset.nok = 'salg:' + b.dataset.id; return kall('medlemssalg.php', {handling: 'godkjenn', id: Number(b.dataset.id)}, 'Salget er godkjent.'); }
+    if (g === 'salg-godkjenn') {
+      // Samme bekreftelse som admin-ny (kontrolløren 09.10.2026).
+      if (!await NA.bekreft('Godkjenn og publiser', `Publiser varen ${b.dataset.tittel || ''}. Selgeren kan få beskjed.`, 'Godkjenn og publiser')) return;
+      b.dataset.nok = 'salg:' + b.dataset.id; return kall('medlemssalg.php', {handling: 'godkjenn', id: Number(b.dataset.id)}, 'Salget er godkjent.'); }
     if (g === 'salg-avvis') return avvisSalg(Number(b.dataset.id));
     if (g === 'migrer') { b.disabled = true; await NA.kjorOppdateringer(); return oppdater(true).catch(() => {}); }
     if (!s) return;

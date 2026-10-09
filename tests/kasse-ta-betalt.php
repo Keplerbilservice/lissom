@@ -358,6 +358,22 @@ try {
     $s = kall($K . '?okt=' . $idagOkt, null, $kasseToken);
     sjekk('?okt= for dagens kurs: den som ikke har betalt', $s[0] === 200 && array_column($s[1]['rader'] ?? [], 'bookingId') === [$b8], $tekst($s));
 
+    // ══ 9: varer i kurven når «Ta betalt» kommer (eieren 09.10.2026) ═══
+    // Skjermlogikk i admin-ny/kasse.js (nettleserkjøring: se overleveringen); her sjekkes koden.
+    echo "\n── 9: varer i kurven først ──\n";
+    $js = str_replace("\r\n", "\n", (string) file_get_contents($rot . '/admin-ny/kasse.js'));
+    $fra = strpos($js, 'async function taFraAdmin()');
+    $fn = $fra === false ? '' : substr($js, $fra, (int) strpos($js, "\n}\n", $fra) - $fra);
+    sjekk('kassa spør «Det ligger varer i kurven» med «Ta dem med» og «Fjern dem»', str_contains($fn, "if(salg&&harVarer(salg)){")
+        && str_contains($fn, "ark('Det ligger varer i kurven'") && str_contains($fn, "pille('Ta dem med'") && str_contains($fn, "pille('Fjern dem'"));
+    sjekk('… «Fjern dem» tømmer kurven før personen legges inn; lukket uten valg = ingenting', str_contains($fn, "if(valg==='fjern'){stopPoll();salg=null;}")
+        && str_contains($fn, 'if(!valg||ikkeNaa())return;')
+        && strpos($fn, "salg=null;}") < strpos($fn, 'await nyttSalg('));
+    sjekk('… «varer» = varer, skrevet beløp, gavekort, Paint on Pots uten booking, timepakke',
+        str_contains($js, 'const harVarer=s=>s.varer.size>0||s.fritt.length>0||s.gavekort.length>0||s.popUten.size>0||!!s.timepakke;'));
+    sjekk('… tom kurv: spørsmålet vises ikke (bare når harVarer)', substr_count($fn, "'Det ligger varer i kurven'") === 1
+        && strpos($fn, 'if(salg&&harVarer(salg))') < strpos($fn, "'Det ligger varer i kurven'"));
+
     $ferdig = true;
 } catch (Throwable $e) {
     echo "  FEIL  unntak: " . $e->getMessage() . ' (' . basename($e->getFile()) . ':' . $e->getLine() . ")\n";

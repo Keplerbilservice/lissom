@@ -98,10 +98,17 @@ async function taFraAdmin(){
  if(ikkeNaa())return;
  let r;
  try{r=await kall('kasse.php?booking='+id);}catch(e){if(e.stille){fraAdmin=id;return;}ark(e.message,lukk=>[el('div',{class:'k-rad-knapper'},pille('Lukk',lukk,'fylt'))]);return;}
+ // Ligger det varer i kurven, spør først (eieren 09.10.2026): «Ta dem med» eller «Fjern dem». Tom kurv: rett inn.
+ if(salg&&harVarer(salg)){
+  const valg=await new Promise(svar=>{const a=ark('Det ligger varer i kurven',lukk=>[el('div',{class:'k-rad-knapper'},pille('Ta dem med',()=>{lukk();svar('med');}),pille('Fjern dem',()=>{lukk();svar('fjern');}))]);a.addEventListener('click',ev=>{if(ev.target===a)svar(null);});});
+  if(!valg||ikkeNaa())return;
+  if(valg==='fjern'){stopPoll();salg=null;}
+ }
  const k=r.idag?data.kurs.find(x=>x.oktId===r.oktId):null;
  if(k)await apneKurs(k);
  await nyttSalg({bookingId:r.bookingId,navn:r.navn,oktId:r.oktId});
 }
+const harVarer=s=>s.varer.size>0||s.fritt.length>0||s.gavekort.length>0||s.popUten.size>0||!!s.timepakke;
 function lytt(){stoppListe();listeTimer=setTimeout(async()=>{listeTimer=null;if(!person||!venstreEl||!venstreEl.isConnected)return;try{if(kursVist)kursVist=await kall('kasse.php?okt='+kursVist.oktId);else data=await kall('kasse.php');tegnVenstre();}catch(e){if(e.stille)return;if(e.status===404){kursVist=null;tegnVenstre();}}lytt();},15000);}
 async function oppdaterListe(){try{if(kursVist)kursVist=await kall('kasse.php?okt='+kursVist.oktId);data=await kall('kasse.php');}catch(e){if(e.stille)return;if(e.status===404)kursVist=null;}tegnVenstre();}
 

@@ -39,10 +39,13 @@ final class KasseKurv
         return PopPris::kr($ore);
     }
 
+    public const VIPPS_PAAGAR = 'En Vipps-betaling pågår for denne påmeldingen. Vent til den er ferdig.';
+
     /**
-     * Bookingen, når den er aktiv. Uansett dato: «Ta betalt» i ny admin
-     * åpner kassa med påmeldingen for alle datoer (eieren 9. oktober 2026,
-     * fraAdmin()). Lista i kassa («Dagens kurs») er fortsatt bare i dag.
+     * Bookingen, når den er aktiv og økta ikke er avlyst. Uansett dato: bare
+     * betalingsveien (person, kurven, betal, QR, status), så «Ta betalt» i ny
+     * admin kan ta betalt for alle datoer (eieren 9. oktober 2026, fraAdmin()).
+     * Alt annet i kassa bruker dagensBooking() (kontrolløren 9. oktober 2026).
      */
     public static function booking(int $bookingId): ?array
     {
@@ -56,12 +59,41 @@ final class KasseKurv
                     COALESCE(NULLIF(m.telefon, ''), b.gjest_telefon) AS telefon,
                     c.tittel, cs.start_tid
                FROM bookings b
-               JOIN course_sessions cs ON cs.id = b.course_session_id
+               JOIN course_sessions cs ON cs.id = b.course_session_id AND cs.status <> 'avlyst'
                JOIN courses c ON c.id = b.course_id
           LEFT JOIN members m ON m.id = b.member_id
               WHERE b.id = :i AND b.status IN ('betalt', 'reservert')",
             ['i' => $bookingId]
         );
+    }
+
+    /** Bookingen, når den hører til en økt i dag (ikke avlyst) og er aktiv. */
+    public static function dagensBooking(int $bookingId): ?array
+    {
+        $b = self::booking($bookingId);
+        [$fra, $til] = self::dagen();
+        return $b !== null && (string) $b['start_tid'] >= $fra && (string) $b['start_tid'] < $til ? $b : null;
+    }
+
+    /**
+     * Pågår en Vipps-betaling for påmeldingen (opprettet/venter)? Samme vakt
+     * som «Ta betalt» og «endre» i admin (Booking::vippsPaaVeiSql). Med
+     * $utenKassa telles ikke kassa/kursstartens egne QR-koder (KS-…), som
+     * KursstartKrav stopper eller gjenbruker selv.
+     */
+    public static function vippsPaaVei(int $bookingId, bool $utenKassa = false): bool
+    {
+        if ($utenKassa) {
+            $bid = DB::harKolonne('payments', 'booking_id') ? ' OR p.booking_id = b.id' : '';
+            return (int) DB::verdi(
+                "SELECT EXISTS(SELECT 1 FROM payments p
+                                WHERE (p.id = b.payment_id{$bid}) AND p.status IN ('opprettet', 'venter')
+                                  AND COALESCE(p.vipps_reference, '') NOT LIKE 'KS-%')
+                   FROM bookings b WHERE b.id = :i",
+                ['i' => $bookingId]
+            ) === 1;
+        }
+        return (int) DB::verdi('SELECT ' . Booking::vippsPaaVeiSql('b') . ' FROM bookings b WHERE b.id = :i', ['i' => $bookingId]) === 1;
     }
 
     /**
@@ -91,10 +123,8 @@ final class KasseKurv
         if (!$rad['skalBetale']) {
             throw new RuntimeException('Påmeldingen er alt betalt.', 409);
         }
-        // Samme vakt som «Ta betalt» og «endre» i admin (Booking::vippsPaaVeiSql).
-        $paaVei = (int) DB::verdi('SELECT ' . Booking::vippsPaaVeiSql('b') . ' FROM bookings b WHERE b.id = :i', ['i' => $bookingId]);
-        if ($paaVei === 1) {
-            throw new RuntimeException('En Vipps-betaling pågår for denne påmeldingen. Vent til den er ferdig.', 409);
+        if (self::vippsPaaVei($bookingId)) {
+            throw new RuntimeException(self::VIPPS_PAAGAR, 409);
         }
         [$fra, $til] = self::dagen();
         $start = (string) $b['start_tid'];
@@ -430,7 +460,8 @@ final class KasseKurv
             // «Betalt ved booking»-raden: aldri mer enn beløpet ved booking.
             $ut['vedBookingOre'] = min((int) $bet['sum'], (int) $b['depositum_ore']);
             $ut['perPersonOre'] = (int) $b['antall'] > 0 ? intdiv((int) $b['depositum_ore'], (int) $b['antall']) : 0;
-            $ut['kanEndre'] = self::betaltVedBooking($bet['rader']) !== [];
+            // «Endre» → «Betalte ikke» bare for påmeldinger i dag (Kasse::betalteIkke, dagensBooking()).
+            $ut['kanEndre'] = self::betaltVedBooking($bet['rader']) !== [] && self::dagensBooking($bookingId) !== null;
         }
         return $ut;
     }

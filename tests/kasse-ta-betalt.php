@@ -374,6 +374,80 @@ try {
     sjekk('… tom kurv: spørsmålet vises ikke (bare når harVarer)', substr_count($fn, "'Det ligger varer i kurven'") === 1
         && strpos($fn, 'if(salg&&harVarer(salg))') < strpos($fn, "'Det ligger varer i kurven'"));
 
+    // ══ 10: kontrolløren (opus) 09.10.2026 ══════════════════════════════
+    echo "\n── 10: kontrolløren 09.10 ──\n";
+    $vippsPost = static fn(): int => count(array_filter(array_map(static fn($l) => json_decode($l, true), is_file($vlogg) ? file($vlogg) : []),
+        static fn($x) => ($x['metode'] ?? '') === 'POST' && ($x['sti'] ?? '') === '/epayment/v1/payments'));
+    // 1: kassa åpnet med personen, kunden starter Vipps på nettsiden, Monica tar kontant.
+    $b10 = $nyBooking($framKurs, $framOkt, 'Dobbel', 90000);
+    $s = kall($K . '?booking=' . $b10, null, $kasseToken);
+    $k = $kjop(['bookingId' => $b10], ['bookingId' => $b10]);
+    sjekk('1: kassa åpnet med personen: 900 kr i kurven', $s[0] === 200 && ($k['forventet']['booking:' . $b10] ?? 0) === 90000, $tekst($k['regn']));
+    $pW = DB::settInn('payments', ['vipps_reference' => 'TABET-' . bin2hex(random_bytes(6)), 'formal' => 'booking', 'belop_ore' => 90000,
+        'status' => 'opprettet', 'idempotency_key' => Vipps::uuid(), 'booking_id' => $b10]);
+    DB::oppdater('bookings', ['payment_id' => $pW], ['id' => $b10]);
+    $for = (int) DB::verdi('SELECT COUNT(*) FROM payments');
+    $s = kall($K, ['handling' => 'betal', 'maate' => 'Kontant'] + $send($k), $kasseToken);
+    sjekk('1: … kunden starter Vipps på nettsiden, Monica tar kontant: 409 «Vipps pågår», ingen ny rad, fortsatt reservert',
+        $s[0] === 409 && ($s[1]['feil'] ?? '') === $VIPPS && (int) DB::verdi('SELECT COUNT(*) FROM payments') === $for
+        && $status($b10) === 'reservert' && $sum($b10) === 0, $tekst($s));
+    $s = kall($K, ['handling' => 'delt', 'deler' => [['maate' => 'Kontant', 'belop' => '400'], ['maate' => 'Vipps', 'belop' => '500']]] + $send($k), $kasseToken);
+    sjekk('1: … delt betaling: 409 «Vipps pågår», ingen ny rad', $s[0] === 409 && ($s[1]['feil'] ?? '') === $VIPPS
+        && (int) DB::verdi('SELECT COUNT(*) FROM payments') === $for, $tekst($s));
+    $fraV = $vippsPost();
+    $s = kall($K, ['handling' => 'qr', 'del' => 'booking:' . $b10] + $send($k), $kasseToken);
+    sjekk('1: … Vipps-QR i kassa: 409 «Vipps pågår», ingen ny betaling hos Vipps', $s[0] === 409 && ($s[1]['feil'] ?? '') === $VIPPS
+        && $vippsPost() === $fraV && (int) DB::verdi('SELECT COUNT(*) FROM payments') === $for, $tekst($s));
+    DB::oppdater('payments', ['status' => 'avbrutt'], ['id' => $pW]);
+    $s = kall($K, ['handling' => 'betal', 'maate' => 'Kontant'] + $send($k), $kasseToken);
+    sjekk('1: … Vipps på nettsiden avbrutt: kontant 900 kr går, betalt', $s[0] === 200 && $status($b10) === 'betalt' && $sum($b10) === 90000, $tekst($s));
+    // Kassas egen QR som venter stoppes fortsatt før kontant (ingen sperre mot seg selv).
+    $sett('.betaling-status', 'CREATED');
+    $b11 = $nyBooking($framKurs, $framOkt, 'Egenqr', 90000);
+    $k = $kjop(['bookingId' => $b11], ['bookingId' => $b11]);
+    $s1 = kall($K, ['handling' => 'qr', 'del' => 'booking:' . $b11] + $send($k), $kasseToken);
+    $s2 = kall($K, ['handling' => 'qr', 'del' => 'booking:' . $b11] + $send($k), $kasseToken);
+    $s = kall($K, ['handling' => 'betal', 'maate' => 'Kontant'] + $send($k), $kasseToken);
+    sjekk('1: … kassas egen QR: nytt trykk gir QR igjen, og kontant etterpå stopper QR-en og tar 900 kr', $s1[0] === 200 && $s2[0] === 200
+        && $s[0] === 200 && $status($b11) === 'betalt' && $sum($b11) === 90000, $tekst($s1) . ' ' . $tekst($s2) . ' ' . $tekst($s));
+
+    // 2: avlyst økt.
+    $avlystOkt = $nyOkt($framKurs, '+12 days 12:00');
+    $b12 = $nyBooking($framKurs, $avlystOkt, 'Avlyst', 90000);
+    DB::oppdater('course_sessions', ['status' => 'avlyst'], ['id' => $avlystOkt]);
+    $for = (int) DB::verdi('SELECT COUNT(*) FROM payments');
+    $s = kall($K . '?booking=' . $b12, null, $kasseToken);
+    sjekk('2: avlyst økt: ?booking= 404', $s[0] === 404 && ($s[1]['feil'] ?? '') === 'Fant ikke påmeldingen.', $tekst($s));
+    $s = kall($K, ['handling' => 'person', 'bookingId' => $b12], $kasseToken);
+    $r = kall($K, ['handling' => 'regn', 'kurv' => ['bookingId' => $b12], 'betaler' => ['bookingId' => $b12]], $kasseToken);
+    $bt = kall($K, ['handling' => 'betal', 'maate' => 'Kontant', 'kurv' => ['bookingId' => $b12], 'betaler' => ['bookingId' => $b12],
+        'nokler' => ['booking:' . $b12 => Vipps::uuid()], 'forventet' => ['booking:' . $b12 => 90000]], $kasseToken);
+    sjekk('2: … person, kurv og betal avvises, ingenting registrert', $s[0] >= 400 && $r[0] >= 400 && $bt[0] >= 400
+        && (int) DB::verdi('SELECT COUNT(*) FROM payments') === $for && $status($b12) === 'reservert', $tekst($s) . ' ' . $tekst($r) . ' ' . $tekst($bt));
+
+    // 3: «Ta dem med» beholder timepakken (beholdVarer).
+    $bv = '';
+    if (preg_match('/^function beholdVarer\(g\)\{.*\}$/m', $js, $m)) { $bv = $m[0]; }
+    sjekk('3: «Ta dem med» / ny person: timepakken blir med (beholdVarer)', str_contains($bv, 'salg.timepakke=g.timepakke;')
+        && str_contains($bv, 'salg.varer=g.varer;') && str_contains($bv, 'salg.gavekort=g.gavekort;'), $bv);
+
+    // 4: «Betalte ikke» (annullere beløp ved booking) bare for Paint on Pots i dag.
+    $popFram = $nyBooking($popKurs, $popOkt, 'Popfram', 20000, 'betalt', ['antall' => 1, 'depositum_ore' => 20000]);
+    $pF = Booking::manuellBetaling($popFram, 20000, 'Kontant', null, null, 'Beløp ved booking');
+    DB::oppdater('bookings', ['payment_id' => $pF], ['id' => $popFram]);
+    $s = kall($K, ['handling' => 'person', 'bookingId' => $popFram], $kasseToken);
+    sjekk('4: Paint on Pots fram i tid: «Endre» vises ikke (kanEndre false)', $s[0] === 200 && ($s[1]['kanEndre'] ?? null) === false, $tekst($s));
+    $s = kall($K, ['handling' => 'betalteIkke', 'bookingId' => $popFram], $kasseToken);
+    $rad = DB::en('SELECT status, annullert_at FROM payments WHERE id = :i', ['i' => $pF]);
+    sjekk('4: … «Betalte ikke» avvises, beløpet ved booking står (200 kr, ikke annullert)', $s[0] >= 400 && $rad['status'] === 'betalt'
+        && $rad['annullert_at'] === null && $sum($popFram) === 20000, $tekst($s) . ' ' . json_encode($rad));
+    $popIdagOkt = $nyOkt($popKurs, 'today 17:00');
+    $popIdag = $nyBooking($popKurs, $popIdagOkt, 'Popidag', 20000, 'betalt', ['antall' => 1, 'depositum_ore' => 20000]);
+    $pI = Booking::manuellBetaling($popIdag, 20000, 'Kontant', null, null, 'Beløp ved booking');
+    DB::oppdater('bookings', ['payment_id' => $pI], ['id' => $popIdag]);
+    $s = kall($K, ['handling' => 'person', 'bookingId' => $popIdag], $kasseToken);
+    sjekk('4: … Paint on Pots i dag: «Endre» vises som før (kanEndre true)', $s[0] === 200 && ($s[1]['kanEndre'] ?? null) === true, $tekst($s));
+
     $ferdig = true;
 } catch (Throwable $e) {
     echo "  FEIL  unntak: " . $e->getMessage() . ' (' . basename($e->getFile()) . ':' . $e->getLine() . ")\n";

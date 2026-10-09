@@ -66,7 +66,7 @@ final class Kasse
 
     public static function betalteIkke(int $bookingId, int $personId): array
     {
-        $b = KasseKurv::booking($bookingId);
+        $b = KasseKurv::dagensBooking($bookingId);
         if ($b === null || !KasseKurv::erPop($b)) {
             throw new RuntimeException('Fant ikke Paint on Pots-bookingen i dag.');
         }
@@ -497,6 +497,11 @@ final class Kasse
             $stopp = KursstartKrav::stoppVentende($bid);
             if ($stopp !== null) {
                 throw new RuntimeException($stopp, 409);
+            }
+            // En Vipps-betaling som pågår ellers (nettsiden, Min side): ikke ta
+            // betalt ved siden av, under låsen (kontrolløren 9. oktober 2026).
+            if (KasseKurv::vippsPaaVei($bid)) {
+                throw new RuntimeException(KasseKurv::VIPPS_PAAGAR, 409);
             }
             if ($d['pop'] !== []) {
                 PopPris::kassa($bid, $d['pop'], $person['id']);
@@ -1079,6 +1084,23 @@ final class Kasse
 
     /** Påmeldingen: gjenstandene slås inn, og KursstartKrav::visQr() lager koden. */
     private static function qrBooking(array $d, array $person): array
+    {
+        $bid = (int) $d['bookingId'];
+        // En Vipps-betaling som pågår utenom kassa (nettsiden, Min side): ingen
+        // QR ved siden av. Låsen holdes til QR-en er laget (kontrolløren
+        // 9. oktober 2026); kassas egne QR-koder (KS-…) gjenbrukes som før.
+        KursstartKrav::laas($bid);
+        try {
+            if (KasseKurv::vippsPaaVei($bid, true)) {
+                throw new RuntimeException(KasseKurv::VIPPS_PAAGAR, 409);
+            }
+            return self::qrBookingLaast($d, $person);
+        } finally {
+            KursstartKrav::slipp($bid);
+        }
+    }
+
+    private static function qrBookingLaast(array $d, array $person): array
     {
         $bid = (int) $d['bookingId'];
         if ($d['pop'] !== []) {

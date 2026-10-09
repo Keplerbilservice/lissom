@@ -7615,8 +7615,8 @@
         {
             "id": "kasse-ta-betalt-fra-ny-admin-20261009",
             "dato": "2026-10-09",
-            "hva": "Eierens beslutning 09.10.2026: «Ta betalt» i ny admin (Kurs-siden og I dag › Start dagens kurs) åpner kassa (/kasse) med personen og det som står igjen ferdig i kurven, for alle datoer; Monica velger bare Vipps eller Kontant. Kassa leser ?booking=<id> etter at den er låst opp (GET api/kasse/kasse.php?booking=, krever kassetilgang og PIN), og beløpet regnes med de samme reglene som når personen velges under «Dagens kurs» (KasseKurv::deltakere skalBetale, person(), deler(); Paint on Pots fra PopPris). Alt betalt (409 «Påmeldingen er alt betalt.»), Vipps pågår (409) eller ikke funnet (404 «Fant ikke påmeldingen.»): beskjed i kassa, ingenting i kurven. Er kassa alt åpen i fanen «lissom-kasse», sendes bookingen som en melding (NA.tilKassa), så et salg som er i gang der ikke lastes bort. Teksten om at personen må finnes under «Dagens kurs» er fjernet. «Registrer betaling for hånd» står som eget valg under personen (ikke Paint on Pots) for betaling tatt på annen måte. Lista «Dagens kurs» i kassa er fortsatt bare i dag. Eierens valg samme dag: ligger det varer i kurven (varer, skrevet beløp, gavekort, Paint on Pots uten booking, timepakke) når «Ta betalt» kommer, spør kassa først «Det ligger varer i kurven» med «Ta dem med» og «Fjern dem» (tekstene godkjent av eieren 09.10.2026). Tom kurv: rett inn som før.",
-            "hvor": "admin-ny/kasse.js, api/kasse/kasse.php, app/lib/kassekurv.php (booking(), fraAdmin()), app/lib/kasse.php, ny-admin/felles.js (NA.tilKassa), ny-admin/kurs.js, ny-admin/idag.js, tests/kasse-ta-betalt.php",
+            "hva": "Eierens beslutning 09.10.2026: «Ta betalt» i ny admin (Kurs-siden og I dag › Start dagens kurs) åpner kassa (/kasse) med personen og det som står igjen ferdig i kurven, for alle datoer; Monica velger bare Vipps eller Kontant. Kassa leser ?booking=<id> etter at den er låst opp (GET api/kasse/kasse.php?booking=, krever kassetilgang og PIN), og beløpet regnes med de samme reglene som når personen velges under «Dagens kurs» (KasseKurv::deltakere skalBetale, person(), deler(); Paint on Pots fra PopPris). Alt betalt (409 «Påmeldingen er alt betalt.»), Vipps pågår (409) eller ikke funnet (404 «Fant ikke påmeldingen.»): beskjed i kassa, ingenting i kurven. Er kassa alt åpen i fanen «lissom-kasse», sendes bookingen som en melding (NA.tilKassa), så et salg som er i gang der ikke lastes bort. Teksten om at personen må finnes under «Dagens kurs» er fjernet. «Registrer betaling for hånd» står som eget valg under personen (ikke Paint on Pots) for betaling tatt på annen måte. Lista «Dagens kurs» i kassa er fortsatt bare i dag. Eierens valg samme dag: ligger det varer i kurven (varer, skrevet beløp, gavekort, Paint on Pots uten booking, timepakke) når «Ta betalt» kommer, spør kassa først «Det ligger varer i kurven» med «Ta dem med» og «Fjern dem» (tekstene godkjent av eieren 09.10.2026). Tom kurv: rett inn som før. Kontrolløren (opus) 09.10.2026, rettet: (1) kontant, delt og Vipps-QR for en påmelding avvises med 409 «Vipps pågår» når en Vipps-betaling pågår utenom kassa (nettsiden, Min side), sjekket under KursstartKrav::laas (registrerBooking, qrBooking); kassas egne QR-koder stoppes/gjenbrukes som før. (2) Påmeldinger på avlyste økter finnes ikke i kassa. (3) «Ta dem med» / ny person beholder timepakken. (4) Datofritt oppslag bare i betalingsveien; «Betalte ikke» (annullere beløp ved booking) bare for Paint on Pots i dag (dagensBooking, kanEndre).",
+            "hvor": "admin-ny/kasse.js, api/kasse/kasse.php, app/lib/kassekurv.php (booking(), fraAdmin()), app/lib/kasse.php, ny-admin/felles.js (NA.tilKassa), ny-admin/kurs.js, ny-admin/idag.js, tests/kasse-ta-betalt.php, app/lib/kasse.php (registrerBooking, qrBooking, betalteIkke)",
             "kode": [
                 {
                     "fil": "admin-ny/kasse.js",
@@ -7628,7 +7628,8 @@
                         "ark('Det ligger varer i kurven'",
                         "pille('Ta dem med'",
                         "pille('Fjern dem'",
-                        "if(valg==='fjern'){stopPoll();salg=null;}"
+                        "if(valg==='fjern'){stopPoll();salg=null;}",
+                        "salg.timepakke=g.timepakke;"
                     ]
                 },
                 {
@@ -7642,11 +7643,13 @@
                     "finnes": [
                         "public static function fraAdmin(int $bookingId): array",
                         "'Påmeldingen er alt betalt.'",
-                        "Booking::vippsPaaVeiSql('b')"
+                        "Booking::vippsPaaVeiSql('b')",
+                        "JOIN course_sessions cs ON cs.id = b.course_session_id AND cs.status <> 'avlyst'",
+                        "public static function dagensBooking(int $bookingId): ?array",
+                        "public static function vippsPaaVei(int $bookingId, bool $utenKassa = false): bool",
+                        "&& self::dagensBooking($bookingId) !== null;"
                     ],
-                    "ikkeFinnes": [
-                        "function dagensBooking("
-                    ]
+                    "ikkeFinnes": []
                 },
                 {
                     "fil": "ny-admin/felles.js",
@@ -7676,6 +7679,15 @@
                     "ikkeFinnes": [
                         "Personen står under «Dagens kurs» der.",
                         "href=\"/kasse\">Ta betalt</a>"
+                    ]
+                },
+                {
+                    "fil": "app/lib/kasse.php",
+                    "finnes": [
+                        "if (KasseKurv::vippsPaaVei($bid)) {",
+                        "if (KasseKurv::vippsPaaVei($bid, true)) {",
+                        "return self::qrBookingLaast($d, $person);",
+                        "$b = KasseKurv::dagensBooking($bookingId);"
                     ]
                 }
             ]

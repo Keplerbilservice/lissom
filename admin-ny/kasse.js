@@ -173,7 +173,7 @@ const laast=()=>!!salg&&(salg.vent||salg.betalt.size>0);
 const ikkeNaa=()=>{if(laast()){melding('Gjør ferdig betalingen først.');return true;}return false;};
 function kontantkunde(){if(ikkeNaa())return;const g=salg;salg=tomtSalg();salg.kontantkunde=true;if(g)beholdVarer(g);tegnVenstre();visSalg();}
 // Varene som alt er i kurven, blir med når kunden velges etterpå.
-function beholdVarer(g){salg.varer=g.varer;salg.fritt=g.fritt;salg.gavekort=g.gavekort;salg.popUten=g.popUten;salg.popGjester=g.popGjester;for(const [k,v] of g.priser)if(!k.startsWith('booking:'))salg.priser.set(k,v);salg.rabatt=g.rabatt;}
+function beholdVarer(g){salg.varer=g.varer;salg.fritt=g.fritt;salg.gavekort=g.gavekort;salg.timepakke=g.timepakke;salg.popUten=g.popUten;salg.popGjester=g.popGjester;for(const [k,v] of g.priser)if(!k.startsWith('booking:'))salg.priser.set(k,v);salg.rabatt=g.rabatt;}
 async function nyttSalg(fra){
  if(ikkeNaa())return;
  const g=salg;salg=tomtSalg();if(g)beholdVarer(g);salg.navn=fra.navn;salg.oktId=fra.oktId||null;

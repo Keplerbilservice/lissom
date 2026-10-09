@@ -7166,7 +7166,7 @@
                         "api('skoleferier.php')",
                         "api('pop-priser.php')",
                         "arskalender.php",
-                        "Hopp over skoleferier (Vestfold)",
+                        "<b>Hopp over skoleferier</b>",
                         "poll('kalender'"
                     ]
                 },
@@ -7407,7 +7407,7 @@
                         "<input type=\"checkbox\" data-velg=",
                         "data-k=\"dagValg\"",
                         "medReserverte: 'ja'",
-                        "gjentas: enDato ? 1 : 0, varighet: enDato ? -1 : null, egen: '', ferier: new Set(), enDato});"
+                        "gjentas: enDato ? 1 : 0, varighet: enDato ? -1 : null, egen: '', ferier: new Set(), hoppFerier: false, enDato});"
                     ],
                     "ikkeFinnes": [
                         "role=\"checkbox\"",

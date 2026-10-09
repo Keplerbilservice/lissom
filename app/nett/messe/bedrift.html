@@ -86,6 +86,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px soli
     e.preventDefault(); if(sender) return;
     const v=id=>$(id).value.trim();
     if(!v("#b-navn")||!v("#b-tlf")||!v("#b-epost")){ svar("Fyll inn navn, telefon og e-post.",true); return; }
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v("#b-epost"))){ svar("Fyll inn navn, telefon og e-post.",true); document.querySelector("#b-epost").focus(); return; }
     const interesse=[...document.querySelectorAll(".kryss input:checked")].map(x=>x.value);
     const hva=boks.hidden?[]:[...linjer.querySelectorAll(".linje")].map(l=>{ const [a,b]=l.querySelectorAll("input"); return [a.value.trim(),b.value.trim()]; }).filter(([a,b])=>a||b);
     const deler=[];

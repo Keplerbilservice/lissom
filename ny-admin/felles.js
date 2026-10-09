@@ -204,7 +204,8 @@
   };
   NA.kjorOppdateringer = async function () {
     const d = await NA.oppdateringer(true);
-    if (!d || !d.mangler.length) { toast('Databasen er oppdatert. Ingenting å gjøre.'); return false; }
+    if (!d) { toast('Kunne ikke hente oppdateringene.'); return false; }
+    if (!d.mangler.length) { toast('Databasen er oppdatert. Ingenting å gjøre.'); return false; }
     if (!await NA.bekreft('Kjør databaseoppdateringer?', 'Kjør ' + d.mangler.length + ' oppdateringer og importer tilhørende dokumenter. Er du sikker?', 'Kjør oppdateringer')) return false;
     try {
       const r = await api('/api/migrer.php', {data: {kjor: 'ja'}});

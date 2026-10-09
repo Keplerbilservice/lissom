@@ -27,8 +27,10 @@
   /* Vedlikehold (eieren 09.10.2026): det som venter fra api/migrer.php, og «Kjør oppdateringer» (NA.kjorOppdateringer). */
   async function arkVedlikehold() {
     const N = NA();
-    N.apneArk(N.arkHode('Vedlikehold') + '<p class="laster">Henter …</p>');
+    N.apneArk(N.arkHode('Vedlikehold') + '<p class="laster" data-vedlikehold>Henter …</p>');
     const d = await N.oppdateringer(true);
+    /* Lukket eller byttet til et annet ark imens: ikke åpne det igjen. */
+    if (!N.arkApen() || !document.querySelector('#ark-inn [data-vedlikehold]')) return;
     const m = d ? d.mangler : null;
     const inn = N.apneArk(`${N.arkHode('Vedlikehold')}
       <div class="kort-head"><h3>Databaseoppdateringer</h3></div>

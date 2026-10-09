@@ -7697,8 +7697,8 @@
         {
             "id": "nyadmin-vedlikehold-logo-rediger",
             "dato": "2026-10-09",
-            "hva": "Eieren 09.10.2026: (1) «Kjør oppdateringer» også i /ny-admin: Mer › Vedlikehold viser hvor mange databaseoppdateringer som venter og lista (api/migrer.php), knappen «Kjør oppdateringer» spør «Er du sikker?» og viser resultatet, som Vedlikehold i admin-ny. Når noe venter, står det som en sak i «Må gjøres» på I dag («N databaseoppdateringer venter») med samme knapp. (2) Lissom-logoen øverst i venstremenyen går til I dag. (3) «Rediger kurset» og «Legg til bilde» i /ny-admin åpner riktig kurs direkte i gammel admin (/admin-ny#kurs?kurs=<id>, bildet med &vis=bilde); ellers er admin-ny uendret.",
-            "hvor": "ny-admin/felles.js, ny-admin/mer.js, ny-admin/idag.js, ny-admin/ny-admin.css, ny-admin/kurs.js, admin-ny/app.js (courses), tests/ny-admin.php (O)",
+            "hva": "Eieren 09.10.2026: (1) «Kjør oppdateringer» også i /ny-admin: Mer › Vedlikehold viser hvor mange databaseoppdateringer som venter og lista (api/migrer.php), knappen «Kjør oppdateringer» spør «Er du sikker?» og viser resultatet, som Vedlikehold i admin-ny. Når noe venter, står det som en sak i «Må gjøres» på I dag («N databaseoppdateringer venter») med samme knapp. (2) Lissom-logoen øverst i venstremenyen går til I dag. (3) «Rediger kurset» og «Legg til bilde» i /ny-admin åpner riktig kurs direkte i gammel admin (/admin-ny#kurs?kurs=<id>, bildet med &vis=bilde); ellers er admin-ny uendret. Eieren 09.10.2026 (senere): «jeg vil ha oppdatering under innstillinger» – flyttet fra Mer › Vedlikehold til Innstillinger › Oppdateringer (ikke dobbelt).",
+            "hvor": "ny-admin/felles.js, ny-admin/innstillinger.js, ny-admin/idag.js, ny-admin/ny-admin.css, ny-admin/kurs.js, admin-ny/app.js (courses), tests/ny-admin.php (O)",
             "kode": [
                 {
                     "fil": "ny-admin/felles.js",
@@ -7708,9 +7708,10 @@
                     ]
                 },
                 {
-                    "fil": "ny-admin/mer.js",
+                    "fil": "ny-admin/innstillinger.js",
                     "finnes": [
-                        "'Vedlikehold', 'Databaseoppdateringer'"
+                        "'Brytere', 'Oppdateringer'",
+                        "case 'Oppdateringer': return fanOppdateringer();"
                     ]
                 },
                 {

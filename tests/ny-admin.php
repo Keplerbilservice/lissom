@@ -607,9 +607,10 @@ try {
     sjekk('O migrer.php svarer admin med listen som venter (Vedlikehold i ny admin)', $mg[0] === 200 && is_array($mg[1]['mangler'] ?? null), $vis($mg));
     $rot = dirname(__DIR__);
     $fil = static fn(string $f): string => (string) file_get_contents($rot . '/' . $f);
-    sjekk('O Mer › Vedlikehold og «Må gjøres» bruker NA.kjorOppdateringer (api/migrer.php kjor=ja)',
+    sjekk('O Innstillinger › Oppdateringer og «Må gjøres» bruker NA.kjorOppdateringer (api/migrer.php kjor=ja), ikke under Mer',
         str_contains($fil('ny-admin/felles.js'), "api('/api/migrer.php', {data: {kjor: 'ja'}})")
-        && str_contains($fil('ny-admin/mer.js'), "'Vedlikehold', 'Databaseoppdateringer'")
+        && str_contains($fil('ny-admin/innstillinger.js'), "case 'Oppdateringer': return fanOppdateringer();")
+        && !str_contains($fil('ny-admin/mer.js'), "'Vedlikehold', 'Databaseoppdateringer'")
         && str_contains($fil('ny-admin/idag.js'), "knapp('Kjør oppdateringer', 'migrer', true)"));
     sjekk('O Lissom-logoen i menyen går til I dag', str_contains($fil('ny-admin/felles.js'), '<button class="brand" type="button" data-side="idag"'));
     sjekk('O «Rediger kurset»/«Legg til bilde» åpner kurset direkte i admin-ny (#kurs?kurs=<id>, &vis=bilde)',

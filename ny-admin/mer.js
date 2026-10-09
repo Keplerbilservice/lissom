@@ -13,7 +13,6 @@
     ['Markedsføring', 'Nyhetsbrev, SMS, kampanjer', '/admin-ny#marked'],
     ['Vedtak', 'Regler og priser', null],
     ['Eksport', 'Regnskap og lister', '/admin-ny#regnskap'],
-    ['Vedlikehold', 'Databaseoppdateringer', 'vedlikehold'],
     ['Gammel admin', 'Reserve', '/admin-ny'],
   ];
 

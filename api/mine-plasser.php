@@ -78,7 +78,8 @@ $bilder = static function (int $bookingId): array {
 
 $bookinger = DB::alle(
     "SELECT b.id, b.course_id, b.antall, b.status, b.belop_ore, b.created_at, {$bevisFelt} {$depFelt}
-            c.tittel, c.tema, cs.start_tid, cs.slutt_tid, p.vipps_reference
+            c.tittel, c.tema, cs.start_tid, cs.slutt_tid, cs.status AS okt_status, b.payment_id,
+            p.vipps_reference
        FROM bookings b
        JOIN courses c ON c.id = b.course_id
   LEFT JOIN course_sessions cs ON cs.id = b.course_session_id
@@ -89,10 +90,45 @@ $bookinger = DB::alle(
     ['m' => $medlem['id']]
 );
 
+/**
+ * «Du får 1 250 kr tilbake»: det som faktisk er betalt paa plassen, regnet
+ * paa samme maate som avbestillingen gir det tilbake (Booking::tilbakeFor).
+ */
+$tilbakeTekst = static function (array $b): string {
+    $ore = Booking::tilbakeFor((int) $b['id'], $b['payment_id'] !== null ? (int) $b['payment_id'] : null)['sum'];
+    return 'Du får ' . number_format(intdiv($ore + 50, 100), 0, ',', "\u{a0}") . "\u{a0}kr tilbake";
+};
+
 $plasser = [];
 foreach ($bookinger as $b) {
     [$fristTekst, $kanAvbestille] = $frist($b['start_tid'], PopPris::fristFor($b));
     $betalt = $b['status'] === 'betalt';
+
+    // ── Lissom har avlyst datoen (eieren, GO 9. oktober 2026) ──────────
+    //
+    // Plassen staar som avlyst, og kunden velger ny dato eller pengene
+    // tilbake (api/avlyst-plass.php og api/avbestill.php, uansett tid igjen).
+    // Ingen avbestilling etter fristen og intet kursbevis for en dato som
+    // ikke ble holdt.
+    if ((string) ($b['okt_status'] ?? '') === 'avlyst') {
+        $plasser[] = [
+            'id'            => (int) $b['id'],
+            'tittel'        => $b['tittel'],
+            'naar'          => $b['start_tid'] ? Booking::norskDato((string) $b['start_tid']) : 'Dato kommer',
+            'sum'           => Booking::kroner((int) $b['belop_ore'])
+                                . ((int) $b['antall'] > 1 ? ' · ' . $b['antall'] . ' plasser' : ''),
+            'status'        => 'Avlyst',
+            'tone'          => 'danger',
+            'frist'         => 'Lissom har dessverre avlyst denne datoen. Velg en ny dato, eller få pengene tilbake.',
+            'kanAvbestille' => false,
+            'avlyst'        => true,
+            'tilbake'       => $tilbakeTekst($b),
+            'referanse'     => $b['vipps_reference'],
+            'kursbevis'     => null,
+            'bilder'        => $bilder((int) $b['id']),
+        ];
+        continue;
+    }
 
     $plasser[] = [
         'id'            => (int) $b['id'],

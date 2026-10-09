@@ -518,7 +518,7 @@ function arkKopierUke(h) {
 }
 
 // ── Flytt eller avlys én eller mange ────────────────────────────────────────
-// Ingenting er valgt på forhånd (eierens regel): ny dato, om de påmeldte skal få beskjed, og kanal velges hver gang.
+// Ingenting er valgt på forhånd (eierens regel): ny dato og om de påmeldte skal få beskjed velges hver gang. Kanalen står på malen (Innstillinger › Meldinger).
 const FL = {liste: [], avlys: false, til: '', dato: '', tid: '', varsle: '', kanal: ''};
 function nyTid(h) {
   if (FL.til === 'uke') return {dato: pluss(h.dato, 7), tid: h.tid};
@@ -543,48 +543,29 @@ export async function arkFlytt(liste, avlys) {
 // Hovedknappen er låst til valgene er gjort.
 function flyttKlar() {
   const p = FL.liste.reduce((s, o) => s + o.pameldt, 0);
-  if (FL.avlys) {
-    if (!p) return true;
-    if (!FL.kanal) return false;
-    return FL.kanal === 'ingen' || (document.getElementById('nk-avlystekst')?.value || '').trim().length >= 3;
-  }
+  // Avlys (eieren 09.10.2026): malen «Kurset er avlyst» eller ingen beskjed. Kanalen står på malen (Innstillinger › Meldinger).
+  if (FL.avlys) return !p || !!FL.varsle;
   if (!FL.til) return false;
   return !p || !!FL.varsle;
 }
 const sjekkFlytt = () => { const b = document.getElementById('nk-flyttok'); if (b) b.disabled = !flyttKlar(); };
 function tegnFlytt() {
   const {liste, avlys} = FL, p = liste.reduce((s, o) => s + o.pameldt, 0), n = liste.length;
-  const kanal = [['sms', 'SMS'], ['epost', 'E-post'], ['begge', 'Begge'], ['ingen', 'Ikke send beskjed']];
-  const tekstFoer = document.getElementById('nk-avlystekst')?.value || '';
   ark(`<div class="ark-head"><h2>${avlys ? 'Avlys' : 'Flytt'} ${n} kurs</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
    ${liste.map(o => `<div class="rad"><div class="tekst"><b>${kortDato(o.dato)} ${esc(o.tid)} · ${esc(o.tittel)}</b>${avlys || !FL.til ? '' : `<small>Ny: ${esc(langDato(nyTid(o).dato))} kl. ${esc(nyTid(o).tid)}</small>`}</div><span class="merke">${o.pameldt} påmeldt</span>${avlys && ubetalte(o).length < (o.deltakere || []).length ? `<span class="merke gul">${(o.deltakere || []).filter(d => d.status === 'Betalt').length} betalt</span>` : ''}</div>`).join('')}
    ${avlys ? '' : `<div><small>Ny dato og tid</small><div class="valgknapper" style="margin-top:6px">${[['uke', 'Én uke senere'], ['dag', 'Én dag senere'], ['velg', 'Velg dato og tid']].map(([k, t]) => `<button class="knapp ${FL.til === k ? 'valgt-knapp' : ''}" data-k="flyttTil" data-til="${k}" aria-pressed="${FL.til === k}">${t}</button>`).join('')}</div>
      ${FL.til === 'velg' ? `<div class="to-felt"><label><small>Dato</small><input type="date" id="nk-fdato" value="${esc(FL.dato)}"></label><label><small>Tid</small><input type="time" id="nk-ftid" value="${esc(FL.tid)}"></label></div>` : ''}</div>`}
    ${p ? (avlys
-     ? `<div><small>Beskjed til de påmeldte (betalt og reservert)</small><div class="valgknapper" style="margin-top:6px">${kanal.map(([k, t]) => `<button class="knapp ${FL.kanal === k ? 'valgt-knapp' : ''}" data-k="flyttKanal" data-kanal="${k}" aria-pressed="${FL.kanal === k}">${t}</button>`).join('')}</div>
-        ${FL.kanal && FL.kanal !== 'ingen' ? `<label class="en-felt" style="max-width:none"><small>Beskjeden (det finnes ingen ferdig mal for avlysning)</small><textarea id="nk-avlystekst" class="felt" rows="4"></textarea></label>
-        <div class="sms" id="nk-avforh"><small>Henter mottakerne …</small></div>` : ''}
-        <small>Har noen betalt, refunderes de under Penger, som før.</small></div>`
+     ? `<div><small>Gi beskjed til de påmeldte (betalt og reservert)?</small><div class="valgknapper" style="margin-top:6px">${[['ja', 'Send «Kurset er avlyst»'], ['nei', 'Ikke send']].map(([k, t]) => `<button class="knapp ${FL.varsle === k ? 'valgt-knapp' : ''}" data-k="flyttVarsle" data-v="${k}" aria-pressed="${FL.varsle === k}">${t}</button>`).join('')}</div>
+        ${FL.varsle === 'ja' ? '<div class="sms" id="nk-avforh"><small>Henter teksten …</small></div>' : ''}
+        <small>De påmeldte velger selv ny dato eller pengene tilbake på Min side.</small></div>`
      : `<div><small>Gi beskjed om ny dato?</small><div class="valgknapper" style="margin-top:6px">${[['ja', 'Send «Ny dato på kurset»'], ['nei', 'Ikke send']].map(([k, t]) => `<button class="knapp ${FL.varsle === k ? 'valgt-knapp' : ''}" data-k="flyttVarsle" data-v="${k}" aria-pressed="${FL.varsle === k}">${t}</button>`).join('')}</div></div>
         ${FL.varsle === 'ja' ? `<div class="sms" id="nk-forh"><small>${FL.til ? 'Henter teksten …' : 'Velg ny dato først, så vises teksten.'}</small></div>` : ''}`)
      : '<p class="muted">Ingen påmeldte å gi beskjed.</p>'}
    <div class="ark-fot"><button class="knapp" data-k="lukk">Avbryt</button><button class="knapp hoved" id="nk-flyttok" data-k="${avlys ? 'avlysOk' : 'flyttOk'}" ${flyttKlar() ? '' : 'disabled'}>${avlys ? `Avlys ${n}` : `Flytt ${n}`}</button></div>`);
-  const a = document.getElementById('nk-avlystekst'); if (a && tekstFoer) a.value = tekstFoer;
   sjekkFlytt();
   if (!avlys && p && FL.til && FL.varsle === 'ja') forhandsvisFlytt();
-  if (avlys && p && FL.kanal && FL.kanal !== 'ingen') forhandsvisMottakere('nk-avforh', FL.liste, FL.kanal);
-}
-// Hvem en beskjed når, per økt, fra serveren (samme utvalg som utsendingen: betalt + aktive reservasjoner).
-async function forhandsvisMottakere(boksId, liste, kanal) {
-  const linjer = [];
-  for (const h of liste.filter(o => o.pameldt > 0)) {
-    try {
-      const r = await api('beskjed.php', {handling: 'antall', til: 'okt', oktId: h.oktId, medReserverte: 'ja'});
-      const ikke = ikkeNaaddFor(r, kanal);
-      linjer.push(`<b>${esc(kortDato(h.dato))} ${esc(h.tittel)}:</b> ${r.alle - ikke.length} av ${r.alle} nås${ikke.length ? ` · <span class="ikke-naadd">Ikke nådd: ${ikke.map(esc).join(', ')}</span>` : ''}`);
-    } catch (e) { linjer.push(esc(e.message)); }
-  }
-  const boks = document.getElementById(boksId); if (boks) boks.innerHTML = linjer.join('<br>') || '<small>Ingen påmeldte.</small>';
+  if (avlys && p && FL.varsle === 'ja') forhandsvisAvlyst();
 }
 export function ikkeNaaddFor(r, kanal) {
   const utenE = r.utenEpost || [], utenT = r.smsMulig ? (r.utenTelefon || []) : null;
@@ -609,9 +590,21 @@ async function forhandsvisFlytt() {
   }
   const boks = document.getElementById('nk-forh'); if (boks) boks.innerHTML = (linjer.length ? linjer.join('<br>') + '<br>' : '') + tekst;
 }
+// «Kurset er avlyst»: den faktiske teksten og hvem den når, per økt, fra serveren (okt-varsel.php, mal kurs_avlyst).
+async function forhandsvisAvlyst() {
+  const linjer = []; let tekst = '';
+  for (const h of FL.liste.filter(o => o.pameldt > 0)) {
+    try {
+      const r = await api('okt-varsel.php', {handling: 'forhandsvis', mal: 'kurs_avlyst', oktId: h.oktId});
+      if (!r.aktiv) { tekst = '<b>Meldingen «Kurset er avlyst» er slått av.</b> Ingen får beskjed. Slå den på under Innstillinger › Meldinger.'; break; }
+      if (!tekst) tekst = `${r.epost ? esc(r.emne) + '<br>' : ''}<span class="forh-tekst">${esc(r.sms && !r.epost ? r.smsTekst : r.tekst)}</span>`;
+      linjer.push(`<b>${esc(kortDato(h.dato))} ${esc(h.tittel)}:</b> ${r.naas} av ${r.antall} får beskjed (${r.epost} e-post, ${r.sms} SMS)${r.ikkeNaadd?.length ? ` · <span class="ikke-naadd">Ikke nådd: ${r.ikkeNaadd.map(esc).join(', ')}</span>` : ''}`);
+    } catch (e) { linjer.push(esc(e.message)); }
+  }
+  const boks = document.getElementById('nk-avforh'); if (boks) boks.innerHTML = (linjer.length ? linjer.join('<br>') + '<br>' : '') + tekst;
+}
 H.flyttTil = b => { lesFlytt(); FL.til = b.dataset.til; tegnFlytt(); };
 H.flyttVarsle = b => { lesFlytt(); FL.varsle = b.dataset.v; tegnFlytt(); };
-H.flyttKanal = b => { FL.kanal = b.dataset.kanal; tegnFlytt(); };
 function lesFlytt() {
   const d = document.getElementById('nk-fdato'), t = document.getElementById('nk-ftid');
   if (d?.value) FL.dato = d.value; if (t?.value) FL.tid = t.value;
@@ -620,7 +613,7 @@ document.addEventListener('change', e => {
   if (e.target.id === 'nk-fdato' || e.target.id === 'nk-ftid') { lesFlytt(); forhandsvisFlytt(); }
   if (e.target.name === 'nk-dag') { const b = document.getElementById('nk-kopierok'); if (b) b.disabled = !document.querySelector('input[name="nk-dag"]:checked'); }
 });
-document.addEventListener('input', e => { if (e.target.id === 'nk-avlystekst') sjekkFlytt(); if (e.target.id === 'nk-beskjed') sjekkBeskjed(); });
+document.addEventListener('input', e => { if (e.target.id === 'nk-beskjed') sjekkBeskjed(); });
 export const kanalFelt = k => k === 'sms' ? {ogsaaSms: 'ja', bareSms: 'ja'} : k === 'begge' ? {ogsaaSms: 'ja'} : {ogsaaSms: 'nei'};
 const ikkeNaaddTekst = l => l.length ? ` <b>Ikke nådd:</b> ${esc([...new Set(l)].join(', '))}.` : '';
 H.flyttOk = async b => {
@@ -642,22 +635,21 @@ H.flyttOk = async b => {
 };
 H.avlysOk = async b => {
   if (!flyttKlar()) return;
-  const tekst = FL.kanal && FL.kanal !== 'ingen' ? (document.getElementById('nk-avlystekst')?.value || '').trim() : '';
   b.disabled = true;
-  let ok = 0, epost = 0, sms = 0; const beskjeder = [], feil = [], ikke = [];
+  let ok = 0, varslet = 0, alt = 0; const feil = [], ikke = [];
   for (const h of FL.liste) {
     try {
-      const r = await api('kurs.php', {handling: 'avlys', oktId: h.oktId});
-      ok++; if (r.beskjed && /refund/i.test(r.beskjed)) beskjeder.push(r.beskjed);
-      // Mottakerne er de samme som står på lista: betalt og reservert (medReserverte).
-      if (tekst && h.pameldt > 0) {
-        try { const s = await api('beskjed.php', {til: 'okt', oktId: h.oktId, tekst, medReserverte: 'ja', ...kanalFelt(FL.kanal)}); epost += s.epost || 0; sms += s.sms || 0; ikke.push(...(s.ikke_naadd || [])); }
+      await api('kurs.php', {handling: 'avlys', oktId: h.oktId});
+      ok++;
+      // «Kurset er avlyst» til betalt og aktive reservasjoner, én gang per påmelding og kanal (okt-varsel.php avlyst).
+      if (FL.varsle === 'ja' && h.pameldt > 0) {
+        try { const r = await api('okt-varsel.php', {handling: 'avlyst', oktId: h.oktId}); varslet += r.sendt || 0; alt += r.alleredeSendt || 0; ikke.push(...(r.ikkeNaadd || [])); }
         catch (e) { feil.push(`${kortDato(h.dato)} ${h.tittel}: beskjeden gikk ikke ut (${e.message})`); }
       }
     } catch (e) { feil.push(`${kortDato(h.dato)} ${h.tittel}: ${e.message}`); }
   }
   K.valgt.clear(); lukk(true);
-  toast(`<b>${ok} kurs avlyst.</b>${tekst ? ` Beskjed lagt i kø: ${epost} e-post og ${sms} SMS.` : ''}${ikkeNaaddTekst(ikke)} ${esc(beskjeder.join(' '))}${feil.length ? ' ' + esc(feil.join(' ')) : ''}`);
+  toast(`<b>${ok} kurs avlyst.</b>${FL.varsle === 'ja' ? ` ${varslet} påmeldte har fått «Kurset er avlyst».${alt ? ` ${alt} hadde alt fått den.` : ''}` : ''}${ikkeNaaddTekst(ikke)}${feil.length ? ' ' + esc(feil.join(' ')) : ''}`);
   await oppfrisk();
 };
 

@@ -30,7 +30,8 @@ krev_admin();
 function kanalerMulig(string $navn): array
 {
     $begge = ['avbestilling', 'betaling_feilet', 'kurspaaminnelse', 'ordrebekreftelse', 'venteliste_ledig',
-              'venteliste_tildelt', 'ferdig_brent', 'innmelding_fast_trekk', 'innmelding_ordner_selv'];
+              'venteliste_tildelt', 'ferdig_brent', 'innmelding_fast_trekk', 'innmelding_ordner_selv',
+              'kurs_avlyst'];
     // «pamelding_flyttet» staar ikke her: pamelding.php (flytting av én
     // person) sender den bare med e-post, og okt-varsel.php gjoer det samme.
     // Tilbys SMS, kunne malen staa paa «bare SMS» og aldri naa den som ble

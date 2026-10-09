@@ -3561,6 +3561,107 @@ final class Booking
     }
 
     /**
+     * Hva som kan gis tilbake paa én plass, delt etter vei.
+     *
+     * Samme deling som api/avbestill.php gjoer (den er ikke flyttet hit, saa
+     * vedtakssjekkene paa den staar). Min side (avlyst dato, eieren 9. oktober
+     * 2026) viser «Du får … kr tilbake» foer kunden trykker, og det tallet maa
+     * vaere det samme som avbestillingen faktisk gir — tests/avlyst-dato.php
+     * holder de to opp mot hverandre (Vipps, gavekort, ikke betalt, kontant).
+     *
+     *   vipps     Vipps-betalinger som kan refunderes dit (betalt/delvis)
+     *   manuell   kontant/kort i kassa: tilbake for haand
+     *   uavklart  betaling som ikke er bekreftet: ordnes for haand
+     *   gave      betaling-id => oere trukket fra gavekortet
+     *   kort      gavekortene som maa laases
+     *   sum       alt over, Vipps regnet som det som ikke alt er refundert
+     *
+     * @return array{vipps: list<array<string,mixed>>, manuell: int, uavklart: int, gave: array<int,int>, kort: list<int>, sum: int}
+     */
+    public static function tilbakeFor(int $bookingId, ?int $pid = null): array
+    {
+        $ider = array_map(static fn(array $r): int => (int) $r['id'], self::betalingerFor($bookingId)['rader']);
+        if ($ider === [] && $pid !== null) {
+            $ider = [$pid];
+        }
+        $rader = $ider === [] ? [] : DB::alle(
+            'SELECT * FROM payments WHERE id IN (' . implode(',', array_unique($ider)) . ') ORDER BY id'
+        );
+        $ut = ['vipps' => [], 'manuell' => 0, 'uavklart' => 0, 'gave' => [], 'kort' => [], 'sum' => 0];
+        foreach ($rader as $p) {
+            if ($p['annullert_at'] !== null) {
+                continue;
+            }
+            // L-2: gavekortdelen er betalt, den ogsaa — det som faktisk ble
+            // trukket fra kortet for akkurat denne betalingen.
+            $gave = self::gavekortBrukt((int) $p['id']);
+            if ($gave > 0) {
+                $ut['gave'][(int) $p['id']] = $gave;
+                $ut['kort'][] = (int) $p['gavekort_id'];
+            }
+            $penger = (int) $p['belop_ore'];
+            if ($penger <= 0) {
+                continue;
+            }
+            $st = (string) $p['status'];
+            if ((string) $p['type'] !== 'manuell' && trim((string) $p['vipps_reference']) !== ''
+                && in_array($st, ['betalt', 'delvis_refundert'], true)) {
+                $ut['vipps'][] = $p;
+            } elseif ((string) $p['type'] === 'manuell' && $st === 'betalt') {
+                $ut['manuell'] += $penger;
+            } elseif (in_array($st, ['opprettet', 'venter', 'autorisert'], true)) {
+                $ut['uavklart'] += $penger;
+            }
+        }
+        $vippsRest = 0;
+        foreach ($ut['vipps'] as $p) {
+            $vippsRest += max(0, (int) $p['belop_ore'] - (int) ($p['refundert_ore'] ?? 0));
+        }
+        $ut['sum'] = $vippsRest + $ut['manuell'] + $ut['uavklart'] + array_sum($ut['gave']);
+        return $ut;
+    }
+
+    /**
+     * Kontrollen foer en paamelding flyttes til en annen dato, inne i
+     * transaksjonen: paameldingen laases og maa staa som da den ble lest, og
+     * den nye datoen maa ha plass (samme laaser som et kjoep, ledigePlasser
+     * med laas). Kaster RuntimeException med kode 409.
+     *
+     * Samme kontroll som «flytt» i api/admin/pamelding.php (der staar den
+     * inline, med vedtakssjekker paa seg). Brukes av Min side naar Lissom har
+     * avlyst datoen (api/avlyst-plass.php).
+     *
+     * @param array<string,mixed> $b paameldingen slik den ble lest
+     */
+    public static function sjekkFlytting(int $id, array $b, int $tilOkt): void
+    {
+        $naa = DB::en(
+            'SELECT status, course_session_id, antall, belop_ore, payment_id, betalt_maate,
+                    ' . (DB::harKolonne('bookings', 'rabatt_prosent') ? 'rabatt_prosent' : '0 AS rabatt_prosent') . '
+               FROM bookings WHERE id = :i FOR UPDATE',
+            ['i' => $id]
+        );
+        if ($naa === null || (string) $naa['status'] === 'avbestilt'
+            || (string) $naa['status'] !== (string) $b['status']
+            || (int) $naa['course_session_id'] !== (int) $b['course_session_id']
+            || (int) $naa['antall'] !== (int) $b['antall']
+            || (int) $naa['belop_ore'] !== (int) $b['belop_ore']
+            || (int) ($naa['payment_id'] ?? 0) !== (int) ($b['payment_id'] ?? 0)
+            || (string) ($naa['betalt_maate'] ?? '') !== (string) ($b['betalt_maate'] ?? '')
+            || (float) $naa['rabatt_prosent'] !== (float) ($b['rabatt_prosent'] ?? 0)) {
+            throw new RuntimeException('Påmeldingen ble endret i mellomtiden. Last siden på nytt.', 409);
+        }
+        $trenger = max(1, (int) $b['antall']);
+        $ledige = self::ledigePlasser($tilOkt, true);
+        if ($ledige < $trenger) {
+            throw new RuntimeException($ledige <= 0
+                ? 'Den datoen er full.'
+                : 'Det er bare ' . $ledige . ' plass' . ($ledige === 1 ? '' : 'er')
+                  . ' igjen, og denne påmeldingen trenger ' . $trenger . '.', 409);
+        }
+    }
+
+    /**
      * Setter status paa paameldingen etter det som faktisk er betalt.
      *
      * Ett sted, saa registrering og annullering aldri kan svare forskjellig:

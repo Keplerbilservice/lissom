@@ -8,6 +8,14 @@
  *            ikkeNaadd: [navn], paaminnelseSendt }   ingenting sendes
  *   POST handling=flyttet     { oktId, fra, forventet }   «Ny dato paa kurset» til hver paameldt
  *   POST handling=paaminnelse { oktId, forventet }        «Paaminnelse foer kurset» naa
+ *   POST handling=avlyst      { oktId }   «Kurset er avlyst» (kurs_avlyst) til hver paameldt
+ *
+ *   «Kurset er avlyst» (eieren, GO 9. oktober 2026): /ny-admin sender den
+ *   etter «Avlys dato» (kurs.php avlys). Bare naar oekta faktisk er avlyst
+ *   (lest under radlaasen). SMS og e-post etter malens kanal (Innstillinger ›
+ *   Meldinger), til betalt og aktive reservasjoner. Noekkel per paamelding,
+ *   oekt og kanal («avlyst:<booking>:<oekt>:<kanal>»), lagt inn i samme
+ *   transaksjon som koeleggingen: et nytt trykk gir ingen ny beskjed.
  *
  *   forventet: datoen admin saa (norsk tid, «2026-10-20 18:00»). Oekta leses
  *   paa nytt under radlaasen; er datoen en annen, svares 409 og ingenting
@@ -121,6 +129,14 @@ $paaminnelseNaar = Paaminnelse::naar($oktId, (string) $okt['start_tid'], (string
 
 $felterFor = static function (string $mal, array $d, ?array $rad = null) use ($okt, $fraTekst, $tilTekst, $paaminnelseNaar): array {
     $okt = $rad ?? $okt;
+    if ($mal === 'kurs_avlyst') {
+        return [
+            'navn' => (string) ($d['navn'] ?? ''),
+            'kurs' => (string) $okt['tittel'],
+            'dato' => Paaminnelse::ukedagDato((string) $okt['start_tid']),
+            'tid'  => Paaminnelse::klokkeslett((string) $okt['start_tid']),
+        ];
+    }
     if ($mal === 'pamelding_flyttet') {
         return [
             'navn'  => (string) ($d['navn'] ?? ''),
@@ -144,6 +160,16 @@ $mottakerFor = static function (string $mal, array $d) use ($okt): array {
     if ($mal === 'kurspaaminnelse') {
         return Paaminnelse::mottaker($okt, $d);
     }
+    if ($mal === 'kurs_avlyst') {
+        // SMS og e-post: kanalen paa malen avgjoer hva som faktisk gaar ut.
+        $epost = trim((string) ($d['epost'] ?? ''));
+        $tlf = trim((string) ($d['telefon'] ?? ''));
+        return [
+            'navn'    => (string) ($d['navn'] ?? ''),
+            'epost'   => $epost !== '' ? $epost : null,
+            'telefon' => $tlf !== '' ? $tlf : null,
+        ];
+    }
     $epost = trim((string) ($d['epost'] ?? ''));
     return [
         'navn'    => (string) ($d['navn'] ?? ''),
@@ -158,7 +184,7 @@ $iOsloTid = static fn(?string $u): string => ($u !== null && $u !== '') ? Bookin
 
 if ($handling === 'forhandsvis') {
     $mal = Foresporsel::tekst('mal');
-    if (!in_array($mal, ['pamelding_flyttet', 'kurspaaminnelse'], true)) {
+    if (!in_array($mal, ['pamelding_flyttet', 'kurspaaminnelse', 'kurs_avlyst'], true)) {
         Svar::feil('Ukjent mal.');
     }
     $m = $malRad($mal);
@@ -293,6 +319,90 @@ if ($handling === 'flyttet') {
         throw $e;
     }
     revider('okt_flyttet_varslet', 'course_session', $oktId, ['sendt' => $sendt, 'alt' => $alt, 'fra' => $fraRaa]);
+    Svar::ok(['sendt' => $sendt, 'alleredeSendt' => $alt, 'uten' => count($ikkeNaadd), 'ikkeNaadd' => $ikkeNaadd]);
+}
+
+if ($handling === 'avlyst') {
+    $m = $malRad('kurs_avlyst');
+    if ($m === null || (int) $m['aktiv'] !== 1) {
+        Svar::feil('Meldingen «Kurset er avlyst» er slått av under Innstillinger › Meldinger. Ingen fikk beskjed.', 409);
+    }
+    // Uten utsendingsnoeklene (migrasjon 270) sendes ingenting: et nytt
+    // trykk kunne gitt samme beskjed to ganger.
+    if (!DB::harTabell('varsel_utsendinger')) {
+        Svar::feil('Kjør oppdateringene først.', 503);
+    }
+    $sendt = 0;
+    $alt = 0;
+    $ikkeNaadd = [];
+    $pdo = DB::kobling();
+    $pdo->beginTransaction();
+    try {
+        // Laas oekta og les den paa nytt: beskjeden gaar bare naar datoen
+        // faktisk er avlyst, og teksten bygges fra raden under laasen.
+        DB::verdi('SELECT id FROM course_sessions WHERE id = :i FOR UPDATE', ['i' => $oktId]);
+        $rad = DB::en(
+            "SELECT cs.id, cs.start_tid, cs.slutt_tid, cs.status, c.tittel
+               FROM course_sessions cs JOIN courses c ON c.id = cs.course_id WHERE cs.id = :i",
+            ['i' => $oktId]
+        );
+        if ($rad === null || (string) $rad['status'] !== 'avlyst') {
+            $pdo->rollBack();
+            Svar::feil('Datoen er ikke avlyst. Ingen fikk beskjed.', 409);
+        }
+        $liste = DB::alle(
+            "SELECT b.id, COALESCE(m.navn, b.gjest_navn) AS navn,
+                    COALESCE(m.epost, b.gjest_epost) AS epost,
+                    COALESCE(m.telefon, b.gjest_telefon) AS telefon
+               FROM bookings b
+          LEFT JOIN members m ON m.id = b.member_id
+              WHERE b.course_session_id = :o AND " . Booking::aktivSql('b') . "
+           ORDER BY b.id",
+            ['o' => $oktId]
+        );
+        foreach ($liste as $d) {
+            $mottaker = $mottakerFor('kurs_avlyst', $d);
+            $v = $veiFor($m, $mottaker);
+            if (!$v['epost'] && !$v['sms']) {
+                $ikkeNaadd[] = (string) $d['navn'];
+                continue;
+            }
+            // avlyst:<booking>:<oekt>:<kanal> — bare kanalene som ikke alt
+            // har faatt den, sendes.
+            $nye = [];
+            foreach (['epost', 'sms'] as $k) {
+                if ($v[$k] && DB::kjor(
+                    'INSERT IGNORE INTO varsel_utsendinger (nokkel) VALUES (:n)',
+                    ['n' => 'avlyst:' . (int) $d['id'] . ':' . $oktId . ':' . $k]
+                )->rowCount() === 1) {
+                    $nye[$k] = true;
+                }
+            }
+            if ($nye === []) {
+                $alt++;
+                continue;
+            }
+            // E-post naar malen bare er SMS og personen ikke har telefon:
+            // veier() sier epost, og Varsel::mal() sender den som reserve.
+            $lagt = Varsel::mal('kurs_avlyst', [
+                'navn'    => $mottaker['navn'],
+                'epost'   => isset($nye['epost']) ? $mottaker['epost'] : null,
+                'telefon' => isset($nye['sms']) ? $mottaker['telefon'] : null,
+            ], $felterFor('kurs_avlyst', $d, $rad), 'booking', (int) $d['id']);
+            if ($lagt > 0) {
+                $sendt++;
+            } else {
+                $ikkeNaadd[] = (string) $d['navn'];
+            }
+        }
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $e;
+    }
+    revider('okt_avlyst_varslet', 'course_session', $oktId, ['sendt' => $sendt, 'alt' => $alt]);
     Svar::ok(['sendt' => $sendt, 'alleredeSendt' => $alt, 'uten' => count($ikkeNaadd), 'ikkeNaadd' => $ikkeNaadd]);
 }
 

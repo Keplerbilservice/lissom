@@ -691,6 +691,7 @@ img{max-width:100%;display:block}
 .ms-fm small, .ms-fr > small { display: block; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty; }
 .ms-merke { font-size: 11px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; border-radius: 999px; padding: 2px 9px; background: var(--clay-200); color: var(--lissom-brown); }
 .ms-merke.ok { background: var(--sage-100, #dfe9d6); color: var(--sage-600, #4f7a46); }
+.ms-merke.avlyst { background: var(--danger-bg); color: var(--danger); }
 .ms-fr-knapp { cursor: pointer; }
 /* Menylinja paa Min side (skissen): gul, som nettsiden; paa telefon «☰ Meny». */
 .ms-tl { background: var(--lissom-yellow); position: sticky; top: 0; z-index: 30; }
@@ -6251,7 +6252,7 @@ window.__resources = {
               <div class="ms-fh"><span class="ms-ft">Mine påmeldinger</span><span class="ms-fn">{{ msPamldAntall }}</span></div>
               <sc-for list="{{ minePameldinger }}" as="p" hint-placeholder-count="2">
                 <sc-if value="{{ p.kommende }}" hint-placeholder-val="{{ true }}">
-                  <div class="ms-fr"><div class="ms-fm"><b>{{ p.tittel }}</b><small>{{ p.naar }}</small></div><span class="ms-merke ok">{{ p.status }}</span></div>
+                  <div class="ms-fr"><div class="ms-fm"><b>{{ p.tittel }}</b><small>{{ p.naar }}</small></div><span class="{{ p.merkeKlasse }}">{{ p.status }}</span></div>
                 </sc-if>
               </sc-for>
               <sc-if value="{{ msErDeltaker }}" hint-placeholder-val="{{ false }}">
@@ -7525,7 +7526,14 @@ window.__resources = {
                       <sc-if value="{{ p.harKursbevis }}" hint-placeholder-val="{{ false }}">
                         <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="download" on-click="{{ p.apneKursbevis }}" hint-size="auto,36px">Kursbevis</x-import>
                       </sc-if>
-                      <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" size="sm" on-click="{{ p.avbestill }}" hint-size="auto,36px">Avbestill</x-import>
+                      <sc-if value="{{ p.ikkeAvlyst }}" hint-placeholder-val="{{ true }}">
+                        <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" size="sm" on-click="{{ p.avbestill }}" hint-size="auto,36px">Avbestill</x-import>
+                      </sc-if>
+                      <!-- Lissom har avlyst datoen (eieren, GO 9. oktober 2026). -->
+                      <sc-if value="{{ p.erAvlyst }}" hint-placeholder-val="{{ false }}">
+                        <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="primary" size="sm" on-click="{{ p.velgNyDato }}" hint-size="auto,36px">Velg ny dato</x-import>
+                        <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" on-click="{{ p.faaPengene }}" hint-size="auto,36px">Få pengene tilbake</x-import>
+                      </sc-if>
 
                       <!-- Bilder av det du har laget.
                            Verkstedet staar med tjue ferdigbrente ting og skal
@@ -31571,6 +31579,15 @@ window.__resources = {
          produkt» lukket den bare igjen. Begge knappene peker naa paa det
          ekte vareskjemaet, og da var ingenting igjen som kunne aapne denne.
          Fjernet 24. august. -->
+    <!-- Lissom har avlyst datoen: neste datoer paa samme kurs med plass
+         (9. oktober 2026). Kunden velger én, saa kommer «Bytt til denne datoen». -->
+    <sc-if value="{{ datoValgApen }}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; flex-direction: column; gap: var(--space-2);">
+        <sc-for list="{{ datoValg }}" as="v" hint-placeholder-count="3">
+          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="{{ v.variant }}" size="sm" on-click="{{ v.velg }}" aria-pressed="{{ v.valgt }}" hint-size="auto,40px">{{ v.navn }}</x-import>
+        </sc-for>
+      </div>
+    </sc-if>
     <div style="display: flex; gap: var(--space-3); margin-top: var(--space-4); flex-wrap: wrap;">
       <!-- Ruter som bare viser noe, sender «Lukk» som handling. Da sto det
            to like knapper ved siden av hverandre, og den ene gjorde ikke
@@ -33352,6 +33369,8 @@ class Component extends DCLogic {
     }
 
     const tekst = (h) => h === 'Betal tilbake' ? '' : h && h.indexOf('Betal') === 0 ? 'Betalingen er gjennomført' : h && h.indexOf('Opprett avtale') === 0 ? 'Avtalen er opprettet i Vipps' : h && h.indexOf('Avbestill') === 0 ? 'Avbestilt — pengene tilbakeføres til Vipps' : h === 'Legg i handlekurven' ? 'Lagt i handlekurven' : h;
+    // «stille»: kvitteringen kommer fra svaret paa serveren (avlyst dato, 9. oktober 2026).
+    if (d && d.gjor && d.stille) { d.gjor(); this.setState({ detalj: null }); return; }
     if (d && d.gjor) { d.gjor(); this.setState({ detalj: null, kvittering: tekst(d.handling) }); return; }
     if (d && d.maal) { this.setState({ side: d.maal, detalj: null }); window.scrollTo(0, 0); }
     else this.setState({ detalj: null, kvittering: d ? tekst(d.handling) : '' });
@@ -56764,6 +56783,76 @@ class Component extends DCLogic {
       .catch(() => {});
   }
 
+  // ── Lissom har avlyst datoen (eieren, GO 9. oktober 2026) ─────────────
+  //
+  // «Velg ny dato»: neste datoer paa samme kurs med ledig plass, fra
+  // serveren (api/avlyst-plass.php). Kunden velger én og trykker «Bytt til
+  // denne datoen». Ingen ekstra kostnad, ingen ny betaling.
+  avlystVelgDato(p) {
+    if (!this.erPublisert() || !p.id) return;
+    fetch('/api/avlyst-plass.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling: 'datoer', bookingId: p.id }),
+    })
+      .then(r => r.json())
+      .then(d => {
+        if (!d || !d.ok) {
+          this.setState({ kvittering: 'Kunne ikke bytte dato', kvitteringDetalj: (d && d.feil) || 'Ta kontakt på post@lissom.no, så ordner vi det.' });
+          return;
+        }
+        this.visAvlystDatoer(p, d.datoer || [], 0);
+      })
+      .catch(() => this.setState({ kvittering: 'Kunne ikke bytte dato', kvitteringDetalj: 'Fikk ikke kontakt med serveren. Prøv igjen, eller ta kontakt på post@lissom.no.' }));
+  }
+
+  visAvlystDatoer(p, datoer, valgt) {
+    this.setState({
+      detaljMva: null,
+      detalj: {
+        tittel: 'Velg ny dato', undertittel: p.tittel,
+        felter: datoer.length ? [] : [{ navn: 'Det er ingen ledige datoer på dette kurset nå.', verdi: ' ' }],
+        handling: valgt ? 'Bytt til denne datoen' : 'Lukk',
+        stille: true,
+        datoValg: datoer.map(x => ({ navn: x.naar, valgt: x.oktId === valgt, velg: () => this.visAvlystDatoer(p, datoer, x.oktId) })),
+        gjor: valgt ? () => this.byttAvlystDato(p, valgt) : null,
+      },
+    });
+  }
+
+  byttAvlystDato(p, oktId) {
+    fetch('/api/avlyst-plass.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling: 'bytt', bookingId: p.id, oktId }),
+    })
+      .then(r => r.json())
+      .then(d => {
+        if (!d || !d.ok) {
+          this.setState({ kvittering: 'Kunne ikke bytte dato', kvitteringDetalj: (d && d.feil) || 'Ta kontakt på post@lissom.no, så ordner vi det.' });
+          return;
+        }
+        this.setState({ minePlasser: null, kvittering: 'Plassen er flyttet', kvitteringDetalj: d.beskjed });
+      })
+      .catch(() => this.setState({ kvittering: 'Kunne ikke bytte dato', kvitteringDetalj: 'Fikk ikke kontakt med serveren. Prøv igjen, eller ta kontakt på post@lissom.no.' }));
+  }
+
+  // «Få pengene tilbake»: det som faktisk er betalt, regnet av serveren
+  // (mine-plasser «tilbake»). Refusjonen gaar gjennom api/avbestill.php, som
+  // gir alt tilbake naar Lissom har avlyst datoen — uansett tid igjen.
+  visAvlystRefusjon(p) {
+    this.setState({
+      detaljMva: null,
+      detalj: {
+        tittel: 'Få pengene tilbake', undertittel: p.tittel + ' · ' + p.naar,
+        felter: [{ navn: p.tilbake || '', verdi: ' ' }],
+        handling: 'Ja, gi meg pengene tilbake',
+        stille: true,
+        gjor: () => this.avbestillEkte(p),
+      },
+    });
+  }
+
   // Avbestilling. Serveren regner ut refusjonen etter vilkaarene og utforer
   // den mot Vipps — nettleseren sender bare hvilken plass det gjelder.
   avbestillEkte(p) {
@@ -58404,6 +58493,11 @@ class Component extends DCLogic {
         navn: v.navn,
         variant: v.variant || 'primary',
         velg: () => { this.setState({ detalj: null }); this.startAbonnement(v.plan, v.betaling); },
+      })),
+      // Datoene aa velge mellom naar Lissom har avlyst (visAvlystDatoer).
+      datoValgApen: !!((this.state.detalj || {}).datoValg || []).length,
+      datoValg: (((this.state.detalj || {}).datoValg) || []).map(v => ({
+        navn: v.navn, velg: v.velg, variant: v.valgt ? 'primary' : 'secondary', valgt: v.valgt ? 'true' : 'false',
       })),
       visDetaljBevis: !!(this.state.detalj && this.state.detalj.kursbevis),
       apneDetaljBevis: () => {
@@ -60500,6 +60594,12 @@ class Component extends DCLogic {
         naar: p.naar,
         status: p.status,
         harKursbevis: !!p.kursbevis,
+        // Avlyst av Lissom (9. oktober 2026): to valg i stedet for «Avbestill».
+        erAvlyst: !!p.avlyst,
+        ikkeAvlyst: !p.avlyst,
+        merkeKlasse: 'ms-merke ' + (p.avlyst ? 'avlyst' : 'ok'),
+        velgNyDato: () => this.avlystVelgDato(p),
+        faaPengene: () => this.visAvlystRefusjon(p),
         // Flisen paa forsiden viser bare det som kommer (skissen).
         kommende: !p.kursbevis,
         apneKursbevis: () => { if (p.kursbevis) window.open(p.kursbevis, '_blank', 'noopener'); },

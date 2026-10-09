@@ -91,7 +91,8 @@
       </div>`;
   }
   const TYPE = {henvendelse: 'Forespørsel', soknad: 'Medlemssøknad', frys: 'Frys', bidrag: 'Medlemsbidrag', betaling: 'Betaling', venteliste: 'Venteliste',
-    henting: 'Klar til henting', leire: 'Leirebestilling', dugnad: 'Dugnad', lager: 'Lager', chat: 'Chat', innboks: 'Innboks', feil: 'Feilmelding'};
+    henting: 'Klar til henting', leire: 'Leirebestilling', dugnad: 'Dugnad', lager: 'Lager', chat: 'Chat', innboks: 'Innboks', feil: 'Feilmelding',
+    tilbakebetal: 'Avlyst dato'};
   const knapp = (tekst, gjor, hoved, ekstra = '') => `<button class="knapp liten ${hoved ? 'hoved' : ''}" type="button" data-gjor="${gjor}" ${ekstra}>${tekst}</button>`;
   /* Databaseoppdateringer som venter (eieren 09.10.2026). Samme knapp som Mer › Vedlikehold. */
   const radMigr = n => `<div class="rad"><div class="tekst"><span class="type">Vedlikehold</span><b>${n} ${n === 1 ? 'databaseoppdatering venter' : 'databaseoppdateringer venter'}</b><small>${esc(migr.mangler.join(' · '))}</small></div><div class="knapper">${knapp('Kjør oppdateringer', 'migrer', true)}</div></div>`;
@@ -112,6 +113,8 @@
       henting: () => knapp('Send «Klar til henting»', 'henting', true, `data-k="${k}"`),
       lager: () => knapp('Bestill mer', 'bestill', true, `data-k="${k}"`),
       feil: () => knapp('Løst', 'feil-lost', false, `data-k="${k}"`) + gammel,
+      /* Avlyst dato, betalt kontant/kort i kassa (eieren 09.10.2026): verkstedet gir pengene tilbake og merker det her. */
+      tilbakebetal: () => knapp('Betalt tilbake', 'tilbakebetalt', true, `data-k="${k}"`),
     }[s.type] || (() => gammel);
     return `<div class="rad"><div class="tekst"><span class="type">${TYPE[s.type] || esc(s.gruppe || '')}</span><b>${esc(s.tittel)}</b>${s.under ? `<small>${esc(s.under)}</small>` : ''}</div><div class="knapper">${h()}</div></div>`;
   }
@@ -287,6 +290,9 @@
         return kall('ferdigbrent.php', {handling: 'meld-alle', oktId: id}, 'Sendt.');
       case 'bestill': return kall('produkter.php', {handling: 'bestillMer', id}, 'Lagt i handlelista.');
       case 'feil-lost': return kall('feilrapporter.php', {handling: 'status', id, status: 'lukket'}, 'Merket som løst.');
+      case 'tilbakebetalt':
+        if (!await NA.bekreft('Betalt tilbake?', String(s.tittel) + '. Merk saken som betalt tilbake når pengene er gitt.', 'Betalt tilbake')) return;
+        return kall('pamelding.php', {handling: 'tilbakebetalt', id}, 'Merket som betalt tilbake.');
     }
   }
   async function utfort(b) {

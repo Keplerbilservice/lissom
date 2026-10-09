@@ -47,7 +47,7 @@ Rate::sjekk('avbestill', maks: 10, vindu: 3600,
     nokkel: $medlem !== null ? (string) $medlem['id'] : 'booking-' . $bookingId);
 
 $b = DB::en(
-    'SELECT b.*, c.tittel, c.type, cs.start_tid, p.vipps_reference, p.belop_ore AS betalt_ore,
+    'SELECT b.*, c.tittel, c.type, cs.start_tid, cs.status AS okt_status, p.vipps_reference, p.belop_ore AS betalt_ore,
             p.refundert_ore, p.status AS betalingsstatus, p.id AS pid,
             m.navn AS m_navn, m.epost AS m_epost, m.telefon AS m_telefon
        FROM bookings b
@@ -136,9 +136,21 @@ $betalt = $manuellOre + $uavklartOre + array_sum(array_map(static fn(array $p): 
 $gavekort = array_sum($gavedeler);
 $timerIgjen = $b['start_tid'] ? (strtotime((string) $b['start_tid']) - time()) / 3600 : null;
 
+// ── Datoen er avlyst av Lissom ──────────────────────────────────────────
+//
+// Eieren, 9. oktober 2026: har Lissom avlyst datoen, faar kunden alt tilbake
+// uansett hvor lenge det er igjen — 2-dagersregelen gjelder bare naar kunden
+// selv avbestiller. Samme refusjonsloeype som ellers (Vipps tilbake til
+// Vipps, gavekort tilbake til kortet). Kontant/kort betalt i kassa blir en
+// sak i «Må gjøres» i /ny-admin (avlyst_tilbakebetal, migrasjon 271).
+$avlystDato = (string) ($b['okt_status'] ?? '') === 'avlyst';
+
 if ($betalt === 0 && $gavekort === 0) {
     $andel = 0.0;
     $regel = 'Ingenting var belastet.';
+} elseif ($avlystDato) {
+    $andel = 1.0;
+    $regel = 'Lissom har avlyst datoen.';
 } else {
     // Selve regelen staar i Booking::avbestillingsregel(). Den samme brukes
     // av api/mine-plasser.php, som forteller kunden hva hen faar — sto den to
@@ -159,7 +171,7 @@ $refundert = false;
 $manuelt = $forHaand > 0;
 
 $harClaim = false;
-$claim = static function () use ($bookingId, $medlem, $b, &$harClaim, $gavedeler, $andel, &$gaveGitt): void {
+$claim = static function () use ($bookingId, $medlem, $b, &$harClaim, $gavedeler, $andel, &$gaveGitt, $avlystDato, $manuellOre): void {
     // Med kode: den samme koden som ble sjekket over, saa en byttet kode
     // ikke kan avbestille.
     $endret = DB::kjor(
@@ -180,6 +192,13 @@ $claim = static function () use ($bookingId, $medlem, $b, &$harClaim, $gavedeler
         if ($tilbake > 0) {
             $gaveGitt += Booking::gavekortTilbake((int) $pid, $tilbake);
         }
+    }
+    // Avlyst dato, betalt kontant/kort i kassa: en sak i «Må gjøres» i
+    // /ny-admin («Tilbakebetal X kr til NN»). I samme transaksjon som
+    // avbestillingen, og bare én per plass (primaernoekkel).
+    if ($avlystDato && $manuellOre > 0 && DB::harTabell('avlyst_tilbakebetal')) {
+        DB::kjor('INSERT IGNORE INTO avlyst_tilbakebetal (booking_id, belop_ore) VALUES (:b, :o)',
+            ['b' => $bookingId, 'o' => $manuellOre]);
     }
     $harClaim = true;
 };

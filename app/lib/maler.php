@@ -160,6 +160,18 @@ final class Maler
                 'lenke' => 'Lenken til Min side',
             ],
         ],
+        // Eieren, GO 9. oktober 2026: «Avlys dato» i /ny-admin gir beskjed.
+        // Sendes av api/admin/okt-varsel.php (handling=avlyst).
+        'kurs_avlyst' => [
+            'tittel' => 'Kurset er avlyst',
+            'hvor'   => 'Sendes når du avlyser en dato i den nye adminen og velger å gi beskjed.',
+            'felter' => [
+                'navn' => 'Fornavnet til deltakeren',
+                'kurs' => 'Kursets navn',
+                'dato' => 'Ukedag og dato, f.eks. «onsdag 7. oktober»',
+                'tid'  => 'Klokkeslettet kurset skulle starte',
+            ],
+        ],
         'kurspaaminnelse' => [
             'tittel' => 'Påminnelse før kurset',
             // Eieren, 8. oktober 2026: «dagen før kl 12» — se bin/cron.php

@@ -13,6 +13,7 @@
  *   POST handling=bevis      { id, navn?, kurs?, sperret? }  retter kursbeviset
  *   POST handling=bekreftelse { id, oppmote? }  sender paameldingsbekreftelsen
  *   POST handling=sett       { id }   «Sett som sett» paa en ny paamelding (migrasjon 265)
+ *   POST handling=tilbakebetalt { id }  avlyst dato: kontant/kort er betalt tilbake (migrasjon 271)
  *
  * Ikke alle bestiller paa nett. Noen ringer, noen staar i doera. De maa staa
  * paa samme deltakerliste som alle andre — ellers foerer verkstedet to
@@ -46,6 +47,28 @@ const MAATER = ['Kontant', 'Vipps', 'Vipps i verkstedet', 'Gavekort',
 
 $handling = Foresporsel::tekst('handling', 'legg-til');
 $id       = Foresporsel::heltall('id');
+
+// ----------------------------------------------------- tilbakebetalt
+//
+// Avlyst dato, kunden valgte pengene tilbake, og plassen var betalt kontant
+// eller med kort i kassa (eieren, GO 9. oktober 2026). Saken «Tilbakebetal X
+// kr til NN» i Må gjøres staar til noen trykker «Betalt tilbake» her.
+if ($handling === 'tilbakebetalt') {
+    if (!DB::harTabell('avlyst_tilbakebetal')) {
+        Svar::feil('Dette krever en oppdatering av databasen. Kjør vedlikeholdet fra menyen nederst til venstre.', 503);
+    }
+    $n = DB::kjor(
+        'UPDATE avlyst_tilbakebetal SET ferdig_at = UTC_TIMESTAMP(), ferdig_av = :a
+          WHERE booking_id = :b AND ferdig_at IS NULL',
+        ['a' => (int) $admin['id'], 'b' => $id]
+    )->rowCount();
+    if ($n !== 1) {
+        Svar::feil('Denne er alt merket som betalt tilbake.', 409);
+    }
+    $belop = (int) DB::verdi('SELECT belop_ore FROM avlyst_tilbakebetal WHERE booking_id = :b', ['b' => $id]);
+    revider('avlyst_tilbakebetalt', 'booking', $id, ['belop_ore' => $belop]);
+    Svar::ok(['beskjed' => 'Merket som betalt tilbake.']);
+}
 
 // ------------------------------------------------------------ sett
 //

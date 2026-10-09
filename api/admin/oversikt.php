@@ -952,6 +952,32 @@ $maGjores = (static function () use ($medlemsstatus, $nyeste): array {
         $sak('Betaling', 'betaling', (int) $m['id'], $m['navn'] . ' mangler betaling',
             implode(' · ', array_filter([(string) $m['plan'], (string) $m['hvorfor']])), 'folk?person=' . (int) $m['id']);
     }
+    // Avlyst dato der kunden valgte pengene tilbake, men betalte kontant/kort
+    // i kassa (eieren, GO 9. oktober 2026). Migrasjon 271; «Betalt tilbake»
+    // (ma-gjores-mer.php tilbakebetalt) tar den bort.
+    $trygt('tilbakebetal', static function () use ($sak): void {
+        if (!DB::harTabell('avlyst_tilbakebetal')) {
+            return;
+        }
+        foreach (DB::alle(
+            "SELECT t.booking_id, t.belop_ore, c.tittel, cs.start_tid,
+                    COALESCE(m.navn, b.gjest_navn) AS navn
+               FROM avlyst_tilbakebetal t
+               JOIN bookings b ON b.id = t.booking_id
+               JOIN courses c ON c.id = b.course_id
+          LEFT JOIN course_sessions cs ON cs.id = b.course_session_id
+          LEFT JOIN members m ON m.id = b.member_id
+              WHERE t.ferdig_at IS NULL
+           ORDER BY t.created_at LIMIT 50"
+        ) as $r) {
+            $kr = number_format(intdiv((int) $r['belop_ore'] + 50, 100), 0, ',', "\u{a0}");
+            $sak('Betaling', 'tilbakebetal', (int) $r['booking_id'],
+                'Tilbakebetal ' . $kr . "\u{a0}kr til " . (string) $r['navn'],
+                implode(' · ', array_filter([(string) $r['tittel'],
+                    $r['start_tid'] ? Booking::norskDato((string) $r['start_tid']) : '', 'avlyst'])),
+                'pameldte?booking=' . (int) $r['booking_id']);
+        }
+    });
 
     // Kurs: nye påmeldinger (siste tre dager) og ledig plass med folk på
     // venteliste. «Sett» ligger på serveren fra migrasjon 265 (idé 2, 08.10);

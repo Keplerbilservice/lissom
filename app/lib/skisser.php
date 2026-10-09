@@ -141,20 +141,9 @@ final class Skisser
                        (SELECT COUNT(*) FROM skisse_sider sd WHERE sd.skisse_id = s.id) AS sider
                   FROM skisser s
              LEFT JOIN members mb ON mb.id = s.eier_id';
-        if (self::erAdmin($m)) {
-            $rader = DB::alle($sql . ' WHERE s.eier_id = :m ORDER BY s.updated_at DESC, s.id DESC',
-                ['m' => (int) $m['id']]);
-        } else {
-            $vilkaar = ['s.eier_id = :m'];
-            if (self::forMedlemmer() && self::erMedlem($m)) {
-                $vilkaar[] = 's.delt_medlemmer = 1';
-            }
-            if (!self::erMedlem($m) && self::forDeltakere() && self::erDeltaker($m)) {
-                $vilkaar[] = 's.delt_deltakere = 1';
-            }
-            $rader = DB::alle($sql . ' WHERE ' . implode(' OR ', $vilkaar) . ' ORDER BY s.updated_at DESC, s.id DESC',
-                ['m' => (int) $m['id']]);
-        }
+        // Eieren 09.10.2026: alle – admin, medlemmer og kursdeltakere – ser bare sine egne tavler.
+        $rader = DB::alle($sql . ' WHERE s.eier_id = :m ORDER BY s.updated_at DESC, s.id DESC',
+            ['m' => (int) $m['id']]);
         return array_map(static fn(array $r): array => self::ut($r, $m), $rader);
     }
 
@@ -187,15 +176,9 @@ final class Skisser
      */
     public static function kanSe(array $r, array $m): bool
     {
-        if ((int) ($r['eier_id'] ?? 0) === (int) $m['id']) {
-            return true;
-        }
-        // Eieren 09.10: admin ser bare sine egne tavler, ikke medlemmenes.
-        if (self::erAdmin($m)) {
-            return false;
-        }
-        return ((int) $r['delt_medlemmer'] === 1 && self::forMedlemmer() && self::erMedlem($m))
-            || ((int) $r['delt_deltakere'] === 1 && !self::erMedlem($m) && self::forDeltakere() && self::erDeltaker($m));
+        // Eieren 09.10.2026: «admin ser bare sine egne» og «medlemmene skal også bare se sin egen skisse».
+        // Delte tavler vises ikke lenger for andre; delingsfeltene står i basen, men gir ingen tilgang.
+        return (int) ($r['eier_id'] ?? 0) === (int) $m['id'];
     }
 
     /**

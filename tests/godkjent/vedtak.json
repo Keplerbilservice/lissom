@@ -1645,7 +1645,7 @@
         {
             "id": "skisser-modul",
             "dato": "2026-09-30",
-            "hva": "Skisser er en egen modul: egen side (skisser.html), eget API og egne tabeller, utenfor lissom-2108.html. Admin, medlemmer og kursdeltakere tegner med finger eller penn, legger inn bilder og notater. Egne tavler ser bare eieren (eieren 09.10: «jeg vil ikke se medlemmenes skisser, kun min egen» — admin ser og åpner bare sine egne, 404 på andres); admin kan dele sine tavler med medlemmer og/eller kursdeltakere. Bryterne «Skisser for medlemmer» og «Skisser for kursdeltakere» er av fra start, og av betyr at serveren også stopper (403). Eieren 30.09: «jeg vil ha et skisseprogram … bryter på synlighet … tegne med fingeren og ta notater», og «moduler nå».",
+            "hva": "Skisser er en egen modul: egen side (skisser.html), eget API og egne tabeller, utenfor lissom-2108.html. Admin, medlemmer og kursdeltakere tegner med finger eller penn, legger inn bilder og notater. Egne tavler ser bare eieren (eieren 09.10: «jeg vil ikke se medlemmenes skisser, kun min egen» — admin ser og åpner bare sine egne, 404 på andres); Eieren 09.10 (senere): «medlemmene skal også bare se sin egen skisse» – alle (admin, medlemmer, kursdeltakere) ser bare sine egne tavler; deling gir ikke lenger tilgang. Bryterne «Skisser for medlemmer» og «Skisser for kursdeltakere» er av fra start, og av betyr at serveren også stopper (403). Eieren 30.09: «jeg vil ha et skisseprogram … bryter på synlighet … tegne med fingeren og ta notater», og «moduler nå».",
             "hvor": "skisser.html, skisser.js, api/skisser.php, api/admin/skisser.php, app/lib/skisser.php, ⊙ Synlighet › Min side, Min side-flisen «Skisser»",
             "kode": [
                 {
@@ -1687,7 +1687,8 @@
                         "return self::modulPaa() && self::bryter('skissermedlemmer') === 'ja';",
                         "return self::modulPaa() && self::bryter('skisserdeltakere') === 'ja';",
                         "if ($r === null || (int) ($r['eier_id'] ?? 0) !== (int) $m['id']) {",
-                        "// Eieren 09.10: admin ser bare sine egne tavler, ikke medlemmenes."
+                        "«medlemmene skal også bare se sin egen skisse»",
+                        "return (int) ($r['eier_id'] ?? 0) === (int) $m['id'];"
                     ]
                 },
                 {
@@ -2113,7 +2114,7 @@
                     "finnes": [
                         "if (self::erMedlem($m)) {",
                         "return self::forMedlemmer();",
-                        "!self::erMedlem($m) && self::forDeltakere() && self::erDeltaker($m)"
+                        "return self::forDeltakere() && self::erDeltaker($m);"
                     ]
                 }
             ]

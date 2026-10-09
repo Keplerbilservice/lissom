@@ -157,16 +157,11 @@ sjekk('admin ser sin egen tavle', in_array($tV, $idListe($admin), true) && Skiss
 $admin2 = $person('admin', 'aktiv');
 sjekk('en annen admin ser ikke tavla', !in_array($tV, $idListe($admin2), true) && Skisser::hent($tV, $admin2) === null);
 sjekk('udelt: A ser ikke verkstedets tavle', !in_array($tV, $idListe($a), true));
-Skisser::del($tV, true, false, $admin);
-sjekk('delt med medlemmer: A ser den', in_array($tV, $idListe($a), true));
-sjekk('… men deltakeren gjør ikke', !in_array($tV, $idListe($deltaker), true));
-sjekk('… og A kan ikke endre den', ($r = Skisser::hent($tV, $a)) !== null && $r['kanEndre'] === false
-    && str_contains(kaster(static fn() => Skisser::lagreSide($tV, 1, '{"objects":[]}', $a)), 'se på'));
-Skisser::del($tV, false, true, $admin);
-sjekk('delt med deltakere: deltakeren ser den', in_array($tV, $idListe($deltaker), true));
-sjekk('… og A gjør ikke lenger', !in_array($tV, $idListe($a), true));
-$bryter('skisserdeltakere', 'nei');
-sjekk('deltakerbryteren av: den delte tavla er borte for deltakeren', Skisser::hent($tV, $deltaker) === null);
+// Eieren 09.10.2026: «medlemmene skal også bare se sin egen skisse» – deling gir ikke lenger tilgang for andre.
+Skisser::del($tV, true, true, $admin);
+sjekk('delt med medlemmer og deltakere: A ser den IKKE (bare egne)', !in_array($tV, $idListe($a), true) && Skisser::hent($tV, $a) === null);
+sjekk('… og deltakeren ser den IKKE', !in_array($tV, $idListe($deltaker), true) && Skisser::hent($tV, $deltaker) === null);
+Skisser::del($tV, false, false, $admin);
 
 // ── Bilder følger tavla ───────────────────────────────────────────────
 $fil = bin2hex(random_bytes(16)) . '.jpg';

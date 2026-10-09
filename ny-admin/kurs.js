@@ -142,9 +142,9 @@ H.kursAvlys = () => arkFlytt([aktiv()], true);
 H.kursSteng = () => stengOkt(aktiv());
 H.kursKopier = () => kopierOkt(aktiv());
 // Kursoppsettet og bildet redigeres fortsatt i gammel admin. Kurs-id-en sendes med i adressen.
-const tilGammel = id => { location.href = '/admin-ny#kurs?kurs=' + encodeURIComponent(id || aktiv()?.kursId || ''); };
+const tilGammel = (id, vis) => { location.href = '/admin-ny#kurs?kurs=' + encodeURIComponent(id || aktiv()?.kursId || '') + (vis ? '&vis=' + vis : ''); };
 H.kursRediger = b => tilGammel(+b.dataset.kurs);
-H.kursBilde = () => tilGammel();
+H.kursBilde = () => tilGammel(0, 'bilde');
 
 // Ta betalt (eieren 09.10.2026): kassa (/kasse) med personen og det som står igjen ferdig i kurven, for alle datoer.
 // Monica velger bare Vipps eller Kontant der. Beløpet regnes i kassa (api/kasse/kasse.php ?booking=), ikke her.

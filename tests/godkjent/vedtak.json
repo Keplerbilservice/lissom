@@ -7691,6 +7691,46 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "nyadmin-vedlikehold-logo-rediger",
+            "dato": "2026-10-09",
+            "hva": "Eieren 09.10.2026: (1) «Kjør oppdateringer» også i /ny-admin: Mer › Vedlikehold viser hvor mange databaseoppdateringer som venter og lista (api/migrer.php), knappen «Kjør oppdateringer» spør «Er du sikker?» og viser resultatet, som Vedlikehold i admin-ny. Når noe venter, står det som en sak i «Må gjøres» på I dag («N databaseoppdateringer venter») med samme knapp. (2) Lissom-logoen øverst i venstremenyen går til I dag. (3) «Rediger kurset» og «Legg til bilde» i /ny-admin åpner riktig kurs direkte i gammel admin (/admin-ny#kurs?kurs=<id>, bildet med &vis=bilde); ellers er admin-ny uendret.",
+            "hvor": "ny-admin/felles.js, ny-admin/mer.js, ny-admin/idag.js, ny-admin/ny-admin.css, ny-admin/kurs.js, admin-ny/app.js (courses), tests/ny-admin.php (O)",
+            "kode": [
+                {
+                    "fil": "ny-admin/felles.js",
+                    "finnes": [
+                        "api('/api/migrer.php', {data: {kjor: 'ja'}})",
+                        "<button class=\"brand\" type=\"button\" data-side=\"idag\""
+                    ]
+                },
+                {
+                    "fil": "ny-admin/mer.js",
+                    "finnes": [
+                        "'Vedlikehold', 'Databaseoppdateringer'"
+                    ]
+                },
+                {
+                    "fil": "ny-admin/idag.js",
+                    "finnes": [
+                        "knapp('Kjør oppdateringer', 'migrer', true)"
+                    ]
+                },
+                {
+                    "fil": "ny-admin/kurs.js",
+                    "finnes": [
+                        "H.kursBilde = () => tilGammel(0, 'bilde');"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/app.js",
+                    "finnes": [
+                        "params().get('kurs')",
+                        "pv==='bilde'"
+                    ]
+                }
+            ]
         }
     ]
 }

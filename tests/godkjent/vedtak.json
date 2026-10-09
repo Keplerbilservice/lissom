@@ -7657,8 +7657,8 @@
                     "fil": "ny-admin/felles.js",
                     "finnes": [
                         "NA.tilKassa = bookingId =>",
-                        "w.postMessage({kasseBooking: id}, location.origin);",
-                        "'/kasse?booking=' + id"
+                        "location.href = NA.kasseAdresse(id);",
+                        "'booking=' + bookingId + '&'"
                     ]
                 },
                 {
@@ -7690,6 +7690,44 @@
                         "if (KasseKurv::vippsPaaVei($bid, true)) {",
                         "return self::qrBookingLaast($d, $person);",
                         "$b = KasseKurv::dagensBooking($bookingId);"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "kasse-samme-vindu-lukk-20261009",
+            "dato": "2026-10-09",
+            "hva": "Eieren 09.10.2026: «kan kasse åpne i samme vindu, og få en lukkeknapp, så jeg går tilbake til start?» Menypunktet «Kasse» og «Ta betalt» (NA.tilKassa) i /ny-admin åpner kassa i SAMME vindu (ikke ny eller navngitt fane), med /kasse?booking=<id>&fra=ny-admin&tilbake=<siden man kom fra> (Kasse uten booking). I kassa vises «✕ Lukk» øverst til høyre (samme pille som kassens øvrige knapper, minst 48 px) når den er åpnet fra ny admin (fra=ny-admin) eller av en innlogget admin (api/kasse/pin.php GET admin=true, aldri kassekontoen). «✕ Lukk» går til /ny-admin#<tilbake> (I dag hvis tilbake mangler). Ligger det et uferdig salg i kurven (varer, beløp, gavekort, Paint on Pots, timepakke eller en person), spør kassa «Det ligger varer i kurven» med «Lukk likevel» og «Avbryt». Mens en betaling registreres eller en QR-kode venter: «Gjør ferdig betalingen først.» iPad-kassen (kassekontoen, uten fra=ny-admin) har ingen Lukk-knapp og er som før. Ingen endring i betalingslogikken.",
+            "hvor": "ny-admin/felles.js (NA.kasseAdresse, NA.tilKassa, menyen), ny-admin/kurs.js, ny-admin/idag.js, admin-ny/kasse.js (lukkKnapp, lukkKassa, topp), api/kasse/pin.php, tests/kasse-ta-betalt.php (11)",
+            "kode": [
+                {
+                    "fil": "ny-admin/felles.js",
+                    "finnes": [
+                        "NA.kasseAdresse = bookingId =>",
+                        "'fra=ny-admin&tilbake='",
+                        "location.href = NA.kasseAdresse(id);",
+                        "href=\"${esc(NA.kasseAdresse())}\""
+                    ],
+                    "ikkeFinnes": [
+                        "window.open('', 'lissom-kasse')",
+                        "href=\"/kasse\""
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kasse.js",
+                    "finnes": [
+                        "let fraNyAdmin=sok.get('fra')==='ny-admin';",
+                        "pille('✕ Lukk',lukkKassa,'k-lukk')",
+                        "pille('Lukk likevel'",
+                        "pille('Avbryt'",
+                        "location.href='/ny-admin#'+tilbakeSide;",
+                        "if(s.admin)fraNyAdmin=true;"
+                    ]
+                },
+                {
+                    "fil": "api/kasse/pin.php",
+                    "finnes": [
+                        "'admin'        => Sesjon::erAdmin() && !Sesjon::erKasse(),"
                     ]
                 }
             ]

@@ -146,7 +146,8 @@ const tilGammel = (id, vis) => { location.href = '/admin-ny#kurs?kurs=' + encode
 H.kursRediger = b => tilGammel(+b.dataset.kurs);
 H.kursBilde = () => tilGammel(0, 'bilde');
 
-// Ta betalt (eieren 09.10.2026): kassa (/kasse) med personen og det som står igjen ferdig i kurven, for alle datoer.
+// Ta betalt (eieren 09.10.2026): kassa (/kasse) med personen og det som står igjen ferdig i kurven, for alle datoer,
+// i samme vindu; «✕ Lukk» i kassa går tilbake hit.
 // Monica velger bare Vipps eller Kontant der. Beløpet regnes i kassa (api/kasse/kasse.php ?booking=), ikke her.
 const VIPPS_PAAGAR = 'En Vipps-betaling pågår for denne påmeldingen. Vent til den er ferdig.';
 H.taBetalt = b => {
@@ -154,7 +155,6 @@ H.taBetalt = b => {
   // En Vipps-betaling som pågår (opprettet/venter) for påmeldingen: ikke ta betalt ved siden av (kassa sjekker det også).
   if (d.vippsPaaVei) return toast(VIPPS_PAAGAR);
   window.NA.tilKassa(d.bookingId);
-  return toast('Kassa er åpnet.');
 };
 // «Registrer betaling for hånd» (under personen): betaling tatt på annen måte. Den eksisterende registreringen
 // (pamelding.php status=betalt med betalingsmåte), som «Status og betaling» i gammel admin. Ingen ny pengelogikk.

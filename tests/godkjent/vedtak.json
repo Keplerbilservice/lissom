@@ -7737,8 +7737,8 @@
         {
             "id": "avlyst-dato-min-side-melding",
             "dato": "2026-10-09",
-            "hva": "Eierens GO 09.10.2026: når Lissom avlyser en dato (course_sessions.status = avlyst), viser Min side plassen som avlyst (kurs · dato, merket «Avlyst», teksten «Lissom har dessverre avlyst denne datoen. Velg en ny dato, eller få pengene tilbake.» og knappene «Velg ny dato» og «Få pengene tilbake»; ingen «Avbestill» og intet kursbevis). «Velg ny dato»: neste datoer på SAMME kurs med ledig plass (samme regler som booking: planlagt, kurset publisert, ikke passert, nok ledige), kunden velger og trykker «Bytt til denne datoen» → påmeldingen flyttes under lås med samme kontroll som pamelding.php flytt, uten ekstra kostnad og uten ny betaling (beløpet følger med også når den nye datoen har annen pris), og «Ny dato på kurset» går på e-post som før. «Få pengene tilbake»: «Du får … kr tilbake» (det som faktisk er betalt) og «Ja, gi meg pengene tilbake» → api/avbestill.php, som gir alt tilbake på en avlyst dato uansett tid igjen (2-dagersregelen gjelder bare når kunden selv avbestiller): Vipps tilbake til Vipps, gavekort tilbake til kortet, ikke betalt = bare frigjort; kontant/kort betalt i kassa blir en sak i «Må gjøres» i /ny-admin («Tilbakebetal X kr til NN», avlyst_tilbakebetal, migrasjon 271) til noen trykker «Betalt tilbake». Idempotent (samme claim og refusjonslås som avbestilling, aldri dobbel refusjon). «Avlys dato» i /ny-admin: ny mal kurs_avlyst (migrasjon 271, SMS + e-post, av/på og kanal under Innstillinger › Meldinger), teksten ordrett «Hei {navn}! Dessverre må vi avlyse {kurs} {dato} kl. {tid}. Velg en ny dato eller få pengene tilbake på Min side. Beklager, og velkommen tilbake! Hilsen Lissom», sendt med okt-varsel.php handling=avlyst til betalte og aktive reservasjoner, bare når datoen er avlyst, én gang per påmelding, økt og kanal (varsel_utsendinger «avlyst:<booking>:<økt>:<kanal>»), med forhåndsvisning av faktisk tekst og «ikke nådd». Arket har «Send «Kurset er avlyst»» / «Ikke send» (ingenting forhåndsvalgt); fritekstfeltet for avlysning er borte. Gammel admins avlysning er uendret. Tillegg samme dag (eieren og kontrolløren): bare datoer avlyst etter migrasjon 271 (course_sessions.avlyst_at, satt av «Avlys dato» i ny og gammel admin, tatt bort ved gjenoppretting) gir valgene, full refusjon og meldingen; eldre avlyste datoer oppfører seg som før. Avbestillingen leser datoen og plassens dato på nytt under lås og avviser (409) om noe er endret siden andelen ble regnet; flytting leser måldatoen under lås og tar aldri imot en avlyst dato (kunden: bare samme kurs, planlagt, publisert, ikke passert). Avbestillingen bruker Booking::tilbakeFor (ingen kopi), flyttingen i admin Booking::sjekkFlytting. Uten migrasjon 271 og med kontantdel: 503 «Kjør oppdateringene først.». «Betalt tilbake» føres i kassa den dagen (Booking::tilbakebetalIKassa: manuell rad, belop 0, refundert = beløpet, per måte): kontant trekkes fra kontant i kassa og står som egen linje i dagsoppgjøret («Kurs og events – tilbakebetalt», «Kontant (tilbakebetalt)», i balanse), annen måte som egen linje («Tilbakebetalt, annen måte» i kassa); den opprinnelige betalingen står urørt; dobbelttrykk gir én føring. «Neste kurs» på Min side hopper over avlyste datoer.",
-            "hvor": "api/mine-plasser.php, api/avlyst-plass.php (ny), api/avbestill.php, app/lib/booking.php (tilbakeFor, sjekkFlytting), api/admin/okt-varsel.php, api/admin/oversikt.php (Må gjøres), api/admin/pamelding.php (tilbakebetalt), api/admin/meldinger.php, app/lib/maler.php, ny-admin/kalender.js, ny-admin/idag.js, lissom-2108.html (+ uten-admin), db/migrations/271_kurs_avlyst.sql, tests/avlyst-dato.php, api/admin/kurs.php, api/admin/dagsoppgjor.php, app/lib/kassekurv.php, app/lib/omsetning.php, tests/alle.sh, tests/nettleser/avlyst-dato.mjs",
+            "hva": "Eierens GO 09.10.2026: når Lissom avlyser en dato (course_sessions.status = avlyst), viser Min side plassen som avlyst (kurs · dato, merket «Avlyst», teksten «Lissom har dessverre avlyst denne datoen. Velg en ny dato, eller få pengene tilbake.» og knappene «Velg ny dato» og «Få pengene tilbake»; ingen «Avbestill» og intet kursbevis). «Velg ny dato»: neste datoer på SAMME kurs med ledig plass (samme regler som booking: planlagt, kurset publisert, ikke passert, nok ledige), kunden velger og trykker «Bytt til denne datoen» → påmeldingen flyttes under lås med samme kontroll som pamelding.php flytt, uten ekstra kostnad og uten ny betaling (beløpet følger med også når den nye datoen har annen pris), og «Ny dato på kurset» går på e-post som før. «Få pengene tilbake»: «Du får … kr tilbake» (det som faktisk er betalt) og «Ja, gi meg pengene tilbake» → api/avbestill.php, som gir alt tilbake på en avlyst dato uansett tid igjen (2-dagersregelen gjelder bare når kunden selv avbestiller): Vipps tilbake til Vipps, gavekort tilbake til kortet, ikke betalt = bare frigjort; kontant/kort betalt i kassa blir en sak i «Må gjøres» i /ny-admin («Tilbakebetal X kr til NN», avlyst_tilbakebetal, migrasjon 271) til noen trykker «Betalt tilbake». Idempotent (samme claim og refusjonslås som avbestilling, aldri dobbel refusjon). «Avlys dato» i /ny-admin: ny mal kurs_avlyst (migrasjon 271, SMS + e-post, av/på og kanal under Innstillinger › Meldinger), teksten ordrett «Hei {navn}! Dessverre må vi avlyse {kurs} {dato} kl. {tid}. Velg en ny dato eller få pengene tilbake på Min side. Beklager, og velkommen tilbake! Hilsen Lissom», sendt med okt-varsel.php handling=avlyst til betalte og aktive reservasjoner, bare når datoen er avlyst, én gang per påmelding, økt og kanal (varsel_utsendinger «avlyst:<booking>:<økt>:<kanal>»), med forhåndsvisning av faktisk tekst og «ikke nådd». Arket har «Send «Kurset er avlyst»» / «Ikke send» (ingenting forhåndsvalgt); fritekstfeltet for avlysning er borte. Gammel admins avlysning er uendret. Tillegg samme dag (eieren og kontrolløren): bare datoer avlyst etter migrasjon 271 (course_sessions.avlyst_at, satt av «Avlys dato» i ny og gammel admin, tatt bort ved gjenoppretting) gir valgene, full refusjon og meldingen; eldre avlyste datoer oppfører seg som før. Avbestillingen leser datoen og plassens dato på nytt under lås og avviser (409) om noe er endret siden andelen ble regnet; flytting leser måldatoen under lås og tar aldri imot en avlyst dato (kunden: bare samme kurs, planlagt, publisert, ikke passert). Avbestillingen bruker Booking::tilbakeFor (ingen kopi), flyttingen i admin Booking::sjekkFlytting. Uten migrasjon 271 og med kontantdel: 503 «Kjør oppdateringene først.». «Betalt tilbake» føres i kassa den dagen (Booking::tilbakebetalIKassa: manuell rad, belop 0, refundert = beløpet, per måte): kontant trekkes fra kontant i kassa og står som egen linje i dagsoppgjøret («Kurs og events – tilbakebetalt», «Kontant (tilbakebetalt)», i balanse), annen måte som egen linje («Tilbakebetalt, annen måte» i kassa); den opprinnelige betalingen står urørt; dobbelttrykk gir én føring. «Neste kurs» på Min side hopper over avlyste datoer. Kontrolløren runde 2 (samme dag): utbetalingen og betalingen bak en slik sak kan ikke annulleres (409); betalt på plassen (betalingerFor, betaltSql) trekker fra utbetalingen; admin-historikken viser «−kr. 500,-» og «Kontant (tilbakebetalt)», kundens kjøpshistorikk «kr. 500,- refundert», og transaksjonsuttrekket «Kontant (tilbakebetalt)» / «Tilbakebetalt»; «Avlys dato» setter tidspunktet i én setning bare når datoen ikke alt er avlyst, og gjenoppretting skjer i én transaksjon under radlås.",
+            "hvor": "api/mine-plasser.php, api/avlyst-plass.php (ny), api/avbestill.php, app/lib/booking.php (tilbakeFor, sjekkFlytting), api/admin/okt-varsel.php, api/admin/oversikt.php (Må gjøres), api/admin/pamelding.php (tilbakebetalt), api/admin/meldinger.php, app/lib/maler.php, ny-admin/kalender.js, ny-admin/idag.js, lissom-2108.html (+ uten-admin), db/migrations/271_kurs_avlyst.sql, tests/avlyst-dato.php, api/admin/kurs.php, api/admin/dagsoppgjor.php, app/lib/kassekurv.php, app/lib/omsetning.php, tests/alle.sh, tests/nettleser/avlyst-dato.mjs, api/admin/kursbetaling.php, api/mine-kjop.php, api/admin/transaksjoner.php",
             "kode": [
                 {
                     "fil": "db/migrations/271_kurs_avlyst.sql",
@@ -7822,14 +7822,17 @@
                     "finnes": [
                         "return $status === 'avlyst' && $avlystAt !== null && $avlystAt !== '';",
                         "public static function tilbakebetalIKassa(int $bookingId, int $belopOre, ?int $adminId, string $kommentar): int",
-                        "throw new RuntimeException('Den datoen er avlyst.', 409);"
+                        "throw new RuntimeException('Den datoen er avlyst.', 409);",
+                        "THEN -CAST(p.refundert_ore AS SIGNED)",
+                        "if (self::erUtbetaling($r)) {"
                     ]
                 },
                 {
                     "fil": "api/admin/kurs.php",
                     "finnes": [
-                        "['avlyst_at' => gmdate('Y-m-d H:i:s')]",
-                        "DB::oppdater('course_sessions', ['avlyst_at' => null], ['id' => $oktId]);"
+                        "SET avlyst_at = IF(status = 'avlyst', avlyst_at, UTC_TIMESTAMP()),",
+                        "DB::oppdater('course_sessions', ['avlyst_at' => null], ['id' => $oktId]);",
+                        "$naa = (string) DB::verdi('SELECT status FROM course_sessions WHERE id = :o FOR UPDATE', ['o' => $oktId]);"
                     ]
                 },
                 {
@@ -7856,6 +7859,25 @@
                     "finnes": [
                         "php tests/avlyst-dato.php",
                         "bash tests/nettleser/kjor.sh avlyst-dato.mjs"
+                    ]
+                },
+                {
+                    "fil": "api/admin/kursbetaling.php",
+                    "finnes": [
+                        "Svar::feil('Dette er penger gitt tilbake for en avlyst dato. Den kan ikke annulleres.', 409);",
+                        "? '−' . Booking::kroner((int) $r['refundert_ore'])"
+                    ]
+                },
+                {
+                    "fil": "api/mine-kjop.php",
+                    "finnes": [
+                        "'refOre'    => (int) $b['refundert_ore'] + (int) $b['utbetalt_ore'],"
+                    ]
+                },
+                {
+                    "fil": "api/admin/transaksjoner.php",
+                    "finnes": [
+                        "return (trim((string) ($r['radmaate'] ?? '')) ?: 'Kontant') . ' (tilbakebetalt)';"
                     ]
                 }
             ]

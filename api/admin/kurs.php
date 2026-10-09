@@ -461,6 +461,24 @@ $gjentaPaa = static function (): bool {
     return $v !== null && $v !== false && (string) $v === 'ja';
 };
 
+// Avlys én dato. Med migrasjon 271 settes tidspunktet i samme setning, og bare
+// naar datoen ikke alt er avlyst (SET leses fra venstre: avlyst_at regnes av
+// statusen foer endringen). Gamle avlysninger faar dermed ikke valgene paa
+// Min side ved et nytt trykk (kontrolloeren 9. oktober 2026).
+$avlysOkt = static function (int $oktId): void {
+    if (DB::harKolonne('course_sessions', 'avlyst_at')) {
+        DB::kjor(
+            "UPDATE course_sessions
+                SET avlyst_at = IF(status = 'avlyst', avlyst_at, UTC_TIMESTAMP()),
+                    status = 'avlyst'
+              WHERE id = :o",
+            ['o' => $oktId]
+        );
+        return;
+    }
+    DB::oppdater('course_sessions', ['status' => 'avlyst'], ['id' => $oktId]);
+};
+
 switch ($handling) {
 
     // ------------------------------------------------------------ lagre kurs
@@ -1186,8 +1204,9 @@ switch ($handling) {
 
         // Tidspunktet (migrasjon 271): bare datoer avlyst herfra gir kunden
         // «Velg ny dato» / «Få pengene tilbake» paa Min side (9. oktober 2026).
-        DB::oppdater('course_sessions', ['status' => 'avlyst']
-            + (DB::harKolonne('course_sessions', 'avlyst_at') ? ['avlyst_at' => gmdate('Y-m-d H:i:s')] : []), ['id' => $oktId]);
+        // Én setning, atomisk: tidspunktet settes bare naar datoen ikke alt er
+        // avlyst — en gammel avlysning blir ikke ny ved et nytt trykk.
+        $avlysOkt($oktId);
 
         // ── De som ventet paa denne kvelden ─────────────────────────────
         //
@@ -1393,11 +1412,23 @@ switch ($handling) {
             Svar::feil('Denne datoen er ikke avlyst.');
         }
 
-        DB::oppdater('course_sessions', ['status' => 'planlagt'], ['id' => $oktId]);
-        // Tidspunktet for avlysningen tas bort (migrasjon 271): datoen gir ikke
-        // lenger kunden valgene paa Min side.
-        if (DB::harKolonne('course_sessions', 'avlyst_at')) {
-            DB::oppdater('course_sessions', ['avlyst_at' => null], ['id' => $oktId]);
+        // Status og tidspunkt for avlysningen (migrasjon 271) i én transaksjon,
+        // under radlaas: datoen gir ikke lenger kunden valgene paa Min side, og
+        // en refusjon som leser datoen samtidig ser enten det ene eller det
+        // andre (kontrolloeren 9. oktober 2026).
+        $gjenopprettet = DB::iTransaksjon(static function () use ($oktId): bool {
+            $naa = (string) DB::verdi('SELECT status FROM course_sessions WHERE id = :o FOR UPDATE', ['o' => $oktId]);
+            if ($naa !== 'avlyst') {
+                return false;
+            }
+            DB::oppdater('course_sessions', ['status' => 'planlagt'], ['id' => $oktId]);
+            if (DB::harKolonne('course_sessions', 'avlyst_at')) {
+                DB::oppdater('course_sessions', ['avlyst_at' => null], ['id' => $oktId]);
+            }
+            return true;
+        });
+        if (!$gjenopprettet) {
+            Svar::feil('Denne datoen er ikke avlyst.');
         }
         revider('dato_gjenopprettet', 'course_session', $oktId, []);
 
@@ -1552,8 +1583,7 @@ switch ($handling) {
         );
 
         if ($pameldte > 0) {
-            DB::oppdater('course_sessions', ['status' => 'avlyst']
-                + (DB::harKolonne('course_sessions', 'avlyst_at') ? ['avlyst_at' => gmdate('Y-m-d H:i:s')] : []), ['id' => $oktId]);
+            $avlysOkt($oktId);
             revider('dato_avlyst', 'course_session', $oktId, ['pameldte' => $pameldte, 'via' => 'veiviser']);
             Svar::ok([
                 'slettet' => false,

@@ -3480,7 +3480,12 @@ final class Booking
             return '0';
         }
         $gave = DB::harKolonne('payments', 'gavekort_ore') ? ' + COALESCE(p.gavekort_ore, 0)' : '';
-        return "(SELECT COALESCE(SUM(GREATEST(0, CAST(p.belop_ore AS SIGNED) - CAST(COALESCE(p.refundert_ore, 0) AS SIGNED)){$gave}), 0)
+        // Penger gitt tilbake for haand (Omsetning::erUtbetaling: manuell, 0 inn,
+        // refundert = det som gikk ut) trekkes fra, saa en plass med 500 kr
+        // betalt og 500 kr gitt tilbake staar med 0 (kontrolloeren 9. oktober).
+        return "(SELECT COALESCE(SUM(CASE WHEN p.type = 'manuell' AND p.belop_ore = 0 AND COALESCE(p.refundert_ore, 0) > 0
+                       THEN -CAST(p.refundert_ore AS SIGNED)
+                       ELSE GREATEST(0, CAST(p.belop_ore AS SIGNED) - CAST(COALESCE(p.refundert_ore, 0) AS SIGNED)){$gave} END), 0)
                    FROM payments p
                   WHERE (p.booking_id = {$b}.id OR p.id = {$b}.payment_id)
                     AND p.annullert_at IS NULL
@@ -3554,10 +3559,24 @@ final class Booking
                 // er ikke betalt lenger. Samme regnestykke som Omsetning::perFormal()
                 // (kontrolloeren, 2. oktober 2026: 500 betalt, 200 refundert er 300).
                 $sum += max(0, (int) $r['belop_ore'] - (int) $r['refundert_ore']) + (int) $r['gavekort_ore'];
+                // Penger gitt tilbake for haand (avlyst dato) trekkes fra.
+                if (self::erUtbetaling($r)) {
+                    $sum -= (int) $r['refundert_ore'];
+                }
             }
         }
 
-        return ['rader' => $rader, 'sum' => $sum];
+        return ['rader' => $rader, 'sum' => max(0, $sum)];
+    }
+
+    /**
+     * Er raden penger gitt tilbake for haand (tilbakebetalIKassa)? Manuell rad
+     * uten beloep inn, med det som gikk ut som refundert.
+     */
+    public static function erUtbetaling(array $r): bool
+    {
+        return (string) ($r['type'] ?? '') === 'manuell' && (int) ($r['belop_ore'] ?? 0) === 0
+            && (int) ($r['refundert_ore'] ?? 0) > 0;
     }
 
     /**

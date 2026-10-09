@@ -90,11 +90,15 @@ if (Foresporsel::metode() === 'GET') {
         'maater'    => Booking::MAATER,
         'historikk' => array_map(static fn($r) => [
             'id'         => (int) $r['id'],
-            'belop'      => Booking::kroner((int) $r['belop_ore'] + (int) ($r['gavekort_ore'] ?? 0)),
+            // Penger gitt tilbake for haand (avlyst dato): det som gikk ut, med minus.
+            'belop'      => Omsetning::erUtbetaling($r)
+                              ? '−' . Booking::kroner((int) $r['refundert_ore'])
+                              : Booking::kroner((int) $r['belop_ore'] + (int) ($r['gavekort_ore'] ?? 0)),
+            'tilbakebetalt' => Omsetning::erUtbetaling($r),
             // Vipps eller for haand — det skal aldri vaere tvil om hvilken.
             'manuell'    => (string) $r['type'] === 'manuell',
             'maate'      => (string) $r['type'] === 'manuell'
-                              ? ((string) ($r['maate'] ?? '') ?: 'Ukjent')
+                              ? (((string) ($r['maate'] ?? '') ?: 'Ukjent') . (Omsetning::erUtbetaling($r) ? ' (tilbakebetalt)' : ''))
                               : 'Vipps',
             'kommentar'  => (string) ($r['kommentar'] ?? ''),
             'av'         => (string) ($r['registrert_navn'] ?? ''),
@@ -411,6 +415,20 @@ switch (Foresporsel::tekst('handling', 'registrer')) {
         }
         if ($p['annullert_at'] !== null) {
             Svar::feil('Denne er alt annullert.');
+        }
+        // Penger gitt tilbake for haand paa en avlyst dato («Betalt tilbake»,
+        // Booking::tilbakebetalIKassa) er en utbetaling foert i kassa og
+        // dagsoppgjoeret, ikke en innbetaling som kan angres. Og saa lenge
+        // plassen har en slik sak, kan heller ikke betalingen bak den
+        // annulleres — da ville saken og kassa sagt hver sitt (kontrolloeren
+        // 9. oktober 2026).
+        if (Omsetning::erUtbetaling($p) || (DB::harKolonne('avlyst_tilbakebetal', 'payment_id')
+            && DB::verdi('SELECT booking_id FROM avlyst_tilbakebetal WHERE payment_id = :p', ['p' => $betalingId]) !== null)) {
+            Svar::feil('Dette er penger gitt tilbake for en avlyst dato. Den kan ikke annulleres.', 409);
+        }
+        if ($p['booking_id'] !== null && DB::harTabell('avlyst_tilbakebetal')
+            && DB::verdi('SELECT booking_id FROM avlyst_tilbakebetal WHERE booking_id = :b', ['b' => (int) $p['booking_id']]) !== null) {
+            Svar::feil('Pengene for denne plassen er avklart for en avlyst dato (Må gjøres). Betalingen kan ikke annulleres.', 409);
         }
         // Et medlemskap har ingen paamelding. Betalingen staar paa
         // medlemmet, ikke paa en booking — og den maa kunne angres.

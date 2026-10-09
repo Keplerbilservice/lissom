@@ -60,8 +60,12 @@ $harOrdre   = DB::harTabell('orders') && DB::harKolonne('orders', 'betalt_maate'
 $ordreFelt  = $harOrdre ? ', o.betalt_maate, o.ordrenr, o.kunde_navn' : '';
 $ordreJoin  = $harOrdre ? ' LEFT JOIN orders o ON o.payment_id = p.id' : '';
 
+// Maaten paa selve raden (migrasjon 084). Brukes her bare for penger gitt
+// tilbake for haand paa en avlyst dato (kontrolloeren 9. oktober 2026).
+$maateFelt = DB::harKolonne('payments', 'maate') ? 'p.maate AS radmaate' : 'NULL AS radmaate';
+
 $rader = DB::alle(
-    "SELECT p.id, p.created_at, p.vipps_reference, p.vipps_psp_ref, p.formal, p.type,
+    "SELECT p.id, p.created_at, p.vipps_reference, p.vipps_psp_ref, p.formal, p.type, " . $maateFelt . ",
             p.status, p.belop_ore, p.refundert_ore, m.navn AS medlemsnavn" . $ordreFelt . "
        FROM payments p
        LEFT JOIN members m ON m.id = p.member_id" . $ordreJoin . "
@@ -112,6 +116,10 @@ fputcsv($ut, [
 // den som tok imot pengene. Ellers er det Vipps, som er den eneste veien
 // betalinger kommer inn av seg selv.
 $maateFor = static function (array $r): string {
+    // Penger gitt tilbake for haand (avlyst dato): maaten de gikk ut med.
+    if (Omsetning::erUtbetaling($r)) {
+        return (trim((string) ($r['radmaate'] ?? '')) ?: 'Kontant') . ' (tilbakebetalt)';
+    }
     $paaOrdre = trim((string) ($r['betalt_maate'] ?? ''));
     if ($paaOrdre !== '') {
         return $paaOrdre;
@@ -141,7 +149,7 @@ foreach ($rader as $r) {
         (string) ($r['vipps_psp_ref'] ?? ''),
         $FORMAL[$r['formal']] ?? (string) $r['formal'],
         $maateFor($r),
-        $STATUS[$r['status']] ?? (string) $r['status'],
+        Omsetning::erUtbetaling($r) ? 'Tilbakebetalt' : ($STATUS[$r['status']] ?? (string) $r['status']),
         $kr($brutto),
         $refund > 0 ? $kr($refund) : '',
         $kr($brutto - $refund),

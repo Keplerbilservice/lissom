@@ -433,6 +433,33 @@ try {
     })();
     sjekk('… CSV-en har «Tilbakebetalt · Kontant»', str_contains($csv, 'Tilbakebetalt · Kontant'));
 
+    // Kontrolløren runde 2: utbetalingen kan ikke annulleres, og den synes.
+    $utId = (int) ($ut[0]['id'] ?? 0);
+    $r = kall('/api/admin/kursbetaling.php', ['handling' => 'annuller', 'betalingId' => $utId], $adminT);
+    sjekk('utbetalingen kan ikke annulleres (409), står urørt', $r[0] === 409
+        && DB::verdi('SELECT annullert_at FROM payments WHERE id = :i', ['i' => $utId]) === null, $tekst($r));
+    $orig = (int) DB::verdi("SELECT id FROM payments WHERE booking_id = :b AND type = 'manuell' AND belop_ore = 50000", ['b' => $bKim]);
+    $r = kall('/api/admin/kursbetaling.php', ['handling' => 'annuller', 'betalingId' => $orig], $adminT);
+    sjekk('… heller ikke kontantbetalingen bak saken (409)', $r[0] === 409
+        && DB::verdi('SELECT annullert_at FROM payments WHERE id = :i', ['i' => $orig]) === null, $tekst($r));
+    sjekk('betalt på plassen etter utbetalingen: 0 (betalingerFor)', Booking::betalingerFor($bKim)['sum'] === 0, (string) Booking::betalingerFor($bKim)['sum']);
+    sjekk('… og i listene (betaltSql): 0', (int) DB::verdi('SELECT ' . Booking::betaltSql('b') . ' FROM bookings b WHERE b.id = :i', ['i' => $bKim]) === 0);
+    $r = kall('/api/admin/kursbetaling.php?bookingId=' . $bKim, null, $adminT);
+    $hist = array_values(array_filter($r[1]['historikk'] ?? [], static fn($h) => (int) $h['id'] === $utId))[0] ?? null;
+    sjekk('admin-historikken: «−kr. 500,-», «Kontant (tilbakebetalt)», kan ikke annulleres', $hist !== null
+        && $hist['belop'] === '−' . Booking::kroner(50000) && $hist['maate'] === 'Kontant (tilbakebetalt)' && $hist['kanAnnulleres'] === false
+        && ($r[1]['betalt'] ?? '') === Booking::kroner(0), json_encode([$hist, $r[1]['betalt'] ?? null], JSON_UNESCAPED_UNICODE));
+    $r = kall('/api/mine-kjop.php', null, $kimT);
+    $kj = array_values(array_filter($r[1]['kjop'] ?? [], static fn($k) => str_contains((string) $k['navn'], 'Dreiekurs')))[0] ?? null;
+    sjekk('kundens kjøpshistorikk: «kr. 500,- refundert»', $kj !== null && $kj['refundert'] === Booking::kroner(50000) . ' refundert', json_encode($r[1], JSON_UNESCAPED_UNICODE));
+    $tcsv = (static function () use ($adminT, $idag, $port): string {
+        $c = curl_init('http://127.0.0.1:' . $port . '/api/admin/transaksjoner.php?maaned=' . substr($idag, 0, 7));
+        curl_setopt_array($c, [CURLOPT_RETURNTRANSFER => true, CURLOPT_HTTPHEADER => ['Cookie: lissom_sesjon=' . $adminT]]);
+        $t = (string) curl_exec($c); curl_close($c); return $t;
+    })();
+    $linje = array_values(array_filter(explode("\n", $tcsv), static fn($l) => str_contains($l, (string) $ut[0]['vipps_reference'])))[0] ?? '';
+    sjekk('transaksjonsuttrekket: «Kontant (tilbakebetalt)», «Tilbakebetalt», netto −500', str_contains($linje, ';"Kontant (tilbakebetalt)";Tilbakebetalt;0,00;500,00;-500,00;'), $linje);
+
     // Annen måte (Vipps i verkstedet): egen linje i kassa, ikke trukket fra kontant.
     $vera = $nyttMedlem('Vera'); $veraT = $sesjon($vera);
     $bVera = $plass($vera, $sAvl);
@@ -475,6 +502,8 @@ try {
     sjekk('… «Velg ny dato» avvist (409)', $r[0] === 409, $tekst($r));
     $r = kall($V, ['handling' => 'avlyst', 'oktId' => $sGml], $adminT);
     sjekk('… ingen «Kurset er avlyst» (409)', $r[0] === 409, $tekst($r));
+    kall('/api/admin/kurs.php', ['handling' => 'avlys', 'oktId' => $sGml], $adminT);
+    sjekk('… et nytt «Avlys dato» gir den ikke et tidspunkt', DB::verdi('SELECT avlyst_at FROM course_sessions WHERE id = :i', ['i' => $sGml]) === null);
     $r = kall($B, ['bookingId' => $bOla], $olaT);
     sjekk('… avbestilling under 2 dager: 0 kr, intet Vipps-kall, ingen sak', $r[0] === 200 && ($r[1]['refunderes'] ?? '') === Booking::kroner(0)
         && $refusjoner($refOla) === [] && DB::verdi('SELECT booking_id FROM avlyst_tilbakebetal WHERE booking_id = :b', ['b' => $bOla]) === null, $tekst($r));
@@ -485,6 +514,8 @@ try {
     $bTor = $plass($tor, $sGjen); [$pTor, $refTor] = $vippsBetaling($tor, $bTor, 50000);
     kall('/api/admin/kurs.php', ['handling' => 'avlys', 'oktId' => $sGjen], $adminT);
     $r = kall('/api/admin/kurs.php', ['handling' => 'gjenopprett', 'oktId' => $sGjen], $adminT);
+    $r2 = kall('/api/admin/kurs.php', ['handling' => 'gjenopprett', 'oktId' => $sGjen], $adminT);
+    sjekk('gjenopprett igjen: «ikke avlyst»', $r2[0] !== 200, $tekst($r2));
     sjekk('gjenopprettet: avlyst_at tatt bort', $r[0] === 200 && DB::verdi('SELECT avlyst_at FROM course_sessions WHERE id = :i', ['i' => $sGjen]) === null, $tekst($r));
     $r = kall($B, ['bookingId' => $bTor], $torT);
     sjekk('… avbestilling under 2 dager: 0 kr, intet Vipps-kall', $r[0] === 200 && ($r[1]['refunderes'] ?? '') === Booking::kroner(0) && $refusjoner($refTor) === [], $tekst($r));

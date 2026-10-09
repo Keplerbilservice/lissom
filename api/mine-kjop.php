@@ -108,8 +108,16 @@ foreach ($ordrer as $o) {
 }
 
 // ------------------------------------------------------------- bookinger
+//
+// Penger gitt tilbake for haand paa en avlyst dato (Booking::tilbakebetalIKassa)
+// staar paa egne rader og regnes med i «refundert» (kontrolloeren 9. oktober).
+$utbetaltFelt = DB::harKolonne('payments', 'booking_id')
+    ? "(SELECT COALESCE(SUM(u.refundert_ore), 0) FROM payments u
+         WHERE u.booking_id = b.id AND u.type = 'manuell' AND u.belop_ore = 0
+           AND u.annullert_at IS NULL AND u.status IN ('betalt','delvis_refundert'))"
+    : '0';
 $bookinger = DB::alle(
-    "SELECT b.id, b.belop_ore, b.antall, c.tittel, cs.start_tid,
+    "SELECT b.id, b.belop_ore, b.antall, c.tittel, cs.start_tid, {$utbetaltFelt} AS utbetalt_ore,
             p.vipps_reference, p.status AS betalingsstatus, p.refundert_ore,
             p.created_at AS betalt_at
        FROM bookings b
@@ -133,7 +141,7 @@ foreach ($bookinger as $b) {
         'betaltMed' => 'Vipps',
         'kvittering'=> $kvitteringen('booking', (int) $b['id']),
         'status'    => (string) $b['betalingsstatus'],
-        'refOre'    => (int) $b['refundert_ore'],
+        'refOre'    => (int) $b['refundert_ore'] + (int) $b['utbetalt_ore'],
     ];
 }
 

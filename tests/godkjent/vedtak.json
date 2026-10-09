@@ -7885,6 +7885,56 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "ny-admin-varer-faner-handleliste",
+            "dato": "2026-10-09",
+            "hva": "«la meg sortere intern lager, Lissom kolleksjon, medlemskolleksjon, her må jeg kunne fjerne eller redigere varer, samt på internlager legge inn minimum antall og maks antall, og få på plass handlelisten også her»: faner Internlager · Lissom kolleksjon · Medlemskolleksjon · Alle · Handleliste, rediger alle felt, Fjern vare med «Er du sikker?», minimum/maks med «Under minimum», handlelista med Legg i handlelista, Handlet (antallet legges på lageret) og Fjern",
+            "hvor": "/ny-admin › Varer",
+            "kode": [
+                {
+                    "fil": "ny-admin/varer.js",
+                    "finnes": [
+                        "['intern', 'Internlager'], ['lissom', 'Lissom kolleksjon'], ['medlem', 'Medlemskolleksjon'], ['alle', 'Alle'], ['handle', 'Handleliste']",
+                        "const erIntern = v => !!v.kunMedlemmer || !v.iNettbutikk;",
+                        "<span class=\"merke rod\">Under minimum</span>",
+                        "handling: 'handlet', linjeId",
+                        "handling: 'handlelisteFjern', linjeId",
+                        "kall('medlemssalg.php', { handling: 'endre'",
+                        "NA().bekreft('Fjern vare?'",
+                        "lagerEndring: lager - A.lagerFoer"
+                    ]
+                },
+                {
+                    "fil": "api/admin/produkter.php",
+                    "finnes": [
+                        "'handleliste'    => Lager::verkstedLinjer(),",
+                        "if ($handling === 'handlelisteFjern' || $handling === 'handlet') {",
+                        "$valgt === null ? Lager::tilHandlelista($vare) : Lager::leggIHandlelista($vare, $valgt);"
+                    ]
+                },
+                {
+                    "fil": "app/lib/lager.php",
+                    "finnes": [
+                        "public static function verkstedLinjer(): array",
+                        "public static function handlet(int $linjeId): ?array",
+                        "WHERE id = :i AND member_id IS NULL AND status = 'sendt' AND bestilt_at IS NULL AND order_id IS NULL"
+                    ]
+                },
+                {
+                    "fil": "api/admin/medlemssalg.php",
+                    "finnes": [
+                        "case 'endre':",
+                        "'prisKr'   => intdiv((int) $r['pris_ore'], 100),"
+                    ]
+                },
+                {
+                    "fil": "tests/alle.sh",
+                    "finnes": [
+                        "php tests/ny-admin-varer.php"
+                    ]
+                }
+            ]
         }
     ]
 }

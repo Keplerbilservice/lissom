@@ -76,6 +76,8 @@
       <p>${merke(m)} <span class="muted">${esc(m.medlemskap || '')}${m.timerIgjen ? ` · ${esc(m.timerIgjen)} igjen denne måneden` : ''}</span></p>
       <p class="muted">${esc([m.epost, m.telefon].filter(Boolean).join(' · ') || 'Ingen kontaktinfo')}</p>
       ${m.betalingUte ? `<p class="feil">${esc(m.betalingTekst || 'Ikke betalt')}</p>` : ''}
+      ${typeof m.dugnadUtenGodkjenning === 'boolean' ? `<div class="bryter"><div><b>Dugnad uten godkjenning</b><br><small>Medlemmet kan stemple inn dugnad uten at den godkjennes først.</small></div>
+        <button class="av" type="button" data-mlm="dugnadfri" data-id="${m.id}" aria-pressed="${m.dugnadUtenGodkjenning}" aria-label="Dugnad uten godkjenning"></button></div>` : ''}
       <div class="valgknapper"><button class="knapp" data-mlm="gave" data-id="${m.id}">🎁 Gi gave</button>
         <button class="knapp" data-mlm="beskjeden" data-id="${m.id}" ${m.epost || m.telefon ? '' : 'disabled'}>✉ Send beskjed</button>
         <a class="knapp" href="/admin-ny#folk?person=${m.id}">Betaling og detaljer (gammel admin)</a></div>`);
@@ -204,6 +206,15 @@
     if (h === 'bekrefttrekk') {
       if (S.opptatt) return; S.opptatt = true; b.disabled = true;
       try { const d = await kall('gaver.php', { handling: 'trekk', id }); NA().lukkArk(true); toast(esc(d.beskjed || 'Gaven er trukket.')); hentGaver(); }
+      catch (err) { toast(esc(err.message)); } finally { S.opptatt = false; b.disabled = false; }
+      return;
+    }
+    // «Dugnad uten godkjenning» (eieren 11.10.2026, migrasjon 272): lagres med en gang, per medlem.
+    if (h === 'dugnadfri') {
+      const m = S.medlemmer.find(x => x.id === id); if (!m || S.opptatt) return;
+      const paa = b.getAttribute('aria-pressed') !== 'true';
+      S.opptatt = true; b.disabled = true;
+      try { await kall('medlemmer.php', { handling: 'dugnad-uten-godkjenning', medlemId: id, paa: paa ? 'ja' : 'nei' }); m.dugnadUtenGodkjenning = paa; b.setAttribute('aria-pressed', String(paa)); }
       catch (err) { toast(esc(err.message)); } finally { S.opptatt = false; b.disabled = false; }
       return;
     }

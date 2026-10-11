@@ -731,6 +731,45 @@ try {
         $l = $saker();
         sjekk('Q dugnad: alle fire er ute av Må gjøres', array_filter($q['dugnad'], static fn($id) => $harSak($l, 'dugnad', $id) !== null) === []);
 
+        // ── Dugnad uten godkjenning (eieren 11.10.2026, migrasjon 272) ──
+        // Bryteren per medlem: på = forespørselen godkjennes med en gang (ingen sak i Må gjøres, ingen
+        // e-post i køen); av = venter som før. Dugnad står på for alle mens dette kjører.
+        if (DB::harKolonne('members', 'dugnad_uten_godkjenning')) {
+            $visFor = array_column(DB::alle("SELECT nokkel, verdi FROM content_blocks WHERE nokkel IN ('Vis/dugnad','Vis/dugnadutvalgte')"), 'verdi', 'nokkel');
+            DB::kjor("DELETE FROM content_blocks WHERE nokkel IN ('Vis/dugnad','Vis/dugnadutvalgte')");
+            try {
+                $eirin = $nyttMedlem(['navn' => $tag . ' Eirin', 'rolle' => 'medlem', 'status' => 'aktiv', 'betaler_ikke' => 1]);
+                $andre = $nyttMedlem(['navn' => $tag . ' Siri', 'rolle' => 'medlem', 'status' => 'aktiv', 'betaler_ikke' => 1]);
+                $tE = $sesjon($eirin); $tS = $sesjon($andre);
+                $ml = kall('/api/admin/medlemmer.php', null, $tA);
+                $rE = array_values(array_filter($ml[1]['medlemmer'] ?? [], static fn($r) => (int) $r['id'] === $eirin))[0] ?? null;
+                sjekk('Q dugnad uten godkjenning: av som standard i medlemslista', $ml[0] === 200 && ($rE['dugnadUtenGodkjenning'] ?? null) === false, $vis($ml));
+                $nekt = kall('/api/admin/medlemmer.php', ['handling' => 'dugnad-uten-godkjenning', 'medlemId' => $eirin, 'paa' => 'ja'], $tM);
+                $paa = kall('/api/admin/medlemmer.php', ['handling' => 'dugnad-uten-godkjenning', 'medlemId' => $eirin, 'paa' => 'ja'], $tA);
+                sjekk('Q dugnad uten godkjenning: bare admin kan slå den på', $nekt[0] === 403 && $paa[0] === 200
+                    && (int) DB::verdi('SELECT dugnad_uten_godkjenning FROM members WHERE id = :i', ['i' => $eirin]) === 1, $vis($nekt) . ' / ' . $vis($paa));
+                $koFor = (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE ref_type = 'dugnad'");
+                $sE = kall('/api/dugnad.php', ['handling' => 'sporr', 'tekst' => $tag . ' vaske glasurrommet'], $tE);
+                $dE = DB::en('SELECT id, status, svart_av, svart_at FROM dugnad WHERE member_id = :m ORDER BY id DESC LIMIT 1', ['m' => $eirin]) ?? [];
+                if (isset($dE['id'])) { $q['dugnad'][] = (int) $dE['id']; }
+                sjekk('Q dugnad uten godkjenning: på → godkjent med en gang (svart_av tom, svart_at satt), ingen e-post i køen',
+                    $sE[0] === 200 && ($dE['status'] ?? '') === 'godkjent' && $dE['svart_av'] === null && $dE['svart_at'] !== null
+                    && (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE ref_type = 'dugnad'") === $koFor, $vis($sE));
+                sjekk('Q dugnad uten godkjenning: revidert som dugnad_auto_godkjent', (int) DB::verdi(
+                    "SELECT COUNT(*) FROM audit_log WHERE handling = 'dugnad_auto_godkjent' AND member_id = :m", ['m' => $eirin]) === 1);
+                sjekk('Q dugnad uten godkjenning: ingen sak i Må gjøres', $harSak($saker(), 'dugnad', (int) ($dE['id'] ?? 0)) === null);
+                $inn = kall('/api/dugnad.php', ['handling' => 'inn'], $tE);
+                sjekk('Q dugnad uten godkjenning: kan stemple inn direkte', $inn[0] === 200
+                    && (string) DB::verdi('SELECT status FROM dugnad WHERE id = :i', ['i' => (int) ($dE['id'] ?? 0)]) === 'pagar', $vis($inn));
+                $sS = kall('/api/dugnad.php', ['handling' => 'sporr', 'tekst' => $tag . ' rydde hyllene'], $tS);
+                $dS = DB::en('SELECT id, status FROM dugnad WHERE member_id = :m ORDER BY id DESC LIMIT 1', ['m' => $andre]) ?? [];
+                if (isset($dS['id'])) { $q['dugnad'][] = (int) $dS['id']; }
+                sjekk('Q dugnad uten godkjenning: av → venter som før', $sS[0] === 200 && ($dS['status'] ?? '') === 'venter', $vis($sS));
+            } finally {
+                foreach ($visFor as $n => $v) { DB::kjor('INSERT INTO content_blocks (nokkel, verdi) VALUES (:n, :v) ON DUPLICATE KEY UPDATE verdi = :v2', ['n' => $n, 'v' => $v, 'v2' => $v]); }
+            }
+        }
+
         // ── Leirebestilling ────────────────────────────────────────────
         $q['lev'] = DB::settInn('leverandorer', ['navn' => $tag . ' Leirhuset', 'epost' => strtolower($tag) . '-lev@example.com', 'bestillingsmaate' => 'epost']);
         $q['vare'] = DB::settInn('products', ['tittel' => $tag . ' Steintøyleire', 'pris_ore' => 29000, 'status' => 'publisert', 'leverandor_id' => $q['lev'], 'artikkelnr' => 'T-1']);

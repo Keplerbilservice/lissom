@@ -8299,6 +8299,52 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "dugnad-uten-godkjenning",
+            "dato": "2026-10-11",
+            "hva": "Eieren 11.10.2026: «kan du skru av at Monica må godkjenne dugnaden til Eirin?», valgt «Bare for Eirin». Bryter per medlem «Dugnad uten godkjenning» (migrasjon 272, members.dugnad_uten_godkjenning, av som standard) på medlemskortet i ny admin og gammel admin. På: forespørselen blir godkjent med en gang (svart_av NULL, revidert dugnad_auto_godkjent), hun kan stemple inn direkte, ingen sak i «Må gjøres» og ingen e-post. Godkjenningen av timene etter utstempling er uendret. Uten migrasjonen vises ikke bryteren.",
+            "hvor": "db/migrations/272_dugnad_uten_godkjenning.sql, api/dugnad.php, app/lib/dugnad.php (utenGodkjenning), api/admin/medlemmer.php (dugnad-uten-godkjenning, dugnadUtenGodkjenning), ny-admin/medlemmer.js, admin-ny/app.js, tests/ny-admin.php",
+            "kode": [
+                {
+                    "fil": "db/migrations/272_dugnad_uten_godkjenning.sql",
+                    "finnes": [
+                        "ADD COLUMN IF NOT EXISTS dugnad_uten_godkjenning TINYINT(1) NOT NULL DEFAULT 0"
+                    ]
+                },
+                {
+                    "fil": "api/dugnad.php",
+                    "finnes": [
+                        "if (Dugnad::utenGodkjenning($id)) {",
+                        "revider('dugnad_auto_godkjent', 'member', $id, ['dugnad' => $nyId]);"
+                    ]
+                },
+                {
+                    "fil": "app/lib/dugnad.php",
+                    "finnes": [
+                        "DB::harKolonne('members', 'dugnad_uten_godkjenning')"
+                    ]
+                },
+                {
+                    "fil": "api/admin/medlemmer.php",
+                    "finnes": [
+                        "if ($handling === 'dugnad-uten-godkjenning') {"
+                    ]
+                },
+                {
+                    "fil": "ny-admin/medlemmer.js",
+                    "finnes": [
+                        "<b>Dugnad uten godkjenning</b>",
+                        "Medlemmet kan stemple inn dugnad uten at den godkjennes først."
+                    ]
+                },
+                {
+                    "fil": "admin-ny/app.js",
+                    "finnes": [
+                        "field('paa','Dugnad uten godkjenning','checkbox',{help:'Medlemmet kan stemple inn dugnad uten at den godkjennes først.'})"
+                    ]
+                }
+            ]
         }
     ]
 }

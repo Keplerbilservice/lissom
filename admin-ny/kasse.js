@@ -335,7 +335,6 @@ function flereValg(){
  if(ikkeNaa())return;
  ark('Flere valg',lukk=>[el('div',{class:'k-g2'},
   kort({onclick:()=>{lukk();deltArk();}},el('b',{text:'Del betalingen'}),el('small',{text:'To eller flere betaler'})),
-  kort({onclick:()=>{lukk();registrer('Faktura','med faktura');}},el('b',{text:'Faktura'})),
   kort({onclick:()=>{lukk();registrer('Vipps','med Vipps-nummer');}},el('b',{text:'Vipps-nummer'}),el('small',{text:'Betalt på annen måte'}))),
   el('div',{class:'k-rad-knapper'},pille('Lukk',lukk,'fylt'))]);
 }

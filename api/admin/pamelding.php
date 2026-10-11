@@ -43,7 +43,9 @@ $admin = krev_admin();
 // «Vipps» kom i tillegg til «Vipps i verkstedet» da valget paa okta ble kortet
 // ned. Begge staar: dagsoppgjoret foerer dem samme sted uansett.
 const MAATER = ['Kontant', 'Vipps', 'Vipps i verkstedet', 'Gavekort',
-                'Ikke betalt', 'Faktura', 'Betaler ved oppmøte', 'Gratis'];
+                'Ikke betalt', 'Betaler ved oppmøte', 'Gratis'];
+// Faktura tilbys aldri (eieren 11.10.2026: «dette skal aldri vises i hele systemet»).
+// Gamle rader med «Faktura» staar i basen og telles i dagsoppgjoret som foer.
 
 $handling = Foresporsel::tekst('handling', 'legg-til');
 $id       = Foresporsel::heltall('id');

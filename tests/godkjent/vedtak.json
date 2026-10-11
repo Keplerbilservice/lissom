@@ -488,7 +488,7 @@
                 {
                     "fil": "lissom-2108.html",
                     "finnes": [
-                        "return ['Ikke betalt', 'Kontant', 'Vipps i verkstedet', 'Faktura', 'Betaler ved oppmøte', 'Gratis'];"
+                        "return ['Ikke betalt', 'Kontant', 'Vipps i verkstedet', 'Betaler ved oppmøte', 'Gratis'];"
                     ]
                 }
             ]
@@ -8222,6 +8222,69 @@
                     "fil": "tests/alle.sh",
                     "finnes": [
                         "php tests/pop-betal-na.php"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "hentevarsel-tre-uker",
+            "dato": "2026-10-11",
+            "hva": "Eieren 11.10.2026: «Klar til henting» kom for tidlig i admin-varselet; skal komme etter hentetiden nettsiden lover («samme som står på nettsiden» = tre uker). Saken «Klar til henting» i I dag › Må gjøres (api/admin/oversikt.php) vises først tre uker etter at kurset er ferdig. Admin kan fortsatt melde når som helst fra «Ovn er tømt» og «Klar til henting» (ma-gjores-mer.php uendret).",
+            "kode": [
+                {
+                    "fil": "api/admin/oversikt.php",
+                    "finnes": [
+                        "COALESCE(cs.slutt_tid, cs.start_tid) < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 3 WEEK)"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "ingen-faktura",
+            "dato": "2026-10-11",
+            "hva": "Eieren 11.10.2026: «i kassa, kan jeg velge faktura, dette skal aldri vises i hele systemet». Faktura er tatt ut som valg overalt: kassa (Flere valg), Kasse::MAATER, påmeldingens betalingsvalg i admin-ny (legg til deltaker, rediger påmelding, kalenderarket), api/admin/pamelding.php MAATER, BETALT_MAATER på siden (lissom-2108 og uten-admin) og malhjelpen. Gamle rader med «Faktura» står i basen og telles i dagsoppgjøret som før.",
+            "kode": [
+                {
+                    "fil": "admin-ny/kasse.js",
+                    "ikkeFinnes": [
+                        "registrer('Faktura'"
+                    ]
+                },
+                {
+                    "fil": "app/lib/kasse.php",
+                    "finnes": [
+                        "public const MAATER = ['Kontant', 'Vipps'];"
+                    ]
+                },
+                {
+                    "fil": "api/admin/pamelding.php",
+                    "ikkeFinnes": [
+                        "'Ikke betalt', 'Faktura'"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/innhold-og-kurs.js",
+                    "ikkeFinnes": [
+                        "'Faktura'"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kalender-ark.js",
+                    "ikkeFinnes": [
+                        "'Faktura'"
+                    ]
+                },
+                {
+                    "fil": "lissom-2108.html",
+                    "ikkeFinnes": [
+                        "'Vipps i verkstedet', 'Faktura'",
+                        "betaler med faktura"
+                    ]
+                },
+                {
+                    "fil": "lissom-2108-uten-admin.html",
+                    "ikkeFinnes": [
+                        "\"Faktura\",\"Betaler ved oppmøte\""
                     ]
                 }
             ]

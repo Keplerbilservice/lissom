@@ -109,7 +109,7 @@ export function tiderArk(e,apne){const s=sheet(`${visTittel(e)} · ${tiderTekst(
 export const popKnapp=(e,etter)=>e.type==='pop'&&e.popStoler?popDagKnapp(e.dato,popDager,()=>{delete popDager[e.dato];etter&&etter();}):null;
 
 // «Legg til deltaker» (pamelding.php legg-til). Brukes av økt-arket og av «+ Noen kom uten påmelding» i «Start kurset».
-export function leggTilDeltaker(id,ferdig){form('Legg til deltaker',[field('navn','Navn','text',{required:true}),field('telefon','Mobil','tel'),field('epost','E-post','email'),field('antall','Antall','number',{min:1,required:true}),field('betaltMaate','Betaling','text',{velg:true,options:['Ikke betalt','Betaler ved oppmøte','Kontant','Vipps','Gavekort','Faktura','Gratis']}),field('kode','Gavekortkode'),field('varsle','Send bekreftelse','checkbox')],{antall:1},async v=>{await ferdig(await api('pamelding.php',{handling:'legg-til',oktId:id,...v,varsle:v.varsle?'ja':'nei'}));},{submitLabel:'Legg til',successText:false});}
+export function leggTilDeltaker(id,ferdig){form('Legg til deltaker',[field('navn','Navn','text',{required:true}),field('telefon','Mobil','tel'),field('epost','E-post','email'),field('antall','Antall','number',{min:1,required:true}),field('betaltMaate','Betaling','text',{velg:true,options:['Ikke betalt','Betaler ved oppmøte','Kontant','Vipps','Gavekort','Gratis']}),field('kode','Gavekortkode'),field('varsle','Send bekreftelse','checkbox')],{antall:1},async v=>{await ferdig(await api('pamelding.php',{handling:'legg-til',oktId:id,...v,varsle:v.varsle?'ja':'nei'}));},{submitLabel:'Legg til',successText:false});}
 
 // e: hendelsen fra kalender.php. o: {refresh, kursholdere, flytt (moveDate i kalender.js)}.
 export function oktArk(e,o){

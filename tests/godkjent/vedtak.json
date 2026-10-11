@@ -1928,13 +1928,13 @@
                 {
                     "fil": ".htaccess",
                     "finnes": [
-                        "RewriteRule ^admin2(\\.html)?/?$ /admin-ny [R=302,L]"
+                        "RewriteRule ^admin2(\\.html)?/?$ /ny-admin [R=302,L]"
                     ]
                 },
                 {
                     "fil": "lissom-2108.html",
                     "finnes": [
-                        "<a href=\"/admin-ny\" style=\"{{ tmAdmin2Stil }}\">Prøv nytt admin</a>",
+                        "<a href=\"/ny-admin\" style=\"{{ tmAdmin2Stil }}\">Prøv nytt admin</a>",
                         "(this.state.innholdLagret || {})['Vis/admin2'] === 'ja'"
                     ]
                 }
@@ -4529,7 +4529,7 @@
                 {
                     "fil": ".htaccess",
                     "finnes": [
-                        "RewriteRule ^admin2(\\.html)?/?$ /admin-ny [R=302,L]"
+                        "RewriteRule ^admin2(\\.html)?/?$ /ny-admin [R=302,L]"
                     ],
                     "ikkeFinnes": [
                         "RewriteRule ^admin2/?$ /admin2.html [L]"
@@ -4831,7 +4831,7 @@
                 {
                     "fil": ".htaccess",
                     "finnes": [
-                        "RewriteRule ^admin2(\\.html)?/?$ /admin-ny [R=302,L]"
+                        "RewriteRule ^admin2(\\.html)?/?$ /ny-admin [R=302,L]"
                     ]
                 }
             ]
@@ -8454,6 +8454,53 @@
                     "fil": "ny-admin/kurs.js",
                     "finnes": [
                         "window.NA.arkKursbevis = id => arkKursbevis(OKTER.get(+id));"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "ny-admin-standard",
+            "dato": "2026-10-11",
+            "hva": "Ny admin (/ny-admin) er standard (eieren 11.10.2026: «da gjør vi dette til default admin, med en knapp til den opprinnelige admin»). /admin og /admin2 sendes til /ny-admin med 302 (kan snus); reserven /admin?gammel=1 med informasjonskapselen står, og /admin-ny virker direkte. Adminpanelet på nettsiden («Prøv nytt admin») peker til /ny-admin. I ny admin står pillen «Gammel admin» (til /admin-ny, samme vindu) nederst i menyen ved Logg ut — på PC i venstremenyen og på mobil i hamburgermenyen (samme meny, ett sted per skjerm; kortet «Gammel admin» under Mer er tatt bort). I admin-ny står pillen «Ny admin» (til /ny-admin) nederst i menyen. Lenker til bestemte funksjoner som bare finnes i admin-ny (#folk, #foresporsler, #kursstandard, #penger osv.) og kassas tilbake-logikk (fra=ny-admin) står uendret.",
+            "hvor": ".htaccess, lissom-2108.html (adminpanelet), ny-admin/felles.js, ny-admin/mer.js, ny-admin/ny-admin.css, admin-ny/app.js",
+            "kode": [
+                {
+                    "fil": ".htaccess",
+                    "finnes": [
+                        "RewriteRule ^admin2(\\.html)?/?$ /ny-admin [R=302,L]",
+                        "RewriteRule ^admin(/.*)?$ /ny-admin [R=302,L]",
+                        "RewriteCond %{QUERY_STRING} (^|&)gammel=1(&|$)",
+                        "RewriteRule ^admin-ny/?$ /admin-ny.html [L]"
+                    ],
+                    "ikkeFinnes": [
+                        "RewriteRule ^admin(/.*)?$ /admin-ny [R=302,L]"
+                    ]
+                },
+                {
+                    "fil": "ny-admin/felles.js",
+                    "finnes": [
+                        "<a class=\"knapp liten gammel-admin\" href=\"/admin-ny\">Gammel admin</a>"
+                    ]
+                },
+                {
+                    "fil": "ny-admin/mer.js",
+                    "ikkeFinnes": [
+                        "['Gammel admin', 'Reserve', '/admin-ny']"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/app.js",
+                    "finnes": [
+                        "el('a',{href:'/ny-admin',class:'button ny-admin-pille',text:'Ny admin'})"
+                    ]
+                },
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "<a href=\"/ny-admin\" style=\"{{ tmAdmin2Stil }}\">Prøv nytt admin</a>"
+                    ],
+                    "ikkeFinnes": [
+                        "<a href=\"/admin-ny\" style=\"{{ tmAdmin2Stil }}\">Prøv nytt admin</a>"
                     ]
                 }
             ]

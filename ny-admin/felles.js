@@ -315,6 +315,7 @@
       <button class="nav hurtig tilpass" type="button" data-hurtig="tilpass"><span class="ic">＋</span>Tilpass</button>
       <div class="fot">${(erMobil() ? [] : BUNN).map(navKnapp).join('')}
         <small>${esc(NA.meg.navn)} · innlogget</small>
+        <a class="knapp liten gammel-admin" href="/admin-ny">Gammel admin</a>
         <button class="knapp liten logg-ut" type="button" data-loggut>Logg ut</button>
       </div>`;
     /* Bare når noe er endret: menyen tegnes ved hver oppdatering, og fokus skal ikke forsvinne. */

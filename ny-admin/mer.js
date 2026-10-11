@@ -13,7 +13,7 @@
     ['Markedsføring', 'Nyhetsbrev, SMS, kampanjer', '/admin-ny#marked'],
     ['Vedtak', 'Regler og priser', null],
     ['Eksport', 'Regnskap og lister', '/admin-ny#regnskap'],
-    ['Gammel admin', 'Reserve', '/admin-ny'],
+    // «Gammel admin» står i menyen (eieren 11.10.2026), ikke to steder på samme skjerm.
   ];
 
   function tegn(el) {

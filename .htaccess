@@ -408,7 +408,9 @@ RewriteRule ^nyttig-info/([a-z0-9-]+)/?$ /guide.php?slug=$1 [L,QSA]
 # gamle, som egen side. Tilgangen sjekkes av API-et (krev_admin).
 # Eieren 4. oktober 2026: /admin2 sendes til det nyeste admin (/admin-ny),
 # så det bare finnes ett nytt admin. 302, så det kan snus.
-RewriteRule ^admin2(\.html)?/?$ /admin-ny [R=302,L]
+# Eieren 11. oktober 2026: ny admin (/ny-admin) er standard. /admin-ny virker
+# fortsatt direkte, og pillen «Gammel admin» i ny admin går dit.
+RewriteRule ^admin2(\.html)?/?$ /ny-admin [R=302,L]
 
 # Eieren 8. oktober 2026: gamle /admin sendes til det nye admin. Det gamle
 # ligger skjult en måned som reserve: /admin?gammel=1 slipper inn og setter
@@ -418,7 +420,7 @@ RewriteCond %{QUERY_STRING} (^|&)gammel=1(&|$)
 RewriteRule ^admin(/.*)?$ - [CO=admin_gammel:1:%{HTTP_HOST}:43200:/:secure:httponly]
 RewriteCond %{QUERY_STRING} !(^|&)gammel=1(&|$)
 RewriteCond %{HTTP_COOKIE} !(^|;\s*)admin_gammel=1
-RewriteRule ^admin(/.*)?$ /admin-ny [R=302,L]
+RewriteRule ^admin(/.*)?$ /ny-admin [R=302,L]
 
 # Kort lenke til kursbeviset i SMS-en (eieren 8. oktober 2026): /k/<påmelding>.<kode>.
 # Samme kontroll som den lange lenken: api/kursbevis.php sjekker koden.

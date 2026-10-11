@@ -85,7 +85,7 @@ $ov = (string) file_get_contents($rot . '/api/admin/oversikt.php');
 sjekk('påmeldinger slås sammen per person+kurs', $finnes($ov, <<<'T'
 ' (' . $p['plasser'] . ' plasser)'
 T, <<<'T'
-['ider' => $p['ider']]
+['ider' => $p['ider'], 'betalt' => $p['betalt']]
 T));
 sjekk('Sett som sett setter alle i saken', str_contains($ramme, "for(const id of s.ider||[s.id]){const r=await api('pamelding.php',{handling:'sett',id});"));
 sjekk('Send til medlemmene sender ikke selv', str_contains($js, "location.hash='#beskjeder?'"));

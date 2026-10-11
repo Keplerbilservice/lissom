@@ -20,6 +20,16 @@
  * Beløp i øre som heltall. Prisen hentes alltid fra basen, aldri fra det
  * nettleseren sender.
  *
+ * Eieren, GO 11. oktober 2026 (skissen GvVvGvKzJex3L2qkNcoLzc): de 100
+ * kronene ved booking er borte. Kunden velger hva hun vil male (en teller per
+ * nivå) og så «Betal nå med Vipps» (summen av nivåene) eller «Betal ved
+ * oppmøte» (plassen bookes uten betaling, som en gratis booking).
+ * courses.depositum = 1 er fortsatt «Paint on Pots-modus», men beløpet ved
+ * booking er ikke lenger kursets pris_ore: det er det kunden valgte
+ * (bookings.depositum_ore), og 0 ved oppmøte. Gjenstandene hun valgte står i
+ * pop_kasselinjer, så kassa viser dem ferdig utfylt og Monica kan rette dem.
+ * Bookinger som alt har betalt 100 kr røres ikke.
+ *
  * Tåler at migrasjon 260 ikke er kjørt: da finnes ingen nivåer, ingen
  * kurs er depositum-kurs, og alt er som før.
  */
@@ -131,15 +141,61 @@ final class PopPris
     }
 
     /**
-     * Beløpet per person ved booking når kurset har det (kursets pris, ikke en
-     * egen pris på økta). null = vanlig kurs.
+     * Beløpet per person ved booking på Paint on Pots: 0. Det finnes ikke
+     * lenger et fast beløp per person (eieren, GO 11. oktober 2026) — en plass
+     * lagt inn i admin, fra ventelista eller i kassa betales i verkstedet, som
+     * «Betal ved oppmøte». null = vanlig kurs.
      */
     public static function depositumPerPerson(int $kursId): ?int
     {
-        if (!self::erDepositum($kursId)) {
-            return null;
+        return self::erDepositum($kursId) ? 0 : null;
+    }
+
+    /**
+     * «Betal nå med Vipps»: gjenstandene kunden valgte ved booking, priset med
+     * dagens nivåpriser fra basen (aldri det nettleseren sender), og summen.
+     * Samme regler som kassa (lesValg/regnLinjer): minst én gjenstand, høyst
+     * MAKS_PER_NIVAA per nivå, og bare aktive nivåer.
+     *
+     * @param array<int|string,mixed> $valg nivå-id => antall
+     * @return array{0: list<array<string,mixed>>, 1: int} linjene og summen i øre
+     */
+    public static function valgVedBooking(array $valg): array
+    {
+        if (!self::klar()) {
+            throw new RuntimeException('Kjør oppdateringene først (⚙ Kjør oppdateringer).');
         }
-        return (int) DB::verdi('SELECT pris_ore FROM courses WHERE id = :i', ['i' => $kursId]);
+        [$linjer, $sum] = self::regnLinjer(self::lesValg($valg), array_column(self::nivaer(), null, 'id'), []);
+        if ($sum <= 0) {
+            throw new RuntimeException('Velg minst én gjenstand.');
+        }
+        return [$linjer, $sum];
+    }
+
+    /**
+     * Lagrer gjenstandene fra bookingen som linjer i pop_kasselinjer, så kassa
+     * viser dem ferdig utfylt. gjenstander_ore står tomt: de er ikke slått
+     * inn før Monica har sett dem i kassa (og avbestilling er fortsatt mulig).
+     * Ingen lagertrekk her. Kalles inne i bookingens transaksjon.
+     *
+     * @param list<array<string,mixed>> $linjer fra valgVedBooking()
+     */
+    public static function lagreValgVedBooking(int $bookingId, array $linjer): void
+    {
+        $medGjenstand = DB::harKolonne('pop_kasselinjer', 'gjenstand');
+        foreach ($linjer as $l) {
+            $rad = [
+                'booking_id' => $bookingId,
+                'nivaa_id'   => (int) $l['nivaa_id'],
+                'navn'       => (string) $l['navn'],
+                'pris_ore'   => (int) $l['pris_ore'],
+                'antall'     => (int) $l['antall'],
+            ];
+            if ($medGjenstand) {
+                $rad['gjenstand'] = $l['gjenstand'] ?? null;
+            }
+            DB::settInn('pop_kasselinjer', $rad);
+        }
     }
 
     /**
@@ -219,8 +275,9 @@ final class PopPris
      */
     public static function bekreftelse(array $b): string
     {
-        $dep = (int) ($b['depositum_ore'] ?? 0);
-        if ($dep <= 0) {
+        // Også «Betal ved oppmøte» (depositum_ore = 0, eieren 11.10.2026): da
+        // står den eksisterende linja for ingenting betalt, med lenka.
+        if (($b['depositum_ore'] ?? null) === null) {
             return '';
         }
         // Det som faktisk er betalt (kontrollen 08.10), ikke det som skulle
@@ -486,7 +543,8 @@ final class PopPris
         // nivå som ikke lenger finnes, står som egen rad: det kan beholdes
         // eller tas bort, men ikke økes.
         $rader = [];
-        foreach (self::nivaer() as $n) {
+        $nivaer = array_column(self::nivaer(), null, 'id');
+        foreach ($nivaer as $n) {
             foreach (self::gjenstandsliste($n['gjenstander']) ?: [''] as $g) {
                 $k = $n['id'] . '|' . $g;
                 $rader[$k] = ['nokkel' => $k, 'nivaaId' => $n['id'], 'gjenstand' => $g, 'nivaa' => $n['navn'],
@@ -496,8 +554,13 @@ final class PopPris
         foreach ($lagret as $k => $ls) {
             if (!isset($rader[$k])) {
                 [$id, $g] = explode('|', $k, 2);
-                $rader[$k] = ['nokkel' => $k, 'nivaaId' => (int) $id, 'gjenstand' => $g, 'nivaa' => $ls[0]['navn'],
-                              'prisOre' => $ls[0]['prisOre'], 'aktiv' => false, 'lager' => false];
+                // Hele nivået uten gjenstand (valgt av kunden ved booking,
+                // eieren 11.10.2026): kan økes så lenge nivået finnes.
+                $n = $g === '' ? ($nivaer[(int) $id] ?? null) : null;
+                $rader[$k] = ['nokkel' => $k, 'nivaaId' => (int) $id, 'gjenstand' => $g,
+                              'nivaa' => $n !== null ? $n['navn'] : $ls[0]['navn'],
+                              'prisOre' => $n !== null ? $n['prisOre'] : $ls[0]['prisOre'],
+                              'aktiv' => $n !== null, 'lager' => false];
             }
             $rader[$k]['lagret'] = array_map(static fn(array $l): array => ['prisOre' => $l['prisOre'], 'antall' => $l['antall']], $ls);
         }

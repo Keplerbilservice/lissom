@@ -1119,7 +1119,10 @@ final class Booking
         // «Noe vi boer vite?» paa bestillinga. Eieren, 4. oktober 2026: «de
         // kan jo skrive antall personer og litt tekst». Antallet staar fra
         // foer i $antall; dette er teksten.
-        ?string $gjestMelding = null
+        ?string $gjestMelding = null,
+        // Paint on Pots, «Betal naa med Vipps» (eieren, GO 11. oktober 2026):
+        // nivaa-id => antall. Prisen regnes av PopPris fra basen.
+        array $popValg = []
     ): array {
         // Prisen paa datoen gaar foran kursets, naar den er satt. COALESCE
         // og ikke to sporringer: da er det ett sted prisen kommer fra, og
@@ -1184,17 +1187,26 @@ final class Booking
         // rett til serveren skal ikke kunne hoppe over betalingen naar
         // ⊙ Synlighet sier at kurs skal betales paa forhaand. Samme regel som
         // fast trekk i api/bli-medlem.php.
-        // Paint on Pots med beloep ved booking (eieren, 8. oktober 2026:
-        // «100 kr per person betales med Vipps ved booking»): da finnes ikke
-        // «betal ved oppmoete». Katalogen tilbyr det ikke, og et kall rett hit
-        // avvises med samme beskjed som naar bryteren er av.
+        // Paint on Pots (eieren, GO 11. oktober 2026, skissen
+        // GvVvGvKzJex3L2qkNcoLzc): ingen fast beloep ved booking lenger.
+        // Kunden velger selv:
+        //  - «Betal naa med Vipps»: summen av nivaaene hun valgte (minst én
+        //    gjenstand). Prisene leses fra basen. Ingen grupperabatt eller
+        //    medlemsrabatt — det er prisen paa gjenstandene, som i kassa.
+        //  - «Betal ved oppmoete»: plassen bookes uten betaling, som en
+        //    gratis booking (beloep 0). Ikke styrt av bryteren for oppmoete
+        //    paa andre kurs: valget er en del av Paint on Pots.
+        // Kursets pris_ore og en egen pris paa oekta brukes ikke.
         $depositum = (int) ($okt['depositum'] ?? 0) === 1;
-        // Beloepet ved booking staar paa kurset (settes i admin). En egen pris
-        // paa en enkelt oekt gjelder ikke da — den ville blitt trukket som
-        // «beloep ved booking».
+        $popLinjer = [];
+        $popSum = 0;
         if ($depositum) {
-            $okt['pris_ore'] = (int) DB::verdi('SELECT pris_ore FROM courses WHERE id = :k', ['k' => (int) $okt['course_id']]);
-            $gratis = (int) $okt['pris_ore'] === 0;
+            if (!$utenForskudd) {
+                [$popLinjer, $popSum] = PopPris::valgVedBooking($popValg);
+            }
+            $okt['pris_ore'] = $popSum;
+            $gratis = $popSum === 0;
+            $apentForAlle = true;
         }
         $oppmote = $utenForskudd && !$gratis && !$depositum && Oppmote::kurs();
         if ($utenForskudd && !$gratis && !$oppmote) {
@@ -1206,7 +1218,10 @@ final class Booking
 
         // Prisen regnes her, ikke i nettleseren. Rabatten som vises paa
         // bookingsiden og den kunden trekkes er naa det samme tallet.
-        $pris   = self::belopFor($okt, $antall, $medlemsrabatt);
+        // Paint on Pots: summen av gjenstandene, ikke pris × antall.
+        $pris   = $depositum
+            ? ['brutto' => $popSum, 'rabatt' => 0.0, 'netto' => $popSum, 'medlemsrabatt' => false]
+            : self::belopFor($okt, $antall, $medlemsrabatt);
         $belop  = $pris['netto'];
         $rabatt = $pris['rabatt'];
         $referanse = Vipps::nyReferanse();
@@ -1235,7 +1250,7 @@ final class Booking
         $reservasjon = DB::iTransaksjon(static function () use (
             $okt, $oktId, $antall, $navn, $epost, $telefon, $medlemId,
             $folgeMedlem, $gratis, $belop, $aBetale, $gavekortId, $gavekortOre, $rabatt, $referanse,
-            $allergier, $oppmote, $gjestMelding, $depositum
+            $allergier, $oppmote, $gjestMelding, $depositum, $popLinjer
         ): array {
             // Plassen sjekkes en gang til inne i transaksjonen. Uten dette kunne
             // to samtidige bookinger begge se den siste plassen som ledig.
@@ -1300,7 +1315,9 @@ final class Booking
             // Det som betales ved booking. Kassa trekker fra det som faktisk
             // er betalt; dette er tallet bekreftelsen og admin viser, og det
             // som skiller en slik booking fra en eldre (migrasjon 260).
-            if ($depositum && !$gratis && DB::harKolonne('bookings', 'depositum_ore')) {
+            // «Betal ved oppmoete» paa Paint on Pots: 0, saa kassa og
+            // avbestillingslenka kjenner den igjen (eieren 11.10.2026).
+            if ($depositum && DB::harKolonne('bookings', 'depositum_ore')) {
                 $felter['depositum_ore'] = $belop;
                 // Fristen som loves i bekreftelsen, saa en senere endring i
                 // admin ikke endrer den for denne bookingen.
@@ -1325,6 +1342,13 @@ final class Booking
             }
 
             $bookingId = DB::settInn('bookings', $felter);
+
+            // Gjenstandene kunden valgte, ferdig utfylt i kassa (eieren
+            // 11.10.2026). Ikke «slaatt inn»: gjenstander_ore staar tomt til
+            // Monica har sett dem, og hun kan rette dem der.
+            if ($popLinjer !== []) {
+                PopPris::lagreValgVedBooking($bookingId, $popLinjer);
+            }
 
             // Betalingen peker tilbake paa paameldingen.
             //

@@ -153,7 +153,10 @@ try {
         // Medlemsrabatt: fra sesjonen, bare for aktive medlemmer.
         Booking::faarMedlemsrabatt($medlem),
         // «Noe vi boer vite?» — valgfritt, og bare paa kurs uten plassgrense.
-        Foresporsel::tekst('melding')
+        Foresporsel::tekst('melding'),
+        // Paint on Pots, «Betal naa med Vipps» (eieren 11.10.2026): nivaa-id
+        // => antall. Prisene leses fra basen i PopPris::valgVedBooking().
+        is_array(Foresporsel::kropp()['gjenstander'] ?? null) ? Foresporsel::kropp()['gjenstander'] : []
     );
 } catch (RuntimeException $e) {
     // Meldingene herfra er skrevet for aa vises til kunden.

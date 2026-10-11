@@ -6015,7 +6015,7 @@
         {
             "id": "pop-prisnivaer-og-100-ved-booking",
             "dato": "2026-10-08",
-            "hva": "Eieren, «ok, bygg det» 8. oktober 2026, til fremvisningene GFD76vZ7iEiFgDiaPFf6hu (prisliste + 100 kr ved booking) og PU3RwTARY6oVYx6dbwaLwo (fire prisnivåer). Paint on Pots har fire prisnivåer per gjenstand, redigerbare i admin-ny › Paint on Pots: Liten 500 kr (standard kopp, kopp uten hank, liten bolle, lysestake), Mellom 700 kr (stor kopp/krus, stor tekopp, tallerken), Stor 850 kr (stor bolle, lite serveringsfat, mugge, smørklokke), Ekstra stor 1 000 kr (mellomstort serveringsfat, stor vase, stort serveringsfat). /kurs/paint-on-pots viser nivåene med gjenstandene og «Glasur og brenning er med i prisen» i stedet for «fra 450 kr»; ingen «fra»-pris. 100 kr per person betales med Vipps ved booking (beløpet og fristen settes i admin), uten rabatter og uten «betal ved oppmøte». Bekreftelsen viser betalt beløp, at det trekkes fra i verkstedet, regelen og en avbestillingslenke. Avbestilling senest 24 timer før = full refusjon via Vipps; senere eller ikke møtt = beholdes. Bookingen står som «Delvis betalt» til gjenstandene er slått inn i kassa; da blir beløpet summen av gjenstandene og det betalte trekkes fra. Eldre bookinger (bl.a. 25 og 41) røres ikke. Erstatter fra-prisen i «paint-on-pots-per-gjenstand».",
+            "hva": "Eieren, «ok, bygg det» 8. oktober 2026, til fremvisningene GFD76vZ7iEiFgDiaPFf6hu (prisliste + 100 kr ved booking) og PU3RwTARY6oVYx6dbwaLwo (fire prisnivåer). Paint on Pots har fire prisnivåer per gjenstand, redigerbare i admin-ny › Paint on Pots: Liten 500 kr (standard kopp, kopp uten hank, liten bolle, lysestake), Mellom 700 kr (stor kopp/krus, stor tekopp, tallerken), Stor 850 kr (stor bolle, lite serveringsfat, mugge, smørklokke), Ekstra stor 1 000 kr (mellomstort serveringsfat, stor vase, stort serveringsfat). /kurs/paint-on-pots viser nivåene med gjenstandene og «Glasur og brenning er med i prisen» i stedet for «fra 450 kr»; ingen «fra»-pris. 100 kr per person betales med Vipps ved booking (beløpet og fristen settes i admin), uten rabatter og uten «betal ved oppmøte». Bekreftelsen viser betalt beløp, at det trekkes fra i verkstedet, regelen og en avbestillingslenke. Avbestilling senest 24 timer før = full refusjon via Vipps; senere eller ikke møtt = beholdes. Bookingen står som «Delvis betalt» til gjenstandene er slått inn i kassa; da blir beløpet summen av gjenstandene og det betalte trekkes fra. Eldre bookinger (bl.a. 25 og 41) røres ikke. Erstatter fra-prisen i «paint-on-pots-per-gjenstand». ENDRET 2026-10-11 (eieren, GO): de 100 kronene ved booking er erstattet av «betal nå med Vipps eller ved oppmøte», se vedtak pop-betal-na-eller-oppmote.",
             "hvor": "/kurs/paint-on-pots, bookingen, bekreftelsen, /api/pop-avbestill.php, admin-ny › Paint on Pots og Kasse",
             "kode": [
                 {
@@ -8155,6 +8155,73 @@
                     ],
                     "ikkeFinnes": [
                         "#mobil{position:fixed;bottom:0"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "pop-betal-na-eller-oppmote",
+            "dato": "2026-10-11",
+            "hva": "Eieren, GO 11. oktober 2026 (skissen GvVvGvKzJex3L2qkNcoLzc): Paint on Pots har ikke lenger 100 kr depositum ved booking. Etter dag, tid og antall velger kunden hva hun vil male med en teller (− / +) per prisnivå (Liten, Mellom, Stor, Ekstra stor), som starter på 0. Overskrift «Hva vil du male?» / «Hva vil dere male?», under nivåene «Usikker? Velg i verkstedet og betal ved oppmøte.». Så velger hun betaling, ingenting forhåndsvalgt: «Betal nå med Vipps» («{sum}. Maler du/dere noe annet, justeres det i verkstedet.», krever minst én gjenstand) eller «Betal ved oppmøte» («Du betaler/Dere betaler i verkstedet med Vipps.»). Hovedknappen er låst til et valg er gjort; ved oppmøte står «Book plass», ved betal nå Vipps-knappen. Betal nå: summen av nivåene (prisene fra basen) lagres som betalt ved booking (bookings.depositum_ore) og gjenstandene i pop_kasselinjer, så kassa viser dem ferdig utfylt og Monica kan rette dem; kassa trekker fra det som er betalt. Oppmøte: bookes uten betaling som en gratis booking (depositum_ore 0), admin viser «Betaler ved besøket». «X kr trekkes fra …» og avbestillingslinja vises bare ved betal nå. Avbestilling som før: senest courses.avbestilling_timer før = hele det betalte beløpet tilbake via Vipps; senere eller ikke møtt = beholdes. Ingen fast beløp per person lenger (admin, venteliste, kassa = 0), og nytt antall i admin regner ikke om beløpet. Admin: «Kunden velger: betal nå med Vipps eller ved oppmøte», fristen kan endres. Bookinger som alt har betalt 100 kr røres ikke.",
+            "hvor": "Bookingen av Paint on Pots på lissom.no, bekreftelsen, /api/pop-avbestill.php, admin-ny › Paint on Pots, ny-admin › Kalender og Kasse",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "bPopMaleTittel: flere ? 'Hva vil dere male?' : 'Hva vil du male?',",
+                        "Usikker? Velg i verkstedet og betal ved oppmøte.</p>",
+                        "<span style=\"display: block; font-weight: 700;\">Betal nå med Vipps</span>",
+                        "<span style=\"display: block; font-weight: 700;\">Betal ved oppmøte</span>",
+                        "(flere ? 'Maler dere' : 'Maler du') + ' noe annet, justeres det i verkstedet.'",
+                        "(flere ? 'Dere betaler' : 'Du betaler') + ' i verkstedet med Vipps.'",
+                        "on-click=\"{{ bekreftBookingOppmote }}\" hint-size=\"100%,52px\">Book plass</x-import>",
+                        "bBetalSperret: !vilkaarOk || (pop && betaling !== 'na'),",
+                        "bPopDepositum: this.popVelgerBetaling() && this.popBetaling() === 'na',"
+                    ]
+                },
+                {
+                    "fil": "app/lib/booking.php",
+                    "finnes": [
+                        "[$popLinjer, $popSum] = PopPris::valgVedBooking($popValg);",
+                        "PopPris::lagreValgVedBooking($bookingId, $popLinjer);",
+                        "if ($depositum && DB::harKolonne('bookings', 'depositum_ore')) {"
+                    ]
+                },
+                {
+                    "fil": "app/lib/poppris.php",
+                    "finnes": [
+                        "return self::erDepositum($kursId) ? 0 : null;",
+                        "if (($b['depositum_ore'] ?? null) === null) {"
+                    ]
+                },
+                {
+                    "fil": "api/admin/pamelding.php",
+                    "finnes": [
+                        "|| ($pr['gjenstander_ore'] === null && (int) $pr['depositum'] !== 1);"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/malebord.js",
+                    "finnes": [
+                        "Kunden velger: betal nå med Vipps eller ved oppmøte"
+                    ],
+                    "ikkeFinnes": [
+                        "per person med Vipps"
+                    ]
+                },
+                {
+                    "fil": "ny-admin/kalender.js",
+                    "finnes": [
+                        "Kunden velger: betal nå med Vipps eller ved oppmøte"
+                    ],
+                    "ikkeFinnes": [
+                        "Beløp ved booking (fra kurset)"
+                    ]
+                },
+                {
+                    "fil": "tests/alle.sh",
+                    "finnes": [
+                        "php tests/pop-betal-na.php"
                     ]
                 }
             ]

@@ -152,7 +152,8 @@ try {
 }
 $felt = PopPris::bookingFelt($kurs, 20000);
 sjekk('admin/venteliste får beløp ved booking og frist', ($felt['depositum_ore'] ?? null) === 20000 && ($felt['avbestilling_timer'] ?? null) === 24, json_encode($felt));
-sjekk('… og beløpet per person er kursets', PopPris::depositumPerPerson($kurs) === 10000);
+// Eieren, GO 11.10.2026: ikke lenger et fast beløp per person (tests/pop-betal-na.php).
+sjekk('… og beløpet per person er 0 (betales i verkstedet)', PopPris::depositumPerPerson($kurs) === 0);
 
 echo "\n── Lager: koblet gjenstand trekker og legger tilbake ────────\n";
 // Eieren, ja 8. oktober 2026 (migrasjon 262): en gjenstand kan kobles til en

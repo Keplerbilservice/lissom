@@ -780,7 +780,7 @@ function tegnSerie() {
      <label><small>Fra kl.</small><input type="time" id="se-fra" value="${esc(SE.fra)}"></label>
      <label><small>Til kl.</small><input type="time" id="se-til" value="${esc(SE.til)}"></label>
      <label><small>Plasser</small><input type="number" min="1" id="se-plasser" value="${esc(SE.plasser)}"></label>
-     ${erPop(SE.kursId) ? `<div class="pop-pris"><small>Beløp ved booking (fra kurset)</small><b>${esc(SE.pris)} kr</b></div>` : `<label><small>Pris (kr)</small><input inputmode="numeric" id="se-pris" value="${esc(SE.pris)}"></label>`}
+     ${erPop(SE.kursId) ? `<div class="pop-pris"><small>Pris og betaling</small><b>Kunden velger: betal nå med Vipps eller ved oppmøte</b></div>` : `<label><small>Pris (kr)</small><input inputmode="numeric" id="se-pris" value="${esc(SE.pris)}"></label>`}
      <label><small>${SE.enDato ? 'Dato' : 'Første dato'}</small><input type="date" id="se-start" value="${esc(SE.start)}"></label>
      ${SE.enDato ? '' : `<label><small>Gjentas</small><select id="se-gjentas"><option value="0">Velg …</option><option value="1" ${SE.gjentas === 1 ? 'selected' : ''}>Hver uke, samme dag</option><option value="2" ${SE.gjentas === 2 ? 'selected' : ''}>Annenhver uke</option></select></label>`}
    </div>

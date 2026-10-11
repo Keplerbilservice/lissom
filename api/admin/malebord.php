@@ -243,23 +243,19 @@ switch (Foresporsel::tekst('handling')) {
         Svar::ok($svar() + ['beskjed' => 'Flyttet til ' . $tid . '.']);
 
     case 'betaling':
-        // Beloepet per person ved booking og fristen for avbestilling med
-        // refusjon. Bare Paint on Pots-kurset. Gjelder nye bookinger; de som
-        // er gjort beholder sitt beloep.
+        // Fristen for avbestilling med refusjon. Bare Paint on Pots-kurset.
+        // Gjelder nye bookinger. Beloepet per person er borte (eieren, GO
+        // 11. oktober 2026): kunden velger «betal naa med Vipps» (summen av
+        // gjenstandene) eller «ved oppmoete», saa pris_ore roeres ikke her.
         if (!DB::harKolonne('courses', 'depositum')) {
             Svar::feil('Kjør oppdateringene først (⚙ Kjør oppdateringer).', 409);
         }
-        $kr = str_replace(',', '.', trim(Foresporsel::tekst('belop')));
         $frist = Foresporsel::heltall('frist', -1);
-        if (!is_numeric($kr) || (float) $kr < 1 || (float) $kr > 5000) {
-            Svar::feil('Beløpet ved booking må være mellom 1 og 5 000 kroner.');
-        }
         if ($frist < 0 || $frist > 720) {
             Svar::feil('Fristen må være mellom 0 og 720 timer.');
         }
-        $ore = (int) round((float) $kr * 100);
-        DB::oppdater('courses', ['pris_ore' => $ore, 'depositum' => 1, 'avbestilling_timer' => $frist], ['id' => $kursId]);
-        revider('pop_betaling', 'course', $kursId, ['pris_ore' => $ore, 'avbestilling_timer' => $frist]);
+        DB::oppdater('courses', ['depositum' => 1, 'avbestilling_timer' => $frist], ['id' => $kursId]);
+        revider('pop_betaling', 'course', $kursId, ['avbestilling_timer' => $frist]);
         Svar::ok($svar() + ['beskjed' => 'Lagret.']);
 
     case 'nivaer':

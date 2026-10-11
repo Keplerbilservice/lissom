@@ -3921,6 +3921,33 @@ window.__resources = {
                   </div>
                   <div style="height: var(--space-4);"></div>
                   </sc-if>
+                  <!-- Paint on Pots: hva kunden vil male, og betal naa eller ved
+                       oppmoete (eieren, GO 11. oktober 2026, skissen
+                       GvVvGvKzJex3L2qkNcoLzc). Ingen 100 kr ved booking lenger.
+                       Tellerne starter paa 0, og ingen betaling er valgt paa
+                       forhaand. Prisene regnes paa nytt av serveren. -->
+                  <sc-if value="{{ bPopVelg }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin-bottom: var(--space-5);">
+                      <div style="font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-heading); margin-bottom: var(--space-3);">{{ bPopMaleTittel }}</div>
+                      <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <sc-for list="{{ bPopTellere }}" as="n" hint-placeholder-count="4">
+                          <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; background: var(--surface-card);">
+                            <span style="min-width: 0;"><span style="font-weight: 700; color: var(--text-heading);">{{ n.navn }} · {{ n.pris }}</span><span style="display: block; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ n.gjenstander }}</span></span>
+                            <span style="display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto;">
+                              <button type="button" onClick="{{ n.minus }}" aria-label="{{ n.minusEtikett }}" style="{{ n.minusStil }}">−</button>
+                              <span style="min-width: 20px; text-align: center; font-family: var(--font-display); font-weight: 800; font-size: var(--text-base); color: var(--text-heading);">{{ n.antall }}</span>
+                              <button type="button" onClick="{{ n.pluss }}" aria-label="{{ n.plussEtikett }}" style="{{ n.plussStil }}">+</button>
+                            </span>
+                          </div>
+                        </sc-for>
+                      </div>
+                      <p style="margin: var(--space-3) 0 0; font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">Usikker? Velg i verkstedet og betal ved oppmøte.</p>
+                    </div>
+                    <div role="radiogroup" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: var(--space-5);">
+                      <button type="button" role="radio" aria-checked="{{ bPopNaValgt }}" aria-disabled="{{ bPopNaAv }}" onClick="{{ bPopVelgNa }}" style="{{ bPopNaStil }}"><span style="display: block; font-weight: 700;">Betal nå med Vipps</span><span style="display: block; font-size: var(--text-sm); color: var(--text-muted);">{{ bPopNaTekst }}</span></button>
+                      <button type="button" role="radio" aria-checked="{{ bPopOppmoteValgt }}" onClick="{{ bPopVelgOppmote }}" style="{{ bPopOppmoteStil }}"><span style="display: block; font-weight: 700;">Betal ved oppmøte</span><span style="display: block; font-size: var(--text-sm); color: var(--text-muted);">{{ bPopOppmoteTekst }}</span></button>
+                    </div>
+                  </sc-if>
                   <!-- Feltet var tegnet, men ikke koblet til noe: kvitteringen
                        gikk til adressen fra Vipps-innloggingen uansett hva som
                        ble skrevet. Naa staar innloggingens adresse her, og kan
@@ -4025,17 +4052,25 @@ window.__resources = {
                        ennaa — eller aldri — staar vaar egen, og kortet er ikke uten
                        knapp. To utgaver fordi komponenten leser OM «disabled» finnes,
                        ikke hva den staar til: disabled="false" sperrer like godt. -->
-                  <sc-if value="{{ vippsKlar }}" hint-placeholder-val="{{ false }}">
+                  <!-- Paint on Pots (eieren 11.10.2026): knappen er laast til
+                       kunden har valgt betaling. «Betal ved oppmoete» gir
+                       «Book plass» i stedet for Vipps. Andre kurs: som foer. -->
+                  <sc-if value="{{ bVippsVis }}" hint-placeholder-val="{{ false }}">
+                    <sc-if value="{{ bookBetalLinje }}" hint-placeholder-val="{{ '' }}">
                     <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); font-weight: 700; color: var(--text-heading); text-align: center;">{{ bookBetalLinje }}</p>
-                    <sc-if value="{{ vilkaarMangler }}" hint-placeholder-val="{{ false }}">
+                    </sc-if>
+                    <sc-if value="{{ bBetalSperret }}" hint-placeholder-val="{{ false }}">
                       <vipps-mobilepay-button brand="vipps" language="no" variant="primary" rounded="true" verb="pay" stretched="true" disabled="true"></vipps-mobilepay-button>
                     </sc-if>
-                    <sc-if value="{{ vilkaarOk }}" hint-placeholder-val="{{ true }}">
+                    <sc-if value="{{ bBetalKlar }}" hint-placeholder-val="{{ true }}">
                       <vipps-mobilepay-button brand="vipps" language="no" variant="primary" rounded="true" verb="pay" stretched="true" onClick="{{ bekreftBooking }}"></vipps-mobilepay-button>
                     </sc-if>
                   </sc-if>
-                  <sc-if value="{{ vippsIkkeKlar }}" hint-placeholder-val="{{ true }}">
-                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" disabled="{{ vilkaarMangler }}" on-click="{{ bekreftBooking }}" hint-size="100%,52px">{{ bookKnapp }}</x-import>
+                  <sc-if value="{{ bVippsIkkeVis }}" hint-placeholder-val="{{ true }}">
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" disabled="{{ bBetalSperret }}" on-click="{{ bekreftBooking }}" hint-size="100%,52px">{{ bookKnapp }}</x-import>
+                  </sc-if>
+                  <sc-if value="{{ bPopBookPlass }}" hint-placeholder-val="{{ false }}">
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" disabled="{{ vilkaarMangler }}" on-click="{{ bekreftBookingOppmote }}" hint-size="100%,52px">Book plass</x-import>
                   </sc-if>
                   <!-- Betal ved oppmoete.
                        Eieren, 19. september 2026: «det maa gaa an aa bestille
@@ -37707,9 +37742,55 @@ class Component extends DCLogic {
     return dag + ', ' + t.tid + '\u2013' + (t.slutt || '') + ' · ' + n + (n === 1 ? ' person' : ' personer');
   }
 
+  // ── Paint on Pots: betal naa eller ved oppmoete ──────────────────────
+  //
+  // Eieren, GO 11. oktober 2026 (skissen GvVvGvKzJex3L2qkNcoLzc): de 100
+  // kronene ved booking er borte. Kunden velger hva hun vil male (en teller
+  // per nivaa, starter paa 0) og saa betaling — ingenting forhaandsvalgt.
+  // Summen her er bare visning: serveren (PopPris::valgVedBooking) regner
+  // den paa nytt fra basen.
+
+  /** Paint on Pots-kurset (courses.depositum = 1): betalingen velges. */
+  popVelgerBetaling() {
+    return !!this.katalogKurs().depositum;
+  }
+
+  /** Antallet per nivaa som kunden har valgt, bare de over 0. */
+  popValgListe() {
+    const valg = this.state.popValg || {};
+    return (this.katalogKurs().popNivaer || [])
+      .map(n => ({ id: n.id, antall: parseInt(valg[String(n.id)], 10) || 0, prisOre: Number(n.prisOre) || 0 }))
+      .filter(n => n.antall > 0);
+  }
+
+  /** Summen av nivaaene som er valgt, i oere. */
+  popValgSum() {
+    return this.popValgListe().reduce((s, n) => s + n.antall * n.prisOre, 0);
+  }
+
+  /** «na», «oppmote» eller ''. «Betal naa» krever minst én gjenstand. */
+  popBetaling() {
+    const b = this.state.popBetaling || '';
+    return b === 'na' && this.popValgSum() <= 0 ? '' : b;
+  }
+
+  settPopValg(id, antall) {
+    const n = Math.max(0, Math.min(50, antall));
+    this.setState(s => ({ popValg: Object.assign({}, s.popValg || {}, { [String(id)]: n }) }));
+  }
+
+  /** «1 200 kr», som prisene paa nivaaene. */
+  popKr(ore) {
+    return Math.round((Number(ore) || 0) / 100).toLocaleString('nb-NO') + ' kr';
+  }
+
   bookSum() {
     const k = this.state.valgtKurs || {};
     if (k.price === 'Gratis') return 'Gratis';
+    // Paint on Pots: summen av gjenstandene som er valgt (eieren 11.10.2026).
+    if (this.popVelgerBetaling()) {
+      return 'kr.' + ' ' + Math.round(this.popValgSum() / 100).toLocaleString('nb-NO') + ',-';
+    }
     const antall = this.valgtAntall();
     // Prisen fra katalogen forst. Finner vi den ikke, bruker vi den
     // som staar paa kortet — «kr. 0,-» paa et kurs til 2 800 er verre
@@ -57039,6 +57120,13 @@ class Component extends DCLogic {
       return;
     }
     if (this.state.bookJobber) return;
+    // Paint on Pots, «Betal naa med Vipps»: minst én gjenstand (eieren
+    // 11.10.2026). Serveren sier det samme; dette sparer turen dit.
+    const popNa = this.popVelgerBetaling() && betaling !== 'oppmote';
+    if (popNa && this.popValgSum() <= 0) {
+      this.setState({ kvittering: 'Velg minst én gjenstand.' });
+      return;
+    }
 
     this.setState({ bookJobber: true });
     // Trakta: kassa er begynt. Etter innloggingssjekken, saa den som sendes
@@ -57062,6 +57150,8 @@ class Component extends DCLogic {
         allergier: this.state.bAllergiKryss ? allergier : '',
         betaling: betaling === 'oppmote' ? 'oppmote' : '',
         melding: (this.state.bMelding || '').trim(),
+        // Paint on Pots: nivaa-id => antall, bare ved «Betal naa».
+        gjenstander: popNa ? Object.fromEntries(this.popValgListe().map(n => [String(n.id), n.antall])) : {},
         // Gjesten skriver navnet selv; for et medlem henter serveren det.
         navn: this.state.innlogget ? '' : (this.state.bNavn || '').trim(),
       }),
@@ -60192,7 +60282,9 @@ class Component extends DCLogic {
       bookOrdreDato: (this.visningsDato()) || (this.state.valgtKurs && this.state.valgtKurs.datoer && this.state.valgtKurs.datoer[0] && this.state.valgtKurs.datoer[0].dato) || (this.state.valgtKurs && this.state.valgtKurs.date) || 'Onsdag 2. september, 17:30',
       // Paint on Pots: antallet staar med (eieren 8. oktober 2026).
       bookOrdreSum: this.folgerApningstid()
-        ? this.valgtAntall() + (this.valgtAntall() === 1 ? ' person' : ' personer') + ' · ' + this.bookSum()
+        ? this.valgtAntall() + (this.valgtAntall() === 1 ? ' person' : ' personer')
+          // Paint on Pots ved oppmoete: ingen sum (eieren 11.10.2026).
+          + (this.popVelgerBetaling() && this.state.bookVedOppmote ? '' : ' · ' + this.bookSum())
         : ((this.state.valgtKurs && this.state.valgtKurs.price) || 'Fra kr. 2 800,-').replace('Fra ', ''),
       // «bookTilKurv» sto her: den la kursnavnet med datoen i handlekurven.
       // Ingen knapp pekte paa den, og godt var det — kassa slaar hver linje
@@ -60264,15 +60356,65 @@ class Component extends DCLogic {
         return t ? (this.norskDag(this.state.bTidDato || '') + ', ' + t.tid + '\u2013' + (t.slutt || '')) : '';
       })(),
       bPopOppsAntall: this.valgtAntall() + (this.valgtAntall() === 1 ? ' person' : ' personer'),
-      bPopOppsBetaling: 'Å betale: ' + this.bookSum()
-        + ((this.state.valgtKurs || {}).utenForskudd ? ' — med Vipps nå, eller ved besøket.' : ' — med Vipps nå.'),
-      // Beloep ved booking (fremvisningen GFD76vZ7iEiFgDiaPFf6hu, steg 2):
-      // det trekkes fra i verkstedet, og avbestillingsregelen staar under.
-      bPopDepositum: !!this.katalogKurs().depositum,
+      // Paint on Pots: bare naar «Betal naa med Vipps» er valgt (eieren
+      // 11.10.2026). Ved oppmoete eller foer noe er valgt staar linja tom.
+      bPopOppsBetaling: this.popVelgerBetaling()
+        ? (this.popBetaling() === 'na' ? 'Å betale: ' + this.bookSum() + ' — med Vipps nå.' : '')
+        : 'Å betale: ' + this.bookSum()
+          + ((this.state.valgtKurs || {}).utenForskudd ? ' — med Vipps nå, eller ved besøket.' : ' — med Vipps nå.'),
+      // Beloepet betalt naa (eieren 11.10.2026: summen av gjenstandene, ikke
+      // 100 kr per person): det trekkes fra i verkstedet, og
+      // avbestillingsregelen staar under. Bare naar «Betal naa» er valgt.
+      bPopDepositum: this.popVelgerBetaling() && this.popBetaling() === 'na',
       bPopDepTrekk: (() => {
         const n = this.valgtAntall();
-        const kr = Math.round((parseInt(this.katalogKurs().prisOre, 10) || 0) / 100 * n).toLocaleString('nb-NO');
+        const kr = Math.round(this.popValgSum() / 100).toLocaleString('nb-NO');
         return kr + ' kr trekkes fra når ' + (n === 1 ? 'du betaler' : 'dere betaler') + ' i verkstedet.';
+      })(),
+      // Hva vil du/dere male, og betal naa eller ved oppmoete (eieren, GO
+      // 11. oktober 2026). Tekstene er godkjent ordrett.
+      ...(() => {
+        const pop = this.popVelgerBetaling();
+        const valg = this.state.popValg || {};
+        const flere = this.valgtAntall() > 1;
+        const sum = this.popValgSum();
+        const betaling = this.popBetaling();
+        const vilkaarOk = !!this.state.vilkaarOk;
+        const rund = (aktiv, gul) => 'appearance: none; cursor: ' + (aktiv ? 'pointer' : 'default') + '; width: 32px; height: 32px; border-radius: 50%; border: none; background: '
+          + (gul ? 'var(--lissom-yellow)' : 'var(--clay-100)') + '; color: var(--lissom-brown); font-size: 18px; font-weight: 700; line-height: 1; display: flex; align-items: center; justify-content: center;'
+          + (aktiv ? '' : ' opacity: .4;');
+        const kort = (paa, av) => 'appearance: none; cursor: ' + (av ? 'default' : 'pointer') + '; text-align: left; width: 100%; border-radius: var(--radius-md); padding: 10px 12px; font: inherit; color: var(--text-heading); border: 2px solid '
+          + (paa ? 'var(--lissom-brown)' : 'var(--border-subtle)') + '; background: ' + (paa ? 'var(--clay-100)' : 'var(--surface-card)') + ';'
+          + (av ? ' opacity: .5;' : '');
+        return {
+          bPopVelg: pop && !this.state.bookKvittert,
+          bPopMaleTittel: flere ? 'Hva vil dere male?' : 'Hva vil du male?',
+          bPopTellere: pop ? (this.katalogKurs().popNivaer || []).map(n => {
+            const a = parseInt(valg[String(n.id)], 10) || 0;
+            return {
+              navn: n.navn, pris: n.pris, gjenstander: n.gjenstander, antall: a,
+              minus: () => { if (a > 0) this.settPopValg(n.id, a - 1); },
+              pluss: () => { if (a < 50) this.settPopValg(n.id, a + 1); },
+              minusEtikett: 'Færre ' + n.navn, plussEtikett: 'Flere ' + n.navn,
+              minusStil: rund(a > 0, false), plussStil: rund(a < 50, true),
+            };
+          }) : [],
+          bPopNaValgt: betaling === 'na',
+          bPopNaAv: sum <= 0,
+          bPopOppmoteValgt: betaling === 'oppmote',
+          bPopNaStil: kort(betaling === 'na', sum <= 0),
+          bPopOppmoteStil: kort(betaling === 'oppmote', false),
+          bPopNaTekst: sum > 0 ? this.popKr(sum) + '. ' + (flere ? 'Maler dere' : 'Maler du') + ' noe annet, justeres det i verkstedet.' : '',
+          bPopOppmoteTekst: (flere ? 'Dere betaler' : 'Du betaler') + ' i verkstedet med Vipps.',
+          bPopVelgNa: () => { if (this.popValgSum() > 0) this.setState({ popBetaling: 'na' }); },
+          bPopVelgOppmote: () => this.setState({ popBetaling: 'oppmote' }),
+          // Hovedknappen: laast til et valg er gjort. Andre kurs: som foer.
+          bVippsVis: !!this.state.vippsKlar && !(pop && betaling === 'oppmote'),
+          bVippsIkkeVis: !this.state.vippsKlar && !(pop && betaling === 'oppmote'),
+          bBetalSperret: !vilkaarOk || (pop && betaling !== 'na'),
+          bBetalKlar: vilkaarOk && !(pop && betaling !== 'na'),
+          bPopBookPlass: pop && betaling === 'oppmote',
+        };
       })(),
       bPopDepAvbestill: 'Avbestiller du senest ' + (this.katalogKurs().avbestillingTimer ?? 48)
         + ' timer før, får du pengene tilbake. Møter du ikke, beholdes beløpet.',
@@ -60283,7 +60425,9 @@ class Component extends DCLogic {
       // «Fra 500 kr», som paa kurssida. Hele lista staar under Priser.
       bPopNivaerVis: false,
       bPrisVis: true,
-      bookBetalLinje: !this.state.innlogget
+      // Paint on Pots: tom til «Betal naa» er valgt (eieren 11.10.2026).
+      bookBetalLinje: (this.popVelgerBetaling() && this.popBetaling() !== 'na') ? ''
+        : !this.state.innlogget
         ? 'Du logger inn med Vipps først — så betaler du ' + this.bookSum()
         : 'Du betaler ' + this.bookSum(),
       bekreftBooking: () => {

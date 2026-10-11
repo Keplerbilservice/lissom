@@ -1044,8 +1044,12 @@ if ($handling === 'endre') {
             ['i' => $id]
         );
         $popDep = $pr !== null && $pr['depositum_ore'] !== null;
+        // Eieren, GO 11. oktober 2026: ikke lenger et fast beloep per person.
+        // Beloepet paa en Paint on Pots-booking er det kunden betalte for
+        // gjenstandene (eller 0 ved oppmoete), og et nytt antall roerer det
+        // ikke. Bookinger som betalte 100 kr roeres heller ikke.
         $popRegnes = $pr === null
-            || ($pr['gjenstander_ore'] === null && ((int) $pr['depositum'] !== 1 || $popDep));
+            || ($pr['gjenstander_ore'] === null && (int) $pr['depositum'] !== 1);
     }
 
     $belopRaa = trim(Foresporsel::tekst('belop'));

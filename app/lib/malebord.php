@@ -532,6 +532,12 @@ final class Malebord
     public static function betalingsstatus(array $r, int $betaltOre): string
     {
         $belop = (int) $r['belop_ore'];
+        // Paint on Pots, «Betal ved oppmøte» (eieren 11.10.2026): bookes uten
+        // beløp, men skal betales når gjenstandene er slått inn.
+        if (($r['depositum_ore'] ?? null) !== null && (int) $r['depositum_ore'] === 0
+            && ($r['gjenstander_ore'] ?? null) === null && $betaltOre === 0) {
+            return 'Betaler ved besøket';
+        }
         if ($belop <= 0) {
             return 'Gratis';
         }

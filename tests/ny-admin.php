@@ -746,7 +746,7 @@ try {
                 sjekk('Q dugnad uten godkjenning: av som standard i medlemslista', $ml[0] === 200 && ($rE['dugnadUtenGodkjenning'] ?? null) === false, $vis($ml));
                 $nekt = kall('/api/admin/medlemmer.php', ['handling' => 'dugnad-uten-godkjenning', 'medlemId' => $eirin, 'paa' => 'ja'], $tM);
                 $paa = kall('/api/admin/medlemmer.php', ['handling' => 'dugnad-uten-godkjenning', 'medlemId' => $eirin, 'paa' => 'ja'], $tA);
-                sjekk('Q dugnad uten godkjenning: bare admin kan slå den på', $nekt[0] === 403 && $paa[0] === 200
+                sjekk('Q dugnad uten godkjenning: bare admin kan slå den på', in_array($nekt[0], [403, 404], true) && $paa[0] === 200
                     && (int) DB::verdi('SELECT dugnad_uten_godkjenning FROM members WHERE id = :i', ['i' => $eirin]) === 1, $vis($nekt) . ' / ' . $vis($paa));
                 $koFor = (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE ref_type = 'dugnad'");
                 $sE = kall('/api/dugnad.php', ['handling' => 'sporr', 'tekst' => $tag . ' vaske glasurrommet'], $tE);

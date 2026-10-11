@@ -8403,6 +8403,60 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "mobil-admin-11-10",
+            "dato": "2026-10-11",
+            "hva": "Mobil i ny admin (eierens GO 11.10.2026, skissen mobil-admin.html; gjelder erMobil = pointer:coarse og ≤600 px). I dag: ovnen er én lav linje «Ovn · {status}» med sluttid fra brenningen («ferdig tir 09:00») og pillen «Endre»; de tre ovnknappene (samme funksjon) vises først etter «Endre». «I verkstedet nå · N» er eget grønt kort øverst med navnene som piller; et navn åpner medlemsarket (NA.arkMedlem); pillen i topplinja er tatt bort på mobil. Kalender er en flis under Hurtig på I dag (HURTIG, bare mobil; ikke dobbelt i menyen). Kalender Dag: dagene ligger som et bånd med scroll-snap (tre dager på hver side), nabodagen synes i kanten, ukestripen følger dagen i midten, «Forrige dag / Neste dag» står; bare båndet ruller sidelengs. Hamburgermenyen har gruppen «Send»: «Send beskjed» (undertekst «SMS og/eller e-post til et kurs, en dato eller én person») med «Til hvem?» først (Et kurs og en dato · Én person · Alle medlemmer, ingenting valgt), «Send kursbevis» og «Send påminnelse» (velg kurs og dato, så de eksisterende arkene) og «Klar til henting» (den eksisterende «Ovn er tømt»-flyten). Ingen ny sendelogikk. Hjemknappen «⌂ I dag» står ved ☰ i topplinja på mobil og i arkhodet på mobil (lukker arket først); logoen gjør det samme på PC.",
+            "hvor": "ny-admin/idag.js, ny-admin/felles.js, ny-admin/kalender.js, ny-admin/kalender.css, ny-admin/kurs.js, ny-admin/ny-admin.css",
+            "kode": [
+                {
+                    "fil": "ny-admin/idag.js",
+                    "finnes": [
+                        "<b>Ovn · ${esc(status)}</b>",
+                        "data-ovnendre aria-expanded=\"${ovnApen}\">Endre</button>",
+                        "<h2>I verkstedet nå · ${inne.length}</h2>",
+                        "NA.arkMedlem(Number(b.dataset.inneperson))",
+                        "NA.arkFerdigbrent = arkFerdigbrent;"
+                    ]
+                },
+                {
+                    "fil": "ny-admin/felles.js",
+                    "finnes": [
+                        "['kalender', 'Kalender', '▦', 'mobil']",
+                        "<div class=\"hurtig-tittel\">Send</div>",
+                        "['beskjed', 'Send beskjed', 'SMS og/eller e-post til et kurs, en dato eller én person']",
+                        "['henting', 'Klar til henting', 'Meld at keramikken er klar']",
+                        "<button class=\"hjem\" type=\"button\" data-side=\"idag\"><span aria-hidden=\"true\">⌂</span> I dag</button>",
+                        "${erMobil() ? '' : `<button class=\"tall-pille inne-pille\"",
+                        "if (d.send) return NA.send ? NA.send(d.send) : null;"
+                    ]
+                },
+                {
+                    "fil": "ny-admin/kalender.js",
+                    "finnes": [
+                        "<small>Til hvem?</small>",
+                        "data-v=\"okt\">Et kurs og en dato</button>",
+                        "data-v=\"en\">Én person</button>",
+                        "data-v=\"medlemmer\">Alle medlemmer</button>",
+                        "class=\"nkm-baand\" data-baand",
+                        "function baandRull(baand)"
+                    ]
+                },
+                {
+                    "fil": "ny-admin/kalender.css",
+                    "finnes": [
+                        "scroll-snap-type:x mandatory",
+                        "scroll-snap-align:center"
+                    ]
+                },
+                {
+                    "fil": "ny-admin/kurs.js",
+                    "finnes": [
+                        "window.NA.arkKursbevis = id => arkKursbevis(OKTER.get(+id));"
+                    ]
+                }
+            ]
         }
     ]
 }

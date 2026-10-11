@@ -21775,7 +21775,7 @@ window.__resources = {
                 </div>
                 <div>
                   <label style="{{ miEtikett }}">Notat</label>
-                  <input value="{{ miNotat }}" onChange="{{ settMiNotat }}" placeholder="Internt — f.eks. «betaler med faktura»" style="{{ miFeltStil }}">
+                  <input value="{{ miNotat }}" onChange="{{ settMiNotat }}" placeholder="Internt — f.eks. «betaler kontant»" style="{{ miFeltStil }}">
                 </div>
               </div>
               <!-- Et medlem som ikke skal betale.
@@ -23164,7 +23164,7 @@ window.__resources = {
                 </div>
                 <div>
                   <label style="{{ miEtikett }}">Notat</label>
-                  <input value="{{ miNotat }}" onChange="{{ settMiNotat }}" placeholder="Internt — f.eks. «betaler med faktura»" style="{{ miFeltStil }}">
+                  <input value="{{ miNotat }}" onChange="{{ settMiNotat }}" placeholder="Internt — f.eks. «betaler kontant»" style="{{ miFeltStil }}">
                 </div>
               </div>
               <!-- Et medlem som ikke skal betale.
@@ -36207,7 +36207,7 @@ class Component extends DCLogic {
     // «Ikke betalt» staar forst, og er derfor standardvalget.
     // Eieren, 6. september: «jeg valgte ingen betalingsmaaten, men hun kom
     // inn som betalt, det stemmer ikke! Default maa vaere ikke betalt.»
-    return ['Ikke betalt', 'Kontant', 'Vipps i verkstedet', 'Faktura', 'Betaler ved oppmøte', 'Gratis'];
+    return ['Ikke betalt', 'Kontant', 'Vipps i verkstedet', 'Betaler ved oppmøte', 'Gratis'];
   }
 
   /**

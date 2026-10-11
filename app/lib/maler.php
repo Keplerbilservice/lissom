@@ -358,7 +358,7 @@ final class Maler
             'hvor'   => 'Sendes når du trykker «Kvittering på SMS» i kassa på iPaden, til kunden som har mobil. Den fulle kvitteringen går på e-post.',
             'felter' => [
                 'belop' => 'Beløpet som ble betalt, for eksempel 1 150 kr',
-                'maate' => 'Hvordan det ble betalt: Vipps, kontant, faktura, gavekort eller delt betaling',
+                'maate' => 'Hvordan det ble betalt: Vipps, kontant, gavekort eller delt betaling',
                 'dato'  => 'Datoen, for eksempel 8. oktober',
             ],
         ],

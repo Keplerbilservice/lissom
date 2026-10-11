@@ -56,7 +56,8 @@ declare(strict_types=1);
 final class Kasse
 {
     /** «Betalt på annen måte» og kontant, slik de føres på raden. */
-    public const MAATER = ['Kontant', 'Vipps', 'Faktura'];
+    // Faktura er tatt ut (eieren 11.10.2026: «dette skal aldri vises i hele systemet»).
+    public const MAATER = ['Kontant', 'Vipps'];
 
     /** Delene i «Del betalingen». Samme som delt oppgjør i admin. */
     public const DELMAATER = ['Kontant', 'Vipps', 'Gavekort'];

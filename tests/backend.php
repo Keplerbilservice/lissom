@@ -3408,9 +3408,9 @@ sjekk('kortet har sitt eget navn, ikke et som var tatt',
 sjekk('maaten foelger med naar den kreves inn fra kortet',
     str_contains($pamFil, "if (\$status === 'betalt' && in_array(\$nyMaate, MAATER, true)) {"));
 // De gamle maatene staar igjen i BETALT_MAATER, saa paameldinger som alt er
-// lagt inn med «Faktura» beholder maaten sin.
+// lagt inn foer beholder maaten sin. Faktura tilbys aldri (eieren 11.10.2026).
 sjekk('de gamle maatene finnes fortsatt for det som er lagt inn',
-    str_contains($sida2, "return ['Ikke betalt', 'Kontant', 'Vipps i verkstedet', 'Faktura', 'Betaler ved oppmøte', 'Gratis'];"));
+    str_contains($sida2, "return ['Ikke betalt', 'Kontant', 'Vipps i verkstedet', 'Betaler ved oppmøte', 'Gratis'];"));
 // Et gavekort er penger som alt er betalt inn. Trekkes det ikke fra kortet,
 // kan det brukes om igjen, og gavekortgjelda blir aldri nedskrevet.
 sjekk('gavekortet finnes for plassen legges inn',
@@ -11174,7 +11174,7 @@ sjekk('… og «Vipps i verkstedet» heter «Vipps», som i kassa',
 // Aa slutte aa tilby en maate er ikke det samme som aa slette den.
 $pamLib = les_testfil(dirname(__DIR__) . '/api/admin/pamelding.php');
 sjekk('gamle rader beholder maaten sin',
-    str_contains($pamLib, "'Ikke betalt', 'Faktura', 'Betaler ved oppmøte', 'Gratis'];")
+    str_contains($pamLib, "'Ikke betalt', 'Betaler ved oppmøte', 'Gratis'];")
     && str_contains($pamLib, "'Vipps i verkstedet'"));
 // Dagsoppgjoret maa fortsatt kunne foere et gammelt fakturabilag.
 $dagLib = les_testfil(dirname(__DIR__) . '/api/admin/dagsoppgjor.php');
@@ -15983,7 +15983,7 @@ sjekk('… saa «Gratis» og «Gavekort» staar der ogsaa',
     str_contains($sida, "return ['Ikke betalt', 'Kontant', 'Vipps', 'Gavekort', 'Gratis'];"));
 sjekk('… og serveren tar imot begge to',
     str_contains($pamP = les_testfil(dirname(__DIR__) . '/api/admin/pamelding.php'),
-        "'Ikke betalt', 'Faktura', 'Betaler ved oppmøte', 'Gratis'")
+        "'Ikke betalt', 'Betaler ved oppmøte', 'Gratis'")
     && str_contains($pamP, "'Gavekort'"));
 
 // ── Betalingsstatus paa ventelista ogsaa ─────────────────────────────

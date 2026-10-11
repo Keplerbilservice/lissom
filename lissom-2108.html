@@ -4054,8 +4054,11 @@ window.__resources = {
                        ikke hva den staar til: disabled="false" sperrer like godt. -->
                   <!-- Paint on Pots (eieren 11.10.2026): knappen er laast til
                        kunden har valgt betaling. «Betal ved oppmoete» gir
-                       «Book plass» i stedet for Vipps. Andre kurs: som foer. -->
-                  <sc-if value="{{ bVippsVis }}" hint-placeholder-val="{{ false }}">
+                       «Book plass» i stedet for Vipps. Andre kurs: som foer.
+                       Begge greinene (vippsKlar/vippsIkkeKlar) staar som paa
+                       de andre Vipps-stedene; PoP-valget ligger inni. -->
+                  <sc-if value="{{ vippsKlar }}" hint-placeholder-val="{{ false }}">
+                    <sc-if value="{{ bIkkePopOppmote }}" hint-placeholder-val="{{ true }}">
                     <sc-if value="{{ bookBetalLinje }}" hint-placeholder-val="{{ '' }}">
                     <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); font-weight: 700; color: var(--text-heading); text-align: center;">{{ bookBetalLinje }}</p>
                     </sc-if>
@@ -4065,9 +4068,12 @@ window.__resources = {
                     <sc-if value="{{ bBetalKlar }}" hint-placeholder-val="{{ true }}">
                       <vipps-mobilepay-button brand="vipps" language="no" variant="primary" rounded="true" verb="pay" stretched="true" onClick="{{ bekreftBooking }}"></vipps-mobilepay-button>
                     </sc-if>
+                    </sc-if>
                   </sc-if>
-                  <sc-if value="{{ bVippsIkkeVis }}" hint-placeholder-val="{{ true }}">
+                  <sc-if value="{{ vippsIkkeKlar }}" hint-placeholder-val="{{ true }}">
+                    <sc-if value="{{ bIkkePopOppmote }}" hint-placeholder-val="{{ true }}">
                     <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" disabled="{{ bBetalSperret }}" on-click="{{ bekreftBooking }}" hint-size="100%,52px">{{ bookKnapp }}</x-import>
+                    </sc-if>
                   </sc-if>
                   <sc-if value="{{ bPopBookPlass }}" hint-placeholder-val="{{ false }}">
                     <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" disabled="{{ vilkaarMangler }}" on-click="{{ bekreftBookingOppmote }}" hint-size="100%,52px">Book plass</x-import>
@@ -60358,8 +60364,8 @@ class Component extends DCLogic {
       bPopOppsAntall: this.valgtAntall() + (this.valgtAntall() === 1 ? ' person' : ' personer'),
       // Paint on Pots: bare naar «Betal naa med Vipps» er valgt (eieren
       // 11.10.2026). Ved oppmoete eller foer noe er valgt staar linja tom.
-      bPopOppsBetaling: this.popVelgerBetaling()
-        ? (this.popBetaling() === 'na' ? 'Å betale: ' + this.bookSum() + ' — med Vipps nå.' : '')
+      // Én bookSum(), som ellers (tests/backend.php «summen regnes ett sted»).
+      bPopOppsBetaling: (this.popVelgerBetaling() && this.popBetaling() !== 'na') ? ''
         : 'Å betale: ' + this.bookSum()
           + ((this.state.valgtKurs || {}).utenForskudd ? ' — med Vipps nå, eller ved besøket.' : ' — med Vipps nå.'),
       // Beloepet betalt naa (eieren 11.10.2026: summen av gjenstandene, ikke
@@ -60409,8 +60415,7 @@ class Component extends DCLogic {
           bPopVelgNa: () => { if (this.popValgSum() > 0) this.setState({ popBetaling: 'na' }); },
           bPopVelgOppmote: () => this.setState({ popBetaling: 'oppmote' }),
           // Hovedknappen: laast til et valg er gjort. Andre kurs: som foer.
-          bVippsVis: !!this.state.vippsKlar && !(pop && betaling === 'oppmote'),
-          bVippsIkkeVis: !this.state.vippsKlar && !(pop && betaling === 'oppmote'),
+          bIkkePopOppmote: !(pop && betaling === 'oppmote'),
           bBetalSperret: !vilkaarOk || (pop && betaling !== 'na'),
           bBetalKlar: vilkaarOk && !(pop && betaling !== 'na'),
           bPopBookPlass: pop && betaling === 'oppmote',

@@ -305,6 +305,17 @@ try {
     sjekk('… står som reservert og «Ikke betalt» til pengene er inne', $b2k['status'] === 'reservert'
         && Malebord::betalingsstatus($b2k, 0) === 'Betaler ved besøket' && (int) $b2k['belop_ore'] === 120000);
 
+    // Kontrolløren, runde 2: gjort opp i kassa med 0 kr (100 % rabatt) skal
+    // bli betalt — men aldri før gjenstandene er slått inn.
+    [$r, $b2r] = $bestill($okt, ['betaling' => 'oppmote']);
+    sjekk('oppmøte, ikke gjort opp: fortsatt reservert', Booking::settBetaltStatus((int) $b2r['id'])['status'] === 'reservert');
+    // Rabatten kassa fører på påmeldingen (KasseJustering, migrasjon 269).
+    DB::oppdater('bookings', ['kasse_rabatt_ore' => 50000], ['id' => (int) $b2r['id']]);
+    $kr = PopPris::kassa((int) $b2r['id'], [$liten['id'] . '|' => 1], null);
+    $b2rk = DB::en('SELECT status, belop_ore FROM bookings WHERE id = :i', ['i' => (int) $b2r['id']]);
+    sjekk('oppmøte gjort opp i kassa med 100 % rabatt (0 kr): betalt', $b2rk['status'] === 'betalt' && (int) $b2rk['belop_ore'] === 0,
+        json_encode($b2rk));
+
     echo "\n── 6. Gammel booking med 100 kr ─────────────────────────────\n";
     $b6 = DB::settInn('bookings', ['course_id' => $kurs, 'course_session_id' => $okt, 'gjest_navn' => 'PoP Gammel',
         'gjest_epost' => 'popbetal-gammel@example.com', 'antall' => 2, 'belop_ore' => 20000, 'status' => 'betalt',

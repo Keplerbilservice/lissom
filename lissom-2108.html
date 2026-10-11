@@ -32427,7 +32427,7 @@ class Component extends DCLogic {
     this._bookingIgjen = null;
     this.setState({
       side: 'booking', fra: 'kurs', valgtKurs: kort,
-      bookOrdre: false, bookKvittert: false, bDato: null,
+      bookOrdre: false, bookKvittert: false, popValg: {}, popBetaling: '', bDato: null,
       bOktId: (igjen && igjen.oktId) || null,
       bDag: dag || (igjen && igjen.dag) || null, bKal: kal, bVlApen: vl,
       bDagLaast: !!(dag || (igjen && igjen.dag)),
@@ -32620,7 +32620,7 @@ class Component extends DCLogic {
         //
         // Kurset foelger med som emne, saa forespoerselen kommer inn merket
         // med hvilket kurs den gjelder.
-        book: () => { this.setState({ side: 'booking', fra: 'kurs', valgtKurs: k, bookOrdre: false, bookKvittert: false, bDato: null, bOktId: null, ventelisteBekreftet: null }); window.scrollTo(0, 0); },
+        book: () => { this.setState({ side: 'booking', fra: 'kurs', valgtKurs: k, bookOrdre: false, bookKvittert: false, popValg: {}, popBetaling: '', bDato: null, bOktId: null, ventelisteBekreftet: null }); window.scrollTo(0, 0); },
       }));
   }
 
@@ -33246,7 +33246,7 @@ class Component extends DCLogic {
       book: () => {
         this.setState({
           side: 'booking', fra: 'kurs', valgtKurs: k,
-          bookOrdre: false, bookKvittert: false,
+          bookOrdre: false, bookKvittert: false, popValg: {}, popBetaling: '',
           bDato: treff[0].dato || null, bOktId: treff[0].oktId || null,
           ventelisteBekreftet: null,
         });
@@ -48173,7 +48173,7 @@ class Component extends DCLogic {
     // gjelder bmBetalingTekst og bmMaaHaTrekk denne planen — de samme
     // feltene innmeldingsskjemaet bruker. Da slipper sida aa ha sine egne.
     this.setState({ side: 'booking', fra: 'medlemskap', valgtKurs: k, bmType: o.navn, bmFeil: null,
-      bookOrdre: false, bookKvittert: false, bDato: null, ventelisteBekreftet: null });
+      bookOrdre: false, bookKvittert: false, popValg: {}, popBetaling: '', bDato: null, ventelisteBekreftet: null });
     window.scrollTo(0, 0);
   }
 
@@ -59238,7 +59238,7 @@ class Component extends DCLogic {
             navn,
             velg: () => {
               const k = (this._alleKort || []).find(x => x.title === navn);
-              if (k) { this.setState({ side: 'booking', fra: 'kurs', valgtKurs: k, bookOrdre: false, bookKvittert: false, bDato: null, bOktId: null, ventelisteBekreftet: null, kvApen: false }); window.scrollTo(0, 0); }
+              if (k) { this.setState({ side: 'booking', fra: 'kurs', valgtKurs: k, bookOrdre: false, bookKvittert: false, popValg: {}, popBetaling: '', bDato: null, bOktId: null, ventelisteBekreftet: null, kvApen: false }); window.scrollTo(0, 0); }
             },
           })),
           kvMeta: (() => {
@@ -59253,7 +59253,7 @@ class Component extends DCLogic {
             if (!rec) return;
             if (rec.gaTil) { this.setState({ side: rec.gaTil, kvApen: false }); window.scrollTo(0, 0); return; }
             const k = (this._alleKort || []).find(x => x.title === rec.kurs);
-            if (k) { this.setState({ side: 'booking', fra: 'kurs', valgtKurs: k, bookOrdre: false, bookKvittert: false, bDato: null, bOktId: null, ventelisteBekreftet: null, kvApen: false }); window.scrollTo(0, 0); }
+            if (k) { this.setState({ side: 'booking', fra: 'kurs', valgtKurs: k, bookOrdre: false, bookKvittert: false, popValg: {}, popBetaling: '', bDato: null, bOktId: null, ventelisteBekreftet: null, kvApen: false }); window.scrollTo(0, 0); }
           },
         };
       })(),
@@ -59465,7 +59465,7 @@ class Component extends DCLogic {
             }
             if (k) {
               this.setState({ side: 'booking', fra: 'kurs', valgtKurs: k, bookOrdre: false,
-                              bookKvittert: false, bDato: p.dato || null, bOktId: p.oktId || null,
+                              bookKvittert: false, popValg: {}, popBetaling: '', bDato: p.dato || null, bOktId: p.oktId || null,
                               ventelisteBekreftet: null });
               window.scrollTo(0, 0);
             } else { this.setState({ side: 'kurs', kursFilter: 'Kursene' }); window.scrollTo(0, 0); }
@@ -69798,7 +69798,7 @@ class Component extends DCLogic {
         if (kat && (kat.datoer || []).length && base) {
           this.setState({
             side: 'booking', fra: 'paintonpots', valgtKurs: this.medServerdata(base),
-            bookOrdre: false, bookKvittert: false,
+            bookOrdre: false, bookKvittert: false, popValg: {}, popBetaling: '',
             bDato: null, bOktId: null, bDag: '', bKal: '', bVlApen: false, bDagLaast: false,
             ventelisteBekreftet: null,
           });
@@ -77563,7 +77563,7 @@ class Component extends DCLogic {
             book: () => {
               this.setState({
                 side: 'booking', fra: 'paintonpots', valgtKurs: k,
-                bookOrdre: false, bookKvittert: false,
+                bookOrdre: false, bookKvittert: false, popValg: {}, popBetaling: '',
                 // Ingen dato er valgt paa forhaand: kunden velger selv i
                 // lista. Sto den forste som valgt, var valget alt tatt.
                 bDato: null, bOktId: null, ventelisteBekreftet: null,

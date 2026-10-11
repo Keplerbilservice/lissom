@@ -3834,6 +3834,8 @@ final class Booking
     {
         $b = DB::en('SELECT id, belop_ore, status'
             . (DB::harKolonne('bookings', 'uten_forskudd') ? ', uten_forskudd' : ', 0 AS uten_forskudd')
+            . (DB::harKolonne('bookings', 'gjenstander_ore') ? ', depositum_ore, gjenstander_ore' : ', NULL AS depositum_ore, NULL AS gjenstander_ore')
+            . (DB::harKolonne('bookings', 'kasse_rabatt_ore') ? ', kasse_rabatt_ore' : ', 0 AS kasse_rabatt_ore')
             . ' FROM bookings WHERE id = :i', ['i' => $bookingId]);
         if ($b === null) {
             return ['status' => 'reservert', 'sum' => 0, 'skyldig' => 0];
@@ -3856,11 +3858,16 @@ final class Booking
         $ny = (string) $b['status'];
         if (in_array($ny, ['betalt', 'reservert'], true)) {
             $ny = $bet['sum'] >= (int) $b['belop_ore'] ? 'betalt' : 'reservert';
-            // «Betal ved oppmoete» uten beloep ennaa (Paint on Pots foer
-            // gjenstandene er slaatt inn, kontrolloeren 11.10.2026): 0 av 0
-            // er ikke betalt.
+            // «Betal ved oppmoete» paa Paint on Pots uten beloep ennaa
+            // (kontrolloeren 11.10.2026): 0 av 0 er ikke betalt — saa lenge
+            // ingenting er gjort opp. Er gjenstandene slaatt inn i kassa
+            // (gjenstander_ore), eller har kassa ført en endret pris/rabatt
+            // (kasse_rabatt_ore), er oppgjoeret gjort, og 0 kr er betalt
+            // (f.eks. 100 % rabatt). Andre bookinger roeres ikke.
             if ($ny === 'betalt' && (int) $b['belop_ore'] === 0 && $bet['sum'] === 0
-                && (int) $b['uten_forskudd'] === 1) {
+                && (int) $b['uten_forskudd'] === 1
+                && $b['depositum_ore'] !== null && $b['gjenstander_ore'] === null
+                && (int) $b['kasse_rabatt_ore'] === 0) {
                 $ny = 'reservert';
             }
         }

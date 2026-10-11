@@ -7159,7 +7159,7 @@
                     "finnes": [
                         "registrer('kalender'",
                         "data-kal=\"vis-aar\"",
-                        "['maaned', 'Måned'], ['aar', 'År']",
+                        "[['dag', 'Dag'], ['uke', 'Uke'], ['maaned', 'Måned']].map",
                         "handling: 'endredato'",
                         "handling: 'flyttet'",
                         "mal: 'pamelding_flyttet'",
@@ -8342,6 +8342,64 @@
                     "fil": "admin-ny/app.js",
                     "finnes": [
                         "field('paa','Dugnad uten godkjenning','checkbox',{help:'Medlemmet kan stemple inn dugnad uten at den godkjennes først.'})"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "ny-admin-kalender-runde2",
+            "dato": "2026-10-11",
+            "hva": "Kalenderen i ny admin, runde 2 (eierens GO 11.10.2026, felles anbefaling): samme innhold og funksjoner, bare plassering og lesbarhet. PC: minikalenderen i sidekolonnen er borte; pillen «Velg dato · {Måned ÅÅÅÅ}» over uka åpner den i en liten boks med «Lukk», og en dato hopper dit og lukker. Tallene står på én linje («Uke 41: N kurs og arrangementer · N påmeldte · Paint on Pots N dager, N påmeldte», i Måned for måneden); Paint on Pots telles som én aktivitet per dag. Kortet: tid, navn, kursholder, fyllstrek, påmeldte/plasser og status på egen linje (Fullt, Stengt for påmelding og Avlyst ulikt merket); navn brytes på ord (hyphens:manual, overflow-wrap:normal, word-break:normal). Hele kortet åpner kurset; «Valg» er en liten pille med 44 px trykkflate; avkrysningsboksene vises bare i «Velg flere» (av med «Avbryt»), og handlingene viser antallet («Flytt 3 kurs»). Sju kolonner fra 1000 px, smalere én agenda mandag–søndag. «Liste / Tidsplan» i Uke fra 1000 px, Liste standard, valget i localStorage: timer nedover (minst 09–22), kurs som blokker side om side, Paint on Pots som bånd med de faktiske tidene, ovn/verksted/notat over dagen. Måned: ukedager over rutene, én linje per aktivitet (navn over inntil to linjer), én Paint on Pots-linje per dag, stengte dager synlige, «Se alle N» over tre aktiviteter åpner dagens liste med «Velg flere». Ovn, verksted og notat er piller med etikett; ovn over natta viser «ferdig {dag} {tid}». Mobil: «Forrige dag · I dag · Neste dag» og «Velg dato» (sveip beholdt), ukedager over måneden, ingen årsplan på mobil, og «Neste»-kortet øverst bare når kurset ikke står i lista (ellers merket i lista). Valg-menyen, høyreklikk, langt trykk, Valg per dag, Paint on Pots samlet per dag og årsplanen på PC/iPad er uendret.",
+            "hvor": "ny-admin/kalender.js, ny-admin/kalender.css, tests/godkjent/vedtak.json",
+            "kode": [
+                {
+                    "fil": "ny-admin/kalender.js",
+                    "finnes": [
+                        "data-k=\"velgDato\"",
+                        "Velg dato · ${STOR(MND[f.getMonth()])} ${f.getFullYear()}",
+                        "data-k=\"velgDatoLukk\">Lukk</button>",
+                        "${K.velg ? 'Avbryt' : 'Velg flere'}",
+                        "${K.velg && !h.avlyst ? `<label class=\"okt-velg\"><input type=\"checkbox\" data-velg=",
+                        "Avlys ${n} kurs",
+                        "Flytt ${n} kurs",
+                        "kurs og arrangementer · ${p} påmeldte",
+                        "Paint on Pots ${popD.size} ${popD.size === 1 ? 'dag' : 'dager'}, ${popP} påmeldte",
+                        "<span class=\"merke status-fullt\">Fullt</span>",
+                        "<span class=\"merke status-stengt\">Stengt for påmelding</span>",
+                        "<span class=\"merke status-avlyst\">Avlyst</span>",
+                        "const DRIFT = {brenning: 'Ovn', verksted: 'Verksted', notat: 'Notat'};",
+                        "`ferdig ${KORTDAG[ukedag(dato)]} ${m[1]}`",
+                        "const UKEVIS = 'nyAdmin.kalender.ukevisning';",
+                        "data-v=\"liste\"",
+                        "data-v=\"tidsplan\"",
+                        "let t0 = 9 * 60, t1 = 22 * 60;",
+                        "Se alle ${os.length}",
+                        "os.length > 3",
+                        "['Forrige dag', 'Neste dag']",
+                        "class=\"nkm-ukedager\"",
+                        "neste && !nesteILista ? naKort(neste, 'Neste', 'neste')",
+                        "data-k=\"dagValg\"",
+                        "data-kal=\"vis-aar\"",
+                        "document.addEventListener('contextmenu'"
+                    ],
+                    "ikkeFinnes": [
+                        "class=\"kort kal-side\"",
+                        "['aar', 'År']].map",
+                        "<small>kurs denne uka</small>"
+                    ]
+                },
+                {
+                    "fil": "ny-admin/kalender.css",
+                    "finnes": [
+                        ".okt-navn{font-weight:600;max-width:100%;hyphens:manual;-webkit-hyphens:manual;overflow-wrap:normal;word-break:normal}",
+                        ".velg-dato-boks{",
+                        ".mnd-ukedag{",
+                        ".nkm-ukedager{",
+                        "@media (max-width:999px){"
+                    ],
+                    "ikkeFinnes": [
+                        ".kal-side{",
+                        ".ukegrid{grid-template-columns:repeat(4,minmax(0,1fr))}"
                     ]
                 }
             ]

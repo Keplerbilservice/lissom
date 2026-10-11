@@ -51,58 +51,135 @@ textarea.felt{min-height:110px;resize:vertical}
 .pop-pris b{padding:10px 0}
 @media (max-width:600px){.to-felt{grid-template-columns:1fr}}
 
-/* Kalender, PC og iPad */
-.kal-verktoy{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;margin-bottom:16px}
-.kal{display:grid;grid-template-columns:270px minmax(0,1fr);gap:18px;align-items:start}
-.kal-side{display:grid;gap:12px;position:sticky;top:96px}
+/* Kalender, PC og iPad. Runde 2 (eierens GO 11.10.2026): minikalenderen er flyttet til pillen «Velg dato», tallene står
+   på én linje over uka, kortene har status på egen linje og navn som brytes på ord (ikke midt i ordet). */
+.kal-verktoy{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+.kal-nav,.kal-venstre{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.nk-kal .kal-seg{flex:0 0 auto}
+.nk-kal .kal-seg .nkm-pille{flex:0 0 auto;padding:0 16px}
+.nk-kal .nkm-pille[data-k="velgFlere"][aria-pressed=true]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.kal-sum{margin:0 0 14px;font-weight:700;font-size:16px;line-height:1.35}
+.kal-hoved{min-width:0}
+.kal-velgdato{position:relative}
+.velg-dato-boks{position:absolute;top:calc(100% + 6px);left:0;z-index:20;width:min(340px,calc(100vw - 32px));background:var(--paper);border:1px solid var(--line);border-radius:16px;box-shadow:0 16px 50px #0003;padding:12px;display:grid;gap:8px}
+.vd-fot{display:flex;justify-content:flex-end}
 .mini-head{display:flex;align-items:center;justify-content:space-between;text-transform:capitalize}
 .mini-head .lukk{width:44px;height:44px;font-size:18px}
 .mini{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center}
 .mini-d{font-size:13px;color:var(--muted);font-weight:700;text-transform:capitalize;padding:4px 0}
-.mini-dag{border:0;background:none;border-radius:8px;padding:6px 0 8px;font-size:15px;position:relative;font-variant-numeric:tabular-nums;min-height:44px;cursor:pointer}
+.mini-dag{border:0;background:none;border-radius:8px;padding:6px 0 8px;font-size:15px;position:relative;font-variant-numeric:tabular-nums;min-height:44px;cursor:pointer;color:inherit}
 .mini-dag:hover{background:var(--ground)}
 .mini-dag.ut{color:var(--muted);font-weight:400}
 .mini-dag.iuke{background:var(--nk-yellow-soft)}
 .mini-dag.idag{font-weight:800;outline:2px solid var(--ink);outline-offset:-2px}
 .mini-dag i{position:absolute;left:50%;bottom:3px;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:var(--ink)}
-.kal-sum{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.kal-sum div{background:var(--ground);border-radius:12px;padding:10px}
-.kal-sum b{display:block;font-family:var(--f-head,Bitter,Georgia,serif);font-size:26px}
-.ukegrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}
-.kol{display:flex;flex-direction:column;gap:8px;min-width:0}
-.kol-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 6px;padding:4px 4px 4px 10px;border-radius:10px;background:var(--paper);border:1px solid var(--line);font-size:16px}
+
+/* Uke som liste: sju kolonner fra 1000 px */
+.ukegrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;align-items:start}
+.kol{display:flex;flex-direction:column;gap:6px;min-width:0}
+.kol-innhold{display:flex;flex-direction:column;gap:6px;min-width:0}
+.kol-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:0 2px;padding:0 0 0 8px;border-radius:10px;background:var(--paper);border:1px solid var(--line);font-size:15px;min-height:46px;min-width:0}
+.kol-dato{min-width:0;display:flex;flex-wrap:wrap;align-items:center;gap:2px 6px;line-height:1.2}
+.kol-head .lang-dag{display:none}
 .kol.idag .kol-head{background:var(--ink);color:var(--paper);border-color:var(--ink)}
-.kol-head .dag-valg{min-height:44px;min-width:44px;padding:4px 10px;border-radius:9px;border:1px solid var(--line);background:var(--ground);color:var(--ink);font-weight:700;font-size:14px;cursor:pointer}
-.kol .tom{padding:6px 10px}
-.kol .annet{padding:4px 10px;color:var(--muted);font-size:14px}
-.kol .annet[data-k]{cursor:pointer}
-/* Kortet: én knapp som åpner kurset, en ekte avkrysningsboks og «Valg» ved siden av (ingen knapp i knapp). */
-.okt{display:flex;flex-direction:column;align-items:stretch;gap:6px;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:6px;font-size:15px;min-width:0;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.kol .tom{padding:6px 8px}
+/* «Valg»: liten pille, men knappen (trykkflaten) er minst 44 × 44 px. */
+.dag-valg,.valg-knapp{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;padding:0 3px;border:0;background:transparent;color:var(--ink);font:inherit;cursor:pointer;flex:none}
+.dag-valg span,.valg-knapp span{border:1px solid var(--line);background:var(--ground);border-radius:999px;padding:1px 9px;font-size:13px;font-weight:700;line-height:1.35}
+.dag-valg:hover span,.valg-knapp:hover span{border-color:var(--ink)}
+.kol.idag .dag-valg span{background:var(--paper);border-color:var(--paper)}
+/* Kortet: én knapp som åpner kurset; under den avkrysningsboksen (bare i «Velg flere») og «Valg» (ingen knapp i knapp). */
+.okt{container-type:inline-size;display:flex;flex-direction:column;align-items:stretch;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:3px;font-size:15px;min-width:0;overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .okt.valgt{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
-.okt-apne{display:block;width:100%;min-height:44px;border:0;background:none;text-align:left;padding:6px;border-radius:10px;font:inherit;color:inherit;cursor:pointer;min-width:0;overflow-wrap:break-word;hyphens:auto}
+.okt-apne{display:flex;flex-direction:column;align-items:flex-start;gap:1px;width:100%;min-height:44px;border:0;background:none;text-align:left;padding:5px 5px 2px;border-radius:9px;font:inherit;color:inherit;cursor:pointer;min-width:0;line-height:1.25}
 .okt-apne:hover{background:var(--ground)}
-.okt-apne small{display:block}
-.okt-fot{display:flex;gap:6px;align-items:stretch}
-.okt-velg{display:flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;border:1px solid var(--line);border-radius:10px;background:var(--ground);cursor:pointer;flex:none}
+.okt-tid{font-weight:800;font-variant-numeric:tabular-nums}
+.okt-navn{font-weight:600;max-width:100%;hyphens:manual;-webkit-hyphens:manual;overflow-wrap:normal;word-break:normal}
+.okt-holder{font-size:14px;color:var(--muted)}
+.okt-apne small{display:block;font-size:14px}
+.okt-status{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;max-width:100%}
+.okt .okt-status .merke{white-space:normal;font-size:13px;line-height:1.25;padding:2px 7px;max-width:100%;border-radius:7px}
+.okt .status-fullt{background:var(--nk-green-soft);color:var(--green)}
+.okt .status-stengt{background:var(--paper);color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--ink)}
+.okt .status-avlyst{background:var(--nk-red-soft);color:var(--red)}
+.okt-fot{display:flex;justify-content:space-between;align-items:center}
+.okt-fot .valg-knapp{margin-left:auto}
+/* Smale kort (iPad liggende, kurs side om side i tidsplanen): litt mindre skrift, så ordene får plass uten å deles. */
+@container (max-width:104px){.okt-apne{font-size:13px;padding:4px 2px 2px}.okt-apne small,.okt-holder{font-size:12.5px}.okt .okt-status .merke{font-size:12px;padding:2px 5px}}
+@container (max-width:76px){.okt-apne{font-size:11.5px;padding:3px 1px 2px}.okt-apne small,.okt-holder{font-size:11.5px}.okt .okt-status .merke{font-size:10.5px;padding:1px 3px;letter-spacing:-.01em}}
+.okt-velg{display:flex;align-items:center;justify-content:center;width:44px;height:44px;cursor:pointer;flex:none}
 .okt-velg input{width:22px;height:22px;margin:0;accent-color:var(--ink);cursor:pointer}
 .okt.avlyst{background:var(--ground);color:var(--muted)}
-.okt.avlyst .okt-apne b{text-decoration:line-through}
-.valg-knapp{flex:1;min-height:44px;border:1px solid var(--line);background:var(--ground);border-radius:10px;font-weight:700;font-size:15px;padding:6px 10px;cursor:pointer;color:var(--ink)}
-.fyll{display:block;height:6px;background:var(--ground);border-radius:999px;margin:6px 0 2px;overflow:hidden}
+.okt.avlyst .okt-tid{text-decoration:line-through}
+.fyll{display:block;align-self:stretch;height:6px;background:var(--ground);border-radius:999px;margin:5px 0 2px;overflow:hidden}
 .fyll i{display:block;height:100%;background:var(--green);border-radius:999px}
-.mndgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
-.mndgrid .mini-d{text-align:left;padding-left:6px}
-.mnd-dag{min-height:96px;border:1px solid var(--line);background:var(--paper);border-radius:12px;padding:6px;text-align:left;display:flex;flex-direction:column;gap:3px;font-size:13px;min-width:0;cursor:pointer}
-.mnd-dag.ut{background:var(--ground);color:var(--muted)}
-.mnd-dag.idag{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
-.mnd-okt{background:var(--nk-yellow-soft);border-radius:6px;padding:2px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-.mnd-okt.avlyst{text-decoration:line-through;background:var(--ground);color:var(--muted)}
+/* Ovn, verksted og notat: rolige piller med etikett foran. */
+.annet.drift{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 6px;padding:5px 8px;border-radius:12px;background:var(--ground);border:1px solid var(--line);color:var(--ink);font-size:14px;line-height:1.3;min-width:0}
+.annet.drift>b{flex:none;font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);background:var(--paper);border-radius:999px;padding:0 7px}
+.annet.drift.brenning>b{color:#a2502b}
+.annet.drift>span{min-width:0;hyphens:manual;overflow-wrap:normal;word-break:normal}
+.annet.drift[data-k]{cursor:pointer;min-height:44px;align-items:center}
 .handlingslinje{position:sticky;bottom:16px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;background:var(--ink);color:var(--paper);padding:12px 16px;border-radius:16px;margin-top:16px;z-index:3}
 .handlingslinje .knapp{color:var(--ink)}
-/* iPad: uka først, minikalenderen under (samme størrelse på trykkflatene), så uka synes på første skjerm. */
-@media (max-width:1180px){.kal{grid-template-columns:1fr}.kal>div{order:1}.kal-side{order:2;position:static;grid-template-columns:minmax(0,320px) 1fr;align-items:start}.ukegrid{grid-template-columns:repeat(4,minmax(0,1fr))}}
-@media (max-width:900px){.ukegrid{grid-template-columns:1fr}.kal-side{grid-template-columns:1fr}.mnd-dag{min-height:64px}.mnd-okt{display:none}}
+/* Smalere enn 1000 px (iPad stående, smalt vindu): én sammenhengende agenda mandag–søndag, aldri 4 + 3. */
+@media (max-width:999px){
+  .ukegrid{grid-template-columns:1fr;gap:14px}
+  .kol-head{font-size:17px;padding-left:12px}
+  .kol-head .kort-dag{display:none}
+  .kol-head .lang-dag{display:inline}
+  .kol-innhold{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+  .kol-innhold>.annet,.kol-innhold>.tom{grid-column:1/-1}
+}
 
+/* Uke som tidsplan (valg, bare fra 1000 px): timer nedover, kurs som blokker, Paint on Pots som bånd. */
+.tp{display:grid;gap:6px;--tp-akse:44px}
+.tp-rad{display:grid;grid-template-columns:var(--tp-akse) var(--tp-kol,repeat(7,minmax(0,1fr)));gap:6px;align-items:start}
+.tp-driftcelle{display:flex;flex-direction:column;gap:4px;min-width:0}
+.tp-kropp{position:relative;align-items:stretch}
+.tp-akse{position:relative}
+.tp-akse span{position:absolute;right:2px;margin-top:2px;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.tp-dag{position:relative;min-width:0;border:1px solid var(--line);border-radius:10px;background:repeating-linear-gradient(to bottom,var(--line) 0 1px,transparent 1px var(--tp-h)) var(--paper)}
+.tp-dag.idag{border-color:var(--ink)}
+.tp-dag.stengt{background-color:var(--ground)}
+.tp-blokk{position:absolute;left:2px;width:calc(100% - 4px);z-index:1}
+.okt.tp-blokk{box-shadow:0 2px 6px #4d1d1214}
+.tp-pop{background:var(--nk-yellow-soft);border-left:4px solid var(--yellow);border-radius:8px;overflow:hidden}
+.tp-pop-tid{position:absolute;left:0;right:0;display:flex;flex-direction:column;align-items:flex-start;gap:0;min-height:44px;padding:3px 6px;border:0;border-top:1px solid #ecd98f;background:transparent;text-align:left;font:inherit;font-size:13px;line-height:1.2;color:var(--ink);cursor:pointer;overflow:hidden}
+.tp-pop-tid:first-child{border-top:0}
+.tp-pop-tid:hover{background:#fff7d6}
+.tp-pop-tid b{font-size:12px;font-weight:800}
+.tp-pop-tid.avlyst{text-decoration:line-through;color:var(--muted)}
+.tp-pop.smal{border-left:0;border-right:4px solid var(--yellow)}
+.tp-pop-tid i{display:none}
+.tp-pop.smal .tp-pop-tid{padding:3px 2px;font-size:12px;align-items:center;text-align:center}
+.tp-pop.smal .tp-pop-tid>b,.tp-pop.smal .tp-pop-tid>span+span{display:none}
+.tp-pop-tid em{font-style:normal}
+.tp-pop.smal .tp-pop-tid>span{font-variant-numeric:tabular-nums}
+.tp-pop.smal .tp-pop-tid em{display:none}
+.tp-pop.smal .tp-pop-tid i{display:block;font-style:normal;font-weight:700}
+
+/* Måned: ukedager over rutene, én linje per aktivitet, «Se alle N» når det er mer enn tre. */
+.mndgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.mnd-ukedag{font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:0 6px}
+.mnd-dag{min-height:110px;border:1px solid var(--line);background:var(--paper);border-radius:12px;padding:3px;display:flex;flex-direction:column;gap:3px;font-size:13px;min-width:0}
+.mnd-dag.ut{background:var(--ground);color:var(--muted)}
+.mnd-dag.idag{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.mnd-dag.stengt{background:var(--nk-red-soft)}
+.mnd-topp{display:flex;align-items:center;gap:2px 4px;flex-wrap:wrap;min-width:0}
+.mnd-nr{min-width:44px;min-height:44px;border:0;background:none;border-radius:9px;padding:0 6px;font:inherit;font-weight:800;font-size:16px;text-align:left;color:inherit;cursor:pointer}
+.mnd-nr:hover{background:var(--ground)}
+.mnd-okt{display:block;width:100%;min-height:44px;min-width:0;text-align:left;border:0;background:var(--nk-yellow-soft);border-radius:8px;padding:4px 6px;font:inherit;font-size:13px;line-height:1.2;color:inherit;cursor:pointer;overflow:hidden}
+.mnd-okt>span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;hyphens:manual;overflow-wrap:normal;word-break:normal}
+.mnd-okt small{display:block;font-size:12px}
+.mnd-okt.pop{background:var(--nk-green-soft)}
+.mnd-okt.avlyst{text-decoration:line-through;background:var(--ground);color:var(--muted)}
+.mnd-alle{min-height:44px;border:1px solid var(--line);background:var(--ground);border-radius:999px;padding:0 8px;font:inherit;font-weight:700;font-size:13px;color:var(--ink);cursor:pointer}
+@media (max-width:999px){.mnd-dag{min-height:90px}.mnd-okt{padding:3px 4px;font-size:12px}.mnd-ukedag{padding:0 2px;letter-spacing:.02em}}
+/* Dagens liste fra «Se alle N» */
+.nk-dagark{display:contents}
+.dagark-liste{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+.dagark-liste>.annet{grid-column:1/-1}
+.dagark-tall{margin-right:auto;align-self:center}
 /* År: årsplanleggeren */
 .aargrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
 .aar-mnd{display:flex;flex-direction:column;gap:8px;padding:16px}
@@ -189,5 +266,13 @@ textarea.felt{min-height:110px;resize:vertical}
 .nkm-hva{display:grid;min-width:0;gap:2px;justify-items:start}
 .nkm-hva strong{overflow-wrap:anywhere}
 .nkm-hva small{font-size:15px}
+/* Mobil, runde 2: Forrige dag · I dag · Neste dag, «Velg dato», ukedager over måneden, «Neste» merket i lista. */
+.nkm-nav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.nkm-nav .nkm-pille{min-width:0;padding:0 6px;font-size:15px;white-space:normal;line-height:1.15}
+.nkm .kal-velgdato .nkm-pille{width:100%}
+.nkm .velg-dato-boks{left:0;right:0;width:auto}
+.nkm-ukedager{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;text-align:center;font-size:13px;font-weight:700;color:var(--muted)}
+.nkm-kort.neste{border-left-color:var(--yellow);box-shadow:inset 0 0 0 1px var(--yellow)}
+.nkm-dag>.annet{min-height:44px;align-items:center}
 @media (max-width:760px){.nk-kurs .head h1{font-size:30px}.hgrupper{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){.nkm-uke,.nkm-mnd-rute{transition:none}}

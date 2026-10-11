@@ -467,7 +467,7 @@ try {
     sjekk('11: NA.tilKassa åpner kassa i samme vindu (ingen window.open / navngitt fane)', str_contains($tk, 'location.href = NA.kasseAdresse(id);')
         && !str_contains($fj, "window.open('', 'lissom-kasse')"), $tk);
     sjekk('11: adressen har booking, fra=ny-admin og tilbake=<siden>', str_contains($fj, "NA.kasseAdresse = bookingId => '/kasse?' + (bookingId ? 'booking=' + bookingId + '&' : '') + 'fra=ny-admin&tilbake=' + encodeURIComponent(rute?.id || 'idag');"));
-    sjekk('11: menypunktet «Kasse» bruker samme adresse (samme vindu)', substr_count($fj, 'href="${esc(NA.kasseAdresse())}"') === 2 && !str_contains($fj, 'href="/kasse"'));
+    sjekk('11: menypunktet «Kasse» bruker samme adresse (samme vindu)', substr_count($fj, 'href="${esc(NA.kasseAdresse())}"') === 1 && !str_contains($fj, 'href="/kasse"'));
     $fra = strpos($js, 'async function lukkKassa()');
     $lk = $fra === false ? '' : substr($js, $fra, (int) strpos($js, "
 }

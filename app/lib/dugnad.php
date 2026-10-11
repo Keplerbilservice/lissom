@@ -64,6 +64,16 @@ final class Dugnad
         return $aktiv !== null && !empty($aktiv['tildelt']);
     }
 
+    /**
+     * «Dugnad uten godkjenning» paa medlemskortet (migrasjon 272): godkjennes
+     * forespoerselen med en gang? Uten migrasjonen: nei, som foer.
+     */
+    public static function utenGodkjenning(int $medlemId): bool
+    {
+        return DB::harKolonne('members', 'dugnad_uten_godkjenning')
+            && (int) DB::verdi('SELECT dugnad_uten_godkjenning FROM members WHERE id = :i', ['i' => $medlemId]) === 1;
+    }
+
     /** Skal ubrukte dugnadstimer tas med til neste maaned? Mangler raden, er den paa. */
     public static function overforing(): bool
     {

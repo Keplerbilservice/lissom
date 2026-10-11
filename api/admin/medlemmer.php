@@ -1273,6 +1273,27 @@ if (Foresporsel::metode() === 'POST') {
         Svar::ok(['beskjed' => $paa ? 'Medlemmet ser nå dugnad på Min side.' : 'Medlemmet ser ikke lenger dugnad.']);
     }
 
+    // ── Dugnad uten godkjenning ───────────────────────────────────────
+    //
+    //   POST handling=dugnad-uten-godkjenning { medlemId, paa: 'ja'|'nei' }
+    //
+    // Eieren, 11. oktober 2026: «kan du skru av at Monica må godkjenne
+    // dugnaden til Eirin?» — per medlem. Paa: forespoerselen godkjennes med
+    // en gang (api/dugnad.php). Tida etter utstempling godkjennes som foer.
+    if ($handling === 'dugnad-uten-godkjenning') {
+        if (!DB::harKolonne('members', 'dugnad_uten_godkjenning')) {
+            Svar::feil('Vedlikeholdet må kjøres først (oppdatering 272).');
+        }
+        $id = Foresporsel::heltall('medlemId');
+        if (DB::en('SELECT id FROM members WHERE id = :i', ['i' => $id]) === null) {
+            Svar::feil('Fant ikke personen.', 404);
+        }
+        $paa = Foresporsel::tekst('paa') === 'ja';
+        DB::oppdater('members', ['dugnad_uten_godkjenning' => $paa ? 1 : 0], ['id' => $id]);
+        revider('medlem_dugnad_uten_godkjenning', 'member', $id, ['paa' => $paa]);
+        Svar::ok(['beskjed' => 'Lagret.']);
+    }
+
     if ($handling === 'betaler-ikke') {
         if (!DB::harKolonne('members', 'betaler_ikke')) {
             Svar::feil('Vedlikeholdet må kjøres først (oppdatering 130).');
@@ -2321,6 +2342,8 @@ if (Foresporsel::heltall('person') > 0 || Foresporsel::heltall('booking') > 0) {
             // ikke kan svare hver sitt om den samme personen.
             'betalerIkke'      => !empty($m['betaler_ikke']),
             'serDugnad'        => !empty($m['ser_dugnad']),
+            // null = migrasjon 272 er ikke kjoert; da vises ikke bryteren.
+            'dugnadUtenGodkjenning' => array_key_exists('dugnad_uten_godkjenning', $m) ? !empty($m['dugnad_uten_godkjenning']) : null,
             'betalerIkkeGrunn' => (string) ($m['betaler_ikke_grunn'] ?? ''),
             // ── Den siste oekta i verkstedet ───────────────────────────
             //
@@ -2634,6 +2657,8 @@ $betalerKol = DB::harKolonne('members', 'betaler_ikke')
     : '0 AS betaler_ikke, NULL AS betaler_ikke_grunn';
 // «Ser dugnad» (migrasjon 214), paa samme maate.
 $betalerKol .= DB::harKolonne('members', 'ser_dugnad') ? ', ser_dugnad' : ', 0 AS ser_dugnad';
+// «Dugnad uten godkjenning» (migrasjon 272). NULL = ikke kjoert, bryteren skjules.
+$betalerKol .= DB::harKolonne('members', 'dugnad_uten_godkjenning') ? ', dugnad_uten_godkjenning' : ', NULL AS dugnad_uten_godkjenning';
 
 $medlemmer = DB::alle(
     "SELECT id, navn, epost, telefon, rolle, medlemskap_type, status,
@@ -2905,6 +2930,7 @@ Svar::json(['lavAktivitetDager' => Aktivitet::dager(), 'medlemmer' => array_map(
     'harAktivAvtale'  => isset($harAktivAvtale[(int) $m['id']]),
     'betalerIkke'     => !empty($m['betaler_ikke']),
     'serDugnad'       => !empty($m['ser_dugnad']),
+    'dugnadUtenGodkjenning' => ($m['dugnad_uten_godkjenning'] ?? null) === null ? null : !empty($m['dugnad_uten_godkjenning']),
     'betalerIkkeGrunn'=> (string) ($m['betaler_ikke_grunn'] ?? ''),
     'sisteBetaling'   => isset($sisteBetaling[(int) $m['id']])
         ? $dato(substr((string) $sisteBetaling[(int) $m['id']]['created_at'], 0, 10)) : null,

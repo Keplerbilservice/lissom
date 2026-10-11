@@ -45,6 +45,22 @@ if (Foresporsel::metode() === 'POST') {
         if (mb_strlen($tekst) < 5) {
             Svar::feil('Skriv kort hva du vil gjøre — for eksempel «vaske gulvet i glasurrommet».');
         }
+        // «Dugnad uten godkjenning» paa medlemskortet (migrasjon 272, eieren
+        // 11. oktober 2026): forespoerselen godkjennes med en gang, og hun kan
+        // stemple inn direkte. Ingen sak i «Maa gjoeres», ingen e-post til
+        // verkstedet eller medlemmet. Tida etter utstempling godkjennes som foer.
+        if (Dugnad::utenGodkjenning($id)) {
+            $nyId = DB::settInn('dugnad', [
+                'member_id' => $id,
+                'tekst'     => $tekst,
+                'status'    => 'godkjent',
+                'svart_av'  => null,
+                'svart_at'  => gmdate('Y-m-d H:i:s'),
+            ]);
+            revider('dugnad_spurt', 'member', $id, ['dugnad' => $nyId]);
+            revider('dugnad_auto_godkjent', 'member', $id, ['dugnad' => $nyId]);
+            Svar::ok(['beskjed' => 'Stemple inn når du begynner, og ut når du er ferdig. Tida trekkes ikke fra timene dine — den legges til når jobben er godkjent.']);
+        }
         $nyId = DB::settInn('dugnad', ['member_id' => $id, 'tekst' => $tekst]);
         revider('dugnad_spurt', 'member', $id, ['dugnad' => $nyId]);
         // Verkstedet faar beskjed. Godkjenningen skjer under Ubesvarte.

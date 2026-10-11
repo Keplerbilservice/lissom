@@ -30,7 +30,7 @@
   const $ = s => document.querySelector(s);
   const esc = t => String(t ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
   const kr = ore => Math.round((Number(ore) || 0) / 100).toLocaleString('nb-NO') + ' kr';
-  /* Mobilvisningen (bunnmeny, «Brukes på iPad eller PC») bare på berøringsskjerm og smal skjerm. En PC med 200 % zoom
+  /* Mobilvisningen (hamburgermeny, «Brukes på iPad eller PC») bare på berøringsskjerm og smal skjerm. En PC med 200 % zoom
      eller et smalt vindu får hele adminen, som flyter om (designvokteren 08.10.2026). */
   const MOBIL_MQ = '(pointer:coarse) and (max-width:600px)';
   const erMobil = () => matchMedia(MOBIL_MQ).matches;
@@ -297,29 +297,27 @@
     const navKnapp = ([id, navn, ic]) => id === 'kasse'
       ? `<a class="nav" href="${esc(NA.kasseAdresse())}"><span class="ic">${ic}</span>${navn}</a>`
       : `<button class="nav" type="button" data-side="${id}" ${aktiv === id ? 'aria-current="page"' : ''}><span class="ic">${ic}</span>${navn}${id === 'idag' && n ? `<span class="tall">${n}</span>` : ''}</button>`;
-    const meny = `<button class="brand" type="button" data-side="idag" aria-label="Lissom · til I dag">Lissom</button><div class="brand-note">Keramikk · admin</div>${MENY.map(navKnapp).join('')}
+    /* Hamburgermenyen på mobil viser bare sidene som brukes der (I dag, Kalender, Kurs) — eieren 11.10.2026. */
+    const sideMeny = erMobil() ? MENY.filter(m => MOBIL.includes(m[0])) : MENY;
+    const meny = `<button class="brand" type="button" data-side="idag" aria-label="Lissom · til I dag">Lissom</button><div class="brand-note">Keramikk · admin</div>${sideMeny.map(navKnapp).join('')}
       <div class="hurtig-tittel">Hurtig</div>
       ${hurtigValgt().map(h => `<button class="nav hurtig" type="button" data-hurtig="${h[0]}"><span class="ic">${h[2]}</span>${h[1]}</button>`).join('')}
       <button class="nav hurtig tilpass" type="button" data-hurtig="tilpass"><span class="ic">＋</span>Tilpass</button>
-      <div class="fot">${BUNN.map(navKnapp).join('')}
+      <div class="fot">${(erMobil() ? [] : BUNN).map(navKnapp).join('')}
         <small>${esc(NA.meg.navn)} · innlogget</small>
         <button class="knapp liten logg-ut" type="button" data-loggut>Logg ut</button>
       </div>`;
     /* Bare når noe er endret: menyen tegnes ved hver oppdatering, og fokus skal ikke forsvinne. */
     if ($('#meny')._html !== meny) { $('#meny').innerHTML = meny; $('#meny')._html = meny; }
-    /* Bunnmenyen: på mobil bare I dag, Kalender og Kurs. På en smal PC-skjerm (zoom) alle sidene, så ingen blir borte. */
-    const alle = !erMobil();
-    const mobil = (alle ? [...MENY, ...BUNN] : MENY.filter(m => MOBIL.includes(m[0]))).map(([id, navn, ic]) => id === 'kasse'
-      ? `<a href="${esc(NA.kasseAdresse())}"><span aria-hidden="true">${ic}</span>${navn}</a>`
-      : `<button type="button" data-side="${id}" ${aktiv === id ? 'aria-current="page"' : ''}><span aria-hidden="true">${ic}</span>${navn}${id === 'idag' && n ? ` (${n})` : ''}</button>`).join('');
-    $('#mobil').classList.toggle('alle', alle);
-    if ($('#mobil')._html !== mobil) { $('#mobil').innerHTML = mobil; $('#mobil')._html = mobil; }
+    /* Ingen bunnmeny (eieren 11.10.2026: «jeg vil ikke ha bunnmeny på admin, lag heller hamburgermeny»).
+       På smal skjerm åpnes menyen over fra ☰ i topplinja. */
+    const h = $('#hamburger'); if (h) h.querySelector('.tall')?.replaceWith(); if (h && n) h.insertAdjacentHTML('beforeend', `<span class="tall">${n}</span>`);
   }
 
   /* ── topplinje ───────────────────────────────────────────────────────── */
   let stemplet = null;
   function tegnToppSkall() {
-    $('#topp').innerHTML = `<div class="sok-wrap"><input id="sok" type="search" class="sok" placeholder="⌕ Søk" autocomplete="off" aria-label="Søk etter kurs, deltaker, medlem eller vare"><div id="sokres" class="sokres" hidden></div></div>
+    $('#topp').innerHTML = `<button class="hamburger" id="hamburger" type="button" aria-label="Meny" aria-expanded="false" aria-controls="meny">☰</button><div class="sok-wrap"><input id="sok" type="search" class="sok" placeholder="⌕ Søk" autocomplete="off" aria-label="Søk etter kurs, deltaker, medlem eller vare"><div id="sokres" class="sokres" hidden></div></div>
       <span id="topptall"></span><span class="topp-fyll"></span>
       <button class="knapp stemple-topp" id="stemple-topp" type="button" hidden></button>
       <span class="live" id="live" title="Oppdateres av seg selv"><i></i><span id="live-tekst">Live</span></span>`;
@@ -513,8 +511,9 @@
     NA.meg = null;
     if (toppPoll) { toppPoll(); toppPoll = null; }
     sidePollere.forEach(s => s()); sidePollere = [];
-    $('#meny').innerHTML = ''; $('#mobil').innerHTML = ''; $('#topp').innerHTML = '';
-    $('#meny')._html = $('#mobil')._html = '';
+    apneMeny(false);
+    $('#meny').innerHTML = ''; $('#topp').innerHTML = '';
+    $('#meny')._html = '';
     if (ark().open) lukkArk(true);
     $('#arbeid').innerHTML = `<div class="head"><div><div class="eyebrow">Lissom · admin</div><h1>Logg inn</h1></div></div>
       <section class="kort" style="max-width:480px"><form id="innlogging" style="display:grid;gap:12px">
@@ -566,9 +565,19 @@
     await moduler;
   }
 
+  /* ── hamburgermenyen ─────────────────────────────────────────────────── */
+  function apneMeny(apen) {
+    document.documentElement.classList.toggle('meny-apen', apen);
+    $('#hamburger')?.setAttribute('aria-expanded', apen ? 'true' : 'false');
+    if (apen) $('#meny button')?.focus();
+  }
+
   /* ── klikk ───────────────────────────────────────────────────────────── */
   document.addEventListener('click', e => {
     const b = e.target.closest('button,a');
+    if (b && b.id === 'hamburger') { apneMeny(!document.documentElement.classList.contains('meny-apen')); return; }
+    /* Trykk på et valg i menyen eller utenfor den lukker den. */
+    if (document.documentElement.classList.contains('meny-apen') && (!e.target.closest('#meny') || (b && b.closest('#meny')))) apneMeny(false);
     if (!e.target.closest('.sok-wrap') && $('#sokres')) $('#sokres').hidden = true;
     /* Brytere: hele raden er trykkflaten (designvokteren 08.10.2026), ikke bare den lille bryteren. */
     const bryterRad = !b && e.target.closest('.bryter');
@@ -591,6 +600,7 @@
   });
   document.addEventListener('input', e => { if (e.target.id === 'sok') sok(e.target.value); });
   document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && document.documentElement.classList.contains('meny-apen')) { apneMeny(false); $('#hamburger')?.focus(); }
     if (e.key === 'Escape' && $('#sokres') && !$('#sokres').hidden) { $('#sokres').hidden = true; }
     if (e.key === 'Enter' && e.target.id === 'sok') { const f = $('#sokres button'); if (f) f.click(); }
   });

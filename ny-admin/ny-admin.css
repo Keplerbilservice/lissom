@@ -28,7 +28,8 @@ small{font-size:15px;color:var(--muted)}
 .na-hopp{position:fixed;top:-90px;left:20px;z-index:100;background:var(--yellow);padding:12px;border-radius:10px}
 .na-hopp:focus{top:10px}
 
-/* Venstremeny */
+/* Venstremeny. ☰ vises bare på smal skjerm. */
+.hamburger{display:none}
 #meny{position:fixed;inset:0 auto 0 0;width:240px;padding:28px 18px;display:flex;flex-direction:column;gap:4px;border-right:1px solid var(--line);background:var(--paper);z-index:5;overflow-y:auto}
 .brand{font-family:var(--f-head);font-size:30px;padding:0 12px;letter-spacing:-.04em;background:none;border:0;color:inherit;text-align:left;cursor:pointer;align-self:flex-start}
 .brand-note{padding:0 12px 26px;font-size:13px;text-transform:uppercase;letter-spacing:.13em;color:var(--muted)}
@@ -158,7 +159,6 @@ dialog#ark::backdrop{background:#27110870}
 .toast{background:var(--ink);color:#fff;padding:13px 18px;border-radius:12px;box-shadow:0 8px 30px #0003;font-size:16px}
 .toast b{color:var(--yellow)}
 
-#mobil{display:none}
 .bare-mobil{display:none}
 .na-mobil .bare-stor{display:none!important}
 .na-mobil .bare-mobil{display:block}
@@ -197,16 +197,17 @@ dialog#ark::backdrop{background:#27110870}
   .stemple-topp{order:1;flex:1;min-height:44px;padding:6px 10px;font-size:15px}
   .live{order:1}
   .live span{display:none}
-  #arbeid{padding:22px 16px 170px}
+  #arbeid{padding:22px 16px 60px}
   .head h1{font-size:30px}
   .ovn-knapper{grid-template-columns:1fr}
   .ovn-knapper button{min-height:52px;font-size:16px}
-  #toast{bottom:96px;right:16px}
-  #mobil{position:fixed;bottom:0;left:0;right:0;display:grid;grid-template-columns:repeat(3,1fr);background:var(--paper);border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));z-index:20}
-  #mobil button,#mobil a{border:0;background:none;display:grid;justify-items:center;gap:2px;font-size:13px;padding:6px;min-height:52px;border-radius:10px;font-weight:700}
-  #mobil button[aria-current=page]{background:var(--yellow)}
-  #mobil.alle{display:flex;overflow-x:auto;gap:2px;scrollbar-width:thin}
-  #mobil.alle>*{flex:0 0 auto;min-width:84px}
+  #toast{bottom:16px;right:16px}
+  /* Hamburgermeny i stedet for bunnmeny (eieren 11.10.2026): venstremenyen glir inn over siden. */
+  .hamburger{display:grid;place-items:center;order:0;position:relative;width:48px;height:48px;border:1px solid var(--line);border-radius:12px;background:var(--paper);color:var(--ink);font-size:24px;line-height:1;cursor:pointer}
+  .hamburger .tall{position:absolute;top:-6px;right:-6px;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:var(--red);color:#fff;font-size:13px;font-weight:700;display:grid;place-items:center}
+  .meny-apen #meny{display:flex;width:min(300px,86vw);z-index:40;padding-top:max(22px,env(safe-area-inset-top));padding-bottom:calc(22px + env(safe-area-inset-bottom,0px));box-shadow:0 0 0 100vmax rgba(0,0,0,.35)}
+  .meny-apen #meny .nav{min-height:48px}
+  .meny-apen body{overflow:hidden}
   .ark{padding:18px}
   .ark-head{top:-18px}
 }
@@ -231,7 +232,6 @@ dialog#ark::backdrop{background:#27110870}
   .rad .knapper{width:100%}
   .rad .knapper .knapp{flex:1 1 auto}
   .ark-fot .knapp{flex:1 1 auto}
-  #mobil button span{font-size:18px}
 }
 
 /* Del C (Medlemmer, Medlemssiden, Varer, Innstillinger, Mer): klassene fra prototypen lissom-enklere-admin-2.html. */

@@ -8126,6 +8126,38 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "ny-admin-hamburgermeny",
+            "dato": "2026-10-11",
+            "hva": "Eieren 11.10.2026: «jeg vil ikke ha bunnmeny på admin, lag heller hamburgermeny». Ny admin har ingen bunnmeny. På smal skjerm (≤760 px) står ☰ først i topplinja; den åpner venstremenyen over siden (merke med antall i Må gjøres). Valg, trykk utenfor og Esc lukker. På mobil viser menyen bare I dag, Kalender og Kurs pluss Hurtig og Logg ut.",
+            "kode": [
+                {
+                    "fil": "ny-admin/felles.js",
+                    "finnes": [
+                        "id=\"hamburger\"",
+                        "function apneMeny(apen)"
+                    ],
+                    "ikkeFinnes": [
+                        "$('#mobil')"
+                    ]
+                },
+                {
+                    "fil": "ny-admin.html",
+                    "ikkeFinnes": [
+                        "id=\"mobil\""
+                    ]
+                },
+                {
+                    "fil": "ny-admin/ny-admin.css",
+                    "finnes": [
+                        ".meny-apen #meny{display:flex"
+                    ],
+                    "ikkeFinnes": [
+                        "#mobil{position:fixed;bottom:0"
+                    ]
+                }
+            ]
         }
     ]
 }

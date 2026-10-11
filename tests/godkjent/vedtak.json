@@ -8504,6 +8504,25 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "til-info-betalt",
+            "dato": "2026-10-11",
+            "hva": "Eieren 11.10.2026: «til info, ny påmelding, her er det fint om jeg kan se om de er betalt eller ikke». I ny admin › I dag › Til info har hver «Ny påmelding» et merke: grønt «Betalt» eller rødt «Ikke betalt» (oversikt.php sender betalt=true/false med saken). Teksten under viser ikke betalingen to ganger.",
+            "kode": [
+                {
+                    "fil": "api/admin/oversikt.php",
+                    "finnes": [
+                        "'betalt' => $p['betalt']]"
+                    ]
+                },
+                {
+                    "fil": "ny-admin/idag.js",
+                    "finnes": [
+                        "'<span class=\"merke rod\">Ikke betalt</span>'"
+                    ]
+                }
+            ]
         }
     ]
 }

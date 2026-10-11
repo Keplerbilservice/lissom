@@ -1017,7 +1017,8 @@ $maGjores = (static function () use ($medlemsstatus, $nyeste): array {
             implode(' · ', array_filter([(string) $b['tittel'],
                 implode(', ', array_unique($p['datoer'])),
                 $p['betalt'] ? 'Betalt' : 'Ikke betalt'])), 'pameldte?booking=' . (int) $b['id'],
-            ['ider' => $p['ider']]);
+            // Ny admin viser betalingen som merke (eieren 11.10.2026: «fint om jeg kan se om de er betalt eller ikke»).
+            ['ider' => $p['ider'], 'betalt' => $p['betalt']]);
     }
     $trygt('venteliste', static function () use ($sak): void {
         $rader = DB::alle(

@@ -112,7 +112,7 @@
           <div class="kort-head"><h2>Må gjøres</h2></div>
           ${maa.length || salgIgjen.length || nMigr ? (nMigr ? radMigr(nMigr) : '') + salgIgjen.map(radSalg).join('') + maa.map(radSak).join('') : '<p class="tom">Alt er gjort. Fint!</p>'}
           <div class="kort-head" style="margin:22px 0 4px"><h3>Til info</h3><small>Forsvinner av seg selv etter 3 dager</small></div>
-          ${info.length ? info.map(s => `<div class="rad"><div class="tekst"><span class="type">Ny påmelding</span><b>${esc(String(s.tittel).replace(/^Ny påmelding: /, ''))}</b><small>${esc(s.under)}</small></div><button class="knapp liten" type="button" data-utfort="${esc(nokkel(s))}">Utført</button></div>`).join('') : '<p class="tom">Ingen nye.</p>'}
+          ${info.length ? info.map(s => `<div class="rad"><div class="tekst"><span class="type">Ny påmelding</span><b>${esc(String(s.tittel).replace(/^Ny påmelding: /, ''))}</b><small>${esc(String(s.under).replace(/ · (Ikke betalt|Betalt)$/, ''))}</small></div>${s.betalt === true ? '<span class="merke gronn">Betalt</span>' : s.betalt === false ? '<span class="merke rod">Ikke betalt</span>' : ''}<button class="knapp liten" type="button" data-utfort="${esc(nokkel(s))}">Utført</button></div>`).join('') : '<p class="tom">Ingen nye.</p>'}
         </section>
       </div>`;
   }

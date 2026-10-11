@@ -88,7 +88,11 @@ if (!$ok || $b === null) {
     $kr = static fn(int $ore): string => str_replace("\u{a0}", ' ', PopPris::kr($ore));
     $tittel = 'Avbestill ' . (string) $b['tittel'];
     $linjer = [Booking::norskDato((string) $b['start_tid']) . ' · ' . $n . ($n === 1 ? ' person' : ' personer')];
-    if ($regel['andel'] < 1.0) {
+    if ($vipps + $gave + $manuell + $faktura === 0) {
+        // Ingenting betalt (Paint on Pots ved oppmøte, kontrolløren
+        // 11.10.2026): kan avbestilles når som helst, uten tekst om beløp —
+        // som en gratis eller ubetalt plass. Svaret er «Plassen er avbestilt.»
+    } elseif ($regel['andel'] < 1.0) {
         $linjer[] = 'Det er mindre enn ' . ($frist ?? 48) . ' timer igjen, så beløpet beholdes.';
     } else {
         // Bare delene som finnes — aldri «0 kr tilbake på Vipps».

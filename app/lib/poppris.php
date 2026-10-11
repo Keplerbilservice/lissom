@@ -292,6 +292,18 @@ final class PopPris
         $kr = str_replace("\u{a0}", ' ', self::kr($betalt));
         $kroner = number_format($betalt / 100, 0, ',', ' ');
         $timer = self::fristFor($b) ?? 48;
+        // «Betal nå med Vipps» (eieren, GO 11.10.2026): gjenstandene er valgt
+        // og betalt ved booking (linjer i pop_kasselinjer). Den godkjente
+        // setningen i stedet for «trekkes fra». Bookinger som betalte 100 kr
+        // har ingen linjer før kassa, og får teksten som før.
+        $valgt = (int) DB::verdi('SELECT COUNT(*) FROM pop_kasselinjer WHERE booking_id = :b', ['b' => (int) $b['id']]) > 0;
+        if ($valgt) {
+            return 'Betalt: ' . $kr . '. '
+                . ((int) ($b['antall'] ?? 1) > 1 ? 'Maler dere' : 'Maler du') . ' noe annet, justeres det i verkstedet.'
+                . ' Avbestiller du senest ' . $timer . ' timer før, får du pengene tilbake. '
+                . 'Møter du ikke, beholdes beløpet.'
+                . ($lenke !== null ? ' Avbestill her: ' . $lenke : '');
+        }
         return 'Betalt: ' . $kr . '. Prisen på gjenstandene betaler du i verkstedet. De ' . $kroner
             . ' kronene trekkes fra. Avbestiller du senest ' . $timer . ' timer før, får du pengene tilbake. '
             . 'Møter du ikke, beholdes beløpet.'
@@ -688,6 +700,13 @@ final class PopPris
                 throw new RuntimeException('Antallet må være mellom 0 og ' . self::MAKS_PER_NIVAA . '.');
             }
             $onsket[$nk] = ($onsket[$nk] ?? 0) + $n;
+        }
+        // Grensen gjelder summen per nivå/gjenstand, også når samme rad
+        // kommer flere ganger (kontrolløren 11.10.2026).
+        foreach ($onsket as $n) {
+            if ($n > self::MAKS_PER_NIVAA) {
+                throw new RuntimeException('Antallet må være mellom 0 og ' . self::MAKS_PER_NIVAA . '.');
+            }
         }
         if ($onsket === []) {
             throw new RuntimeException('Velg minst én gjenstand.');

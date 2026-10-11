@@ -8,7 +8,7 @@
  * stubb (LISSOM_VIPPS_BASE) som skriver ned hvert kall og beløpet i det:
  *
  *   1. betal nå: 1 Liten + 1 Mellom = 1 200 kr til Vipps, gjenstandene lagret
- *   2. ved oppmøte: 0 kr, ingen betaling, plassen booket
+ *   2. ved oppmøte: 0 kr, ingen betaling, plassen reservert (ikke «betalt»)
  *   3. avbestilling i tide: hele 1 200 kr tilbake (ikke 100 kr)
  *   4. for sen avbestilling: beløpet beholdes
  *   5. kassa: gjenstandene ferdig utfylt, 1 200 kr trekkes fra, kan rettes
@@ -179,8 +179,9 @@ try {
     $b1 = DB::en('SELECT * FROM bookings WHERE id = :i', ['i' => (int) $b1['id']]);
     sjekk('betalt i Vipps: bookingen står som betalt', $b1['status'] === 'betalt');
     $tekst = PopPris::bekreftelse($b1);
-    sjekk('bekreftelsen: «Betalt: 1 200 kr.» og 1 200 kronene trekkes fra',
-        str_contains($tekst, 'Betalt: 1 200 kr.') && str_contains($tekst, 'De 1 200 kronene trekkes fra.'), $tekst);
+    sjekk('bekreftelsen: «Betalt: 1 200 kr. Maler dere noe annet, justeres det i verkstedet.»',
+        str_starts_with($tekst, 'Betalt: 1 200 kr. Maler dere noe annet, justeres det i verkstedet. Avbestiller du senest 24 timer før')
+        && !str_contains($tekst, 'trekkes fra'), $tekst);
 
     echo "\n── Serveren bestemmer prisen ────────────────────────────────\n";
     $foer = count($vippsKall());
@@ -190,6 +191,8 @@ try {
     sjekk('ukjent nivå avvises', $r[0] === 409, $r[2]);
     [$r] = $bestill($okt, ['gjenstander' => [(string) $liten['id'] => 51]]);
     sjekk('mer enn 50 av ett nivå avvises', $r[0] === 409, $r[2]);
+    [$r] = $bestill($okt, ['gjenstander' => [['nivaaId' => $liten['id'], 'antall' => 30], ['nivaaId' => $liten['id'], 'antall' => 30]]]);
+    sjekk('… også når samme nivå kommer i to rader (30 + 30)', $r[0] === 409, $r[2]);
     [$r] = $bestill($okt, ['gjenstander' => [(string) $liten['id'] => 1], 'prisOre' => 100, 'belop' => 1]);
     $b = DB::en('SELECT belop_ore FROM bookings WHERE id = :i', ['i' => end($bookinger)]);
     sjekk('beløp fra nettleseren brukes ikke (Liten = 500 kr)', $r[0] === 200 && (int) ($b['belop_ore'] ?? 0) === 50000);
@@ -200,9 +203,12 @@ try {
     $foer = count($vippsKall());
     [$r, $b2] = $bestill($okt, ['betaling' => 'oppmote', 'gjenstander' => $valg1200, 'gavekort' => 'FINNESIKKE']);
     sjekk('book.php: ingen tur til Vipps', $r[0] === 200 && ($r[1]['betaling'] ?? true) === false, $r[2]);
-    sjekk('bookingen: 0 kr, betalt ved booking 0, status som gratis booking',
-        $b2 !== null && (int) $b2['belop_ore'] === 0 && (int) $b2['depositum_ore'] === 0 && $b2['status'] === 'betalt'
-        && $b2['payment_id'] === null && $b2['reservert_til'] === null, json_encode($b2));
+    sjekk('bookingen: 0 kr, reservert uten frist og med uten_forskudd (ikke «betalt»)',
+        $b2 !== null && (int) $b2['belop_ore'] === 0 && (int) $b2['depositum_ore'] === 0 && $b2['status'] === 'reservert'
+        && (int) $b2['uten_forskudd'] === 1 && $b2['payment_id'] === null && $b2['reservert_til'] === null, json_encode($b2));
+    $st = Booking::settBetaltStatus((int) $b2['id']);
+    sjekk('… og blir ikke «betalt» av 0 av 0 kr', $st['status'] === 'reservert'
+        && DB::verdi('SELECT status FROM bookings WHERE id = :i', ['i' => (int) $b2['id']]) === 'reservert', json_encode($st));
     sjekk('ingen betalingsrad og ingen kall til Vipps',
         (int) DB::verdi('SELECT COUNT(*) FROM payments WHERE booking_id = :b', ['b' => (int) $b2['id']]) === 0
         && count($vippsKall()) === $foer);
@@ -213,6 +219,20 @@ try {
     sjekk('bekreftelsen: «Prisen på gjenstandene betaler du i verkstedet.» + lenke, ingen refusjonsløfte',
         str_starts_with($t2, 'Prisen på gjenstandene betaler du i verkstedet.') && str_contains($t2, 'pop-avbestill.php?b=' . $b2['id'])
         && !str_contains($t2, 'tilbake'), $t2);
+
+    echo "\n── Oppmøte avbestilles når som helst ────────────────────────\n";
+    [$r, $b2s] = $bestill($oktSen, ['betaling' => 'oppmote']);
+    PopPris::bekreftelse($b2s);
+    $kode2 = (string) DB::verdi('SELECT avbestill_kode FROM bookings WHERE id = :i', ['i' => (int) $b2s['id']]);
+    [, , $side] = $kall('GET', '/api/pop-avbestill.php?b=' . $b2s['id'] . '&k=' . $kode2);
+    sjekk('10 timer før, ingenting betalt: ingen tekst om at beløpet beholdes, knappen står',
+        !str_contains($side, 'beholdes') && !str_contains($side, 'tilbake på Vipps') && str_contains($side, 'id="avbestill"'),
+        substr(strip_tags($side), 0, 300));
+    $foer = count($vippsKall());
+    $r = $kall('POST', '/api/avbestill.php', ['bookingId' => (int) $b2s['id'], 'k' => $kode2]);
+    sjekk('… avbestilt, «Plassen er avbestilt.», ingen Vipps-kall', $r[0] === 200 && ($r[1]['beskjed'] ?? '') === 'Plassen er avbestilt.'
+        && count($vippsKall()) === $foer
+        && DB::verdi('SELECT status FROM bookings WHERE id = :i', ['i' => (int) $b2s['id']]) === 'avbestilt', $r[2]);
 
     echo "\n── 3. Avbestilling i tide: hele beløpet tilbake ─────────────\n";
     PopPris::bekreftelse($b1);
@@ -281,6 +301,9 @@ try {
     sjekk('oppmøte i kassa: ingenting betalt, gjenstandene slås inn der', $k2['betaltOre'] === 0 && $k2['depositumOre'] === 0);
     $kr = PopPris::kassa((int) $b2['id'], [$liten['id'] . '|' => 1, $mellom['id'] . '|' => 1], null);
     sjekk('… 1 200 kr å betale i verkstedet', $kr['sumOre'] === 120000 && $kr['skyldigOre'] === 120000, json_encode($kr));
+    $b2k = DB::en('SELECT * FROM bookings WHERE id = :i', ['i' => (int) $b2['id']]);
+    sjekk('… står som reservert og «Ikke betalt» til pengene er inne', $b2k['status'] === 'reservert'
+        && Malebord::betalingsstatus($b2k, 0) === 'Betaler ved besøket' && (int) $b2k['belop_ore'] === 120000);
 
     echo "\n── 6. Gammel booking med 100 kr ─────────────────────────────\n";
     $b6 = DB::settInn('bookings', ['course_id' => $kurs, 'course_session_id' => $okt, 'gjest_navn' => 'PoP Gammel',

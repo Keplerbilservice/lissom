@@ -1193,9 +1193,12 @@ final class Booking
         //  - «Betal naa med Vipps»: summen av nivaaene hun valgte (minst én
         //    gjenstand). Prisene leses fra basen. Ingen grupperabatt eller
         //    medlemsrabatt — det er prisen paa gjenstandene, som i kassa.
-        //  - «Betal ved oppmoete»: plassen bookes uten betaling, som en
-        //    gratis booking (beloep 0). Ikke styrt av bryteren for oppmoete
-        //    paa andre kurs: valget er en del av Paint on Pots.
+        //  - «Betal ved oppmoete»: plassen bookes uten betaling, som vanlig
+        //    oppmoete og ventelista: «reservert» uten frist og med
+        //    uten_forskudd = 1 (kontrolloeren 11.10.2026: ikke «betalt»).
+        //    Beloepet er 0 til gjenstandene er slaatt inn i kassa. Ikke
+        //    styrt av bryteren for oppmoete paa andre kurs: valget er en del
+        //    av Paint on Pots.
         // Kursets pris_ore og en egen pris paa oekta brukes ikke.
         $depositum = (int) ($okt['depositum'] ?? 0) === 1;
         $popLinjer = [];
@@ -1205,10 +1208,10 @@ final class Booking
                 [$popLinjer, $popSum] = PopPris::valgVedBooking($popValg);
             }
             $okt['pris_ore'] = $popSum;
-            $gratis = $popSum === 0;
+            $gratis = false;
             $apentForAlle = true;
         }
-        $oppmote = $utenForskudd && !$gratis && !$depositum && Oppmote::kurs();
+        $oppmote = $utenForskudd && !$gratis && ($depositum || Oppmote::kurs());
         if ($utenForskudd && !$gratis && !$oppmote) {
             throw new RuntimeException('Dette kurset må betales når du melder deg på.');
         }
@@ -1234,7 +1237,8 @@ final class Booking
         // saldoen.
         $gavekortId = null;
         $gavekortOre = 0;
-        if (!$gratis && trim($gavekortKode) !== '') {
+        // Paint on Pots ved oppmoete: ingenting aa trekke kortet for naa.
+        if (!$gratis && !($depositum && $oppmote) && trim($gavekortKode) !== '') {
             $kort = self::finnGavekort($gavekortKode);
             if ($kort === null) {
                 throw new RuntimeException('Fant ikke gavekortet, eller det er brukt opp.');
@@ -2319,7 +2323,9 @@ final class Booking
             // Paint on Pots med beloep ved booking (eieren, 8. oktober 2026,
             // fremvisningen steg 3): det som er betalt, at det trekkes fra i
             // verkstedet, avbestillingsfristen og lenka for aa avbestille.
-            'betaling' => (int) ($b['uten_forskudd'] ?? 0) === 1
+            // Paint on Pots ved oppmoete (uten_forskudd = 1, depositum_ore 0)
+            // beholder sin egen linje med avbestillingslenka.
+            'betaling' => (int) ($b['uten_forskudd'] ?? 0) === 1 && ($b['depositum_ore'] ?? null) === null
                 ? 'Du betaler ved oppmøte — kontant eller Vipps.'
                 : PopPris::bekreftelse($b),
             // Samlingskortene. Ikke et felt eieren skriver i malen — Varsel::
@@ -3826,7 +3832,9 @@ final class Booking
      */
     public static function settBetaltStatus(int $bookingId): array
     {
-        $b = DB::en('SELECT id, belop_ore, status FROM bookings WHERE id = :i', ['i' => $bookingId]);
+        $b = DB::en('SELECT id, belop_ore, status'
+            . (DB::harKolonne('bookings', 'uten_forskudd') ? ', uten_forskudd' : ', 0 AS uten_forskudd')
+            . ' FROM bookings WHERE id = :i', ['i' => $bookingId]);
         if ($b === null) {
             return ['status' => 'reservert', 'sum' => 0, 'skyldig' => 0];
         }
@@ -3848,6 +3856,13 @@ final class Booking
         $ny = (string) $b['status'];
         if (in_array($ny, ['betalt', 'reservert'], true)) {
             $ny = $bet['sum'] >= (int) $b['belop_ore'] ? 'betalt' : 'reservert';
+            // «Betal ved oppmoete» uten beloep ennaa (Paint on Pots foer
+            // gjenstandene er slaatt inn, kontrolloeren 11.10.2026): 0 av 0
+            // er ikke betalt.
+            if ($ny === 'betalt' && (int) $b['belop_ore'] === 0 && $bet['sum'] === 0
+                && (int) $b['uten_forskudd'] === 1) {
+                $ny = 'reservert';
+            }
         }
 
         // «payment_id» og «betalt_maate» roeres bare naar det finnes en

@@ -6037,7 +6037,7 @@
                     "fil": "app/lib/booking.php",
                     "finnes": [
                         "if ($timerIgjen >= $fristTimer) {",
-                        "$oppmote = $utenForskudd && !$gratis && !$depositum && Oppmote::kurs();",
+                        "$oppmote = $utenForskudd && !$gratis && ($depositum || Oppmote::kurs());",
                         ": PopPris::bekreftelse($b),"
                     ]
                 },
@@ -8162,7 +8162,7 @@
         {
             "id": "pop-betal-na-eller-oppmote",
             "dato": "2026-10-11",
-            "hva": "Eieren, GO 11. oktober 2026 (skissen GvVvGvKzJex3L2qkNcoLzc): Paint on Pots har ikke lenger 100 kr depositum ved booking. Etter dag, tid og antall velger kunden hva hun vil male med en teller (− / +) per prisnivå (Liten, Mellom, Stor, Ekstra stor), som starter på 0. Overskrift «Hva vil du male?» / «Hva vil dere male?», under nivåene «Usikker? Velg i verkstedet og betal ved oppmøte.». Så velger hun betaling, ingenting forhåndsvalgt: «Betal nå med Vipps» («{sum}. Maler du/dere noe annet, justeres det i verkstedet.», krever minst én gjenstand) eller «Betal ved oppmøte» («Du betaler/Dere betaler i verkstedet med Vipps.»). Hovedknappen er låst til et valg er gjort; ved oppmøte står «Book plass», ved betal nå Vipps-knappen. Betal nå: summen av nivåene (prisene fra basen) lagres som betalt ved booking (bookings.depositum_ore) og gjenstandene i pop_kasselinjer, så kassa viser dem ferdig utfylt og Monica kan rette dem; kassa trekker fra det som er betalt. Oppmøte: bookes uten betaling som en gratis booking (depositum_ore 0), admin viser «Betaler ved besøket». «X kr trekkes fra …» og avbestillingslinja vises bare ved betal nå. Avbestilling som før: senest courses.avbestilling_timer før = hele det betalte beløpet tilbake via Vipps; senere eller ikke møtt = beholdes. Ingen fast beløp per person lenger (admin, venteliste, kassa = 0), og nytt antall i admin regner ikke om beløpet. Admin: «Kunden velger: betal nå med Vipps eller ved oppmøte», fristen kan endres. Bookinger som alt har betalt 100 kr røres ikke.",
+            "hva": "Eieren, GO 11. oktober 2026 (skissen GvVvGvKzJex3L2qkNcoLzc): Paint on Pots har ikke lenger 100 kr depositum ved booking. Etter dag, tid og antall velger kunden hva hun vil male med en teller (− / +) per prisnivå (Liten, Mellom, Stor, Ekstra stor), som starter på 0. Overskrift «Hva vil du male?» / «Hva vil dere male?», under nivåene «Usikker? Velg i verkstedet og betal ved oppmøte.». Så velger hun betaling, ingenting forhåndsvalgt: «Betal nå med Vipps» («{sum}. Maler du/dere noe annet, justeres det i verkstedet.», krever minst én gjenstand) eller «Betal ved oppmøte» («Du betaler/Dere betaler i verkstedet med Vipps.»). Hovedknappen er låst til et valg er gjort; ved oppmøte står «Book plass», ved betal nå Vipps-knappen. Betal nå: summen av nivåene (prisene fra basen) lagres som betalt ved booking (bookings.depositum_ore) og gjenstandene i pop_kasselinjer, så kassa viser dem ferdig utfylt og Monica kan rette dem; kassa trekker fra det som er betalt. Oppmøte: bookes uten betaling som vanlig oppmøte og ventelista — «reservert» uten frist, uten_forskudd = 1, beløp 0 og depositum_ore 0 — aldri «betalt» før pengene er inne; admin viser «Betaler ved besøket», og når gjenstandene er slått inn står resten som ikke betalt. Uten noe betalt kan plassen avbestilles når som helst med lenka, uten tekst om at beløpet beholdes. «X kr trekkes fra …» og avbestillingslinja vises bare ved betal nå. Avbestilling som før: senest courses.avbestilling_timer før = hele det betalte beløpet tilbake via Vipps; senere eller ikke møtt = beholdes. Ingen fast beløp per person lenger (admin, venteliste, kassa = 0), og nytt antall i admin regner ikke om beløpet. Admin: «Kunden velger: betal nå med Vipps eller ved oppmøte», fristen kan endres. Bekreftelsen ved betal nå: «Betalt: N kr. Maler du/dere noe annet, justeres det i verkstedet.» + avbestillingslinja; ved oppmøte uendret. Grensen på 50 gjelder summen per nivå. Lager: linjene fra bookingen står per nivå uten gjenstand og trekker ikke lager; skal lager trekkes, bytter Monica til konkret gjenstand i kassa. Bookinger som alt har betalt 100 kr røres ikke (får teksten som før).",
             "hvor": "Bookingen av Paint on Pots på lissom.no, bekreftelsen, /api/pop-avbestill.php, admin-ny › Paint on Pots, ny-admin › Kalender og Kasse",
             "kode": [
                 {
@@ -8184,14 +8184,18 @@
                     "finnes": [
                         "[$popLinjer, $popSum] = PopPris::valgVedBooking($popValg);",
                         "PopPris::lagreValgVedBooking($bookingId, $popLinjer);",
-                        "if ($depositum && DB::harKolonne('bookings', 'depositum_ore')) {"
+                        "if ($depositum && DB::harKolonne('bookings', 'depositum_ore')) {",
+                        "$oppmote = $utenForskudd && !$gratis && ($depositum || Oppmote::kurs());",
+                        "&& (int) $b['uten_forskudd'] === 1) {"
                     ]
                 },
                 {
                     "fil": "app/lib/poppris.php",
                     "finnes": [
                         "return self::erDepositum($kursId) ? 0 : null;",
-                        "if (($b['depositum_ore'] ?? null) === null) {"
+                        "if (($b['depositum_ore'] ?? null) === null) {",
+                        "((int) ($b['antall'] ?? 1) > 1 ? 'Maler dere' : 'Maler du') . ' noe annet, justeres det i verkstedet.'",
+                        "foreach ($onsket as $n) {"
                     ]
                 },
                 {
@@ -8222,6 +8226,12 @@
                     "fil": "tests/alle.sh",
                     "finnes": [
                         "php tests/pop-betal-na.php"
+                    ]
+                },
+                {
+                    "fil": "api/pop-avbestill.php",
+                    "finnes": [
+                        "if ($vipps + $gave + $manuell + $faktura === 0) {"
                     ]
                 }
             ]

@@ -8240,12 +8240,12 @@
         {
             "id": "hentevarsel-tre-uker",
             "dato": "2026-10-11",
-            "hva": "Eieren 11.10.2026: «Klar til henting» kom for tidlig i admin-varselet; skal komme etter hentetiden nettsiden lover («samme som står på nettsiden» = tre uker). Saken «Klar til henting» i I dag › Må gjøres (api/admin/oversikt.php) vises først tre uker etter at kurset er ferdig. Admin kan fortsatt melde når som helst fra «Ovn er tømt» og «Klar til henting» (ma-gjores-mer.php uendret).",
+            "hva": "Eieren 11.10.2026: «Klar til henting» kom for tidlig i admin-varselet; skal komme etter hentetiden nettsiden lover («samme som står på nettsiden» = tre uker). Saken «Klar til henting» i I dag › Må gjøres (api/admin/oversikt.php) vises først FIRE uker etter at kurset er ferdig (eieren 11.10.2026, presisert: «det er 4 uker etter kurset er ferdig»). Admin kan fortsatt melde når som helst fra «Ovn er tømt» og «Klar til henting» (ma-gjores-mer.php uendret).",
             "kode": [
                 {
                     "fil": "api/admin/oversikt.php",
                     "finnes": [
-                        "COALESCE(cs.slutt_tid, cs.start_tid) < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 3 WEEK)"
+                        "COALESCE(cs.slutt_tid, cs.start_tid) < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 4 WEEK)"
                     ]
                 }
             ]

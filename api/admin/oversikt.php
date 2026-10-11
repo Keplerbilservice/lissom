@@ -1055,8 +1055,8 @@ $maGjores = (static function () use ($medlemsstatus, $nyeste): array {
     });
 
     // Verksted: klar til henting, leirebestillingen og dugnad som venter.
-    // Klar til henting foreslaas foerst tre uker etter kurset, samme hentetid
-    // som nettsiden lover (eieren 11.10.2026: «samme som står på nettsiden»).
+    // Klar til henting foreslaas foerst fire uker etter kurset (eieren 11.10.2026:
+    // «det er 4 uker etter kurset er ferdig»).
     // Vil admin melde tidligere, gjoeres det fra «Ovn er tømt».
     $trygt('henting', static function () use ($sak): void {
         foreach (DB::alle(
@@ -1065,7 +1065,7 @@ $maGjores = (static function () use ($medlemsstatus, $nyeste): array {
                       WHERE b.course_session_id = cs.id AND b.status IN ('betalt','reservert')) AS deltakere
                FROM course_sessions cs JOIN courses c ON c.id = cs.course_id
               WHERE cs.status = 'planlagt' AND cs.hentemelding_at IS NULL
-                AND COALESCE(cs.slutt_tid, cs.start_tid) < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 3 WEEK)
+                AND COALESCE(cs.slutt_tid, cs.start_tid) < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 4 WEEK)
                 AND cs.start_tid > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 16 WEEK)
            ORDER BY cs.start_tid DESC LIMIT 20"
         ) as $o) {

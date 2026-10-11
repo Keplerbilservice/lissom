@@ -1727,7 +1727,8 @@ await flyt('Skisser: tegne, bilde, notat, lagre og dele', async () => {
   const annen = Number(php(`$o = DB::settInn('members', ['navn' => 'Skisse Annen', 'epost' => 'skisse-annen-' . bin2hex(random_bytes(3)) . '@e2e.lissom.test', 'telefon' => '+4790000099', 'rolle' => 'medlem', 'status' => 'aktiv']); require dirname(__DIR__) . '/betalt-fixture.php'; test_betalt_medlem($o); return Skisser::ny(DB::en('SELECT * FROM members WHERE id = :i', ['i' => $o]), 'Andres tavle');`));
   const k = await side('medlem', 390, 844);
   await gaa(k, '/skisser.html', 1500);
-  sjekk('Medlem: ser tavla admin delte', await k.locator(`[data-tavle="${S.skisseDelt}"]`).count() === 1);
+  // Eieren 09.10.2026: «medlemmene skal også bare se sin egen skisse» – heller ikke tavler admin har delt.
+  sjekk('Medlem: ser ikke tavla admin delte (bare egne)', await k.locator(`[data-tavle="${S.skisseDelt}"]`).count() === 0);
   sjekk('Medlem: ser ikke admins udelte tavle', await k.locator(`[data-tavle="${S.skisseMobil}"]`).count() === 0);
   sjekk('Medlem: ser ikke et annet medlems tavle', await k.locator(`[data-tavle="${annen}"]`).count() === 0);
   const fremmed = await api(k, '/api/skisser.php?id=' + annen);
@@ -1739,9 +1740,8 @@ await flyt('Skisser: tegne, bilde, notat, lagre og dele', async () => {
   const egen = await k.evaluate(() => window.__skisse.tavle());
   sjekk('Medlem: tegner paa egen tavle med fingeren', /"path"/i.test(String(verdi('SELECT data FROM skisse_sider WHERE skisse_id = :i AND nr = 1', { i: egen.id }) || '')));
   await k.locator('[data-test="ferdig"]').click(); await k.waitForTimeout(800);
-  await k.locator(`[data-tavle="${S.skisseDelt}"]`).click();
-  await k.waitForSelector('.upper-canvas'); await k.waitForTimeout(800);
-  sjekk('Medlem: den delte tavla kan ikke endres', await k.locator('[data-verktoy="penn"]').count() === 0);
+  const delt = await api(k, '/api/skisser.php?id=' + S.skisseDelt);
+  sjekk('Medlem: serveren gir ikke ut tavla admin delte', delt.ok !== true);
   const endre = await api(k, '/api/skisser.php', { handling: 'lagre', id: S.skisseDelt, nr: 1, data: '{"objects":[]}' });
   sjekk('Medlem: serveren avviser endring av delt tavle', endre.ok !== true);
   await k.context().close();

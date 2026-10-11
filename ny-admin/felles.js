@@ -45,7 +45,8 @@
   const MENY = [['idag', 'I dag', '☀'], ['kalender', 'Kalender', '▦'], ['kurs', 'Kurs', '◍'], ['medlemmer', 'Medlemmer', '☺'], ['varer', 'Varer', '◇'], ['kasse', 'Kasse', MYNT], ['mer', 'Mer', '…']];
   const BUNN = [['semedlem', 'Medlemssiden', '👁'], ['innstillinger', 'Innstillinger', '⚙']];
   const MOBIL = ['idag', 'kalender', 'kurs'];
-  const HURTIG = [['skisse', 'Skisseverktøy', '✎'], ['uttak', 'Uttak leire', '◼']];
+  /* Kalender er en flis på I dag på mobil (eieren 11.10.2026); i menyen står den alt blant sidene. */
+  const HURTIG = [['skisse', 'Skisseverktøy', '✎'], ['uttak', 'Uttak leire', '◼'], ['kalender', 'Kalender', '▦', 'mobil']];
   const HURTIG_NOKKEL = 'na-hurtig';
 
   const sider = new Map();
@@ -84,6 +85,9 @@
     endret = false;
     /* Overskriften gir arket navnet (skjermleser) og tar fokus når innholdet byttes, så fokus aldri havner på body. */
     const h2 = inn.querySelector('h2');
+    /* Hjemknappen (eieren 11.10.2026): «⌂ I dag» også i arket på mobil, siden topplinja ligger bak arket. */
+    const hode = inn.querySelector('.ark-head');
+    if (erMobil() && hode && !hode.querySelector('.hjem')) hode.querySelector('.lukk')?.insertAdjacentHTML('beforebegin', '<button class="hjem" type="button" data-side="idag"><span aria-hidden="true">⌂</span> I dag</button>');
     if (h2) { h2.id = h2.id || 'ark-tittel'; h2.tabIndex = -1; ark().setAttribute('aria-labelledby', h2.id); ark().removeAttribute('aria-label'); }
     if (!ark().open) {
       ark().showModal();
@@ -286,10 +290,15 @@
 
   /* ── meny ────────────────────────────────────────────────────────────── */
   function hurtigValgt() {
-    try { const v = JSON.parse(localStorage.getItem(HURTIG_NOKKEL) || 'null'); if (Array.isArray(v)) return HURTIG.filter(h => v.includes(h[0])); } catch {}
-    return HURTIG;
+    const her = HURTIG.filter(h => h[3] !== 'mobil' || erMobil());
+    /* Lagret før Kalender-flisen fantes: den står på til den slås av («-kalender»). */
+    try { const v = JSON.parse(localStorage.getItem(HURTIG_NOKKEL) || 'null'); if (Array.isArray(v)) return her.filter(h => v.includes(h[0]) || (h[0] === 'kalender' && !v.includes('-kalender'))); } catch {}
+    return her;
   }
   NA.hurtig = hurtigValgt;
+  /* «Send» i hamburgermenyen på mobil (eieren 11.10.2026): snarveier til arkene som finnes, ingen ny sendelogikk. */
+  const SEND = [['beskjed', 'Send beskjed', 'SMS og/eller e-post til et kurs, en dato eller én person'], ['kursbevis', 'Send kursbevis', 'Velg kurs og dato'],
+    ['paaminnelse', 'Send påminnelse', 'Velg kurs og dato'], ['henting', 'Klar til henting', 'Meld at keramikken er klar']];
   function tegnMeny() {
     if (!NA.meg) return;
     const aktiv = rute.id;
@@ -300,8 +309,9 @@
     /* Hamburgermenyen på mobil viser bare sidene som brukes der (I dag, Kalender, Kurs) — eieren 11.10.2026. */
     const sideMeny = erMobil() ? MENY.filter(m => MOBIL.includes(m[0])) : MENY;
     const meny = `<button class="brand" type="button" data-side="idag" aria-label="Lissom · til I dag">Lissom</button><div class="brand-note">Keramikk · admin</div>${sideMeny.map(navKnapp).join('')}
+      ${erMobil() ? `<div class="hurtig-tittel">Send</div>${SEND.map(([id, navn, under]) => `<button class="nav send" type="button" data-send="${id}"><span class="ic">✉</span><span class="send-tekst">${navn}<small>${under}</small></span></button>`).join('')}` : ''}
       <div class="hurtig-tittel">Hurtig</div>
-      ${hurtigValgt().map(h => `<button class="nav hurtig" type="button" data-hurtig="${h[0]}"><span class="ic">${h[2]}</span>${h[1]}</button>`).join('')}
+      ${hurtigValgt().filter(h => h[0] !== 'kalender').map(h => `<button class="nav hurtig" type="button" data-hurtig="${h[0]}"><span class="ic">${h[2]}</span>${h[1]}</button>`).join('')}
       <button class="nav hurtig tilpass" type="button" data-hurtig="tilpass"><span class="ic">＋</span>Tilpass</button>
       <div class="fot">${(erMobil() ? [] : BUNN).map(navKnapp).join('')}
         <small>${esc(NA.meg.navn)} · innlogget</small>
@@ -317,7 +327,7 @@
   /* ── topplinje ───────────────────────────────────────────────────────── */
   let stemplet = null;
   function tegnToppSkall() {
-    $('#topp').innerHTML = `<button class="hamburger" id="hamburger" type="button" aria-label="Meny" aria-expanded="false" aria-controls="meny">☰</button><div class="sok-wrap"><input id="sok" type="search" class="sok" placeholder="⌕ Søk" autocomplete="off" aria-label="Søk etter kurs, deltaker, medlem eller vare"><div id="sokres" class="sokres" hidden></div></div>
+    $('#topp').innerHTML = `<button class="hamburger" id="hamburger" type="button" aria-label="Meny" aria-expanded="false" aria-controls="meny">☰</button><button class="hjem" type="button" data-side="idag"><span aria-hidden="true">⌂</span> I dag</button><div class="sok-wrap"><input id="sok" type="search" class="sok" placeholder="⌕ Søk" autocomplete="off" aria-label="Søk etter kurs, deltaker, medlem eller vare"><div id="sokres" class="sokres" hidden></div></div>
       <span id="topptall"></span><span class="topp-fyll"></span>
       <button class="knapp stemple-topp" id="stemple-topp" type="button" hidden></button>
       <span class="live" id="live" title="Oppdateres av seg selv"><i></i><span id="live-tekst">Live</span></span>`;
@@ -344,8 +354,9 @@
     $('#topptall').innerHTML = `<button class="tall-pille" type="button" data-topp="omsetning" data-tips="Samme ukedag forrige uke: ${kr(uke)}"><small>I dag</small><b>${kr(idag)}</b></button>
       <button class="tall-pille" type="button" data-topp="omsetning" data-tips="${esc('Forrige måned til samme dato: ' + kr(forr) + (diff === null ? '' : ' · ' + (diff >= 0 ? '+' : '') + diff + ' %'))}"><small>Denne måneden</small><b>${kr(mnd)}${diff === null ? '' : ` <span class="${diff >= 0 ? 'opp' : 'ned'}">${diff >= 0 ? '▲' : '▼'} ${Math.abs(diff)} %</span>`}</b></button>
       <button class="tall-pille ${ub.length ? 'varsel' : ''}" type="button" data-topp="ubetalt" data-tips="${ub.length} ${ub.length === 1 ? 'har' : 'har'} ikke betalt"><small>Ikke betalt</small><b>${kr(ubSum)}</b></button>
-      <button class="tall-pille inne-pille" type="button" data-topp="inne" data-tips="${esc(inne.map(x => x.navn + ' (inn ' + x.siden + ')').join(' · ') || 'Ingen er stemplet inn')}"><small>I verkstedet nå · ${inne.length}</small>
-        <span class="inne-navn">${inne.length ? inne.slice(0, 4).map(x => `<span class="ini ${x.navn === megNavn ? 'ansatt' : ''}">${esc(String(x.navn).split(' ')[0])}</span>`).join('') + (inne.length > 4 ? `<span class="ini">+${inne.length - 4}</span>` : '') : '<span class="muted">Ingen</span>'}</span></button>`;
+      ${erMobil() ? '' : `<button class="tall-pille inne-pille" type="button" data-topp="inne" data-tips="${esc(inne.map(x => x.navn + ' (inn ' + x.siden + ')').join(' · ') || 'Ingen er stemplet inn')}"><small>I verkstedet nå · ${inne.length}</small>
+        <span class="inne-navn">${inne.length ? inne.slice(0, 4).map(x => `<span class="ini ${x.navn === megNavn ? 'ansatt' : ''}">${esc(String(x.navn).split(' ')[0])}</span>`).join('') + (inne.length > 4 ? `<span class="ini">+${inne.length - 4}</span>` : '') : '<span class="muted">Ingen</span>'}</span></button>`}`;
+    /* På mobil står hvem som er inne som eget kort på I dag (eieren 11.10.2026), ikke i topplinja. */
     tegnLive();
   }
   function tegnStemple() {
@@ -500,6 +511,7 @@
       const paa = b.getAttribute('aria-pressed') !== 'true';
       b.setAttribute('aria-pressed', String(paa));
       const ny = [...$('#ark-inn').querySelectorAll('[data-tilpass]')].filter(x => x.getAttribute('aria-pressed') === 'true').map(x => x.dataset.tilpass);
+      if (!ny.includes('kalender') && $('#ark-inn').querySelector('[data-tilpass="kalender"]')) ny.push('-kalender');
       try { localStorage.setItem(HURTIG_NOKKEL, JSON.stringify(ny)); } catch {}
       tegnMeny();
     };
@@ -594,6 +606,8 @@
     if (d.hurtig === 'skisse') return NA.skisse();
     if (d.hurtig === 'uttak') return NA.uttakLeire();
     if (d.hurtig === 'tilpass') return arkTilpass();
+    if (d.hurtig === 'kalender') { gaTil('kalender'); window.scrollTo(0, 0); return; }
+    if (d.send) return NA.send ? NA.send(d.send) : null;
     if (d.loggut !== undefined) {
       api('/api/logg-ut.php', {data: {}}).catch(() => {}).finally(() => visInnlogging());
     }

@@ -117,8 +117,11 @@ const K = {vis: 'uke', uke: mandag(idag()), mnd: idag().slice(0, 7) + '-01', val
 const KM = {modus: 'dag', valgt: idag()};
 function periode() {
   if (erMobil()) {
-    const s = KM.modus === 'maaned' ? KM.valgt.slice(0, 8) + '01' : mandag(KM.valgt);
-    const e = KM.modus === 'maaned' ? pluss(s, 41) : pluss(s, 6), a = pluss(idag(), -1), b = pluss(idag(), 30);
+    // Dag-visningen er et bånd med tre dager på hver side av den valgte (de må også hentes).
+    let s = KM.modus === 'maaned' ? KM.valgt.slice(0, 8) + '01' : mandag(KM.valgt);
+    let e = KM.modus === 'maaned' ? pluss(s, 41) : pluss(s, 6);
+    if (KM.modus === 'dag') { if (pluss(KM.valgt, -3) < s) s = pluss(KM.valgt, -3); if (pluss(KM.valgt, 3) > e) e = pluss(KM.valgt, 3); }
+    const a = pluss(idag(), -1), b = pluss(idag(), 30);
     return [s < a ? s : a, e > b ? e : b];
   }
   const gridStart = mandag(K.mnd);
@@ -165,16 +168,22 @@ function oktKort(h, {stil = '', klasse = '', tidsrom = false} = {}) {
 // Ovn, verksted og notat: piller med etikett foran. En ovn som går over natta sier når den er ferdig («ferdig tir 09:00»).
 const DRIFT = {brenning: 'Ovn', verksted: 'Verksted', notat: 'Notat'};
 const KORTDAG = ['man', 'tir', 'ons', 'tor', 'fre', 'lør', 'søn'];
-export function ferdigTekst(h) {
-  if (h.type !== 'brenning' || !h.slutt) return '';
+// Når brenningen er ferdig: kalender.php gir «09:00 13.10.» når den går over natta, ellers bare «09:00».
+export function ovnSlutt(h) {
+  if (h.type !== 'brenning' || !h.slutt) return null;
   const m = String(h.slutt).match(/^(\d{1,2}:\d{2})(?:\s+(\d{1,2})\.(\d{1,2})\.?)?/);
-  if (!m) return '';
+  if (!m) return null;
   let dato = h.dato;
   if (m[2]) {
     const aar = +h.dato.slice(0, 4) + (+m[3] < +h.dato.slice(5, 7) ? 1 : 0);
     dato = `${aar}-${String(+m[3]).padStart(2, '0')}-${String(+m[2]).padStart(2, '0')}`;
   } else if (h.tid && minutter(m[1]) <= minutter(h.tid)) dato = pluss(h.dato, 1);
-  return dato === h.dato ? '' : `ferdig ${KORTDAG[ukedag(dato)]} ${m[1]}`;
+  const tid = m[1].padStart(5, '0');
+  return {dato, tid, tekst: `ferdig ${KORTDAG[ukedag(dato)]} ${tid}`};
+}
+export function ferdigTekst(h) {
+  const s = ovnSlutt(h);
+  return s && s.dato !== h.dato ? s.tekst : '';
 }
 function annenLinje(h) {
   const okt = h.oktId > 0 ? ` data-k="apneOkt" data-okt="${h.oktId}" role="button" tabindex="0"` : '';
@@ -399,7 +408,7 @@ function tegnMobil() {
   const paaDag = d => samleDag(hend, d);
   const dagKnapp = (d, kl) => `<button type="button" class="${kl} ${d === i0 ? 'idag' : ''}" data-k="mDag" data-dato="${d}" aria-pressed="${d === KM.valgt}" aria-label="${esc(langDato(d))}"><i>${DAG[ukedag(d)].slice(0, 2).toLowerCase()}</i><b>${tilDato(d).getDate()}</b><span class="nkm-prikk ${paaDag(d).some(erOkt) ? '' : 'tom'}" aria-hidden="true"></span></button>`;
   const st = mandag(KM.valgt);
-  const synlige = KM.modus === 'uke' ? [0, 1, 2, 3, 4, 5, 6].map(i => pluss(st, i)) : [KM.valgt];
+  const synlige = KM.modus === 'uke' ? [0, 1, 2, 3, 4, 5, 6].map(i => pluss(st, i)) : KM.modus === 'dag' ? [-3, -2, -1, 0, 1, 2, 3].map(i => pluss(KM.valgt, i)) : [KM.valgt];
   const nesteILista = !!neste && synlige.some(d => paaDag(d).some(h => h.oktId === neste.oktId));
   const nesteId = nesteILista ? neste.oktId : 0;
   const dagListe = (d, hn) => { const l = paaDag(d); return `<section class="nkm-dag" data-kol="${d}"><${hn}>${esc(langDato(d))}</${hn}>${d in stengte ? '<span class="merke rod">Stengt</span>' : ''}${l.length ? l.filter(h => !erOkt(h)).map(annenLinje).join('') + l.filter(erOkt).map(h => timekort(h, nesteId)).join('') : '<p class="muted">Ingen kurs</p>'}</section>`; };
@@ -415,7 +424,8 @@ function tegnMobil() {
   } else {
     topp = velgDato(hend, mini);
     flate = `<div class="nkm-uke" data-sveip="uke">${[0, 1, 2, 3, 4, 5, 6].map(i => dagKnapp(pluss(st, i), 'nkm-ukedag')).join('')}</div>`;
-    if (KM.modus === 'dag') liste = dagListe(KM.valgt, 'h2');
+    // Dag (eieren 11.10.2026): dagene ligger som et bånd man ruller sømløst sidelengs i, nabodagen synes i kanten.
+    if (KM.modus === 'dag') liste = `<div class="nkm-baand" data-baand>${[-3, -2, -1, 0, 1, 2, 3].map(i => { const d = pluss(KM.valgt, i); return `<div class="nkm-baand-dag" data-baanddag="${d}">${dagListe(d, 'h2')}</div>`; }).join('')}</div>`;
     else {
       const fulle = synlige.filter(d => paaDag(d).length);
       liste = fulle.length ? fulle.map(d => dagListe(d, 'h3')).join('') : '<p class="muted">Ingen kurs denne uka</p>';
@@ -429,6 +439,22 @@ function tegnMobil() {
     ${nav}${topp}${flate}${liste}</div>`;
   const fl = K.el.querySelector('[data-sveip]');
   if (fl) sveip(fl, fl.dataset.sveip);
+  const baand = K.el.querySelector('[data-baand]');
+  if (baand) baandRull(baand);
+}
+// Båndet: start på den valgte dagen; ukestripen følger dagen i midten, og når båndet står stille blir den dagen valgt.
+function baandRull(baand) {
+  const midt = () => { const r = baand.getBoundingClientRect(), m = r.left + r.width / 2; let best = null, avst = 1e9;
+    for (const x of baand.children) { const q = x.getBoundingClientRect(), a = Math.abs(q.left + q.width / 2 - m); if (a < avst) { avst = a; best = x; } } return best; };
+  const valgt = baand.querySelector(`[data-baanddag="${KM.valgt}"]`);
+  if (valgt) baand.scrollLeft += valgt.getBoundingClientRect().left + valgt.offsetWidth / 2 - (baand.getBoundingClientRect().left + baand.clientWidth / 2);
+  let tid = 0;
+  baand.addEventListener('scroll', () => {
+    const d = midt()?.dataset.baanddag; if (!d) return;
+    K.el.querySelectorAll('.nkm-uke [data-dato]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.dato === d)));
+    clearTimeout(tid);
+    tid = setTimeout(async () => { if (d !== KM.valgt && K.el?.contains(baand)) { KM.valgt = d; tegnKalender(); await tegnPaaNytt(); } }, 160);
+  }, {passive: true});
 }
 // Sveip sidelengs på ukestripa eller måneden (som kalender-mobil.js); loddrett rulling er nettleserens.
 function sveip(node, hva) {
@@ -1001,3 +1027,57 @@ H.seOk = async b => {
 
 // Det felles «Send beskjed»-arket brukes også av Medlemmer (vanlig skript, ikke modul).
 if (window.NA) window.NA.arkBeskjed = arkBeskjed;
+
+// ── «Send» fra hamburgermenyen på mobil (eieren 11.10.2026) ─────────────────
+// Bare snarveier: kurs og dato velges først, så åpnes de samme arkene som før (samme maler og kanaler).
+const VO = {neste: null};
+export async function velgOkt(tittel, neste) {
+  VO.neste = neste;
+  ark(`<div class="ark-head"><h2>${esc(tittel)}</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div><p class="muted">Henter kursene …</p>`);
+  const i0 = idag(), fra = pluss(i0, -14), til = pluss(i0, 21);
+  const d = await hentPeriode(fra, til);
+  const okter = (d.hendelser || []).filter(h => erOkt(h) && !h.avlyst).sort((a, b) => (a.dato + a.tid).localeCompare(b.dato + b.tid));
+  const rad = h => `<button type="button" class="rad-knapp" data-k="velgOktValgt" data-okt="${h.oktId}"><b>${esc(h.tittel)}</b><small>${esc(DAG[ukedag(h.dato)].slice(0, 3))} ${kortDato(h.dato)} kl. ${esc(h.tid)} · ${h.pameldt} påmeldt</small></button>`;
+  const kommende = okter.filter(h => h.dato >= i0), tidligere = okter.filter(h => h.dato < i0).reverse();
+  ark(`<div class="ark-head"><h2>${esc(tittel)}</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
+    <p class="muted">Velg kurs og dato</p>
+    ${kommende.length ? `<p class="velg-gruppe">Kommende</p><div class="velg-liste">${kommende.map(rad).join('')}</div>` : ''}
+    ${tidligere.length ? `<p class="velg-gruppe">Tidligere</p><div class="velg-liste">${tidligere.map(rad).join('')}</div>` : ''}
+    ${okter.length ? '' : '<p class="muted">Ingen kurs</p>'}`);
+}
+H.velgOktValgt = b => VO.neste?.(+b.dataset.okt);
+// «Send beskjed»: «Til hvem?» først. Ingenting er valgt på forhånd.
+function arkTilHvem() {
+  ark(`<div class="ark-head"><h2>✉ Send beskjed</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
+    <div><small>Til hvem?</small><div class="til-hvem" style="margin-top:6px"><button class="knapp" data-k="tilHvem" data-v="okt">Et kurs og en dato</button><button class="knapp" data-k="tilHvem" data-v="en">Én person</button><button class="knapp" data-k="tilHvem" data-v="medlemmer">Alle medlemmer</button></div></div>`);
+}
+let PERSONER = null;
+async function arkVelgPerson() {
+  ark(`<div class="ark-head"><h2>Én person</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div><p class="muted">Henter medlemmene …</p>`);
+  if (!PERSONER) PERSONER = ((await api('medlemmer.php')).medlemmer || []).filter(m => m.epost || m.telefon);
+  ark(`<div class="ark-head"><h2>Én person</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
+    <label class="en-felt" style="max-width:none"><small>Søk etter navn</small><input id="nk-person-sok" class="felt" type="search" autocomplete="off"></label>
+    <div class="velg-liste" id="nk-personer"></div>`);
+  tegnPersoner('');
+}
+function tegnPersoner(q) {
+  const boks = document.getElementById('nk-personer'); if (!boks) return;
+  const s = q.trim().toLowerCase();
+  const treff = (PERSONER || []).filter(m => !s || String(m.navn).toLowerCase().includes(s)).slice(0, 40);
+  boks.innerHTML = treff.map(m => `<button type="button" class="rad-knapp" data-k="personValgt" data-id="${Number(m.id)}"><b>${esc(m.navn)}</b><small>${esc([m.epost, m.telefon].filter(Boolean).join(' · '))}</small></button>`).join('') || '<p class="muted">Ingen treff.</p>';
+}
+document.addEventListener('input', e => { if (e.target.id === 'nk-person-sok') tegnPersoner(e.target.value); });
+H.personValgt = b => { const m = (PERSONER || []).find(x => Number(x.id) === +b.dataset.id); if (m) arkBeskjed({til: 'en', navn: m.navn, epost: m.epost || '', telefon: m.telefon || ''}); };
+H.tilHvem = b => {
+  const v = b.dataset.v;
+  if (v === 'okt') return velgOkt('Send beskjed', id => arkBeskjed(id));
+  if (v === 'en') return arkVelgPerson();
+  return arkBeskjed({til: 'medlemmer'});
+};
+async function send(hva) {
+  if (hva === 'beskjed') return arkTilHvem();
+  if (hva === 'kursbevis') return velgOkt('Send kursbevis', id => window.NA?.arkKursbevis?.(id));
+  if (hva === 'paaminnelse') return velgOkt('Send påminnelse', id => arkPaaminnelse(id));
+  if (hva === 'henting') return window.NA?.arkFerdigbrent?.();
+}
+if (window.NA) Object.assign(window.NA, {send: (hva) => Promise.resolve(send(hva)).catch(e => toast(`<b>Gikk ikke:</b> ${esc(e.message)}`)), velgOkt, ovnSlutt});

@@ -358,14 +358,18 @@ async function tilAlle(rader, handling, tittel) {
   if (!ok && feil.length) return toast(`<b>${tittel} ble ikke sendt.</b> ${esc(feil[0].tekst)}`);
   toast(`<b>${tittel} sendt til ${ok}.</b>${feil.length ? ' ' + esc(like ? feil[0].tekst + ' (' + feil.map(f => f.navn).join(', ') + ')' : feil.map(f => f.navn + ': ' + f.tekst).join(' ')) : ''}`);
 }
-H.kursbevis = () => {
-  const rader = (aktiv().deltakere || []).filter(d => d.status === 'Betalt');
+// Samme ark fra kurssiden og fra «Send kursbevis» i menyen på mobil (da er økta valgt der, data-okt).
+function arkKursbevis(h) {
+  if (!h) return;
+  const rader = (h.deltakere || []).filter(d => d.status === 'Betalt');
   if (!rader.length) return toast('Ingen har betalt ennå.');
   ark(`<div class="ark-head"><h2>Kursbevis til ${rader.length} som har betalt</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
     <p class="muted">${rader.map(d => esc(d.navn)).join(', ')}</p><small>Samme e-post som etter kurset («Be om en anmeldelse» med kursbeviset).</small>
-    <div class="ark-fot"><button class="knapp" data-k="lukk">Avbryt</button><button class="knapp hoved" data-k="kursbevisOk">Send kursbevis</button></div>`);
-};
-H.kursbevisOk = b => { b.disabled = true; return tilAlle((aktiv().deltakere || []).filter(d => d.status === 'Betalt'), 'kursbevis', 'Kursbevis'); };
+    <div class="ark-fot"><button class="knapp" data-k="lukk">Avbryt</button><button class="knapp hoved" data-k="kursbevisOk" data-okt="${h.oktId}">Send kursbevis</button></div>`);
+}
+H.kursbevis = () => arkKursbevis(aktiv());
+H.kursbevisOk = b => { b.disabled = true; const h = OKTER.get(+b.dataset.okt) || aktiv(); return tilAlle((h.deltakere || []).filter(d => d.status === 'Betalt'), 'kursbevis', 'Kursbevis'); };
+if (window.NA) window.NA.arkKursbevis = id => arkKursbevis(OKTER.get(+id));
 H.bekreftAlle = () => {
   const rader = (aktiv().deltakere || []).filter(d => d.epost && (d.status === 'Betalt' || d.status === 'Ikke betalt'));
   if (!rader.length) return toast('Ingen påmeldte med e-post.');

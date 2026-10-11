@@ -34,6 +34,20 @@
     return (d.toDateString() === i.toDateString() ? 'i dag ' : d.toDateString() === igaar.toDateString() ? 'i går ' : d.toLocaleDateString('nb-NO', {day: 'numeric', month: 'numeric'}) + ' ') + klokke(s); };
 
   async function hentOvn() { try { ovn = await NA.api('/api/ovn.php'); } catch { ovn = null; } }
+  /* Mobil (eieren 11.10.2026): når ovnen er ferdig, fra brenningen i kalenderen (i går og i dag). */
+  let brenning = null, ovnApen = false;
+  async function hentBrenning() {
+    if (!NA.erMobil()) { brenning = null; return; }
+    const i = idagIso(), g = new Date(); g.setDate(g.getDate() - 1);
+    const igaar = g.getFullYear() + '-' + String(g.getMonth() + 1).padStart(2, '0') + '-' + String(g.getDate()).padStart(2, '0');
+    try {
+      const k = await NA.api('kalender.php?fra=' + igaar + '&til=' + i);
+      const naa = new Date(), naaS = i + ' ' + String(naa.getHours()).padStart(2, '0') + ':' + String(naa.getMinutes()).padStart(2, '0');
+      brenning = (k.hendelser || []).filter(h => h.type === 'brenning').map(h => ({h, s: NA.ovnSlutt ? NA.ovnSlutt(h) : null}))
+        .filter(x => x.s && (x.h.dato + ' ' + x.h.tid) <= naaS && (x.s.dato + ' ' + x.s.tid) >= naaS)
+        .sort((a, b) => (b.h.dato + b.h.tid).localeCompare(a.h.dato + a.h.tid))[0] || null;
+    } catch { brenning = null; }
+  }
   async function hentSalg(d) {
     if (!(Number(d?.koer?.medlemsvarer) > 0)) { salg = []; return; }
     if (Date.now() - salgTid < 60000) return;
@@ -63,18 +77,30 @@
     const info = (d.maGjores || []).filter(s => s.type === 'pamelding' && !gjort.has(nokkel(s)) && !(s.ider || [s.id]).every(i => sett.has(i)));
     const dato = new Date().toLocaleDateString('nb-NO', {weekday: 'long', day: 'numeric', month: 'long'});
     const hurtig = NA.hurtig();
-    el.innerHTML = `
-      <div class="head"><div><div class="eyebrow">${esc(dato.charAt(0).toUpperCase() + dato.slice(1))}</div><h1>${hilsen()}, ${esc(String(NA.meg?.navn || '').split(' ')[0])}</h1></div></div>
-      <div style="display:grid;gap:20px">
-        ${hurtig.length ? `<div class="bare-mobil"><div class="fliser">${hurtig.map(h => `<button class="flis" type="button" data-hurtig="${h[0]}"><span class="flis-ikon" aria-hidden="true">${h[2]}</span><span class="flis-tittel">${h[1]}</span></button>`).join('')}</div></div>` : ''}
-        <div class="grid">
-          <section class="kort" aria-label="Ovnen">
+    const mobil = NA.erMobil(), inne = d.verkstedet || [];
+    const ovnKnapper = `<div class="ovn-knapper">${Object.entries(OVN).map(([id, txt]) => `<button type="button" data-ovn="${id}" aria-pressed="${t?.slag === id}" ${ovn && ovn.klar === false ? 'disabled' : ''}>${txt}</button>`).join('')}</div>`;
+    /* Mobil: ovnen er én lav linje med status og sluttid; de tre knappene kommer fram med «Endre». */
+    const ovnKort = mobil
+      ? `<section class="kort ovn-lav" aria-label="Ovnen"><div class="ovn-linje"><span class="ovn-tekst"><b>Ovn · ${esc(status)}</b>${brenning ? `<small>${esc(brenning.s.tekst)}</small>` : ''}</span><button type="button" class="na-pille" data-ovnendre aria-expanded="${ovnApen}">Endre</button></div>
+          ${ovnApen ? ovnKnapper + '<p class="muted" style="margin-top:10px;font-size:15px">«Ovn er tømt» = ferdigbrent. Du velger hvilke kursdatoer som får «Klar til henting».</p>' : ''}</section>`
+      : `<section class="kort" aria-label="Ovnen">
             <div class="kort-head"><h2>Ovnen</h2></div>
             <div class="ovnstatus">${status}</div>
             <p class="muted" style="margin:4px 0 16px">${t ? esc(t.av) + ' · ' + naarTekst(t.naar) + ' · medlemmene ser det på Min side' : 'Ingen har trykket det siste døgnet'}</p>
-            <div class="ovn-knapper">${Object.entries(OVN).map(([id, txt]) => `<button type="button" data-ovn="${id}" aria-pressed="${t?.slag === id}" ${ovn && ovn.klar === false ? 'disabled' : ''}>${txt}</button>`).join('')}</div>
+            ${ovnKnapper}
             <p class="muted" style="margin-top:12px;font-size:15px">«Ovn er tømt» = ferdigbrent. Du velger hvilke kursdatoer som får «Klar til henting».</p>
-          </section>
+          </section>`;
+    /* Mobil: hvem som er inne, som eget kort øverst. Et navn åpner medlemsarket. */
+    const inneKort = mobil ? `<section class="kort inne-kort" aria-label="I verkstedet nå"><h2>I verkstedet nå · ${inne.length}</h2>
+        ${inne.length ? `<div class="inne-piller">${inne.map(x => `<button type="button" class="na-pille" data-inneperson="${Number(x.id)}">${esc(x.navn)}</button>`).join('')}</div>` : '<p class="muted">Ingen</p>'}</section>` : '';
+    el.innerHTML = `
+      <div class="head"><div><div class="eyebrow">${esc(dato.charAt(0).toUpperCase() + dato.slice(1))}</div><h1>${hilsen()}, ${esc(String(NA.meg?.navn || '').split(' ')[0])}</h1></div></div>
+      <div style="display:grid;gap:20px">
+        ${inneKort}
+        ${mobil ? ovnKort : ''}
+        ${hurtig.length ? `<div class="bare-mobil"><div class="fliser">${hurtig.map(h => `<button class="flis" type="button" data-hurtig="${h[0]}"><span class="flis-ikon" aria-hidden="true">${h[2]}</span><span class="flis-tittel">${h[1]}</span></button>`).join('')}</div></div>` : ''}
+        <div class="grid">
+          ${mobil ? '' : ovnKort}
           <section class="kort" aria-label="Dagens kurs">
             <div class="kort-head"><h2>Dagens kurs</h2></div>
             ${okter.length ? okter.map(o => { const h = kal.get(o.oktId); const ub = ikkeBetalt(h).length; const n = h ? h.pameldt : o.pameldte, kap = h ? h.kap : o.kapasitet;
@@ -128,7 +154,7 @@
   /* ── oppdatering ─────────────────────────────────────────────────────── */
   async function oppdater(tving) {
     const d = await NA.oversikt(tving);
-    const [m] = await Promise.all([NA.oppdateringer ? NA.oppdateringer() : null, hentOvn(), hentSalg(d), hentKal(d)]);
+    const [m] = await Promise.all([NA.oppdateringer ? NA.oppdateringer() : null, hentOvn(), hentSalg(d), hentKal(d), hentBrenning()]);
     migr = m;
     tegn(d);
   }
@@ -142,6 +168,7 @@
     try {
       ovn = await NA.api('/api/ovn.php', {data: {handling: slag}});
       tegn(NA.sist);
+      ovnApen = false; tegn(NA.sist);
       if (slag === 'tomt') arkFerdigbrent();
       else NA.toast(`<b>${OVN[slag]}.</b> Medlemmene ser det på Min side.`);
     } catch (e) { NA.toast(esc(e.message)); tegn(NA.sist); }
@@ -169,6 +196,9 @@
       oppdater(true).catch(() => {});
     };
   }
+
+  /* «Klar til henting» i Send-menyen på mobil åpner samme flyt (eieren 11.10.2026). */
+  NA.arkFerdigbrent = arkFerdigbrent;
 
   /* ── start dagens kurs ───────────────────────────────────────────────── */
   /* Hvem har kommet. Ingen er krysset av på forhånd (eierens regel): hver person får «Møtt» eller «Ikke møtt», og
@@ -572,6 +602,8 @@
       el.addEventListener('click', e => {
         const b = e.target.closest('button'); if (!b || b.disabled) return;
         if (b.dataset.ovn) trykkOvn(b);
+        else if (b.hasAttribute('data-ovnendre')) { ovnApen = !ovnApen; tegn(NA.sist); el.querySelector('[data-ovnendre]')?.focus(); }
+        else if (b.dataset.inneperson) { if (NA.arkMedlem) NA.arkMedlem(Number(b.dataset.inneperson)); }
         else if (b.dataset.startkurs) arkStartKurs(Number(b.dataset.startkurs));
         else if (b.dataset.gjor) gjor(b);
         else if (b.dataset.utfort) utfort(b);

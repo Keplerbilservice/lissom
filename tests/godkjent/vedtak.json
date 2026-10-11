@@ -8368,7 +8368,7 @@
                         "<span class=\"merke status-stengt\">Stengt for påmelding</span>",
                         "<span class=\"merke status-avlyst\">Avlyst</span>",
                         "const DRIFT = {brenning: 'Ovn', verksted: 'Verksted', notat: 'Notat'};",
-                        "`ferdig ${KORTDAG[ukedag(dato)]} ${m[1]}`",
+                        "tekst: `ferdig ${KORTDAG[ukedag(dato)]} ${tid}`",
                         "const UKEVIS = 'nyAdmin.kalender.ukevisning';",
                         "data-v=\"liste\"",
                         "data-v=\"tidsplan\"",

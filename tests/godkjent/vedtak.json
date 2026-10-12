@@ -8618,6 +8618,67 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "idag-klikkbare-rader",
+            "dato": "2026-10-12",
+            "hva": "Eieren 12.10.2026: «Må gjøres, venteliste, klar til henting, til info, ny påmelding etc … alle steder klikkbart». Valgt: «Det saken gjelder». Hele raden i Må gjøres og Til info åpner kursdatoen (venteliste, klar til henting, ny påmelding og avlyst dato med deltakeren markert), medlemmet (betaling, frys), varen (lager), Varer › Medlemssalg (medlemssalg), gammel admin (medlemssøknad), ellers samme ark som hovedknappen. Knappene virker som før.",
+            "hvor": "Ny admin › I dag › Må gjøres og Til info",
+            "kode": [
+                {
+                    "fil": "ny-admin/idag.js",
+                    "finnes": [
+                        "function radMaal(s) {",
+                        "case 'henting': return () => tilKurs(id);",
+                        "case 'pamelding': case 'tilbakebetal': return s.oktId ? () => tilKurs(Number(s.oktId), {booking: id}) : null;"
+                    ]
+                },
+                {
+                    "fil": "api/admin/oversikt.php",
+                    "finnes": [
+                        "['medlemId' => (int) $r['member_id']]",
+                        "'oktId' => $okt, 'kursId' => (int) $w['course_id']"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "medlemmer-betalt-merke",
+            "dato": "2026-10-12",
+            "hva": "Eieren 12.10.2026: «på medlemmer, vil jeg også se om det er betalt eller ikke, nå står det bare aktivt». Valgt: «Aktiv» (eller «Prøveperiode») står som før, og ved siden av står betalingen: grønt «Betalt», rødt som før når pengene ikke er inne, grått «Betaler ikke» eller «Fryst». Gjelder lista og arket i ny admin › Medlemmer.",
+            "hvor": "Ny admin › Medlemmer",
+            "kode": [
+                {
+                    "fil": "ny-admin/medlemmer.js",
+                    "finnes": [
+                        "m.betaling === 'betalt' ? '<span class=\"merke gronn\">Betalt</span>'",
+                        "m.betaling === 'fri' ? '<span class=\"merke\">Betaler ikke</span>'",
+                        "return `<span class=\"merker\">${status}${betaling}</span>`;"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "medlemsark-endre",
+            "dato": "2026-10-12",
+            "hva": "Eieren 12.10.2026: «når jeg klikker på medlemmer, må jeg også kunne endre personopplysninger, endre abonnement». Valgt: «Ett skjema». Medlemsarket i ny admin har «Endre», som åpner ett skjema: Navn, E-post, Telefon, Medlemskap, Medlem fra, Medlem til (tom = løper), Timer per måned (tom = følger medlemskapet). Lagre bruker medlemmer.php «kontakt» og «bytt-plan», som gammel admin.",
+            "hvor": "Ny admin › Medlemmer › medlemsarket",
+            "kode": [
+                {
+                    "fil": "ny-admin/medlemmer.js",
+                    "finnes": [
+                        "<button class=\"knapp\" data-mlm=\"endre\" data-id=\"${m.id}\">Endre</button>",
+                        "handling: 'kontakt', medlemId: id",
+                        "handling: 'bytt-plan', medlemId: id, type: plan"
+                    ]
+                },
+                {
+                    "fil": "api/admin/medlemmer.php",
+                    "finnes": [
+                        "'timerEgen'  => $m['timer_per_mnd'] === null ? null : (int) $m['timer_per_mnd'],"
+                    ]
+                }
+            ]
         }
     ]
 }

@@ -112,7 +112,7 @@
           <div class="kort-head"><h2>Må gjøres</h2></div>
           ${maa.length || salgIgjen.length || nMigr ? (nMigr ? radMigr(nMigr) : '') + salgIgjen.map(radSalg).join('') + maa.map(radSak).join('') : '<p class="tom">Alt er gjort. Fint!</p>'}
           <div class="kort-head" style="margin:22px 0 4px"><h3>Til info</h3><small>Forsvinner av seg selv etter 3 dager</small></div>
-          ${info.length ? info.map(s => `<div class="rad"><div class="tekst"><span class="type">Ny påmelding</span><b>${esc(String(s.tittel).replace(/^Ny påmelding: /, ''))}</b><small>${esc(String(s.under).replace(/ · (Ikke betalt|Betalt)$/, ''))}</small></div>${s.betalt === true ? '<span class="merke gronn">Betalt</span>' : s.betalt === false ? '<span class="merke rod">Ikke betalt</span>' : ''}<button class="knapp liten" type="button" data-utfort="${esc(nokkel(s))}">Utført</button></div>`).join('') : '<p class="tom">Ingen nye.</p>'}
+          ${info.length ? info.map(s => `<div class="rad${radMaal(s) ? ` klikkrad" data-rad="${esc(nokkel(s))}" role="button" tabindex="0` : ''}"><div class="tekst"><span class="type">Ny påmelding</span><b>${esc(String(s.tittel).replace(/^Ny påmelding: /, ''))}</b><small>${esc(String(s.under).replace(/ · (Ikke betalt|Betalt)$/, ''))}</small></div>${s.betalt === true ? '<span class="merke gronn">Betalt</span>' : s.betalt === false ? '<span class="merke rod">Ikke betalt</span>' : ''}<button class="knapp liten" type="button" data-utfort="${esc(nokkel(s))}">Utført</button></div>`).join('') : '<p class="tom">Ingen nye.</p>'}
         </section>
       </div>`;
   }
@@ -123,7 +123,7 @@
   /* Databaseoppdateringer som venter (eieren 09.10.2026). Samme knapp som Innstillinger › Oppdateringer. */
   const radMigr = n => `<div class="rad"><div class="tekst"><span class="type">Vedlikehold</span><b>${n} ${n === 1 ? 'databaseoppdatering venter' : 'databaseoppdateringer venter'}</b><small>${esc(migr.mangler.join(' · '))}</small></div><div class="knapper">${knapp('Kjør oppdateringer', 'migrer', true)}</div></div>`;
   function radSalg(x) {
-    return `<div class="rad"><div class="tekst"><span class="type">Medlemssalg</span><b>${esc(x.medlem)} vil selge ${esc(x.tittel)}</b><small>${esc([x.pris, x.antall ? x.antall + ' stk' : '', x.dato].filter(Boolean).join(' · '))}</small></div>
+    return `<div class="rad${NA.erMobil() ? '' : ' klikkrad" data-salgrad="1" role="button" tabindex="0'}"><div class="tekst"><span class="type">Medlemssalg</span><b>${esc(x.medlem)} vil selge ${esc(x.tittel)}</b><small>${esc([x.pris, x.antall ? x.antall + ' stk' : '', x.dato].filter(Boolean).join(' · '))}</small></div>
       <div class="knapper">${knapp('Avslå', 'salg-avvis', false, `data-id="${x.id}"`)}${knapp('Godkjenn', 'salg-godkjenn', true, `data-id="${x.id}"`)}</div></div>`;
   }
   function radSak(s) {
@@ -148,7 +148,31 @@
       /* Avlyst dato, betalt kontant/kort i kassa (eieren 09.10.2026): verkstedet gir pengene tilbake og merker det her. */
       tilbakebetal: () => knapp('Betalt tilbake', 'tilbakebetalt', true, `data-k="${k}"`),
     }[s.type] || (() => gammel);
-    return `<div class="rad"><div class="tekst"><span class="type">${TYPE[s.type] || esc(s.gruppe || '')}</span><b>${esc(s.tittel)}</b>${s.under ? `<small>${esc(s.under)}</small>` : ''}</div><div class="knapper">${h()}</div></div>`;
+    return `<div class="rad${radMaal(s) ? ` klikkrad" data-rad="${k}" role="button" tabindex="0` : ''}"><div class="tekst"><span class="type">${TYPE[s.type] || esc(s.gruppe || '')}</span><b>${esc(s.tittel)}</b>${s.under ? `<small>${esc(s.under)}</small>` : ''}</div><div class="knapper">${h()}</div></div>`;
+  }
+  /* Hele raden er trykkbar og åpner det saken gjelder (eieren 12.10.2026: «alle steder klikkbart»). Knappene virker som før.
+     Varer finnes ikke på mobil, så lager og medlemssalg er bare trykkbare på PC og iPad. */
+  const tilKurs = (okt, mer) => NA.gaTil('kurs', {okt, ...mer, fra: 'idag'});
+  const tilMedlem = id => NA.arkMedlem ? NA.arkMedlem(id) : NA.gaTil('medlemmer', {person: id});
+  function radMaal(s) {
+    const id = Number(s.id);
+    switch (s.type) {
+      case 'henvendelse': return () => svarForesporsel(s);
+      case 'bidrag': return () => arkBidrag(s);
+      case 'betaling': return () => tilMedlem(id);
+      case 'frys': return s.medlemId ? () => tilMedlem(Number(s.medlemId)) : null;
+      case 'dugnad': return () => arkDugnad(s, dugnadTid(s) ? 'godkjenn_tid' : 'godkjenn');
+      case 'leire': return () => arkLeire(s);
+      case 'chat': return () => arkChat(s);
+      case 'innboks': return () => arkInnboks(s);
+      case 'feil': return () => arkFeil(s);
+      case 'henting': return () => tilKurs(id);
+      case 'venteliste': return s.oktId ? () => tilKurs(Number(s.oktId)) : s.kursId ? () => NA.gaTil('kurs', {kurs: Number(s.kursId), fra: 'idag'}) : null;
+      case 'pamelding': case 'tilbakebetal': return s.oktId ? () => tilKurs(Number(s.oktId), {booking: id}) : null;
+      case 'lager': return NA.erMobil() ? null : () => NA.gaTil('varer', {vare: id});
+      case 'soknad': return () => { location.href = '/admin-ny#' + String(s.rute || 'soknader'); };
+    }
+    return null;
   }
 
   /* ── oppdatering ─────────────────────────────────────────────────────── */
@@ -599,7 +623,16 @@
     tittel: 'I dag', ikon: '☀', mobil: true,
     async tegn(side) {
       el = side;
+      const aapneRad = e => {
+        const r = e.target.closest('.klikkrad'); if (!r || e.target.closest('button, a, .knapper, input, label')) return false;
+        if (r.dataset.salgrad) { NA.gaTil('varer', {fane: 'medlem'}); return true; }
+        const s = finnSak(r.dataset.rad), gaa = s && radMaal(s);
+        if (gaa) gaa();
+        return true;
+      };
+      el.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.classList?.contains('klikkrad') && aapneRad(e)) e.preventDefault(); });
       el.addEventListener('click', e => {
+        if (aapneRad(e)) return;
         const b = e.target.closest('button'); if (!b || b.disabled) return;
         if (b.dataset.ovn) trykkOvn(b);
         else if (b.hasAttribute('data-ovnendre')) { ovnApen = !ovnApen; tegn(NA.sist); el.querySelector('[data-ovnendre]')?.focus(); }

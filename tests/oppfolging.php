@@ -23,14 +23,15 @@ require $rot . '/app/bootstrap.php';
 $tag = 'OPPF-' . strtoupper(bin2hex(random_bytes(3)));
 $medlemmer = [];
 $ferdig = false;
-$maler = array_column(DB::alle("SELECT navn, aktiv FROM notification_templates WHERE navn IN ('intern_prove_slutter_sms','prove_slutter_sms','medlem_savner_deg_sms')"), 'aktiv', 'navn');
+$maler = array_column(DB::alle("SELECT navn, aktiv FROM notification_templates WHERE navn IN ('intern_prove_slutter_sms','prove_slutter_sms','medlem_savner_deg_sms','medlem_savner_deg_fri_sms')"), 'aktiv', 'navn');
+$friPlan = '';
 $innst = array_column(DB::alle("SELECT nokkel, verdi FROM innstillinger WHERE nokkel LIKE 'oppfolging_%'"), 'verdi', 'nokkel');
 $server = null;
 // «Den falske SMS-en» (som tests/send-manuelt.php): Sveve-oppsettet settes til
 // testverdier bare under testen, så meldingene havner i køen. Ingen cron kjører.
 $smsFor = array_column(DB::alle("SELECT nokkel, verdi FROM innstillinger WHERE nokkel IN ('sveve_bruker', 'sveve_passord', 'sms_leverandor')"), 'verdi', 'nokkel');
 
-register_shutdown_function(static function () use (&$ferdig, &$medlemmer, &$server, $maler, $innst, $smsFor): void {
+register_shutdown_function(static function () use (&$ferdig, &$medlemmer, &$server, &$friPlan, $maler, $innst, $smsFor): void {
     if (is_resource($server)) { proc_terminate($server); }
     try {
         DB::kjor("DELETE FROM innstillinger WHERE nokkel IN ('sveve_bruker', 'sveve_passord', 'sms_leverandor')");
@@ -49,6 +50,7 @@ register_shutdown_function(static function () use (&$ferdig, &$medlemmer, &$serv
     ] as $sql) {
         try { DB::kjor($sql); } catch (Throwable $e) { echo '  (opprydding: ' . $e->getMessage() . ")\n"; }
     }
+    if ($friPlan !== '') { try { DB::kjor('DELETE FROM membership_plans WHERE navn = :n', ['n' => $friPlan]); } catch (Throwable $e) {} }
     foreach ($innst as $k => $v) { try { DB::kjor('INSERT INTO innstillinger (nokkel, verdi) VALUES (?, ?)', [$k, $v]); } catch (Throwable $e) {} }
     foreach ($maler as $n => $a) { try { DB::oppdater('notification_templates', ['aktiv' => (int) $a], ['navn' => $n]); } catch (Throwable $e) {} }
     if (!$ferdig) { echo "\n  FEIL  testen stoppet foer den var ferdig\n"; exit(1); }
@@ -94,6 +96,20 @@ sjekk('migrasjonen setter prøve- og savner-SMS av', str_contains($sql, "lissom.
 foreach (['intern_prove_slutter_sms', 'prove_slutter_sms', 'medlem_savner_deg_sms'] as $n) {
     sjekk("$n står i malregisteret", in_array($n, Maler::iBruk(), true));
 }
+
+echo "
+── Migrasjon 274 (fri tilgang) ──────────────────────────────
+";
+$sql274 = (string) file_get_contents($rot . '/db/migrations/274_savner_fri_tilgang.sql');
+foreach (['første', 'andre'] as $gang) {
+    try { DB::kobling()->exec($sql274); $f = null; } catch (Throwable $e) { $f = $e->getMessage(); }
+    sjekk("274 $gang kjøring", $f === null, (string) $f);
+}
+sjekk('274 godkjent av eieren 12.10', str_starts_with($sql274, '-- godkjent av eieren: 2026-10-12'));
+sjekk('274 bare tillegg', preg_match('/(DROP|MODIFY|DELETE|UPDATE)/i', str_replace('ON DUPLICATE KEY UPDATE', '', $sql274)) !== 1);
+sjekk('fri-SMS ordrett (med 🙂)', $tekst('medlem_savner_deg_fri_sms') === 'Hei {fornavn}! Vi savner deg i verkstedet 🙂 Velkommen innom når det passer. Hilsen Monica, Lissom');
+sjekk('medlem_savner_deg_fri_sms står i malregisteret', in_array('medlem_savner_deg_fri_sms', Maler::iBruk(), true));
+$malPaa('medlem_savner_deg_fri_sms', true);
 sjekk('standard: 5 dager / 21 dager', Oppfolging::STD_PROVE_DAGER === 5 && Oppfolging::STD_SAVNER_DAGER === 21);
 
 echo "\n── Prøv Lissom slutter snart ────────────────────────────────\n";
@@ -172,13 +188,25 @@ sjekk('pause: ingen SMS', !in_array($d, $k, true));
 sjekk('prøvemedlem: ingen SMS', !in_array($a, $k, true));
 sjekk('annen SMS samme dag: ingen SMS', !in_array($e, $k, true));
 sjekk('neste dag: får den', in_array($e, array_column(Oppfolging::savnerKandidater($naa('2026-10-29 11:00')), 'id'), true));
-$fri = (string) DB::verdi('SELECT navn FROM membership_plans WHERE timer IS NULL LIMIT 1');
-if ($fri !== '') {
-    DB::oppdater('members', ['medlemskap_type' => $fri], ['id' => $f]);
-    Oppfolging::sendSavner($naa('2026-10-28 11:00'));
-    $sf = $ko('savner_deg', $f);
-    sjekk('fri tilgang (ingen timer å fylle inn): ingen SMS', $sf === [], json_encode($sf, JSON_UNESCAPED_UNICODE));
+$fri = (string) DB::verdi('SELECT navn FROM membership_plans WHERE timer IS NULL AND COALESCE(engangs, 0) = 0 LIMIT 1');
+if ($fri === '') {
+    $fri = $friPlan = "Fri $tag";
+    DB::settInn('membership_plans', ['navn' => $fri, 'timer' => null, 'engangs' => 0, 'aktiv' => 0]);
 }
+DB::oppdater('members', ['medlemskap_type' => $fri], ['id' => $f]);
+sjekk('fri tilgang har ikke timetak', Medlemskap::timerMedGaver(DB::en('SELECT * FROM members WHERE id = :i', ['i' => $f])) === null);
+$malPaa('medlem_savner_deg_sms', false);
+Oppfolging::sendSavner($naa('2026-10-28 11:00'));
+sjekk('fri tilgang, bryteren av: ingen SMS', $ko('savner_deg', $f) === []);
+$malPaa('medlem_savner_deg_sms', true);
+Oppfolging::sendSavner($naa('2026-10-24 11:00'));
+sjekk('fri tilgang, lørdag: ingen SMS', $ko('savner_deg', $f) === []);
+Oppfolging::sendSavner($naa('2026-10-28 11:00'));
+$sf = $ko('savner_deg', $f);
+sjekk('fri tilgang: egen mal, teksten ordrett', count($sf) === 1 && $sf[0]['mal'] === 'medlem_savner_deg_fri_sms'
+    && $sf[0]['tekst'] === 'Hei Fri! Vi savner deg i verkstedet 🙂 Velkommen innom når det passer. Hilsen Monica, Lissom', json_encode($sf, JSON_UNESCAPED_UNICODE));
+Oppfolging::sendSavner($naa('2026-10-29 11:00'));
+sjekk('fri tilgang: bare én per fravær', count($ko('savner_deg', $f)) === 1);
 
 echo "\n── Lav aktivitet og «Snakket med» ───────────────────────────\n";
 sjekk('Kari står under Lav aktivitet', in_array($b, array_column(Oppfolging::lavAktivitet(), 'id'), true));

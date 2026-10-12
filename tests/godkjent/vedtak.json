@@ -8816,7 +8816,7 @@
         {
             "id": "medlemmer-oppfolging",
             "dato": "2026-10-12",
-            "hva": "Eieren 12.10.2026, «ja, fint» til visningen «Medlemmer og oppfølging» (alle sju arkene), med endring i «Sist innom»: merket vises bare etter mer enn 7 dager (8–13 nøytral, 14–21 gul, over 21 rød). Medlemmer i ny admin: sorteringsvelger (medlem lengst, nyeste, type i rekkefølgen fra membership_plans, navn A–Å, lengst siden innom; huskes per bruker), filterpiller per medlemskap med antall, medlemskapet som merke og «Medlem i X · siden mån. år», og «X av Y ble medlem» for Prøv Lissom siste 3 måneder. Prøv Lissom slutter snart: samlet SMS til admin-mobilen (Innstillinger › Varsler, antall dager før, standard 5) kl. 09 og sak i Må gjøres med timer brukt, telefon, Send SMS og Snakket med. SMS til medlemmer som ikke kommer (standard 21 dager, hverdager 10–18, én per fravær, aldri samme dag som en annen SMS, ikke prøve/frys/pause, bryter per medlem; global bryter AV fra start). SMS til prøvemedlemmet 3 dager før slutt (AV fra start). «Snakket med» med notat på medlemskortet. Tekstene ordrett i migrasjon 273.",
+            "hva": "Eieren 12.10.2026, «ja, fint» til visningen «Medlemmer og oppfølging» (alle sju arkene), med endring i «Sist innom»: merket vises bare etter mer enn 7 dager (8–13 nøytral, 14–21 gul, over 21 rød). Medlemmer i ny admin: sorteringsvelger (medlem lengst, nyeste, type i rekkefølgen fra membership_plans, navn A–Å, lengst siden innom; huskes per bruker), filterpiller per medlemskap med antall, medlemskapet som merke og «Medlem i X · siden mån. år», og «X av Y ble medlem» for Prøv Lissom siste 3 måneder. Prøv Lissom slutter snart: samlet SMS til admin-mobilen (Innstillinger › Varsler, antall dager før, standard 5) kl. 09 og sak i Må gjøres med timer brukt, telefon, Send SMS og Snakket med. SMS til medlemmer som ikke kommer (standard 21 dager, hverdager 10–18, én per fravær, aldri samme dag som en annen SMS, ikke prøve/frys/pause, bryter per medlem; global bryter AV fra start). SMS til prøvemedlemmet 3 dager før slutt (AV fra start). «Snakket med» med notat på medlemskortet. Tekstene ordrett i migrasjon 273. Endret samme dag (eieren 12.10.2026, «Alle merkene på linje»): hver rad i lista er et rutenett med faste kolonner Navn · Status · Medlemskap · Betaling, med overskriftsrad. «Aktiv»/«Prøveperiode» står fortsatt i lista. Under navnet: «X av Y t igjen» (timer igjen av månedens timer; uten timetak ingen timer) og bak « · » «N d siden sist» / «Aldri innom» bare over 7 dager (grå 8–13, gul 14–21, rød over 21); eget «Sist innom»-merke er fjernet. «Medlem i X · siden mån. år» er en boble over navnet (musepeker, trykk på iPad/mobil). Medlemskapet og betalingen er trykkbare piller (treffflate 44 px): medlemskapet åpner «Endre» (bytte av medlemskap), betalingen åpner betalingen for personen (admin-ny#folk?person=). På smal skjerm skyves lista sideveis i egen boks. «Vi savner deg» til fri tilgang (uten timetak): egen mal medlem_savner_deg_fri_sms ordrett, samme regler og samme bryter (migrasjon 274).",
             "hvor": "Ny admin · Medlemmer, I dag › Må gjøres, Innstillinger › Varsler; cron «varsler»",
             "kode": [
                 {
@@ -8825,7 +8825,31 @@
                         "['lengst', 'Medlem lengst'], ['kortest', 'Nyeste medlem'], ['type', 'Type medlemskap'], ['navn', 'Navn A–Å'], ['sist', 'Lengst siden innom']",
                         "const d = dagerBorte(m); if (d <= 7) return '';",
                         "const k = d > 21 ? 'rod' : d >= 14 ? 'gul' : '';",
-                        "Påminnelse-SMS når hen ikke kommer"
+                        "Påminnelse-SMS når hen ikke kommer",
+                        "<span>Navn</span><span>Status</span><span>Medlemskap</span><span>Betaling</span>",
+                        "`${esc(m.timerIgjen)} av ${tall(m.timer)} t igjen`",
+                        "d + ' d siden sist'",
+                        "<span class=\"boble\" role=\"tooltip\">Medlem i ${esc(varighet(m.medlemFra))} · siden ${esc(maanedAar(m.medlemFra))}</span>",
+                        "data-mlm=\"endre\" data-id=\"${m.id}\">${esc(m.medlemskap)}</button>",
+                        "data-mlm=\"betaling\" data-id=\"${knapp}\"",
+                        "<span class=\"merker\"><span>${statusMerke(m)}</span>"
+                    ],
+                    "ikkeFinnes": [
+                        "${sistMerke(m)}"
+                    ]
+                },
+                {
+                    "fil": "ny-admin/ny-admin.css",
+                    "finnes": [
+                        ".mlm-tabell{overflow-x:auto;",
+                        ".merke.trykk::after{content:\"\";position:absolute;inset:-10px -4px}"
+                    ]
+                },
+                {
+                    "fil": "db/migrations/274_savner_fri_tilgang.sql",
+                    "finnes": [
+                        "-- godkjent av eieren: 2026-10-12",
+                        "'Hei {fornavn}! Vi savner deg i verkstedet 🙂 Velkommen innom når det passer. Hilsen Monica, Lissom', 1, 'system'"
                     ]
                 },
                 {
@@ -8847,7 +8871,8 @@
                     "finnes": [
                         "public const STD_PROVE_DAGER = 5;",
                         "public const STD_SAVNER_DAGER = 21;",
-                        "if ($ukedag > 5 || $time < 10 || $time >= 18 || !self::malPaa(self::MAL_SAVNER) || !Varsel::smsMulig()) {"
+                        "if ($ukedag > 5 || $time < 10 || $time >= 18 || !self::malPaa(self::MAL_SAVNER) || !Varsel::smsMulig()) {",
+                        "$n += Varsel::mal(self::MAL_SAVNER_FRI, ['navn' => $m['navn'], 'telefon' => $m['telefon']], ["
                     ]
                 },
                 {

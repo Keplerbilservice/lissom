@@ -325,3 +325,24 @@ dialog#ark::backdrop{background:#27110870}
 .fot .gammel-admin{margin:6px 14px 0;align-self:flex-start;border-radius:999px}
 /* Medlemsoppfølging: små tallfelt i Innstillinger › Varsler (eieren 12.10.2026). */
 .oppf-tall{width:60px;min-height:36px;padding:4px 8px;border-radius:7px;border:1px solid #c6b1a0;background:var(--field);text-align:center}
+/* Medlemmer: rutenett med faste kolonner, så merkene står rett under hverandre (eieren 12.10.2026,
+   «Alle merkene på linje»). På smal skjerm skyves lista sideveis i sin egen boks, aldri siden. */
+.mlm-tabell{overflow-x:auto;padding-top:10px;-webkit-overflow-scrolling:touch}
+.mlm-rad{display:grid;grid-template-columns:minmax(200px,2fr) 130px minmax(140px,1fr) minmax(130px,1fr);gap:10px;align-items:center;min-width:640px;padding:12px 10px;flex-wrap:nowrap}
+.mlm-rad .merker{display:contents}
+.mlm-rad .merke{white-space:normal}
+.mlm-hode{padding-block:0 4px;font-size:13px;text-transform:uppercase;letter-spacing:.08em;font-weight:800;color:var(--muted)}
+.mlm-rad .tekst{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-width:0}
+.mlm-rad:focus-visible{outline:2px solid var(--ink);outline-offset:-2px}
+.mlm-rad .navn{position:relative;font-weight:700}
+.mlm-rad .boble{position:absolute;left:0;bottom:calc(100% + 6px);white-space:nowrap;background:var(--ink);color:var(--paper);font-weight:500;font-size:14px;padding:5px 10px;border-radius:8px;opacity:0;pointer-events:none;transition:opacity .12s;z-index:2}
+.mlm-rad .navn:hover .boble,.mlm-rad .navn.vis .boble{opacity:1}
+.mlm-rad .igjen{font-size:14px;line-height:1.2;color:var(--muted)}
+.mlm-rad .sist.gul{color:var(--warn)}
+.mlm-rad .sist.rod{color:var(--red)}
+.merke.trykk{position:relative;border:1px solid #0000001f;border-radius:999px;font:inherit;font-size:15px;font-weight:700;cursor:pointer;color:var(--ink);text-align:left}
+.merke.trykk.rod{color:var(--red)}.merke.trykk.gul{color:var(--warn)}.merke.trykk.gronn{color:var(--green)}
+.merke.trykk::after{content:"";position:absolute;inset:-10px -4px}
+.merke.trykk:hover{border-color:currentColor}
+.merke.trykk:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){.mlm-rad .boble{transition:none}}

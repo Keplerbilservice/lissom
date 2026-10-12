@@ -11,7 +11,9 @@
  *      start): én SMS etter N dager (standard 21) uten innstempling, ny først
  *      etter at de har vært innom igjen. Hverdager kl. 10–18, aldri samme dag
  *      som en annen SMS fra Lissom, ikke til Prøv Lissom og ikke til frys/pause.
- *      Bryter per medlem (members.paaminnelse_sms).
+ *      Bryter per medlem (members.paaminnelse_sms). Fri tilgang (uten
+ *      timetak) får malen medlem_savner_deg_fri_sms (migrasjon 274), styrt av
+ *      samme bryter.
  *   4  SMS til prøvemedlemmet selv 3 dager før slutt (malen prove_slutter_sms,
  *      AV fra start).
  *   6  «X av Y ble medlem» for Prøv Lissom de siste 3 månedene.
@@ -34,6 +36,8 @@ final class Oppfolging
     public const MAL_ADMIN = 'intern_prove_slutter_sms';
     public const MAL_PROVE = 'prove_slutter_sms';
     public const MAL_SAVNER = 'medlem_savner_deg_sms';
+    /** Fri tilgang (uten timetak), migrasjon 274. Styres av bryteren til MAL_SAVNER. */
+    public const MAL_SAVNER_FRI = 'medlem_savner_deg_fri_sms';
 
     /** Er migrasjon 273 kjørt? */
     public static function klar(): bool
@@ -433,12 +437,20 @@ final class Oppfolging
             return 0;
         }
         $n = 0;
+        // Migrasjon 274 kan mangle: da får fri tilgang ingen SMS, som før.
+        $friMal = DB::verdi('SELECT id FROM notification_templates WHERE navn = :n', ['n' => self::MAL_SAVNER_FRI]) !== null;
         foreach (array_slice(self::savnerKandidater($naa), 0, 30) as $m) {
             $id = (int) $m['id'];
             $tak = Medlemskap::timerMedGaver($m);
-            // Uten timetak (fri tilgang) kan «Du har {timer} igjen» ikke fylles
-            // ut, og alt skal gå gjennom malen: de får ingen SMS (spørsmål til eieren).
+            // Uten timetak (fri tilgang): egen mal uten timer (eieren 12.10.2026,
+            // migrasjon 274). Samme regler og samme bryter (MAL_SAVNER).
             if ($tak === null) {
+                if (!$friMal) {
+                    continue;
+                }
+                $n += Varsel::mal(self::MAL_SAVNER_FRI, ['navn' => $m['navn'], 'telefon' => $m['telefon']], [
+                    'navn' => (string) $m['navn'],
+                ], 'savner_deg', $id) > 0 ? 1 : 0;
                 continue;
             }
             $igjen = max(0, (int) round($tak * 60) - Stempling::minutterDenneManeden($id));

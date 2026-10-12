@@ -37,7 +37,7 @@ function kanalerMulig(string $navn): array
     // Tilbys SMS, kunne malen staa paa «bare SMS» og aldri naa den som ble
     // flyttet enkeltvis (Codex 9. oktober 2026).
     $bareSms = ['foresporsel_svar_sms', 'kassekvittering_sms', 'kursbevis_sms', 'soknad_godkjent_sms', 'intern_nytt_medlem_sms',
-                'intern_prove_slutter_sms', 'prove_slutter_sms', 'medlem_savner_deg_sms'];
+                'intern_prove_slutter_sms', 'prove_slutter_sms', 'medlem_savner_deg_sms', 'medlem_savner_deg_fri_sms'];
     if (in_array($navn, $bareSms, true)) {
         return ['sms'];
     }
@@ -74,6 +74,7 @@ if (Foresporsel::metode() === 'GET') {
         'intern_prove_slutter_sms' => Oppfolging::proveDager() . ' dager før Prøv Lissom slutter, kl. 09',
         'prove_slutter_sms'        => '3 dager før Prøv Lissom slutter, kl. 10–18',
         'medlem_savner_deg_sms'    => 'Etter ' . Oppfolging::savnerDager() . ' dager uten innstempling, hverdager kl. 10–18',
+        'medlem_savner_deg_fri_sms' => 'Etter ' . Oppfolging::savnerDager() . ' dager uten innstempling, hverdager kl. 10–18',
     ];
 
     $kanaler = [];

@@ -72,7 +72,8 @@
     ['medlem_savner_deg_sms', 'SMS til medlemmer som ikke kommer', o => `Etter <input class="oppf-tall" data-oppf-felt="savnerDager" inputmode="numeric" value="${esc(o.savnerDager)}" aria-label="Dager uten innstempling"> dager uten innstempling · hverdager kl. 10–18`],
     ['intern_lav_aktivitet', 'Lav aktivitet til meg', o => `Etter <input class="oppf-tall" data-oppf-felt="lavDager" inputmode="numeric" value="${esc(o.lavDager)}" aria-label="Dager før lav aktivitet"> dager`],
   ];
-  const OPPF_MALER = OPPF.map(x => x[0]);
+  // «Vi savner deg» for fri tilgang (migrasjon 274) følger bryteren til medlem_savner_deg_sms, så den har ingen egen.
+  const OPPF_MALER = [...OPPF.map(x => x[0]), 'medlem_savner_deg_fri_sms'];
   function oppfKort() {
     const o = S.oppf; if (!o || !S.maler) return '';
     const rader = OPPF.map(([navn, tittel, under]) => {

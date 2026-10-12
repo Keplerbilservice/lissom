@@ -40,19 +40,26 @@
   }
   // Dager siden innom; aldri innom = dager siden medlemskapet startet.
   const dagerBorte = m => m.dagerSidenSist ?? (somDato(m.medlemFra) ? Math.max(0, Math.round((idag() - somDato(m.medlemFra)) / 864e5)) : 0);
-  /* «Sist innom» (eieren 12.10.2026): bare etter mer enn 7 dager. 8–13 nøytral, 14–21 gul, over 21 rød. */
-  function sistMerke(m) {
+  /* «Sist innom» (eieren 12.10.2026): bare etter mer enn 7 dager. 8–13 grå, 14–21 gul, over 21 rød.
+     Står under navnet bak « · » (eieren 12.10.2026, «Alle merkene på linje»), ikke som eget merke. */
+  function sistTekst(m) {
     const d = dagerBorte(m); if (d <= 7) return '';
     const k = d > 21 ? 'rod' : d >= 14 ? 'gul' : '';
-    return `<span class="merke ${k}">${m.dagerSidenSist == null ? 'Aldri innom' : d + ' d siden'}</span>`;
+    return `<span class="sist ${k}">${m.dagerSidenSist == null ? 'Aldri innom' : d + ' d siden sist'}</span>`;
   }
+  // «X av Y t igjen»: timer igjen av månedens timer (medlemmer.php timerIgjen/timer). Uten timetak: ingenting.
+  const tall = t => String(Math.round(Number(t) * 10) / 10).replace('.', ',');
+  const igjenTekst = m => m.timer == null || m.timerIgjen == null ? '' : `${esc(m.timerIgjen)} av ${tall(m.timer)} t igjen`;
   // «Aktiv»/«Prøveperiode» står først som før (vedtaket medlemmer-betalt-merke), så medlemskapet, «sist innom» og betalingen.
   const statusMerke = m => m.status === 'prove' ? '<span class="merke gul">Prøveperiode</span>' : '<span class="merke gronn">Aktiv</span>';
-  function betalingMerke(m) {
-    return m.betalingUte ? `<span class="merke rod">${esc(m.betalingTekst || 'Ikke betalt')}</span>`
-      : m.betaling === 'betalt' ? '<span class="merke gronn">Betalt</span>'
-      : m.betaling === 'fri' ? '<span class="merke">Betaler ikke</span>'
-      : m.betaling === 'fryst' ? '<span class="merke">Fryst</span>' : '';
+  // knapp = id: merket blir en trykkbar pille som åpner betalingen for personen (lista).
+  function betalingMerke(m, knapp = 0) {
+    const [k, t] = m.betalingUte ? ['rod', m.betalingTekst || 'Ikke betalt']
+      : m.betaling === 'betalt' ? ['gronn', 'Betalt']
+      : m.betaling === 'fri' ? ['', 'Betaler ikke']
+      : m.betaling === 'fryst' ? ['', 'Fryst'] : [];
+    if (!t) return '';
+    return knapp ? `<button type="button" class="merke trykk ${k}" data-mlm="betaling" data-id="${knapp}">${esc(t)}</button>` : `<span class="merke ${k}">${esc(t)}</span>`;
   }
   function sorter(L) {
     const fra = m => String(m.medlemFra || '9999');
@@ -126,10 +133,19 @@
     const L = sorter(liste().filter(m => (!S.typeFilter || m.medlemskap === S.typeFilter)
       && (!q || [m.navn, m.epost, m.telefon, m.medlemskap].some(v => String(v || '').toLowerCase().includes(q)))));
     tegnVelger();
-    // Hele raden er trykkbar og åpner medlemmet (gave, beskjed, betaling).
-    const rader = L.length ? L.map(m => `<button type="button" class="rad radknapp ${m.id === S.person ? 'markert' : ''}" data-mlm="medlem" data-id="${m.id}"><span class="tekst"><b>${esc(m.navn)}</b>
-        <small>${m.medlemFra ? `Medlem i ${esc(varighet(m.medlemFra))} · siden ${esc(maanedAar(m.medlemFra))}` : ''}${m.timerIgjen ? ` · ${esc(m.timerIgjen)} igjen denne måneden` : ''}${m.erInne ? ' · i verkstedet nå' : ''}</small></span>
-        <span class="merker">${statusMerke(m)}${m.medlemskap ? `<span class="merke ${typeKlasse(m.medlemskap)}">${esc(m.medlemskap)}</span>` : ''}${sistMerke(m)}${betalingMerke(m)}</span></button>`).join('')
+    /* Rutenett med faste kolonner (eieren 12.10.2026, «Alle merkene på linje»): Navn · Status · Medlemskap · Betaling.
+       Hele raden åpner medlemmet. Medlemskapet åpner «Endre» (bytte av medlemskap), betalingen åpner betalingen
+       for personen (samme sted som «Betaling og detaljer» i arket). Medlemstiden er en boble over navnet. */
+    const rader = L.length ? `<div class="mlm-tabell"><div class="mlm-rad mlm-hode" aria-hidden="true"><span>Navn</span><span>Status</span><span>Medlemskap</span><span>Betaling</span></div>
+      ${L.map(m => {
+        const under = [igjenTekst(m), sistTekst(m)].filter(Boolean).join(' · ');
+        return `<div role="button" tabindex="0" class="rad radknapp mlm-rad ${m.id === S.person ? 'markert' : ''}" data-mlm="medlem" data-id="${m.id}"><span class="tekst">
+          <span class="navn" data-mlm-navn>${esc(m.navn)}${m.medlemFra ? `<span class="boble" role="tooltip">Medlem i ${esc(varighet(m.medlemFra))} · siden ${esc(maanedAar(m.medlemFra))}</span>` : ''}</span>
+          ${under ? `<small class="igjen">${under}</small>` : ''}</span>
+          <span class="merker"><span>${statusMerke(m)}</span>
+          <span>${m.medlemskap ? `<button type="button" class="merke trykk ${typeKlasse(m.medlemskap)}" data-mlm="endre" data-id="${m.id}">${esc(m.medlemskap)}</button>` : ''}</span>
+          <span>${betalingMerke(m, m.id)}</span></span></div>`;
+      }).join('')}</div>`
       : '<p class="muted">Ingen treff.</p>';
     const r = document.getElementById('mlm-rader'); if (r) r.innerHTML = rader;
     const n = liste().length;
@@ -332,9 +348,19 @@
 
   // Én lytter for hele siden og arkene (arket tegnes av skallet, utenfor sideelementet).
   document.addEventListener('click', async e => {
+    if (!e.target.closest('[data-mlm-navn]')) document.querySelectorAll('[data-mlm-navn].vis').forEach(x => x.classList.remove('vis'));
     const b = e.target.closest('[data-mlm]'); if (!b) return;
     const h = b.dataset.mlm, id = Number(b.dataset.id) || 0;
     if (h === 'lukk') return NA().lukkArk();
+    // Navnet på berøringsskjerm: trykk viser medlemstiden (boblen) i stedet for å åpne medlemmet.
+    const navn = e.target.closest('[data-mlm-navn]');
+    if (h === 'medlem' && navn && window.matchMedia?.('(hover: none)').matches) {
+      const vis = !navn.classList.contains('vis');
+      document.querySelectorAll('[data-mlm-navn].vis').forEach(x => x.classList.remove('vis'));
+      navn.classList.toggle('vis', vis);
+      return;
+    }
+    if (h === 'betaling') { location.href = '/admin-ny#folk?person=' + id; return; }
     if (h === 'medlem') return arkMedlem(id);
     if (h === 'endre') return arkEndre(id);
     if (h === 'lagreendre') return lagreEndre(b, id);
@@ -371,6 +397,10 @@
     }
     if (h === 'beskjed') return beskjed({ til: 'medlemmer' });
     if (h === 'beskjeden') { const m = S.medlemmer.find(x => x.id === id); if (m) beskjed({ til: 'en', navn: m.navn, epost: m.epost || '', telefon: m.telefon || '' }); }
+  });
+  // Raden er role=button: Enter og mellomrom åpner medlemmet, som et trykk.
+  document.addEventListener('keydown', e => {
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('.mlm-rad[data-mlm="medlem"]')) { e.preventDefault(); arkMedlem(Number(e.target.dataset.id)); }
   });
   document.addEventListener('input', e => { if (e.target.id === 'mlm-gv-belop' || e.target.id === 'mlm-gv-hilsen') { oppdaterForh(); sjekkGave(); } });
   document.addEventListener('change', e => {

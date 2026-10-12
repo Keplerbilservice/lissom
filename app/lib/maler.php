@@ -541,6 +541,13 @@ final class Maler
                 'timer' => 'Timer igjen denne måneden, f.eks. 9 timer',
             ],
         ],
+        'medlem_savner_deg_fri_sms' => [
+            'tittel' => 'Vi savner deg, fri tilgang (SMS til medlemmet)',
+            'hvor'   => 'Som «Vi savner deg», for medlemmer uten timetak. Følger samme bryter.',
+            'felter' => [
+                'fornavn' => 'Fornavnet til medlemmet',
+            ],
+        ],
         'intern_lav_aktivitet' => [
             'tittel' => 'Til deg: lav aktivitet',
             'hvor'   => 'Sendes til verkstedet én gang i døgnet når nye medlemmer ikke har vært innom på en stund.',

@@ -1063,10 +1063,13 @@ $maGjores = (static function () use ($medlemsstatus, $nyeste): array {
     // «det er 4 uker etter kurset er ferdig»).
     // Vil admin melde tidligere, gjoeres det fra «Ovn er tømt».
     $trygt('henting', static function () use ($sak): void {
+        // De som alt har hentet telles ikke, og har alle hentet, er saken borte
+        // (eieren 12.10.2026: «Merk hentet» på samme sted som Send).
+        $ikkeHentet = DB::harKolonne('bookings', 'hentet_at') ? ' AND b.hentet_at IS NULL' : '';
         foreach (DB::alle(
             "SELECT cs.id, cs.start_tid, c.tittel,
                     (SELECT COUNT(*) FROM bookings b
-                      WHERE b.course_session_id = cs.id AND b.status IN ('betalt','reservert')) AS deltakere
+                      WHERE b.course_session_id = cs.id AND b.status IN ('betalt','reservert'){$ikkeHentet}) AS deltakere
                FROM course_sessions cs JOIN courses c ON c.id = cs.course_id
               WHERE cs.status = 'planlagt' AND cs.hentemelding_at IS NULL
                 AND COALESCE(cs.slutt_tid, cs.start_tid) < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 4 WEEK)

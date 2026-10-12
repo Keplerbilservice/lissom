@@ -42,6 +42,12 @@ if ($mode==='paid') {
 if ($mode==='inspect') {
  echo json_encode(['stamp'=>DB::verdi('SELECT hentemelding_at FROM course_sessions WHERE id=:i',['i'=>$s['session']]),'notifications'=>DB::alle("SELECT kanal,tekst,html FROM notifications WHERE mal='ferdig_brent' AND ref_type='booking' AND ref_id=:i",['i'=>$s['booking']])]); exit;
 }
+// «Merk hentet» i Må gjøres (tests/nyadmin-merk-hentet.mjs): kursdatoen fem uker tilbake, og én deltaker til.
+if ($mode==='hentetid') {
+ DB::oppdater('course_sessions',['start_tid'=>gmdate('Y-m-d H:i:s',time()-35*86400),'hentemelding_at'=>null],['id'=>$s['session']]);
+ $to=DB::settInn('bookings',['course_id'=>$s['course'],'course_session_id'=>$s['session'],'gjest_navn'=>$s['tag'].' To','gjest_telefon'=>'+4790000001','antall'=>1,'belop_ore'=>10000,'status'=>'betalt']);
+ echo json_encode(['to'=>$to]); exit;
+}
 if ($mode==='cleanup') {
  // Kursholdere laget fra Brukere i tests/nyadmin-kursholder-bruker.mjs.
  $kh=$s['tag'].'-kh%@e2e.lissom.test';
@@ -62,6 +68,8 @@ if ($mode==='cleanup') {
  DB::kjor("DELETE FROM notifications WHERE ref_type='booking' AND ref_id=:i",['i'=>$s['booking']]);
  DB::kjor('DELETE FROM bookings WHERE id=:i',['i'=>$s['booking']]);
  DB::kjor("DELETE FROM audit_log WHERE member_id=:i",['i'=>$s['admin']]);
+ DB::kjor("DELETE FROM notifications WHERE ref_type='booking' AND ref_id IN (SELECT id FROM bookings WHERE course_session_id=:i)",['i'=>$s['session']]);
+ DB::kjor('DELETE FROM bookings WHERE course_session_id=:i',['i'=>$s['session']]);
  DB::kjor('DELETE FROM course_sessions WHERE id=:i',['i'=>$s['session']]);
  DB::kjor('DELETE FROM courses WHERE id=:i',['i'=>$s['course']]);
  DB::kjor('DELETE FROM sessions WHERE member_id=:i',['i'=>$s['admin']]);

@@ -8613,6 +8613,28 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "medlemsark-endre",
+            "dato": "2026-10-12",
+            "hva": "Eieren 12.10.2026: «når jeg klikker på medlemmer, må jeg også kunne endre personopplysninger, endre abonnement». Valgt: «Ett skjema». Medlemsarket i ny admin har «Endre», som åpner ett skjema: Navn, E-post, Telefon, Medlemskap, Medlem fra, Medlem til (tom = løper), Timer per måned (tom = følger medlemskapet). Lagre bruker medlemmer.php «kontakt» og «bytt-plan», som gammel admin.",
+            "hvor": "Ny admin › Medlemmer › medlemsarket",
+            "kode": [
+                {
+                    "fil": "ny-admin/medlemmer.js",
+                    "finnes": [
+                        "<button class=\"knapp\" data-mlm=\"endre\" data-id=\"${m.id}\">Endre</button>",
+                        "handling: 'kontakt', medlemId: id",
+                        "handling: 'bytt-plan', medlemId: id, type: plan"
+                    ]
+                },
+                {
+                    "fil": "api/admin/medlemmer.php",
+                    "finnes": [
+                        "'timerEgen'  => $m['timer_per_mnd'] === null ? null : (int) $m['timer_per_mnd'],"
+                    ]
+                }
+            ]
         }
     ]
 }

@@ -12,7 +12,7 @@
   const toast = h => NA().toast(h);
   const registrer = (id, opp) => { const f = NA().registrerSide; if (typeof f === 'function') f(id, opp); else document.addEventListener('DOMContentLoaded', () => registrer(id, opp), { once: true }); };
 
-  const S = { medlemmer: [], gaver: [], sok: '', el: null, tikk: 0, opptatt: false, person: 0 };
+  const S = { medlemmer: [], gaver: [], sok: '', el: null, tikk: 0, opptatt: false, person: 0, planer: [] };
   // Gaveskjemaet. Ingenting er valgt på forhånd (eierens regel), og «belop» er tomt til Monica skriver det.
   const GV = { type: '', til: '', medlemId: 0, timer: 0, belop: '', hilsen: '' };
 
@@ -82,9 +82,47 @@
       ${m.betalingUte ? `<p class="feil">${esc(m.betalingTekst || 'Ikke betalt')}</p>` : ''}
       ${typeof m.dugnadUtenGodkjenning === 'boolean' ? `<div class="bryter"><div><b>Dugnad uten godkjenning</b><br><small>Medlemmet kan stemple inn dugnad uten at den godkjennes først.</small></div>
         <button class="av" type="button" data-mlm="dugnadfri" data-id="${m.id}" aria-pressed="${m.dugnadUtenGodkjenning}" aria-label="Dugnad uten godkjenning"></button></div>` : ''}
-      <div class="valgknapper"><button class="knapp" data-mlm="gave" data-id="${m.id}">🎁 Gi gave</button>
+      <div class="valgknapper"><button class="knapp" data-mlm="endre" data-id="${m.id}">Endre</button>
+        <button class="knapp" data-mlm="gave" data-id="${m.id}">🎁 Gi gave</button>
         <button class="knapp" data-mlm="beskjeden" data-id="${m.id}" ${m.epost || m.telefon ? '' : 'disabled'}>✉ Send beskjed</button>
         <a class="knapp" href="/admin-ny#folk?person=${m.id}">Betaling og detaljer (gammel admin)</a></div>`);
+  }
+
+  /* Endre personopplysninger og medlemskap i ett skjema (eieren 12.10.2026, valgt «Ett skjema»).
+     Samme kall som gammel admin: medlemmer.php «kontakt» (navn, e-post, telefon, datoer, timer) og «bytt-plan».
+     Datoene og timetallet tømmes når feltet er tomt, så skjemaet fylles med det som står. Byttes medlemskapet,
+     kjøres «bytt-plan» sist: sluttdatoen hører til planen (engangsplan = én måned). */
+  function arkEndre(id) {
+    const m = S.medlemmer.find(x => x.id === id); if (!m) return;
+    const planer = S.planer.some(p => p.navn === m.medlemskap) || !m.medlemskap ? S.planer : [{ navn: m.medlemskap, pris: '' }, ...S.planer];
+    const felt = (navn, id2, verdi, type = 'text', ekstra = '') => `<label class="felt"><small>${navn}</small><input id="${id2}" type="${type}" value="${esc(verdi || '')}" ${ekstra}></label>`;
+    NA().apneArk(`<div class="ark-head"><h2>Endre ${esc(m.navn)}</h2><button class="lukk" data-mlm="lukk" aria-label="Lukk">×</button></div>
+      <div style="display:grid;gap:12px">
+        ${felt('Navn', 'mlm-e-navn', m.navn, 'text', 'autocomplete="off"')}
+        ${felt('E-post', 'mlm-e-epost', m.epost, 'email', 'autocomplete="off"')}
+        ${felt('Telefon', 'mlm-e-telefon', m.telefon, 'tel', 'autocomplete="off"')}
+        <label class="felt"><small>Medlemskap</small><select id="mlm-e-plan">${planer.map(p => `<option value="${esc(p.navn)}" ${p.navn === m.medlemskap ? 'selected' : ''}>${esc(p.navn)}${p.pris ? ' · ' + esc(p.pris) : ''}</option>`).join('')}</select></label>
+        ${felt('Medlem fra', 'mlm-e-fra', String(m.startDato || '').slice(0, 10), 'date')}
+        ${felt('Medlem til (tom = løper)', 'mlm-e-til', String(m.sluttDato || '').slice(0, 10), 'date')}
+        ${felt('Timer per måned (tom = følger medlemskapet)', 'mlm-e-timer', m.timerEgen ?? '', 'text', 'inputmode="numeric"')}
+        <p class="feil" id="mlm-e-feil" hidden></p>
+      </div>
+      <div class="ark-fot"><button class="knapp" data-mlm="lukk">Avbryt</button><button class="knapp hoved" data-mlm="lagreendre" data-id="${m.id}">Lagre</button></div>`);
+  }
+  async function lagreEndre(b, id) {
+    const m = S.medlemmer.find(x => x.id === id); if (!m) return;
+    const v = x => (document.getElementById(x)?.value || '').trim();
+    const feil = document.getElementById('mlm-e-feil');
+    const plan = v('mlm-e-plan');
+    b.disabled = true;
+    try {
+      const r = await kall('medlemmer.php', { handling: 'kontakt', medlemId: id, navn: v('mlm-e-navn'), epost: v('mlm-e-epost'), telefon: v('mlm-e-telefon'),
+        startDato: v('mlm-e-fra'), sluttDato: v('mlm-e-til'), timer: v('mlm-e-timer') });
+      let beskjed = r.beskjed || 'Lagret.';
+      if (plan && plan !== m.medlemskap) beskjed = (await kall('medlemmer.php', { handling: 'bytt-plan', medlemId: id, type: plan })).beskjed || beskjed;
+      NA().lukkArk(true); toast(esc(beskjed));
+      await hentMedlemmer();
+    } catch (e) { if (feil) { feil.textContent = e.message; feil.hidden = false; } b.disabled = false; }
   }
 
   async function hentGaver() {
@@ -92,7 +130,7 @@
     tegnGaver();
   }
   async function hentMedlemmer() {
-    try { S.medlemmer = (await kall('medlemmer.php')).medlemmer || []; } catch (e) { toast(esc(e.message)); }
+    try { const d = await kall('medlemmer.php'); S.medlemmer = d.medlemmer || []; S.planer = d.planer || []; } catch (e) { toast(esc(e.message)); }
     tegnListe();
   }
   /* «Må gjøres › Betaling» på mobil (eieren 09.10.2026): samme medlemsark som på PC, uten å bytte side
@@ -201,6 +239,8 @@
     const h = b.dataset.mlm, id = Number(b.dataset.id) || 0;
     if (h === 'lukk') return NA().lukkArk();
     if (h === 'medlem') return arkMedlem(id);
+    if (h === 'endre') return arkEndre(id);
+    if (h === 'lagreendre') return lagreEndre(b, id);
     if (h === 'gave') { Object.assign(GV, { type: '', timer: 0, belop: '', hilsen: '', til: id ? 'en' : '', medlemId: id }); return arkGave(); }
     if (h === 'gvtype') { lesGaveFelter(); GV.type = b.dataset.v; return arkGave(); }
     if (h === 'gvtimer') { lesGaveFelter(); GV.timer = Number(b.dataset.v); return arkGave(); }

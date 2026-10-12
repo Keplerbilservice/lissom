@@ -2891,6 +2891,10 @@ Svar::json(['lavAktivitetDager' => Aktivitet::dager(), 'medlemmer' => array_map(
     'status'     => $m['status'],
     'betalingMangler' => Medlemskap::betalingMangler($m, er_aktivt_medlem($m)),
     'startDato'  => $m['start_dato'],
+    // Skjemaet «Endre» i ny admin (eieren 12.10.2026) fyller feltene med det
+    // som står: «kontakt» tømmer en dato eller et timetall som sendes tomt.
+    'sluttDato'  => $m['slutt_dato'],
+    'timerEgen'  => $m['timer_per_mnd'] === null ? null : (int) $m['timer_per_mnd'],
     // Planen bestemmer timetallet, medlemsraden overstyrer. «timer_per_mnd»
     // alene sto tom for alle — se Medlemskap::timerFor().
     //

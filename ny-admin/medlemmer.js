@@ -20,10 +20,14 @@
   const erMedlem = m => !m.rolleAdmin && (m.status === 'aktiv' || m.status === 'prove');
   const liste = () => S.medlemmer.filter(erMedlem);
 
+  /* Status og betaling hver for seg (eieren 12.10.2026: «vil jeg også se om det er betalt eller ikke, nå står det bare aktivt»). */
   function merke(m) {
-    if (m.status === 'prove') return '<span class="merke gul">Prøveperiode</span>';
-    if (m.betalingUte) return `<span class="merke rod">${esc(m.betalingTekst || 'Ikke betalt')}</span>`;
-    return '<span class="merke gronn">Aktiv</span>';
+    const status = m.status === 'prove' ? '<span class="merke gul">Prøveperiode</span>' : '<span class="merke gronn">Aktiv</span>';
+    const betaling = m.betalingUte ? `<span class="merke rod">${esc(m.betalingTekst || 'Ikke betalt')}</span>`
+      : m.betaling === 'betalt' ? '<span class="merke gronn">Betalt</span>'
+      : m.betaling === 'fri' ? '<span class="merke">Betaler ikke</span>'
+      : m.betaling === 'fryst' ? '<span class="merke">Fryst</span>' : '';
+    return `<span class="merker">${status}${betaling}</span>`;
   }
 
   function gaveTittel(g) {

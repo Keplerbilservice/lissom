@@ -34,6 +34,11 @@ try {
       if (/Noe gikk galt|ikke bygd ennå/.test(m.tekst)) her.push(`${id}: ${m.tekst.slice(0, 120)}`);
       const forventSperre = navn === 'mobil' && ['medlemmer', 'varer', 'mer', 'semedlem', 'innstillinger'].includes(id);
       if (sperret !== forventSperre) her.push(`${id}: «Brukes på iPad eller PC» ${sperret ? 'vises' : 'mangler'} (${navn})`);
+      // Medlemmer (eieren 12.10.2026): status og betaling står hver for seg, «Aktiv» blir stående ved siden av betalingen.
+      if (id === 'medlemmer' && !sperret) {
+        const r = await p.evaluate(() => [...document.querySelectorAll('#mlm-liste .radknapp')].map(b => [...b.querySelectorAll('.merker .merke')].map(x => x.textContent)));
+        if (r.some(x => !/^(Aktiv|Prøveperiode)$/.test(x[0] || '') || x.length > 2)) her.push(`medlemmer: feil merker ${JSON.stringify(r.slice(0, 5))}`);
+      }
       if (navn === 'iPad' && m.topp > 90) her.push(`${id}: topplinja brekker på iPad (${Math.round(m.topp)} px)`);
       if (m.mobil !== (navn === 'mobil')) her.push(`${id}: mobilvisningen er ${m.mobil ? 'på' : 'av'} på ${navn}`);
       console.log(`${navn} #${id}: ${her.length > for_ ? 'FEIL' : 'ok'}`);

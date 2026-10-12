@@ -438,7 +438,7 @@ final class Oppfolging
         }
         $n = 0;
         // Migrasjon 274 kan mangle: da får fri tilgang ingen SMS, som før.
-        $friMal = DB::verdi('SELECT id FROM notification_templates WHERE navn = :n', ['n' => self::MAL_SAVNER_FRI]) !== null;
+        $friMal = DB::verdi('SELECT navn FROM notification_templates WHERE navn = :n', ['n' => self::MAL_SAVNER_FRI]) !== null;
         foreach (array_slice(self::savnerKandidater($naa), 0, 30) as $m) {
             $id = (int) $m['id'];
             $tak = Medlemskap::timerMedGaver($m);

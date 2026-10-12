@@ -278,6 +278,19 @@ switch ($jobb) {
             logg('Varselkø tømt', ['sendt' => $sendt, 'feilet' => $feilet]);
         }
         $si("Varsler: {$sendt} sendt, {$feilet} feilet.");
+
+        // Medlemsoppfoelgingen (eieren 12. oktober 2026): SMS-en til
+        // admin-mobilen kl. 09, til proevemedlemmet 3 dager foer slutt og til
+        // medlemmer som ikke kommer (hverdager 10–18). Tidene og sperrene
+        // ligger i Oppfolging; her kjoeres den hoeyst hvert tiende minutt.
+        try {
+            if (Rate::tillat('oppfolging', 1, 600, 'server')) {
+                $o = Oppfolging::kjor();
+                $si("Oppfølging: {$o['admin']} til admin, {$o['prove']} prøve, {$o['savner']} savner.");
+            }
+        } catch (Throwable $e) {
+            $si('Oppfølging feilet: ' . $e->getMessage());
+        }
         break;
 
     // -----------------------------------------------------------------------

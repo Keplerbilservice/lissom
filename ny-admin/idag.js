@@ -24,6 +24,13 @@
   let salg = [], salgTid = 0;
   let kal = new Map(); // oktId → økta fra kalender.php (i dag)
   let migr = null; // databaseoppdateringer som venter (NA.oppdateringer, api/migrer.php)
+  /* Medlemsoppfølging (eieren 12.10.2026): Prøv Lissom slutter snart og Lav aktivitet, fra oppfolging.php. */
+  let oppf = null, oppfTid = 0;
+  async function hentOppf(tving) {
+    if (!tving && Date.now() - oppfTid < 60000) return;
+    oppfTid = Date.now();
+    try { oppf = await NA.api('oppfolging.php?del=idag'); } catch { oppf = null; }
+  }
   const gjort = new Set();
   const nokkel = s => s.type + ':' + s.id;
 
@@ -74,6 +81,7 @@
     const maa = NA.maGjores(d).filter(s => s.type !== 'taut' && !gjort.has(nokkel(s)));
     const salgIgjen = salg.filter(x => !gjort.has('salg:' + x.id));
     const nMigr = migr?.mangler?.length || 0;
+    const oppfHtml = radOppf();
     const info = (d.maGjores || []).filter(s => s.type === 'pamelding' && !gjort.has(nokkel(s)) && !(s.ider || [s.id]).every(i => sett.has(i)));
     const dato = new Date().toLocaleDateString('nb-NO', {weekday: 'long', day: 'numeric', month: 'long'});
     const hurtig = NA.hurtig();
@@ -110,7 +118,7 @@
         </div>
         <section class="kort" aria-label="Må gjøres">
           <div class="kort-head"><h2>Må gjøres</h2></div>
-          ${maa.length || salgIgjen.length || nMigr ? (nMigr ? radMigr(nMigr) : '') + salgIgjen.map(radSalg).join('') + maa.map(radSak).join('') : '<p class="tom">Alt er gjort. Fint!</p>'}
+          ${maa.length || salgIgjen.length || nMigr || oppfHtml ? (nMigr ? radMigr(nMigr) : '') + salgIgjen.map(radSalg).join('') + maa.map(radSak).join('') + oppfHtml : '<p class="tom">Alt er gjort. Fint!</p>'}
           <div class="kort-head" style="margin:22px 0 4px"><h3>Til info</h3><small>Forsvinner av seg selv etter 3 dager</small></div>
           ${info.length ? info.map(s => `<div class="rad${radMaal(s) ? ` klikkrad" data-rad="${esc(nokkel(s))}" role="button" tabindex="0` : ''}"><div class="tekst"><span class="type">Ny påmelding</span><b>${esc(String(s.tittel).replace(/^Ny påmelding: /, ''))}</b><small>${esc(String(s.under).replace(/ · (Ikke betalt|Betalt)$/, ''))}</small></div>${s.betalt === true ? '<span class="merke gronn">Betalt</span>' : s.betalt === false ? '<span class="merke rod">Ikke betalt</span>' : ''}<button class="knapp liten" type="button" data-utfort="${esc(nokkel(s))}">Utført</button></div>`).join('') : '<p class="tom">Ingen nye.</p>'}
         </section>
@@ -122,6 +130,41 @@
   const knapp = (tekst, gjor, hoved, ekstra = '') => `<button class="knapp liten ${hoved ? 'hoved' : ''}" type="button" data-gjor="${gjor}" ${ekstra}>${tekst}</button>`;
   /* Databaseoppdateringer som venter (eieren 09.10.2026). Samme knapp som Innstillinger › Oppdateringer. */
   const radMigr = n => `<div class="rad"><div class="tekst"><span class="type">Vedlikehold</span><b>${n} ${n === 1 ? 'databaseoppdatering venter' : 'databaseoppdateringer venter'}</b><small>${esc(migr.mangler.join(' · '))}</small></div><div class="knapper">${knapp('Kjør oppdateringer', 'migrer', true)}</div></div>`;
+  /* Prøv Lissom slutter snart (én samlet rad + én per person) og Lav aktivitet (én per person). «Snakket med» tar saken bort. */
+  function radOppf() {
+    if (!oppf) return '';
+    const snakket = (p, sak) => `<button class="knapp liten" type="button" data-oppf="snakket" data-sak="${sak}" data-id="${Number(p.id)}" data-navn="${esc(p.navn)}">Snakket med</button>`;
+    const prove = (oppf.prove || []).filter(p => !gjort.has('prove:' + p.id));
+    const lav = (oppf.lav || []).filter(p => !gjort.has('lav:' + p.id));
+    let h = '';
+    if (prove.length) {
+      const min = Math.min(...prove.map(p => p.dagerIgjen));
+      const naar = min === 0 ? 'i dag' : min === 1 ? 'om 1 dag' : `om ${min} dager`;
+      h += `<div class="rad"><div class="tekst"><b>Prøv Lissom slutter ${naar}</b><small>${prove.length} stk · siste dag ${esc(prove[0].slutt)}</small></div><span class="merke gul">${prove.length}</span></div>`
+        + prove.map(p => `<div class="rad"><div class="tekst"><b>${esc(p.navn)}</b><small>${p.timer != null ? `${esc(p.brukt)} av ${esc(p.timer)} timer brukt` : `${esc(p.brukt)} timer brukt`}${p.telefon ? ' · ' + esc(p.telefon) : ''}</small></div>
+          <div class="knapper">${snakket(p, 'prove')}<button class="knapp liten" type="button" data-oppf="sms" data-id="${Number(p.id)}" ${p.telefon || p.epost ? '' : 'disabled'}>Send SMS</button></div></div>`).join('');
+    }
+    h += lav.map(p => `<div class="rad"><div class="tekst"><b>${esc(p.navn)}</b><small>Lav aktivitet · ${Number(p.dager)} dager</small></div><div class="knapper">${snakket(p, 'lav')}</div></div>`).join('');
+    return h;
+  }
+  function arkSnakket(b) {
+    const id = Number(b.dataset.id), sak = b.dataset.sak, navn = b.dataset.navn || '';
+    const inn = NA.apneArk(`${NA.arkHode(esc('Snakket med ' + navn))}
+      <label class="felt"><small>Notat (valgfritt)</small><textarea id="oppf-notat" maxlength="1000"></textarea></label>
+      <div class="ark-fot"><button class="knapp" type="button" data-lukk>Avbryt</button><button class="knapp hoved" type="button" data-oppflagre>Lagre</button></div>`);
+    inn.querySelector('[data-oppflagre]').onclick = async e => {
+      e.target.disabled = true;
+      try {
+        const r = await NA.api('oppfolging.php', {data: {handling: 'snakket', medlemId: id, sak, notat: inn.querySelector('#oppf-notat').value.trim()}});
+        NA.lukkArk(true); gjort.add(sak + ':' + id); NA.toast(esc(r.beskjed || 'Lagret.')); tegn(NA.sist); hentOppf(true).then(() => tegn(NA.sist));
+      } catch (err) { NA.toast(esc(err.message)); e.target.disabled = false; }
+    };
+  }
+  function smsProve(b) {
+    const p = (oppf?.prove || []).find(x => Number(x.id) === Number(b.dataset.id)); if (!p) return;
+    if (typeof NA.arkBeskjed === 'function') NA.arkBeskjed({til: 'en', navn: p.navn, epost: p.epost || '', telefon: p.telefon || ''});
+    else NA.toast('Fikk ikke åpnet beskjeden. Last siden på nytt.');
+  }
   function radSalg(x) {
     return `<div class="rad${NA.erMobil() ? '' : ' klikkrad" data-salgrad="1" role="button" tabindex="0'}"><div class="tekst"><span class="type">Medlemssalg</span><b>${esc(x.medlem)} vil selge ${esc(x.tittel)}</b><small>${esc([x.pris, x.antall ? x.antall + ' stk' : '', x.dato].filter(Boolean).join(' · '))}</small></div>
       <div class="knapper">${knapp('Avslå', 'salg-avvis', false, `data-id="${x.id}"`)}${knapp('Godkjenn', 'salg-godkjenn', true, `data-id="${x.id}"`)}</div></div>`;
@@ -178,7 +221,7 @@
   /* ── oppdatering ─────────────────────────────────────────────────────── */
   async function oppdater(tving) {
     const d = await NA.oversikt(tving);
-    const [m] = await Promise.all([NA.oppdateringer ? NA.oppdateringer() : null, hentOvn(), hentSalg(d), hentKal(d), hentBrenning()]);
+    const [m] = await Promise.all([NA.oppdateringer ? NA.oppdateringer() : null, hentOvn(), hentSalg(d), hentKal(d), hentBrenning(), hentOppf(tving)]);
     migr = m;
     tegn(d);
   }
@@ -665,6 +708,8 @@
         else if (b.dataset.startkurs) arkStartKurs(Number(b.dataset.startkurs));
         else if (b.dataset.gjor) gjor(b);
         else if (b.dataset.utfort) utfort(b);
+        else if (b.dataset.oppf === 'snakket') arkSnakket(b);
+        else if (b.dataset.oppf === 'sms') smsProve(b);
       });
       el.innerHTML = '<p class="laster">Henter …</p>';
       await oppdater();

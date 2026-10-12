@@ -323,3 +323,5 @@ dialog#ark::backdrop{background:#27110870}
 .velg-liste .rad-knapp small{font-size:14px}
 .velg-gruppe{margin:6px 0 0;font-size:13px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 .fot .gammel-admin{margin:6px 14px 0;align-self:flex-start;border-radius:999px}
+/* Medlemsoppfølging: små tallfelt i Innstillinger › Varsler (eieren 12.10.2026). */
+.oppf-tall{width:60px;min-height:36px;padding:4px 8px;border-radius:7px;border:1px solid #c6b1a0;background:var(--field);text-align:center}

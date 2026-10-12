@@ -143,6 +143,7 @@ kjor "AI-kommentarsvar" php tests/autosvar.php
 kjor "galleri"       php tests/galleri.php
 kjor "lager"         php tests/lager.php
 kjor "må gjøres: ovn, tregt, ikke innom, mandag" php tests/ma-gjores-mer.php
+kjor "medlemmer og oppfølging (sortering, Prøv Lissom, savner-SMS, snakket med)" php tests/oppfolging.php
 kjor "ny admin (/ny-admin): tilgang, PopPris, utsending, påminnelse-sperre, kursbevis, kanaler, lager" php tests/ny-admin.php
 kjor "ny admin › Varer: faner, min/maks, handleliste, medlemskolleksjon" php tests/ny-admin-varer.php
 kjor "ny admin › Send ▾ manuelt: beskjed og kursbevis (falsk SMS)" php tests/send-manuelt.php

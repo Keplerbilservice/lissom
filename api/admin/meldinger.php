@@ -36,7 +36,8 @@ function kanalerMulig(string $navn): array
     // person) sender den bare med e-post, og okt-varsel.php gjoer det samme.
     // Tilbys SMS, kunne malen staa paa «bare SMS» og aldri naa den som ble
     // flyttet enkeltvis (Codex 9. oktober 2026).
-    $bareSms = ['foresporsel_svar_sms', 'kassekvittering_sms', 'kursbevis_sms', 'soknad_godkjent_sms', 'intern_nytt_medlem_sms'];
+    $bareSms = ['foresporsel_svar_sms', 'kassekvittering_sms', 'kursbevis_sms', 'soknad_godkjent_sms', 'intern_nytt_medlem_sms',
+                'intern_prove_slutter_sms', 'prove_slutter_sms', 'medlem_savner_deg_sms'];
     if (in_array($navn, $bareSms, true)) {
         return ['sms'];
     }
@@ -70,6 +71,9 @@ if (Foresporsel::metode() === 'GET') {
         'anmeldelse'      => 'Neste dag kl. 10',
         'kursbevis_sms'   => 'Neste dag kl. 10, sammen med anmeldelsen',
         'fortsett'        => $fortsett . ' dager etter kurset, om morgenen',
+        'intern_prove_slutter_sms' => Oppfolging::proveDager() . ' dager før Prøv Lissom slutter, kl. 09',
+        'prove_slutter_sms'        => '3 dager før Prøv Lissom slutter, kl. 10–18',
+        'medlem_savner_deg_sms'    => 'Etter ' . Oppfolging::savnerDager() . ' dager uten innstempling, hverdager kl. 10–18',
     ];
 
     $kanaler = [];

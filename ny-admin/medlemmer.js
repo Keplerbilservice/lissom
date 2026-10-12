@@ -12,7 +12,79 @@
   const toast = h => NA().toast(h);
   const registrer = (id, opp) => { const f = NA().registrerSide; if (typeof f === 'function') f(id, opp); else document.addEventListener('DOMContentLoaded', () => registrer(id, opp), { once: true }); };
 
-  const S = { medlemmer: [], gaver: [], sok: '', el: null, tikk: 0, opptatt: false, person: 0, planer: [] };
+  const S = { medlemmer: [], gaver: [], sok: '', el: null, tikk: 0, opptatt: false, person: 0, planer: [], sortering: '', typeFilter: '', ble: null, oppf: null };
+
+  /* ── Sortering, type og «sist innom» (eieren 12.10.2026, visningen «Medlemmer og oppfølging») ──
+     Medlemskapene og rekkefølgen kommer fra membership_plans (planer, sortert på «sortering»). */
+  const SORTER = [['lengst', 'Medlem lengst'], ['kortest', 'Nyeste medlem'], ['type', 'Type medlemskap'], ['navn', 'Navn A–Å'], ['sist', 'Lengst siden innom']];
+  const sorteringNokkel = () => 'lissom-nyadmin-medlemmer-sortering-' + (NA().meg?.id || '');
+  const lesSortering = () => { try { const v = localStorage.getItem(sorteringNokkel()); return SORTER.some(x => x[0] === v) ? v : 'lengst'; } catch { return 'lengst'; } };
+  const husk = v => { try { localStorage.setItem(sorteringNokkel(), v); } catch {} };
+  const idag = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
+  const somDato = iso => { const [y, m, d] = String(iso || '').slice(0, 10).split('-').map(Number); return y ? new Date(y, m - 1, d) : null; };
+  function varighet(fra) {
+    const d = somDato(fra), I = idag(); if (!d) return '';
+    let mnd = (I.getFullYear() - d.getFullYear()) * 12 + I.getMonth() - d.getMonth();
+    if (I.getDate() < d.getDate()) mnd--;
+    if (mnd < 1) { const dager = Math.max(0, Math.round((I - d) / 864e5)); return dager + (dager === 1 ? ' dag' : ' dager'); }
+    const aar = Math.floor(mnd / 12), rest = mnd % 12;
+    return [aar ? aar + ' år' : '', rest ? rest + ' mnd' : ''].filter(Boolean).join(' ');
+  }
+  const maanedAar = fra => { const d = somDato(fra); return d ? d.toLocaleDateString('nb-NO', { month: 'short', year: 'numeric' }) : ''; };
+  const planIndeks = navn => { const i = S.planer.findIndex(p => p.navn === navn); return i < 0 ? 999 : i; };
+  // Prøveplanen gul, det minste løpende medlemskapet nøytralt, de andre grønne (som i visningen).
+  function typeKlasse(navn) {
+    const p = S.planer.find(x => x.navn === navn); if (!p) return '';
+    if (p.engangs) return 'gul';
+    return S.planer.filter(x => !x.engangs)[0]?.navn === navn ? '' : 'gronn';
+  }
+  // Dager siden innom; aldri innom = dager siden medlemskapet startet.
+  const dagerBorte = m => m.dagerSidenSist ?? (somDato(m.medlemFra) ? Math.max(0, Math.round((idag() - somDato(m.medlemFra)) / 864e5)) : 0);
+  /* «Sist innom» (eieren 12.10.2026): bare etter mer enn 7 dager. 8–13 nøytral, 14–21 gul, over 21 rød. */
+  function sistMerke(m) {
+    const d = dagerBorte(m); if (d <= 7) return '';
+    const k = d > 21 ? 'rod' : d >= 14 ? 'gul' : '';
+    return `<span class="merke ${k}">${m.dagerSidenSist == null ? 'Aldri innom' : d + ' d siden'}</span>`;
+  }
+  // «Aktiv»/«Prøveperiode» står først som før (vedtaket medlemmer-betalt-merke), så medlemskapet, «sist innom» og betalingen.
+  const statusMerke = m => m.status === 'prove' ? '<span class="merke gul">Prøveperiode</span>' : '<span class="merke gronn">Aktiv</span>';
+  function betalingMerke(m) {
+    return m.betalingUte ? `<span class="merke rod">${esc(m.betalingTekst || 'Ikke betalt')}</span>`
+      : m.betaling === 'betalt' ? '<span class="merke gronn">Betalt</span>'
+      : m.betaling === 'fri' ? '<span class="merke">Betaler ikke</span>'
+      : m.betaling === 'fryst' ? '<span class="merke">Fryst</span>' : '';
+  }
+  function sorter(L) {
+    const fra = m => String(m.medlemFra || '9999');
+    const f = {
+      lengst: (a, b) => fra(a).localeCompare(fra(b)),
+      kortest: (a, b) => fra(b).localeCompare(fra(a)),
+      type: (a, b) => planIndeks(a.medlemskap) - planIndeks(b.medlemskap) || fra(a).localeCompare(fra(b)),
+      navn: (a, b) => String(a.navn).localeCompare(String(b.navn), 'nb'),
+      sist: (a, b) => dagerBorte(b) - dagerBorte(a),
+    }[S.sortering] || (() => 0);
+    return [...L].sort((a, b) => f(a, b) || String(a.navn).localeCompare(String(b.navn), 'nb'));
+  }
+  function tegnVelger() {
+    const boks = document.getElementById('mlm-velger'); if (!boks) return;
+    const alle = liste();
+    const typer = S.planer.map(p => p.navn).filter(n => alle.some(m => m.medlemskap === n));
+    const piller = [['', `Alle (${alle.length})`], ...typer.map(n => [n, `${n} (${alle.filter(m => m.medlemskap === n).length})`])];
+    boks.innerHTML = `<label style="display:grid;gap:5px;max-width:280px"><small>Sorter etter</small><select id="mlm-sorter" style="padding:11px;border-radius:9px;border:1px solid #c6b1a0;background:var(--field);font:inherit;min-height:44px">${SORTER.map(([v, t]) => `<option value="${v}" ${S.sortering === v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
+      <div class="faner" style="margin:12px 0 4px">${piller.map(([v, t]) => `<button type="button" data-mlm="typefilter" data-v="${esc(v)}" aria-pressed="${S.typeFilter === v}">${esc(t)}</button>`).join('')}</div>`;
+  }
+  function tegnBle() {
+    const boks = document.getElementById('mlm-ble'); if (!boks) return;
+    const b = S.ble;
+    if (!b || !b.av) { boks.hidden = true; return; }
+    const pil = b.forrige == null || b.forrige === b.prosent ? '' : b.prosent > b.forrige ? `<span class="merke gronn">↑ fra ${b.forrige} %</span>` : `<span class="merke gul">↓ fra ${b.forrige} %</span>`;
+    boks.hidden = false;
+    boks.innerHTML = `<div class="rad"><div class="tekst"><b>${b.ble} av ${b.av} ble medlem</b><small>Prøv Lissom siste 3 måneder · ${b.prosent} %</small></div>${pil}</div>`;
+  }
+  async function hentBle() {
+    try { S.ble = (await kall('oppfolging.php')).ble || null; } catch { S.ble = null; }
+    tegnBle();
+  }
   // Gaveskjemaet. Ingenting er valgt på forhånd (eierens regel), og «belop» er tomt til Monica skriver det.
   const GV = { type: '', til: '', medlemId: 0, timer: 0, belop: '', hilsen: '' };
 
@@ -49,13 +121,17 @@
   function tegnListe() {
     const boks = document.getElementById('mlm-liste');
     if (!boks) return;
+    if (!document.getElementById('mlm-rader')) boks.innerHTML = '<div id="mlm-velger"></div><div id="mlm-rader"></div>';
     const q = S.sok.trim().toLowerCase();
-    const L = liste().filter(m => !q || [m.navn, m.epost, m.telefon, m.medlemskap].some(v => String(v || '').toLowerCase().includes(q)));
+    const L = sorter(liste().filter(m => (!S.typeFilter || m.medlemskap === S.typeFilter)
+      && (!q || [m.navn, m.epost, m.telefon, m.medlemskap].some(v => String(v || '').toLowerCase().includes(q)))));
+    tegnVelger();
     // Hele raden er trykkbar og åpner medlemmet (gave, beskjed, betaling).
-    boks.innerHTML = L.length ? L.map(m => `<button type="button" class="rad radknapp ${m.id === S.person ? 'markert' : ''}" data-mlm="medlem" data-id="${m.id}"><span class="tekst"><b>${esc(m.navn)}</b>
-        <small>${esc(m.medlemskap || '')}${m.timerIgjen ? ` · ${esc(m.timerIgjen)} igjen denne måneden` : ''}${m.erInne ? ' · i verkstedet nå' : ''}</small></span>
-        ${merke(m)}</button>`).join('')
+    const rader = L.length ? L.map(m => `<button type="button" class="rad radknapp ${m.id === S.person ? 'markert' : ''}" data-mlm="medlem" data-id="${m.id}"><span class="tekst"><b>${esc(m.navn)}</b>
+        <small>${m.medlemFra ? `Medlem i ${esc(varighet(m.medlemFra))} · siden ${esc(maanedAar(m.medlemFra))}` : ''}${m.timerIgjen ? ` · ${esc(m.timerIgjen)} igjen denne måneden` : ''}${m.erInne ? ' · i verkstedet nå' : ''}</small></span>
+        <span class="merker">${statusMerke(m)}${m.medlemskap ? `<span class="merke ${typeKlasse(m.medlemskap)}">${esc(m.medlemskap)}</span>` : ''}${sistMerke(m)}${betalingMerke(m)}</span></button>`).join('')
       : '<p class="muted">Ingen treff.</p>';
+    const r = document.getElementById('mlm-rader'); if (r) r.innerHTML = rader;
     const n = liste().length;
     const ey = document.getElementById('mlm-antall'); if (ey) ey.textContent = `${n} medlemmer`;
   }
@@ -82,10 +158,29 @@
       ${m.betalingUte ? `<p class="feil">${esc(m.betalingTekst || 'Ikke betalt')}</p>` : ''}
       ${typeof m.dugnadUtenGodkjenning === 'boolean' ? `<div class="bryter"><div><b>Dugnad uten godkjenning</b><br><small>Medlemmet kan stemple inn dugnad uten at den godkjennes først.</small></div>
         <button class="av" type="button" data-mlm="dugnadfri" data-id="${m.id}" aria-pressed="${m.dugnadUtenGodkjenning}" aria-label="Dugnad uten godkjenning"></button></div>` : ''}
+      <div id="mlm-oppf" data-id="${m.id}"></div>
       <div class="valgknapper"><button class="knapp" data-mlm="endre" data-id="${m.id}">Endre</button>
         <button class="knapp" data-mlm="gave" data-id="${m.id}">🎁 Gi gave</button>
         <button class="knapp" data-mlm="beskjeden" data-id="${m.id}" ${m.epost || m.telefon ? '' : 'disabled'}>✉ Send beskjed</button>
         <a class="knapp" href="/admin-ny#folk?person=${m.id}">Betaling og detaljer (gammel admin)</a></div>`);
+    hentOppf(m);
+  }
+  /* Medlemskortet: påminnelse-SMS per medlem og notatene fra «Snakket med» (eieren 12.10.2026). */
+  async function hentOppf(m) {
+    let d; try { d = await kall('oppfolging.php?medlem=' + m.id); } catch { return; }
+    const boks = document.getElementById('mlm-oppf'); if (!boks || Number(boks.dataset.id) !== m.id) return;
+    S.oppf = d;
+    tegnOppf(m);
+  }
+  function tegnOppf(m) {
+    const boks = document.getElementById('mlm-oppf'); const d = S.oppf; if (!boks || !d) return;
+    const fornavn = String(m.navn || '').split(' ')[0];
+    const p = d.paaminnelse || {};
+    const status = m.paaminnelseSms ? 'På' + (p.antall ? ` · sendt ${p.antall} gang${p.antall === 1 ? '' : 'er'}${p.sist ? ` (${esc(p.sist)})` : ''}` : '')
+      : `Av · ${esc(fornavn)} får ingen påminnelse-SMS`;
+    boks.innerHTML = (typeof m.paaminnelseSms === 'boolean' ? `<div class="bryter"><div><b>Påminnelse-SMS når hen ikke kommer</b><br><small>${status}</small></div>
+        <button class="av" type="button" data-mlm="paaminnelse" data-id="${m.id}" aria-pressed="${m.paaminnelseSms}" aria-label="Påminnelse-SMS for ${esc(m.navn)}"></button></div>` : '')
+      + (d.notater || []).map(n => `<div class="rad"><div class="tekst"><b>Notat</b><small>${n.notat ? `«${esc(n.notat)}»` : 'Snakket med'} – ${esc(n.av || 'admin')} ${esc(n.dato)}</small></div></div>`).join('');
   }
 
   /* Endre personopplysninger og medlemskap i ett skjema (eieren 12.10.2026, valgt «Ett skjema»).
@@ -141,13 +236,15 @@
     S.el = el;
     S.person = Number(params?.get?.('person')) || 0;
     S.sok = '';
+    S.sortering = lesSortering();
     el.innerHTML = `<div class="head"><div><div class="eyebrow" id="mlm-antall">Henter …</div><h1>Medlemmer</h1></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="knapp" data-mlm="gave">🎁 Gi gave</button>
       <button class="knapp hoved" data-mlm="beskjed" id="mlm-beskjedknapp">✉ Send beskjed</button></div></div>
       <section class="kort" style="margin-bottom:20px"><div class="kort-head"><h2>Gaver som gjelder nå</h2><small>Medlemmene ser dem på Min side</small></div>
       <div id="mlm-gaver"><p class="muted">Henter …</p></div></section>
+      <section class="kort" id="mlm-ble" style="margin-bottom:20px" hidden></section>
       <section class="kort" id="mlm-liste"><p class="muted">Henter …</p></section>`;
-    await Promise.all([hentGaver(), hentMedlemmer()]);
+    await Promise.all([hentGaver(), hentMedlemmer(), hentBle()]);
     visPerson();
     // Fortløpende: gavene hvert 15. sekund, den tunge medlemslista hvert minutt.
     const hh = NA().hentHvert;
@@ -262,11 +359,24 @@
       catch (err) { toast(esc(err.message)); } finally { S.opptatt = false; b.disabled = false; }
       return;
     }
+    if (h === 'typefilter') { S.typeFilter = b.dataset.v || ''; return tegnListe(); }
+    // Påminnelse-SMS per medlem (migrasjon 273): lagres med en gang.
+    if (h === 'paaminnelse') {
+      const m = S.medlemmer.find(x => x.id === id); if (!m || S.opptatt) return;
+      const paa = b.getAttribute('aria-pressed') !== 'true';
+      S.opptatt = true; b.disabled = true;
+      try { await kall('oppfolging.php', { handling: 'paaminnelse', medlemId: id, paa: paa ? 'ja' : 'nei' }); m.paaminnelseSms = paa; tegnOppf(m); }
+      catch (err) { toast(esc(err.message)); } finally { S.opptatt = false; b.disabled = false; }
+      return;
+    }
     if (h === 'beskjed') return beskjed({ til: 'medlemmer' });
     if (h === 'beskjeden') { const m = S.medlemmer.find(x => x.id === id); if (m) beskjed({ til: 'en', navn: m.navn, epost: m.epost || '', telefon: m.telefon || '' }); }
   });
   document.addEventListener('input', e => { if (e.target.id === 'mlm-gv-belop' || e.target.id === 'mlm-gv-hilsen') { oppdaterForh(); sjekkGave(); } });
-  document.addEventListener('change', e => { if (e.target.id === 'mlm-gv-medlem') sjekkGave(); });
+  document.addEventListener('change', e => {
+    if (e.target.id === 'mlm-gv-medlem') sjekkGave();
+    if (e.target.id === 'mlm-sorter') { S.sortering = e.target.value; husk(S.sortering); tegnListe(); }
+  });
 
   registrer('medlemmer', { tittel: 'Medlemmer', ikon: '☺', tegn, mobil: false, sok: q => { S.sok = q; tegnListe(); } });
 })();

@@ -8812,6 +8812,53 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "medlemmer-oppfolging",
+            "dato": "2026-10-12",
+            "hva": "Eieren 12.10.2026, «ja, fint» til visningen «Medlemmer og oppfølging» (alle sju arkene), med endring i «Sist innom»: merket vises bare etter mer enn 7 dager (8–13 nøytral, 14–21 gul, over 21 rød). Medlemmer i ny admin: sorteringsvelger (medlem lengst, nyeste, type i rekkefølgen fra membership_plans, navn A–Å, lengst siden innom; huskes per bruker), filterpiller per medlemskap med antall, medlemskapet som merke og «Medlem i X · siden mån. år», og «X av Y ble medlem» for Prøv Lissom siste 3 måneder. Prøv Lissom slutter snart: samlet SMS til admin-mobilen (Innstillinger › Varsler, antall dager før, standard 5) kl. 09 og sak i Må gjøres med timer brukt, telefon, Send SMS og Snakket med. SMS til medlemmer som ikke kommer (standard 21 dager, hverdager 10–18, én per fravær, aldri samme dag som en annen SMS, ikke prøve/frys/pause, bryter per medlem; global bryter AV fra start). SMS til prøvemedlemmet 3 dager før slutt (AV fra start). «Snakket med» med notat på medlemskortet. Tekstene ordrett i migrasjon 273.",
+            "hvor": "Ny admin · Medlemmer, I dag › Må gjøres, Innstillinger › Varsler; cron «varsler»",
+            "kode": [
+                {
+                    "fil": "ny-admin/medlemmer.js",
+                    "finnes": [
+                        "['lengst', 'Medlem lengst'], ['kortest', 'Nyeste medlem'], ['type', 'Type medlemskap'], ['navn', 'Navn A–Å'], ['sist', 'Lengst siden innom']",
+                        "const d = dagerBorte(m); if (d <= 7) return '';",
+                        "const k = d > 21 ? 'rod' : d >= 14 ? 'gul' : '';",
+                        "Påminnelse-SMS når hen ikke kommer"
+                    ]
+                },
+                {
+                    "fil": "ny-admin/idag.js",
+                    "finnes": [
+                        "Prøv Lissom slutter ${naar}",
+                        ">Snakket med</button>"
+                    ]
+                },
+                {
+                    "fil": "ny-admin/innstillinger.js",
+                    "finnes": [
+                        "'SMS når Prøv Lissom snart slutter'",
+                        "'SMS til medlemmer som ikke kommer'"
+                    ]
+                },
+                {
+                    "fil": "app/lib/oppfolging.php",
+                    "finnes": [
+                        "public const STD_PROVE_DAGER = 5;",
+                        "public const STD_SAVNER_DAGER = 21;",
+                        "if ($ukedag > 5 || $time < 10 || $time >= 18 || !self::malPaa(self::MAL_SAVNER) || !Varsel::smsMulig()) {"
+                    ]
+                },
+                {
+                    "fil": "db/migrations/273_medlemsoppfolging.sql",
+                    "finnes": [
+                        "'Prøv Lissom slutter {dato} for {antall} stk: {liste}. Se I dag i admin.', 1, 'system'",
+                        "'Hei {navn}! Prøv Lissom varer til {dag} {dato}. Vil du fortsette, velger du medlemskap her: lissom.no/min-side Hilsen Monica', 0, 'system'",
+                        "'Hei {navn}! Vi savner deg i verkstedet 🙂 Du har {timer} igjen denne måneden. Velkommen innom når det passer. Hilsen Monica, Lissom', 0, 'system'"
+                    ]
+                }
+            ]
         }
     ]
 }

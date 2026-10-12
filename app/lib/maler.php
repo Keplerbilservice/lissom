@@ -514,6 +514,33 @@ final class Maler
                 'referanse' => 'Vipps-referansen, som søkes opp i Kasse › Betalinger',
             ],
         ],
+        // Medlemsoppfoelgingen (eieren 12. oktober 2026, migrasjon 273).
+        'intern_prove_slutter_sms' => [
+            'tittel' => 'Til deg: Prøv Lissom slutter snart (SMS)',
+            'hvor'   => 'Sendes som én SMS kl. 09 til mobilnummeret under Varsler, når Prøv Lissom slutter om noen dager.',
+            'felter' => [
+                'dato'   => 'Siste dag, f.eks. 31.10',
+                'antall' => 'Hvor mange som slutter',
+                'liste'  => 'Navn og telefon, med komma mellom',
+            ],
+        ],
+        'prove_slutter_sms' => [
+            'tittel' => 'Prøv Lissom slutter snart (SMS til medlemmet)',
+            'hvor'   => 'Sendes til prøvemedlemmet 3 dager før Prøv Lissom slutter, kl. 10–18.',
+            'felter' => [
+                'navn' => 'Fornavnet til medlemmet',
+                'dag'  => 'Ukedagen siste dag, f.eks. fredag',
+                'dato' => 'Siste dag, f.eks. 31.10',
+            ],
+        ],
+        'medlem_savner_deg_sms' => [
+            'tittel' => 'Vi savner deg (SMS til medlemmet)',
+            'hvor'   => 'Sendes én gang når et medlem ikke har stemplet inn på en stund, hverdager kl. 10–18. Ny først etter at hen har vært innom igjen.',
+            'felter' => [
+                'navn'  => 'Fornavnet til medlemmet',
+                'timer' => 'Timer igjen denne måneden, f.eks. 9 timer',
+            ],
+        ],
         'intern_lav_aktivitet' => [
             'tittel' => 'Til deg: lav aktivitet',
             'hvor'   => 'Sendes til verkstedet én gang i døgnet når nye medlemmer ikke har vært innom på en stund.',

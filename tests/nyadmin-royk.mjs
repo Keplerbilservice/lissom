@@ -47,9 +47,10 @@ try {
         } else console.log('idag: ingen trykkbare rader i testdataene');
       }
       // Medlemmer (eieren 12.10.2026): status og betaling står hver for seg, «Aktiv» blir stående ved siden av betalingen.
+      // Medlemsoppfølgingen (12.10.2026) legger til medlemskapet og «sist innom»: høyst fire merker, status først.
       if (id === 'medlemmer' && !sperret) {
         const r = await p.evaluate(() => [...document.querySelectorAll('#mlm-liste .radknapp')].map(b => [...b.querySelectorAll('.merker .merke')].map(x => x.textContent)));
-        if (r.some(x => !/^(Aktiv|Prøveperiode)$/.test(x[0] || '') || x.length > 2)) her.push(`medlemmer: feil merker ${JSON.stringify(r.slice(0, 5))}`);
+        if (r.some(x => !/^(Aktiv|Prøveperiode)$/.test(x[0] || '') || x.length > 4)) her.push(`medlemmer: feil merker ${JSON.stringify(r.slice(0, 5))}`);
       }
       if (navn === 'iPad' && m.topp > 90) her.push(`${id}: topplinja brekker på iPad (${Math.round(m.topp)} px)`);
       if (m.mobil !== (navn === 'mobil')) her.push(`${id}: mobilvisningen er ${m.mobil ? 'på' : 'av'} på ${navn}`);

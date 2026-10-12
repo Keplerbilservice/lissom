@@ -2659,6 +2659,8 @@ $betalerKol = DB::harKolonne('members', 'betaler_ikke')
 $betalerKol .= DB::harKolonne('members', 'ser_dugnad') ? ', ser_dugnad' : ', 0 AS ser_dugnad';
 // «Dugnad uten godkjenning» (migrasjon 272). NULL = ikke kjoert, bryteren skjules.
 $betalerKol .= DB::harKolonne('members', 'dugnad_uten_godkjenning') ? ', dugnad_uten_godkjenning' : ', NULL AS dugnad_uten_godkjenning';
+// «Påminnelse-SMS når hen ikke kommer» (migrasjon 273). NULL = ikke kjoert, bryteren skjules.
+$betalerKol .= DB::harKolonne('members', 'paaminnelse_sms') ? ', paaminnelse_sms' : ', NULL AS paaminnelse_sms';
 
 $medlemmer = DB::alle(
     "SELECT id, navn, epost, telefon, rolle, medlemskap_type, status,
@@ -2935,6 +2937,9 @@ Svar::json(['lavAktivitetDager' => Aktivitet::dager(), 'medlemmer' => array_map(
     'betalerIkke'     => !empty($m['betaler_ikke']),
     'serDugnad'       => !empty($m['ser_dugnad']),
     'dugnadUtenGodkjenning' => ($m['dugnad_uten_godkjenning'] ?? null) === null ? null : !empty($m['dugnad_uten_godkjenning']),
+    // Medlemsoppfoelgingen (eieren 12.10.2026): bryteren per medlem og «Medlem i X · siden mån. år».
+    'paaminnelseSms' => ($m['paaminnelse_sms'] ?? null) === null ? null : !empty($m['paaminnelse_sms']),
+    'medlemFra'   => (string) ($m['start_dato'] ?: substr((string) ($m['created_at'] ?? ''), 0, 10)),
     'betalerIkkeGrunn'=> (string) ($m['betaler_ikke_grunn'] ?? ''),
     'sisteBetaling'   => isset($sisteBetaling[(int) $m['id']])
         ? $dato(substr((string) $sisteBetaling[(int) $m['id']]['created_at'], 0, 10)) : null,

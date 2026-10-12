@@ -62,7 +62,28 @@
     Meldinger: [['Tekstmaler med e-postoppsett', '/admin-ny#maler']],
   };
 
-  const S = { fane: 'Meldinger', el: null, maler: null, telling: null, innhold: null, medl: null, fraktOre: null, opptatt: false, ark: null };
+  const S = { fane: 'Meldinger', el: null, maler: null, telling: null, innhold: null, medl: null, fraktOre: null, opptatt: false, ark: null, oppf: null };
+
+  /* Medlemsoppfølging (eieren 12.10.2026, visningen «Medlemmer og oppfølging»). Malens av/på er bryteren;
+     dagene og mobilnummeret lagres i oppfolging.php. Malene står her, ikke i listene under (én bryter ett sted). */
+  const OPPF = [
+    ['intern_prove_slutter_sms', 'SMS når Prøv Lissom snart slutter', o => `Antall dager før: <input class="oppf-tall" data-oppf-felt="proveDager" inputmode="numeric" value="${esc(o.proveDager)}" aria-label="Antall dager før"> · kl. 09 til mobilnummeret over`],
+    ['prove_slutter_sms', 'SMS til prøvemedlemmet selv', () => '3 dager før slutt, med lenke til Min side'],
+    ['medlem_savner_deg_sms', 'SMS til medlemmer som ikke kommer', o => `Etter <input class="oppf-tall" data-oppf-felt="savnerDager" inputmode="numeric" value="${esc(o.savnerDager)}" aria-label="Dager uten innstempling"> dager uten innstempling · hverdager kl. 10–18`],
+    ['intern_lav_aktivitet', 'Lav aktivitet til meg', o => `Etter <input class="oppf-tall" data-oppf-felt="lavDager" inputmode="numeric" value="${esc(o.lavDager)}" aria-label="Dager før lav aktivitet"> dager`],
+  ];
+  const OPPF_MALER = OPPF.map(x => x[0]);
+  function oppfKort() {
+    const o = S.oppf; if (!o || !S.maler) return '';
+    const rader = OPPF.map(([navn, tittel, under]) => {
+      const m = S.maler.find(x => x.navn === navn); if (!m) return '';
+      return `<div class="bryter"><div><b>${esc(tittel)}</b><br><small>${under(o)}</small></div>
+        <div style="display:flex;gap:10px;align-items:center"><button class="knapp liten" data-inn-tekst="${esc(navn)}">Tekst</button>${bryterKnapp('data-inn-malpaa', navn, tittel, m.aktiv)}</div></div>`;
+    }).join('');
+    return `<section class="kort" style="margin-bottom:16px"><div class="kort-head"><h2>Medlemsoppfølging</h2></div>
+      <label style="display:grid;gap:5px;max-width:320px;margin-bottom:6px"><small>Mobilnummer for SMS til deg</small><input data-oppf-felt="adminMobil" type="tel" autocomplete="off" value="${esc(o.adminMobil)}" style="padding:11px;border-radius:9px;border:1px solid #c6b1a0;background:var(--field);font:inherit;min-height:44px"></label>
+      ${rader}</section>`;
+  }
 
   const bryterKnapp = (attr, verdi, navn, paa, av = false) => `<button class="av" ${attr}="${esc(verdi)}" aria-pressed="${paa}" aria-label="${esc(navn)}" ${av ? 'disabled' : ''}></button>`;
   const flaggPaa = (k, std) => { const v = (S.innhold || {})[k]; return v === undefined ? std : (std ? v !== 'nei' : v === 'ja'); };
@@ -97,13 +118,13 @@
 
   function fanMeldinger(intern) {
     if (!S.maler) return '<p class="muted">Henter …</p>';
-    const M = S.maler.filter(m => m.navn.startsWith('intern_') === intern);
+    const M = S.maler.filter(m => m.navn.startsWith('intern_') === intern && !OPPF_MALER.includes(m.navn));
     const sum = (S.telling && S.telling.sum) || { sms: 0, epost: 0 };
     const topp = intern ? '' : `<div class="grid" style="margin-bottom:20px">
         <div class="kort"><div class="type">SMS siste 30 dager</div><div class="ovnstatus" style="font-size:34px">${sum.sms}</div><small>${S.telling?.smsMulig ? 'Sendt via Sveve' : 'SMS er ikke satt opp'}</small></div>
         <div class="kort"><div class="type">E-post siste 30 dager</div><div class="ovnstatus" style="font-size:34px">${sum.epost}</div><small>Alle maler samlet</small></div></div>`;
     const grupper = intern ? [['', M]] : Object.entries(M.reduce((a, m) => ((a[m.gruppe] = a[m.gruppe] || []).push(m), a), {}));
-    return topp + grupper.map(([g, liste]) => `<section class="kort" style="margin-bottom:16px">
+    return topp + (intern ? oppfKort() : '') + grupper.map(([g, liste]) => `<section class="kort" style="margin-bottom:16px">
         <div class="kort-head"><h2>${intern ? 'Varsler til verkstedet' : esc(GRUPPE[g] || g)}</h2></div><p class="muted" style="margin:-6px 0 8px;font-size:15px">Trykk for å slå SMS eller e-post av og på.</p>
         <div class="meld-tabell">${malRader(liste)}</div></section>`).join('')
       + manglerBoks(intern ? 'Varsler' : 'Meldinger');
@@ -174,6 +195,7 @@
       jobber.push(kall('maler.php').then(d => { S.maler = d.maler || []; }));
       jobber.push(kall('meldinger.php').then(d => { S.telling = d; }).catch(() => { S.telling = null; }));
     }
+    if (S.fane === 'Varsler' && !S.oppf) jobber.push(kall('oppfolging.php?del=idag').then(d => { S.oppf = d.innstillinger || null; }).catch(() => { S.oppf = null; }));
     if (['Kurs', 'Medlemskap', 'Betaling', 'Brytere'].includes(S.fane)) jobber.push(kall('innhold.php').then(d => { S.innhold = d.innhold || {}; }));
     if ((S.fane === 'Medlemskap' || S.fane === 'Priser') && !S.medl) jobber.push(kall('medlemmer.php').then(d => { S.medl = { planer: d.planer || [], timepakke: d.timepakke || {} }; }));
     if (S.fane === 'Oppdateringer') jobber.push(NA().oppdateringer(true).then(d => { S.migr = d ? d.mangler : null; }));
@@ -260,6 +282,16 @@
     } catch (err) { toast(esc(err.message)); } finally { S.opptatt = false; b.disabled = false; }
   });
   document.addEventListener('close', e => { if (e.target.tagName === 'DIALOG') S.ark = null; }, true);
+  // Dagene og mobilnummeret lagres når feltet forlates.
+  document.addEventListener('change', async e => {
+    const f = e.target.closest?.('[data-oppf-felt]'); if (!f || !S.oppf) return;
+    const felt = f.dataset.oppfFelt, verdi = f.value.trim();
+    if (felt !== 'adminMobil' && !/^\d+$/.test(verdi)) { toast('Skriv antall dager som et tall.'); f.value = S.oppf[felt]; return; }
+    try {
+      const d = await kall('oppfolging.php', { handling: 'innstillinger', [felt]: felt === 'adminMobil' ? verdi : Number(verdi) });
+      S.oppf = d.innstillinger || S.oppf; f.value = S.oppf[felt]; toast(esc(d.beskjed || 'Lagret.'));
+    } catch (err) { toast(esc(err.message)); f.value = S.oppf[felt]; }
+  });
 
   registrer('innstillinger', { tittel: 'Innstillinger', ikon: '⚙', tegn, mobil: false });
 })();

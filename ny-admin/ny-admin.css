@@ -260,6 +260,9 @@ dialog#ark::backdrop{background:#27110870}
 .kanal:disabled{cursor:default;color:var(--muted);background:var(--ground)}
 .radknapp{width:100%;border:0;border-bottom:1px solid var(--line);background:none;text-align:left;cursor:pointer;font:inherit;color:inherit;min-height:44px}
 .radknapp:hover{background:var(--ground)}
+.klikkrad{cursor:pointer;border-radius:10px}
+.klikkrad:hover{background:var(--ground)}
+.klikkrad:focus-visible{outline:2px solid var(--ink,currentColor);outline-offset:2px}
 .rad.markert{background:var(--yellow-soft);border-radius:10px;padding-left:10px;padding-right:10px}
 .ant.stor{display:flex;align-items:center;gap:12px}
 /* Uttak leire: samme rad som leira på Min side (.lx-leirerad, eieren 09.10.2026): bilde 52 px, navn, pris, − antall +. */

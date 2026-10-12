@@ -364,7 +364,7 @@ try {
 
 // --- Siste paameldinger ---------------------------------------------------
 $nyeste = DB::alle(
-    "SELECT b.id, b.antall, b.status, b.belop_ore, b.created_at,
+    "SELECT b.id, b.antall, b.status, b.belop_ore, b.created_at, b.course_session_id,
             COALESCE(m.navn, b.gjest_navn) AS navn,
             COALESCE(m.epost, b.gjest_epost) AS epost,
             c.tittel, cs.start_tid, p.vipps_reference
@@ -924,12 +924,14 @@ $maGjores = (static function () use ($medlemsstatus, $nyeste): array {
             return;
         }
         foreach (DB::alle(
-            "SELECT f.id, f.fra_dato, f.til_dato, m.navn FROM medlem_frys f JOIN members m ON m.id = f.member_id
+            "SELECT f.id, f.member_id, f.fra_dato, f.til_dato, m.navn FROM medlem_frys f JOIN members m ON m.id = f.member_id
               WHERE f.status = 'sokt' ORDER BY f.id DESC LIMIT 20"
         ) as $r) {
+            // medlemId: raden i ny admin åpner medlemmet (eieren 12.10.2026, «alle steder klikkbart»).
             $sak('Medlemmer', 'frys', (int) $r['id'], 'Ønsker å fryse medlemskapet',
                 (string) $r['navn'] . ', ' . Booking::norskDatoKort((string) $r['fra_dato'])
-                . '–' . Booking::norskDatoKort((string) $r['til_dato']), 'frys');
+                . '–' . Booking::norskDatoKort((string) $r['til_dato']), 'frys',
+                ['medlemId' => (int) $r['member_id']]);
         }
     });
     $trygt('medlemsbidrag', static function () use ($sak): void {
@@ -960,7 +962,7 @@ $maGjores = (static function () use ($medlemsstatus, $nyeste): array {
             return;
         }
         foreach (DB::alle(
-            "SELECT t.booking_id, t.belop_ore, c.tittel, cs.start_tid,
+            "SELECT t.booking_id, t.belop_ore, c.tittel, cs.start_tid, b.course_session_id,
                     COALESCE(m.navn, b.gjest_navn) AS navn
                FROM avlyst_tilbakebetal t
                JOIN bookings b ON b.id = t.booking_id
@@ -975,7 +977,8 @@ $maGjores = (static function () use ($medlemsstatus, $nyeste): array {
                 'Tilbakebetal ' . $kr . "\u{a0}kr til " . (string) $r['navn'],
                 implode(' · ', array_filter([(string) $r['tittel'],
                     $r['start_tid'] ? Booking::norskDato((string) $r['start_tid']) : '', 'avlyst'])),
-                'pameldte?booking=' . (int) $r['booking_id']);
+                'pameldte?booking=' . (int) $r['booking_id'],
+                ['oktId' => $r['course_session_id'] !== null ? (int) $r['course_session_id'] : null]);
         }
     });
 
@@ -1018,7 +1021,8 @@ $maGjores = (static function () use ($medlemsstatus, $nyeste): array {
                 implode(', ', array_unique($p['datoer'])),
                 $p['betalt'] ? 'Betalt' : 'Ikke betalt'])), 'pameldte?booking=' . (int) $b['id'],
             // Ny admin viser betalingen som merke (eieren 11.10.2026: «fint om jeg kan se om de er betalt eller ikke»).
-            ['ider' => $p['ider'], 'betalt' => $p['betalt']]);
+            ['ider' => $p['ider'], 'betalt' => $p['betalt']]
+            + ['oktId' => $b['course_session_id'] !== null ? (int) $b['course_session_id'] : null]);
     }
     $trygt('venteliste', static function () use ($sak): void {
         $rader = DB::alle(
@@ -1050,7 +1054,7 @@ $maGjores = (static function () use ($medlemsstatus, $nyeste): array {
             $navn = trim((string) $w['navn']);
             $sak('Kurs', 'venteliste', (int) $w['id'], 'Plass ledig: ' . (string) $w['tittel'],
                 $navn . ' står på ventelisten' . ($w['start_tid'] ? ' · ' . Booking::norskDato((string) $w['start_tid']) : ''),
-                'venteliste', ['fornavn' => explode(' ', $navn)[0]]);
+                'venteliste', ['fornavn' => explode(' ', $navn)[0], 'oktId' => $okt, 'kursId' => (int) $w['course_id']]);
         }
     });
 

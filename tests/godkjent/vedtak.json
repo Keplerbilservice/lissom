@@ -8597,6 +8597,29 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "idag-klikkbare-rader",
+            "dato": "2026-10-12",
+            "hva": "Eieren 12.10.2026: «Må gjøres, venteliste, klar til henting, til info, ny påmelding etc … alle steder klikkbart». Valgt: «Det saken gjelder». Hele raden i Må gjøres og Til info åpner kursdatoen (venteliste, klar til henting, ny påmelding og avlyst dato med deltakeren markert), medlemmet (betaling, frys), varen (lager), Varer › Medlemssalg (medlemssalg), gammel admin (medlemssøknad), ellers samme ark som hovedknappen. Knappene virker som før.",
+            "hvor": "Ny admin › I dag › Må gjøres og Til info",
+            "kode": [
+                {
+                    "fil": "ny-admin/idag.js",
+                    "finnes": [
+                        "function radMaal(s) {",
+                        "case 'henting': return () => tilKurs(id);",
+                        "case 'pamelding': case 'tilbakebetal': return s.oktId ? () => tilKurs(Number(s.oktId), {booking: id}) : null;"
+                    ]
+                },
+                {
+                    "fil": "api/admin/oversikt.php",
+                    "finnes": [
+                        "['medlemId' => (int) $r['member_id']]",
+                        "'oktId' => $okt, 'kursId' => (int) $w['course_id']"
+                    ]
+                }
+            ]
         }
     ]
 }

@@ -147,6 +147,8 @@
 .kal-rod{color:var(--red)}
 @media(min-width:761px){.sheet.kal-ark{margin:0 0 0 auto;width:min(480px,100%);height:100dvh;max-height:100dvh;border-radius:22px 0 0 22px}}
 @media(max-width:760px){.sheet.kal-ark{margin-bottom:0;width:100%;max-width:100%;border-radius:22px 22px 0 0}}
+/* PC: arket over kurset som ble trykket på (eieren 12.10.2026). Plasseringen settes i kalender-ark.js (overKurset). */
+@media(min-width:761px){.sheet.kal-ark.kal-ark-ved{position:fixed;inset:auto;margin:0;width:min(480px,calc(100% - 16px));height:auto;max-height:calc(100dvh - 16px);border-radius:22px;overflow:auto}}
 /* Merkene inne i brikka: ikke blokk-linjer (.event span), og ingenting krymper bort. */
 .event .kal-merker{display:flex}.event .kal-m{display:inline-flex}.event .kal-bilder span{display:grid}
 .kp-brikke[class*=" kal-t-"]>*{flex:none}

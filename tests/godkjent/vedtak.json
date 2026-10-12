@@ -8599,6 +8599,27 @@
             ]
         },
         {
+            "id": "kalender-ark-over-kurset",
+            "dato": "2026-10-12",
+            "hva": "Eieren 12.10.2026: «på kalender pc, når jeg klikker på et kurs, så åpner siden seg helt på høyre siden, jeg vil den skal åpnes over kurset jeg klikker på». Valgt: «Over kurset». På PC åpnes økt-arket med øvre venstre hjørne der kurset står, flyttet inn så det er helt innenfor skjermen. Mobil som før.",
+            "hvor": "Admin › Kalender (PC) › økt-arket",
+            "kode": [
+                {
+                    "fil": "admin-ny/kalender-ark.js",
+                    "finnes": [
+                        "s.dlg.classList.add('kal-ark');overKurset(s.dlg);",
+                        "dlg.classList.add('kal-ark-ved');"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kalender.css",
+                    "finnes": [
+                        ".sheet.kal-ark.kal-ark-ved{position:fixed;inset:auto;margin:0;"
+                    ]
+                }
+            ]
+        },
+        {
             "id": "idag-klikkbare-rader",
             "dato": "2026-10-12",
             "hva": "Eieren 12.10.2026: «Må gjøres, venteliste, klar til henting, til info, ny påmelding etc … alle steder klikkbart». Valgt: «Det saken gjelder». Hele raden i Må gjøres og Til info åpner kursdatoen (venteliste, klar til henting, ny påmelding og avlyst dato med deltakeren markert), medlemmet (betaling, frys), varen (lager), Varer › Medlemssalg (medlemssalg), gammel admin (medlemssøknad), ellers samme ark som hovedknappen. Knappene virker som før.",

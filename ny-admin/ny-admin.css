@@ -103,6 +103,7 @@ small{font-size:15px;color:var(--muted)}
 .merke.rod{background:var(--red-soft);color:var(--red)}
 .merke.gul{background:var(--warn-soft);color:var(--warn)}
 .merke.gronn{background:var(--green-soft);color:var(--green)}
+.merker{display:inline-flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 .type{font-size:13px;letter-spacing:.08em;text-transform:uppercase;font-weight:800;color:var(--muted)}
 .tom{color:var(--muted);padding:6px 0}
 .valgknapper{display:flex;gap:8px;flex-wrap:wrap}

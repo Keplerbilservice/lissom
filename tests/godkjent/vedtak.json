@@ -8597,6 +8597,22 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "medlemmer-betalt-merke",
+            "dato": "2026-10-12",
+            "hva": "Eieren 12.10.2026: «på medlemmer, vil jeg også se om det er betalt eller ikke, nå står det bare aktivt». Valgt: «Aktiv» (eller «Prøveperiode») står som før, og ved siden av står betalingen: grønt «Betalt», rødt som før når pengene ikke er inne, grått «Betaler ikke» eller «Fryst». Gjelder lista og arket i ny admin › Medlemmer.",
+            "hvor": "Ny admin › Medlemmer",
+            "kode": [
+                {
+                    "fil": "ny-admin/medlemmer.js",
+                    "finnes": [
+                        "m.betaling === 'betalt' ? '<span class=\"merke gronn\">Betalt</span>'",
+                        "m.betaling === 'fri' ? '<span class=\"merke\">Betaler ikke</span>'",
+                        "return `<span class=\"merker\">${status}${betaling}</span>`;"
+                    ]
+                }
+            ]
         }
     ]
 }

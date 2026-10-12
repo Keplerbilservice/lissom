@@ -111,6 +111,19 @@ export const popKnapp=(e,etter)=>e.type==='pop'&&e.popStoler?popDagKnapp(e.dato,
 // «Legg til deltaker» (pamelding.php legg-til). Brukes av økt-arket og av «+ Noen kom uten påmelding» i «Start kurset».
 export function leggTilDeltaker(id,ferdig){form('Legg til deltaker',[field('navn','Navn','text',{required:true}),field('telefon','Mobil','tel'),field('epost','E-post','email'),field('antall','Antall','number',{min:1,required:true}),field('betaltMaate','Betaling','text',{velg:true,options:['Ikke betalt','Betaler ved oppmøte','Kontant','Vipps','Gavekort','Gratis']}),field('kode','Gavekortkode'),field('varsle','Send bekreftelse','checkbox')],{antall:1},async v=>{await ferdig(await api('pamelding.php',{handling:'legg-til',oktId:id,...v,varsle:v.varsle?'ja':'nei'}));},{submitLabel:'Legg til',successText:false});}
 
+// ── Arket over kurset på PC (eieren 12.10.2026: «når jeg klikker på et kurs, så åpner siden seg helt på høyre siden,
+// jeg vil den skal åpnes over kurset jeg klikker på»). Valgt «Over kurset»: arkets øvre venstre hjørne der kurset står,
+// flyttet inn så det aldri går utenfor skjermen. Mobil som før.
+let ankerRekt=null;
+if(typeof addEventListener==='function')addEventListener('click',ev=>{const n=ev.target?.closest?.('button,[role="button"]');ankerRekt=n&&!n.closest('dialog')?n.getBoundingClientRect():null;},true);
+function overKurset(dlg){
+ const r=ankerRekt;ankerRekt=null;
+ if(!r||!matchMedia('(min-width:761px)').matches)return;
+ dlg.classList.add('kal-ark-ved');
+ const plasser=()=>{const w=dlg.offsetWidth,h=dlg.offsetHeight;dlg.style.left=Math.max(8,Math.min(r.left,innerWidth-w-8))+'px';dlg.style.top=Math.max(8,Math.min(r.top,innerHeight-h-8))+'px';};
+ plasser();if(typeof ResizeObserver==='function')new ResizeObserver(plasser).observe(dlg);
+}
+
 // e: hendelsen fra kalender.php. o: {refresh, kursholdere, flytt (moveDate i kalender.js)}.
 export function oktArk(e,o){
  skjulSveve();
@@ -128,7 +141,7 @@ export function oktArk(e,o){
   popKnapp(e,()=>{s.close();o.refresh();}),
   e.kap&&!e.avlyst?button('▶ Start kurset',()=>{s.close();kursstartPaa()?startKurs(e,{...o,naar:naar(e),leggTil:etter=>leggTilDeltaker(id,etter)}):courseStart(id,o.refresh);},'primary'):null,
   faneRad);
- const s=sheet(visTittel(e),el('div',{},hode,panel));s.dlg.classList.add('kal-ark');
+ const s=sheet(visTittel(e),el('div',{},hode,panel));s.dlg.classList.add('kal-ark');overKurset(s.dlg);
  // Etter en handling: lukk arket, hent kalenderen på nytt og si hva som skjedde.
  const ferdig=async r=>{toast(r?.beskjed||'Lagret.');s.close();await o.refresh();};
  const kjor=async(ep,body)=>{try{await ferdig(await api(ep,body));}catch(err){toast(err.message);}};

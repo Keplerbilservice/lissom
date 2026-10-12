@@ -63,7 +63,8 @@ if (Foresporsel::metode() === 'POST') {
         // Tabellen kom med migrasjon 103. Er den ikke der, lagres ingen
         // ressurs — innstemplinga skal ikke feile av den grunn.
         if ($rid > 0 && (!DB::harTabell('ressurser')
-                || DB::en('SELECT id FROM ressurser WHERE id = :i AND aktiv = 1',
+                || DB::en("SELECT id FROM ressurser WHERE id = :i AND aktiv = 1
+                             AND navn <> 'Paint on Pots'",
                           ['i' => $rid]) === null)) {
             $rid = 0;
         }
@@ -260,7 +261,11 @@ try {
         // Opptatt naa: innstemplede pluss kurs som gaar. Se kommentaren over.
         // Aldri mer enn ressursen har — «9 av 8» er ingen opplysning.
         'iBruk'  => min($iBruk[(int) $r['id']] ?? 0, (int) $r['antall']),
-    ], DB::alle('SELECT id, navn, antall FROM ressurser WHERE aktiv = 1 ORDER BY navn'));
+    // Paint on Pots er plassgrensen for PoP-kurset (migrasjon 258), ikke noe
+    // et medlem bruker. Eieren, 12. oktober 2026: «naar medlemmene stempler
+    // inn, saa kan de velge paint on pots, den vil jeg ta vekk».
+    ], DB::alle("SELECT id, navn, antall FROM ressurser
+                  WHERE aktiv = 1 AND navn <> 'Paint on Pots' ORDER BY navn"));
     if (DB::harKolonne('check_ins', 'ressurs_id')) {
         $valgtRessurs = (int) (DB::verdi(
             'SELECT ressurs_id FROM check_ins WHERE member_id = :m AND ut_tid IS NULL

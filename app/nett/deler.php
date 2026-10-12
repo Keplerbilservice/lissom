@@ -220,9 +220,14 @@ final class Deler
     {
         $e = [self::class, 'e'];
         $href = (string) $k['href'];
+        // «luft»: overlinje, tittel og tekst brytes i stedet for aa kuttes med
+        // «…», og skrifta er større (13/23/16). «bred»: kortet faar klassen
+        // lx-kortbred (bredt kort under de tre paa PC). Bare forsida, eieren
+        // 12. oktober 2026.
+        $luft = !empty($k['luft']);
         // Hele kortet kan trykkes (data-href, som onBook i appen); tittelen
         // er en ekte lenke, saa kurset har en lenke robotene kan foelge.
-        $h = '<div data-href="' . $e($href) . '" data-nett-kort style="border-radius: var(--radius-xl, 22px); padding: 0; overflow: hidden; box-shadow: var(--shadow-sm); transform: none;'
+        $h = '<div' . (!empty($k['bred']) ? ' class="lx-kortbred"' : '') . ' data-href="' . $e($href) . '" data-nett-kort style="border-radius: var(--radius-xl, 22px); padding: 0; overflow: hidden; box-shadow: var(--shadow-sm); transform: none;'
             . ' transition: box-shadow var(--duration-base) var(--ease-clay), transform var(--duration-base) var(--ease-clay); cursor: pointer;'
             . ' background: var(--surface-card); border: 1px solid var(--border-subtle); display: flex; flex-direction: column;' . $ekstraStil . '"'
             . ' data-hover="box-shadow: var(--shadow-md); transform: translateY(-2px);">';
@@ -264,12 +269,16 @@ final class Deler
         // Teksten.
         $h .= '<div style="padding: var(--card-pad); display: flex; flex-direction: column; gap: var(--space-2); flex: 1;">';
         $level = (string) ($k['level'] ?? '');
-        $h .= '<div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); height: 18px; line-height: 18px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">' . ($level !== '' ? $e($level) : '&nbsp;') . '</div>';
-        $h .= '<h3 style="font: var(--type-h3); color: var(--text-heading); margin: 0; line-height: 1.2; height: 1.2em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><a href="' . $e($href) . '" style="color: inherit; text-decoration: none;">' . $e((string) $k['title']) . '</a></h3>';
+        $h .= $luft
+            ? '<div style="font: var(--type-eyebrow); font-size: 13px; line-height: 1.35; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">' . ($level !== '' ? $e($level) : '&nbsp;') . '</div>'
+            : '<div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); height: 18px; line-height: 18px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">' . ($level !== '' ? $e($level) : '&nbsp;') . '</div>';
+        $h .= $luft
+            ? '<h3 style="font: var(--type-h3); font-size: 23px; color: var(--text-heading); margin: 0; line-height: 1.2;"><a href="' . $e($href) . '" style="color: inherit; text-decoration: none;">' . $e((string) $k['title']) . '</a></h3>'
+            : '<h3 style="font: var(--type-h3); color: var(--text-heading); margin: 0; line-height: 1.2; height: 1.2em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><a href="' . $e($href) . '" style="color: inherit; text-decoration: none;">' . $e((string) $k['title']) . '</a></h3>';
         $tekst = (string) ($k['text'] ?? '');
         $dato = (string) ($k['date'] ?? '');
         $varighet = (string) ($k['duration'] ?? '');
-        $h .= '<div style="min-height: 40px; height: ' . ($tekst !== '' ? 'auto' : '40px') . '; overflow: hidden;">';
+        $h .= '<div style="min-height: 40px; height: ' . ($tekst !== '' ? 'auto' : '40px') . ';' . ($luft ? '' : ' overflow: hidden;') . '">';
         if ($dato !== '' || $varighet !== '') {
             $h .= '<div style="display: flex; gap: var(--space-4); color: var(--text-muted); font-size: var(--text-sm); flex-wrap: wrap;">';
             if ($dato !== '') {
@@ -288,7 +297,9 @@ final class Deler
             // Alt annet i kortet staar alt paa fast hoeyde — etiketten 18 px,
             // tittelen 1.2em, prisraden 44 px. Teksten var det siste feltet
             // som fikk vokse som den ville. 4.2em = tre linjer a 1,4.
-            $h .= '<p style="margin: 0; font-size: var(--text-sm); line-height: 1.4; height: 4.2em; color: var(--text-muted); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; text-wrap: pretty;">' . $e($tekst) . '</p>';
+            $h .= $luft
+                ? '<p style="margin: 0; font-size: 16px; line-height: 1.5; color: var(--text-muted); text-wrap: pretty;">' . $e($tekst) . '</p>'
+                : '<p style="margin: 0; font-size: var(--text-sm); line-height: 1.4; height: 4.2em; color: var(--text-muted); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; text-wrap: pretty;">' . $e($tekst) . '</p>';
         }
         $h .= '</div>';
         $h .= '<div style="margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding-top: var(--space-2); flex-wrap: nowrap; height: 44px; box-sizing: border-box; overflow: hidden;">'

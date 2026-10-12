@@ -8859,6 +8859,146 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "forside-mindre-gult",
+            "dato": "2026-10-12",
+            "hva": "Eieren 12.10.2026, punkt 1 «Mindre gult over fotografiet» (OK): på PC er det gule laget fra hjørnet (8–58 %) fjernet, det andre gule laget slutter ved 56 % i stedet for 90 %, og over fotografiet er overlegget 0 % (var 35–75 %). Teksten står fortsatt på helt gult. Mobil uendret.",
+            "hvor": "Forsiden › toppen (PC)",
+            "kode": [
+                {
+                    "fil": "app/nett/sider/forside.php",
+                    "finnes": [
+                        "linear-gradient(100deg, var(--lissom-yellow) 36%, rgba(255,207,56,0.6) 44%, rgba(255,207,56,0) 56%)"
+                    ],
+                    "ikkeFinnes": [
+                        "linear-gradient(to top left, var(--lissom-yellow) 8%",
+                        "rgba(255,207,56,0.35) 72%, transparent 90%"
+                    ]
+                }
+            ],
+            "live": [
+                {
+                    "sti": "/",
+                    "finnes": [
+                        "rgba(255,207,56,0) 56%"
+                    ],
+                    "ikkeFinnes": [
+                        "to top left, var(--lissom-yellow) 8%"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "forside-mobiltopp-strammere",
+            "dato": "2026-10-12",
+            "hva": "Eieren 12.10.2026, punkt 2 «Strammere topp på mobil» (OK): topp 140→112, overlinje→overskrift 32→16, overskrift→tekst 64→24, tekst→knapper 32→24, mellom knappene 20→12, knapper→hjelpelinjer 72→32, mellom hjelpelinjene 24→12, bunn 56→40.",
+            "hvor": "Forsiden › toppen (mobil, til og med 900 px)",
+            "kode": [
+                {
+                    "fil": "nett.css",
+                    "finnes": [
+                        ".lx-hero-pad { padding: 112px 20px 40px !important; }",
+                        ".lx-hero-eb { margin-bottom: var(--space-4) !important; }",
+                        ".lx-hero-h1 { margin-bottom: var(--space-6) !important; }",
+                        ".lx-hero-cta { margin-top: var(--space-6) !important; gap: var(--space-3) !important; }",
+                        ".lx-hero-hj1 { margin-top: var(--space-8) !important; }",
+                        ".lx-hero-hj2 { margin-top: var(--space-3) !important; }"
+                    ],
+                    "ikkeFinnes": [
+                        ".lx-hero-pad { padding: 140px 20px 56px !important; }"
+                    ]
+                },
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        ".lx-hero-pad { padding: 112px 20px 40px !important; }",
+                        ".lx-hero-eb { margin-bottom: var(--space-4) !important; }",
+                        ".lx-hero-h1 { margin-bottom: var(--space-6) !important; }",
+                        ".lx-hero-cta { margin-top: var(--space-6) !important; gap: var(--space-3) !important; }",
+                        ".lx-hero-hj1 { margin-top: var(--space-8) !important; }",
+                        ".lx-hero-hj2 { margin-top: var(--space-3) !important; }"
+                    ],
+                    "ikkeFinnes": [
+                        ".lx-hero-pad { padding: 140px 20px 56px !important; }"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "forside-tre-kurskort",
+            "dato": "2026-10-12",
+            "hva": "Eieren 12.10.2026, punkt 3 «Tre bredere kurskort på PC» (OK): under «Finn ditt kurs» står tre kort i bredden på PC og Medlemskap som et bredt kort under. Ingen avkorting med «…» av overlinje, tittel eller tekst; tittel 19→23, overlinje 12→13, tekst 14→16. Mobil: ett kort i bredden som før, uten avkorting. Bare forsiden; kurskortene ellers er uendret.",
+            "hvor": "Forsiden › Finn ditt kurs",
+            "kode": [
+                {
+                    "fil": "app/nett/sider/forside.php",
+                    "finnes": [
+                        "'<div class=\"lx-kortgrid lx-kortgrid3\" style=\"display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-8);\">'",
+                        "Deler::kurskort($k + ['luft' => true, 'bred' => $i === 3]);"
+                    ]
+                },
+                {
+                    "fil": "app/nett/deler.php",
+                    "finnes": [
+                        "font: var(--type-eyebrow); font-size: 13px; line-height: 1.35;",
+                        "font: var(--type-h3); font-size: 23px;",
+                        "font-size: 16px; line-height: 1.5; color: var(--text-muted); text-wrap: pretty;",
+                        "line-height: 1.4; height: 4.2em; color: var(--text-muted)"
+                    ]
+                },
+                {
+                    "fil": "nett.css",
+                    "finnes": [
+                        ".lx-kortbred { grid-column: 1 / -1; flex-direction: row !important; height: 300px; }"
+                    ]
+                }
+            ],
+            "live": [
+                {
+                    "sti": "/",
+                    "finnes": [
+                        "lx-kortgrid3",
+                        "class=\"lx-kortbred\""
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "forside-ingen-bildestripe",
+            "dato": "2026-10-12",
+            "hva": "Eieren 12.10.2026, punkt 4 «Fotografiene mer fremtredende»: NEI. Ingen bildestripe under toppen, og kortbildene beholder formatet 16:10.",
+            "hvor": "Forsiden",
+            "kode": [
+                {
+                    "fil": "app/nett/deler.php",
+                    "finnes": [
+                        "aspect-ratio: 16 / 10; height: auto; object-fit: cover;"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "forside-jevne-avstander",
+            "dato": "2026-10-12",
+            "hva": "Eieren 12.10.2026, punkt 5 «Jevne avstander» (OK): én avstandsskala på forsiden, 12/24/32/48/96 på PC (seksjoner 96/96) og 12/16/24/32/64 på mobil (seksjoner 64/64). PC-toppen: overlinje→overskrift 32→24, overskrift→tekst 64→32, knapper→hjelpelinjer 72→48, mellom hjelpelinjene 24→12, bunn 80→96. «Finn ditt kurs» har full seksjonsmarg under (var 48).",
+            "hvor": "Forsiden",
+            "kode": [
+                {
+                    "fil": "app/nett/sider/forside.php",
+                    "finnes": [
+                        "padding: 150px var(--space-8) var(--space-24) max(var(--space-10)",
+                        "color: var(--brown-500); margin-bottom: var(--space-6);\">' . $e($innh('Forside/0/Kicker'))",
+                        "margin: 0 0 var(--space-8); max-width: none; text-wrap: balance;",
+                        "'<p class=\"lx-hero-p lx-hero-hj1\" style=\"margin: var(--space-12) 0 0;",
+                        "'<p class=\"lx-hero-p lx-hero-hj2\" style=\"margin: var(--space-3) 0 0;"
+                    ],
+                    "ikkeFinnes": [
+                        "calc(var(--space-8) + 40px)",
+                        "padding: var(--section-y) var(--space-8) var(--space-12);\">'\n    . '<div style=\"max-width: var(--width-content); margin: 0 auto;\">'\n    . '<div style=\"font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);\">' . $e($innh('Forside/1/Kicker'))"
+                    ]
+                }
+            ]
         }
     ]
 }

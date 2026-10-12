@@ -1290,7 +1290,15 @@ img{max-width:100%;display:block}
     }
     .lx-tetttopp { padding-top: var(--space-8) !important; }
     .lx-hero { min-height: auto !important; overflow: visible !important; }
-    .lx-hero-pad { padding: 140px 20px 56px !important; }
+    /* Mobiltoppen strammet inn, én avstandsskala (12/16/24/32/64). Eieren,
+       12. oktober 2026 (punkt 2 og 5): topp 112, overlinje 16, overskrift 24,
+       tekst 24, mellom knappene 12, hjelpelinjer 32, mellom dem 12, bunn 40. */
+    .lx-hero-pad { padding: 112px 20px 40px !important; }
+    .lx-hero-eb { margin-bottom: var(--space-4) !important; }
+    .lx-hero-h1 { margin-bottom: var(--space-6) !important; }
+    .lx-hero-cta { margin-top: var(--space-6) !important; gap: var(--space-3) !important; }
+    .lx-hero-hj1 { margin-top: var(--space-8) !important; }
+    .lx-hero-hj2 { margin-top: var(--space-3) !important; }
     .lx-hero-h1 { font-size: clamp(38px, 11vw, 56px) !important; }
     .lx-kunnskap-h1 { font-size: clamp(26px, 8.5vw, 40px) !important; word-break: break-word; hyphens: auto; }
     .lx-hero-p { font-size: 18px !important; }
@@ -1362,6 +1370,15 @@ img{max-width:100%;display:block}
     .lx-fotokol { height: auto !important; }
     .lx-fotokol > div { flex: none !important; }
     .lx-foto { height: 460px !important; }
+  }
+  /* Forsida, «Finn ditt kurs»: tre kort i bredden og Medlemskap som et bredt
+     kort under. Under 1251 px staar kortene to og to som foer. Eieren,
+     12. oktober 2026 (punkt 3). */
+  @media (min-width: 1251px) {
+    .lx-kortbred { grid-column: 1 / -1; flex-direction: row !important; height: 300px; }
+    .lx-kortbred > div:first-child { flex: 0 0 44%; }
+    .lx-kortbred > div:first-child img { height: 100% !important; aspect-ratio: auto !important; }
+    .lx-kortbred > div:last-child { padding: var(--space-8) !important; }
   }
   /* ≥1024px: fotoet bruker alltid fullskjerm-oppsettet — ingen mellomjusteringer */
   @media (max-width: 1250px) {

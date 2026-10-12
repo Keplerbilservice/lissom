@@ -31,11 +31,13 @@ $h .= '<section class="lx-hero" data-theme="sun" style="background: var(--lissom
     . '<div class="lx-hero-hjerte" style="position: absolute; top: -30%; bottom: -46%; right: -16%; aspect-ratio: 1.036;">'
     . '<div style="position: absolute; inset: 0; background-image: ' . Nett::cssUrl($heroBilde) . '; background-size: cover; background-position: center top; mask-image: url(\'heart-logo-mask.png\'); -webkit-mask-image: url(\'heart-logo-mask.png\'); mask-size: 100% 100%; -webkit-mask-size: 100% 100%; mask-repeat: no-repeat; -webkit-mask-repeat: no-repeat; mask-position: center; -webkit-mask-position: center;" role="img" aria-label="Keramiker former leire på dreieskiven"></div>'
     . '</div>'
-    . '<div class="lx-hide-m lx-hero-grad" style="position: absolute; inset: 0; background: linear-gradient(100deg, var(--lissom-yellow) 38%, rgba(255,207,56,0.75) 54%, rgba(255,207,56,0.35) 72%, transparent 90%); pointer-events: none;"></div>'
-    . '<div class="lx-hide-m lx-hero-grad" style="position: absolute; inset: 0; background: linear-gradient(to top left, var(--lissom-yellow) 8%, rgba(255,207,56,0.75) 22%, rgba(255,207,56,0.35) 40%, transparent 58%); pointer-events: none;"></div>'
-    . '<div class="lx-hero-pad" style="position: relative; width: 100%; max-width: none; margin: 0; padding: 150px var(--space-8) 80px max(var(--space-10), calc((100vw - var(--width-content)) / 2)); align-self: safe center;">'
-    . '<div style="font: var(--type-eyebrow); font-size: var(--text-lg); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--brown-500); margin-bottom: var(--space-8);">' . $e($innh('Forside/0/Kicker')) . '</div>'
-    . '<h1 class="lx-hero-h1" data-nett-hero-h1 style="font-family: var(--font-display); font-weight: 800; font-size: clamp(40px, 4.6vw, 76px); line-height: 1.12; letter-spacing: var(--tracking-display); color: var(--lissom-brown); margin: 0 0 var(--space-16); max-width: none; text-wrap: balance; cursor: default;">'
+    // Ett gult lag, og det slutter ved 56 % av bredden: over fotografiet er
+    // det ingen gulfarge, mens teksten staar paa helt gult. Laget fra
+    // hjoernet (8–58 %) er fjernet. Eieren, 12. oktober 2026 (punkt 1).
+    . '<div class="lx-hide-m lx-hero-grad" style="position: absolute; inset: 0; background: linear-gradient(100deg, var(--lissom-yellow) 36%, rgba(255,207,56,0.6) 44%, rgba(255,207,56,0) 56%); pointer-events: none;"></div>'
+    . '<div class="lx-hero-pad" style="position: relative; width: 100%; max-width: none; margin: 0; padding: 150px var(--space-8) var(--space-24) max(var(--space-10), calc((100vw - var(--width-content)) / 2)); align-self: safe center;">'
+    . '<div class="lx-hero-eb" style="font: var(--type-eyebrow); font-size: var(--text-lg); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--brown-500); margin-bottom: var(--space-6);">' . $e($innh('Forside/0/Kicker')) . '</div>'
+    . '<h1 class="lx-hero-h1" data-nett-hero-h1 style="font-family: var(--font-display); font-weight: 800; font-size: clamp(40px, 4.6vw, 76px); line-height: 1.12; letter-spacing: var(--tracking-display); color: var(--lissom-brown); margin: 0 0 var(--space-8); max-width: none; text-wrap: balance; cursor: default;">'
     . $e($innh('Forside/0/Overskrift')) . ' <em style="font-style: italic; font-weight: 700;">' . $e($innh('Forside/0/Overskrift, kursiv del')) . '</em></h1>'
     . '<div style="max-width: 980px;">'
     . '<p class="lx-hero-p" style="font: var(--type-body); font-size: clamp(17px, 1.2vw, 21px); line-height: 1.55; color: var(--brown-500); margin: 0; text-wrap: pretty;">' . $e($innh('Forside/0/Brødtekst')) . '</p>';
@@ -53,7 +55,7 @@ $h .= '<div class="lx-hero-cta" style="display: flex; gap: var(--space-5); margi
     . Deler::knapp($innh('Forside/0/Knapp 2'), ['href' => $popHref, 'variant' => 'secondary', 'size' => 'lg'])
     . '</div>';
 $lenkeStil = 'appearance: none; background: transparent; border: none; padding: 0; cursor: pointer; font: inherit; color: var(--lissom-brown); font-weight: 700; text-decoration: underline; text-underline-offset: 3px;';
-$h .= '<p class="lx-hero-p" style="margin: calc(var(--space-8) + 40px) 0 0; font-size: clamp(17px, 1.2vw, 21px); line-height: 1.5; color: var(--brown-500);">' . $e($innh('Forside/0/Gruppelinje'))
+$h .= '<p class="lx-hero-p lx-hero-hj1" style="margin: var(--space-12) 0 0; font-size: clamp(17px, 1.2vw, 21px); line-height: 1.5; color: var(--brown-500);">' . $e($innh('Forside/0/Gruppelinje'))
     // «Les mer» aapner forespoerselsskjemaet — som i appen (goForesporsel).
     // Her gikk lenka til /kontakt, saa den som ikke var innlogget (alle paa
     // mobil) fikk en annen side enn eieren saa paa PC. Eieren, 21. september
@@ -63,7 +65,7 @@ $h .= '<p class="lx-hero-p" style="margin: calc(var(--space-8) + 40px) 0 0; font
     // /bedrift — det samme gruppeskjemaet (27. september 2026).
     . ' <a href="/bedrift?skjema=1" style="' . $lenkeStil . '">' . $e($innh('Forside/0/Gruppelenke')) . '</a></p>';
 if (Nett::bryterPaa('kursvelger') && !Nett::mobilSkjult('kursvelger')) {
-    $h .= '<p class="lx-hero-p" style="margin: var(--space-6) 0 0; font-size: clamp(17px, 1.2vw, 21px); line-height: 1.5; color: var(--brown-500);">' . $e($innh('Forside/0/Kursvelgerlinje'))
+    $h .= '<p class="lx-hero-p lx-hero-hj2" style="margin: var(--space-3) 0 0; font-size: clamp(17px, 1.2vw, 21px); line-height: 1.5; color: var(--brown-500);">' . $e($innh('Forside/0/Kursvelgerlinje'))
         . ' <a href="/kurs#kursvelger" style="' . $lenkeStil . '">' . $e($innh('Forside/0/Kursvelgerlenke')) . '</a></p>';
 }
 $h .= '</div></div></section>' . "\n";
@@ -89,19 +91,23 @@ if (($lagret['Banner/pa'] ?? '') !== 'nei' && !Nett::mobilSkjult('apenthus')) {
 }
 
 // ── Velg din inngang ─────────────────────────────────────────────────────
-$h .= '<section style="background: var(--clay-50); padding: var(--section-y) var(--space-8) var(--space-12);">'
+// Tre kort i bredden paa PC og Medlemskap som et bredt kort under
+// (lx-kortbred i lissom-2108.html). Ingen avkorting med «…», og større
+// skrift (luft). Full seksjonsmarg under ogsaa: 96/96 paa PC, 64/64 paa
+// mobil. Eieren, 12. oktober 2026 (punkt 3 og 5).
+$h .= '<section style="background: var(--clay-50); padding: var(--section-y) var(--space-8);">'
     . '<div style="max-width: var(--width-content); margin: 0 auto;">'
     . '<div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">' . $e($innh('Forside/1/Kicker')) . '</div>'
     . '<h2 style="margin: 0 0 var(--space-8);">' . $e($innh('Forside/1/Overskrift')) . '</h2>'
-    . '<div class="lx-kortgrid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8);">';
+    . '<div class="lx-kortgrid lx-kortgrid3" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-8);">';
 $innganger = [
     ['level' => '01 · Dreiekurs', 'title' => 'Dreiekurs', 'text' => 'To kvelder ved dreieskiva: sentrere, dreie, trimme foten og dekorere. Vi glaserer og brenner. Fra leireklump til ferdig kopp.', 'image' => 'uploads_foto-dreiekurs2.jpg', 'imageAlt' => 'Deltaker dreier ved dreieskiva hos Lissom Keramikk', 'cta' => 'Se dreiekurs', 'href' => '/kurs'],
     ['level' => '02 · Plateteknikk og håndbygging', 'title' => 'Boller og store fat', 'text' => 'Kjevle ut leira, forme over form, få rene kanter. Én kveld: boller, et stort fat eller en fransk smørklokke.', 'image' => 'uploads_foto-boller.jpg', 'imageAlt' => 'Kursholderen viser en bolle til deltakerne på plateteknikk hos Lissom Keramikk', 'cta' => 'Se kursene', 'href' => '/kurs'],
     ['level' => '03 · Paint on Pots', 'title' => 'Paint on Pots', 'text' => 'Velg en ferdigbrent kopp, skål eller figur og mal den slik du vil. Vi glaserer og brenner — klar til henting etter tre uker.', 'image' => 'uploads_foto-paint.jpg', 'imageAlt' => 'Paint on Pots: ferdigbrent keramikk som males hos Lissom Keramikk', 'cta' => 'Les mer', 'href' => '/kurs/paint-on-pots'],
     ['level' => '04 · Medlemskap', 'title' => 'Medlemskap', 'text' => 'Egen hylle, dørkode døgnet rundt og timer i verkstedet hver måned. Prøv én måned uten binding.', 'image' => 'uploads_shutterstock_2829101499.jpg', 'imageAlt' => 'Medlem jobber ved dreieskiva i verkstedet hos Lissom', 'cta' => 'Se medlemskap', 'href' => '/medlemskap'],
 ];
-foreach ($innganger as $k) {
-    $h .= Deler::kurskort($k);
+foreach ($innganger as $i => $k) {
+    $h .= Deler::kurskort($k + ['luft' => true, 'bred' => $i === 3]);
 }
 $h .= '</div></div></section>' . "\n";
 

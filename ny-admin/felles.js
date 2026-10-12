@@ -296,9 +296,10 @@
     return her;
   }
   NA.hurtig = hurtigValgt;
-  /* «Send» i hamburgermenyen på mobil (eieren 11.10.2026): snarveier til arkene som finnes, ingen ny sendelogikk. */
-  const SEND = [['beskjed', 'Send beskjed', 'SMS og/eller e-post til et kurs, en dato eller én person'], ['kursbevis', 'Send kursbevis', 'Velg kurs og dato'],
-    ['paaminnelse', 'Send påminnelse', 'Velg kurs og dato'], ['henting', 'Klar til henting', 'Meld at keramikken er klar']];
+  /* «Send ▾» i hamburgermenyen på mobil (eieren 11.10.2026, vedtak send-manuelt): et nedtrekk, lukket til det trykkes på,
+     med bare de to manuelle valgene. Påminnelse og «Klar til henting» står på kursarket og i «Ovn er tømt». */
+  const SEND = [['beskjed', 'Send beskjed', 'Skriv navn og mobilnummer selv'], ['kursbevis', 'Send kursbevis', 'Skriv navn og mobilnummer selv']];
+  let sendApen = false;
   function tegnMeny() {
     if (!NA.meg) return;
     const aktiv = rute.id;
@@ -309,7 +310,7 @@
     /* Hamburgermenyen på mobil viser bare sidene som brukes der (I dag, Kalender, Kurs) — eieren 11.10.2026. */
     const sideMeny = erMobil() ? MENY.filter(m => MOBIL.includes(m[0])) : MENY;
     const meny = `<button class="brand" type="button" data-side="idag" aria-label="Lissom · til I dag">Lissom</button><div class="brand-note">Keramikk · admin</div>${sideMeny.map(navKnapp).join('')}
-      ${erMobil() ? `<div class="hurtig-tittel">Send</div>${SEND.map(([id, navn, under]) => `<button class="nav send" type="button" data-send="${id}"><span class="ic">✉</span><span class="send-tekst">${navn}<small>${under}</small></span></button>`).join('')}` : ''}
+      ${erMobil() ? `<button class="nav send-drop" type="button" data-sendapen aria-expanded="${sendApen}" aria-controls="send-valg"><span class="ic">✉</span>Send ▾</button><div class="send-valg" id="send-valg" ${sendApen ? '' : 'hidden'}>${SEND.map(([id, navn, under]) => `<button class="nav send" type="button" data-send="${id}"><span class="send-tekst">${navn}<small>${under}</small></span></button>`).join('')}</div>` : ''}
       <div class="hurtig-tittel">Hurtig</div>
       ${hurtigValgt().filter(h => h[0] !== 'kalender').map(h => `<button class="nav hurtig" type="button" data-hurtig="${h[0]}"><span class="ic">${h[2]}</span>${h[1]}</button>`).join('')}
       <button class="nav hurtig tilpass" type="button" data-hurtig="tilpass"><span class="ic">＋</span>Tilpass</button>
@@ -589,8 +590,8 @@
   document.addEventListener('click', e => {
     const b = e.target.closest('button,a');
     if (b && b.id === 'hamburger') { apneMeny(!document.documentElement.classList.contains('meny-apen')); return; }
-    /* Trykk på et valg i menyen eller utenfor den lukker den. */
-    if (document.documentElement.classList.contains('meny-apen') && (!e.target.closest('#meny') || (b && b.closest('#meny')))) apneMeny(false);
+    /* Trykk på et valg i menyen eller utenfor den lukker den. «Send ▾» åpner bare nedtrekket. */
+    if (document.documentElement.classList.contains('meny-apen') && (!e.target.closest('#meny') || (b && b.closest('#meny') && b.dataset.sendapen === undefined))) apneMeny(false);
     if (!e.target.closest('.sok-wrap') && $('#sokres')) $('#sokres').hidden = true;
     /* Brytere: hele raden er trykkflaten (designvokteren 08.10.2026), ikke bare den lille bryteren. */
     const bryterRad = !b && e.target.closest('.bryter');
@@ -608,7 +609,8 @@
     if (d.hurtig === 'uttak') return NA.uttakLeire();
     if (d.hurtig === 'tilpass') return arkTilpass();
     if (d.hurtig === 'kalender') { gaTil('kalender'); window.scrollTo(0, 0); return; }
-    if (d.send) return NA.send ? NA.send(d.send) : null;
+    if (d.sendapen !== undefined) { sendApen = !sendApen; tegnMeny(); $('#meny [data-sendapen]')?.focus(); return; }
+    if (d.send) { sendApen = false; tegnMeny(); return NA.send ? NA.send(d.send) : null; }
     if (d.loggut !== undefined) {
       api('/api/logg-ut.php', {data: {}}).catch(() => {}).finally(() => visInnlogging());
     }

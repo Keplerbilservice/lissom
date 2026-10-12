@@ -8407,7 +8407,7 @@
         {
             "id": "mobil-admin-11-10",
             "dato": "2026-10-11",
-            "hva": "Mobil i ny admin (eierens GO 11.10.2026, skissen mobil-admin.html; gjelder erMobil = pointer:coarse og ≤600 px). I dag: ovnen er én lav linje «Ovn · {status}» med sluttid fra brenningen («ferdig tir 09:00») og pillen «Endre»; de tre ovnknappene (samme funksjon) vises først etter «Endre». «I verkstedet nå · N» er eget grønt kort øverst med navnene som piller; et navn åpner medlemsarket (NA.arkMedlem); pillen i topplinja er tatt bort på mobil. Kalender er en flis under Hurtig på I dag (HURTIG, bare mobil; ikke dobbelt i menyen). Kalender Dag: dagene ligger som et bånd med scroll-snap (tre dager på hver side), nabodagen synes i kanten, ukestripen følger dagen i midten, «Forrige dag / Neste dag» står; bare båndet ruller sidelengs. Hamburgermenyen har gruppen «Send»: «Send beskjed» (undertekst «SMS og/eller e-post til et kurs, en dato eller én person») med «Til hvem?» først (Et kurs og en dato · Én person · Alle medlemmer, ingenting valgt), «Send kursbevis» og «Send påminnelse» (velg kurs og dato, så de eksisterende arkene) og «Klar til henting» (den eksisterende «Ovn er tømt»-flyten). Ingen ny sendelogikk. Hjemknappen «⌂ I dag» står ved ☰ i topplinja på mobil og i arkhodet på mobil (lukker arket først); logoen gjør det samme på PC.",
+            "hva": "Mobil i ny admin (eierens GO 11.10.2026, skissen mobil-admin.html; gjelder erMobil = pointer:coarse og ≤600 px). I dag: ovnen er én lav linje «Ovn · {status}» med sluttid fra brenningen («ferdig tir 09:00») og pillen «Endre»; de tre ovnknappene (samme funksjon) vises først etter «Endre». «I verkstedet nå · N» er eget grønt kort øverst med navnene som piller; et navn åpner medlemsarket (NA.arkMedlem); pillen i topplinja er tatt bort på mobil. Kalender er en flis under Hurtig på I dag (HURTIG, bare mobil; ikke dobbelt i menyen). Kalender Dag: dagene ligger som et bånd med scroll-snap (tre dager på hver side), nabodagen synes i kanten, ukestripen følger dagen i midten, «Forrige dag / Neste dag» står; bare båndet ruller sidelengs. Hamburgermenyen har gruppen «Send»: «Send beskjed» (undertekst «SMS og/eller e-post til et kurs, en dato eller én person») med «Til hvem?» først (Et kurs og en dato · Én person · Alle medlemmer, ingenting valgt), «Send kursbevis» og «Send påminnelse» (velg kurs og dato, så de eksisterende arkene) og «Klar til henting» (den eksisterende «Ovn er tømt»-flyten). Ingen ny sendelogikk. Endret 11.10.2026 (vedtak send-manuelt): «Send» er nå nedtrekket «Send ▾» med bare «Send beskjed» og «Send kursbevis» (manuelt, navn og mobilnummer skrives inn); «Send påminnelse», «Klar til henting» og «Til hvem?» er tatt ut av menyen. Hjemknappen «⌂ I dag» står ved ☰ i topplinja på mobil og i arkhodet på mobil (lukker arket først); logoen gjør det samme på PC.",
             "hvor": "ny-admin/idag.js, ny-admin/felles.js, ny-admin/kalender.js, ny-admin/kalender.css, ny-admin/kurs.js, ny-admin/ny-admin.css",
             "kode": [
                 {
@@ -8424,21 +8424,14 @@
                     "fil": "ny-admin/felles.js",
                     "finnes": [
                         "['kalender', 'Kalender', '▦', 'mobil']",
-                        "<div class=\"hurtig-tittel\">Send</div>",
-                        "['beskjed', 'Send beskjed', 'SMS og/eller e-post til et kurs, en dato eller én person']",
-                        "['henting', 'Klar til henting', 'Meld at keramikken er klar']",
                         "<button class=\"hjem\" type=\"button\" data-side=\"idag\"><span aria-hidden=\"true\">⌂</span> I dag</button>",
                         "${erMobil() ? '' : `<button class=\"tall-pille inne-pille\"",
-                        "if (d.send) return NA.send ? NA.send(d.send) : null;"
+                        "if (d.send) { sendApen = false; tegnMeny(); return NA.send ? NA.send(d.send) : null; }"
                     ]
                 },
                 {
                     "fil": "ny-admin/kalender.js",
                     "finnes": [
-                        "<small>Til hvem?</small>",
-                        "data-v=\"okt\">Et kurs og en dato</button>",
-                        "data-v=\"en\">Én person</button>",
-                        "data-v=\"medlemmer\">Alle medlemmer</button>",
                         "class=\"nkm-baand\" data-baand",
                         "function baandRull(baand)"
                     ]
@@ -8454,6 +8447,69 @@
                     "fil": "ny-admin/kurs.js",
                     "finnes": [
                         "window.NA.arkKursbevis = id => arkKursbevis(OKTER.get(+id));"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "send-manuelt",
+            "dato": "2026-10-11",
+            "hva": "Eieren GO 11.10.2026 (skissen send-manuelt.html): «Send» i hamburgermenyen på mobil i ny admin er nedtrekket «Send ▾» (aria-expanded, lukket til det trykkes på, trykkflate minst 44 px) med bare «Send beskjed» og «Send kursbevis», begge med underteksten «Skriv navn og mobilnummer selv». «Send påminnelse» og «Klar til henting» er tatt ut av menyen (finnes på kursarket og i «Ovn er tømt»). Send beskjed: arket Navn · Mobilnummer · Beskjed · «Send SMS»; norsk mobilnummer (åtte siffer, 4 eller 9 først, som normaliser_telefon), forslag fra medlemmer og deltakere mens navnet skrives (forslaget fyller nummeret), ingenting forhåndsvalgt; sendes med den eksisterende beskjed.php (til=en, bare SMS, krev_admin, revider beskjed_sendt) — ingen ny sender; SMS av gir den eksisterende feilmeldingen. Send kursbevis: arket Kurs og dato (tidligere og kommende økter) · Navn (står på beviset) · Mobilnummer · «Send kursbevis»; personen legges til med den eksisterende pamelding.php legg-til, betalingsmåte «Gratis», uten bekreftelse (ingen ny pengeflyt, ingen omsetning), og så sendes den eksisterende kursbevis-SMS-en (malen kursbevis_sms, kort lenke /k/) med pamelding.php handling=kursbevis kanal=sms. Står personen alt på økta med samme nummer, lages ingen ny påmelding; bare beviset sendes. Ingen nye kundetekster.",
+            "hvor": "ny-admin/felles.js, ny-admin/kalender.js, ny-admin/ny-admin.css, api/admin/beskjed.php, api/admin/pamelding.php, tests/send-manuelt.php",
+            "kode": [
+                {
+                    "fil": "ny-admin/felles.js",
+                    "finnes": [
+                        "const SEND = [['beskjed', 'Send beskjed', 'Skriv navn og mobilnummer selv'], ['kursbevis', 'Send kursbevis', 'Skriv navn og mobilnummer selv']];",
+                        "data-sendapen aria-expanded=\"${sendApen}\" aria-controls=\"send-valg\"><span class=\"ic\">✉</span>Send ▾</button>",
+                        "<div class=\"send-valg\" id=\"send-valg\" ${sendApen ? '' : 'hidden'}>"
+                    ],
+                    "ikkeFinnes": [
+                        "'Send påminnelse', 'Velg kurs og dato'",
+                        "['henting', 'Klar til henting'"
+                    ]
+                },
+                {
+                    "fil": "ny-admin/kalender.js",
+                    "finnes": [
+                        "<small>Mobilnummer</small>",
+                        "<small>Beskjed</small>",
+                        "data-k=\"msBeskjedOk\" disabled>Send SMS</button>",
+                        "<small>Kurs og dato</small>",
+                        "navnFelt('Navn (står på beviset)')",
+                        "data-k=\"msKursbevisOk\" disabled>Send kursbevis</button>",
+                        "api('beskjed.php', {til: 'en', navn, telefon: tlf, tekst, norskMobil: 'ja', ...kanalFelt('sms')})",
+                        "{handling: 'legg-til', oktId, navn, telefon: tlf, antall: 1, betaltMaate: 'Gratis', varsle: 'nei'",
+                        "api('pamelding.php', {handling: 'kursbevis', id, kanal: 'sms'})",
+                        "const fra = (h.deltakere || []).find(d => norskMobil(d.tlf) === tlf);"
+                    ],
+                    "ikkeFinnes": [
+                        "<small>Til hvem?</small>"
+                    ]
+                },
+                {
+                    "fil": "ny-admin/ny-admin.css",
+                    "finnes": [
+                        ".nav.send-drop{min-height:44px}"
+                    ]
+                },
+                {
+                    "fil": "api/admin/pamelding.php",
+                    "finnes": [
+                        "if (Foresporsel::tekst('kanal') === 'sms') {",
+                        "Varsel::mal('kursbevis_sms', ['telefon' => $tlf], ["
+                    ]
+                },
+                {
+                    "fil": "api/admin/beskjed.php",
+                    "finnes": [
+                        "Foresporsel::tekst('norskMobil') === 'ja' && !preg_match('/^\\+47[49]\\d{7}$/', $tlfTil)"
+                    ]
+                },
+                {
+                    "fil": "tests/alle.sh",
+                    "finnes": [
+                        "php tests/send-manuelt.php"
                     ]
                 }
             ]

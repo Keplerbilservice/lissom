@@ -162,6 +162,11 @@ if ($til === 'okt') {
     if ($epostTil !== '' && !filter_var($epostTil, FILTER_VALIDATE_EMAIL)) {
         Svar::feil('E-postadressen ser ikke riktig ut.');
     }
+    // «Send beskjed» manuelt fra menyen i ny admin (vedtak send-manuelt):
+    // nummeret skal vaere et norsk mobilnummer (aatte siffer, 4 eller 9 foerst).
+    if (Foresporsel::tekst('norskMobil') === 'ja' && !preg_match('/^\+47[49]\d{7}$/', $tlfTil)) {
+        Svar::feil('Telefonnummeret ser ikke riktig ut.');
+    }
 
     $mottakere = [[
         'navn'    => $navn !== '' ? $navn : 'der',

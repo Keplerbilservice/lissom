@@ -1046,38 +1046,113 @@ export async function velgOkt(tittel, neste) {
     ${okter.length ? '' : '<p class="muted">Ingen kurs</p>'}`);
 }
 H.velgOktValgt = b => VO.neste?.(+b.dataset.okt);
-// «Send beskjed»: «Til hvem?» først. Ingenting er valgt på forhånd.
-function arkTilHvem() {
-  ark(`<div class="ark-head"><h2>✉ Send beskjed</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
-    <div><small>Til hvem?</small><div class="til-hvem" style="margin-top:6px"><button class="knapp" data-k="tilHvem" data-v="okt">Et kurs og en dato</button><button class="knapp" data-k="tilHvem" data-v="en">Én person</button><button class="knapp" data-k="tilHvem" data-v="medlemmer">Alle medlemmer</button></div></div>`);
+// ── «Send ▾» manuelt (eieren GO 11.10.2026, vedtak send-manuelt) ────────────
+// To ark der navn og mobilnummer skrives inn for hånd. Ingenting er forhåndsvalgt. Mens navnet skrives, foreslås
+// medlemmer og deltakere; et forslag fyller inn nummeret. Ingen ny sender: beskjeden går med beskjed.php (til=en,
+// bare SMS), kursbeviset med pamelding.php (legg-til «Gratis» uten bekreftelse, så handling=kursbevis kanal=sms).
+// Norsk mobilnummer som normaliser_telefon (app/config.php): åtte siffer, 4 eller 9 først, +47/0047 tas bort.
+export const norskMobil = raa => {
+  let t = String(raa || '').replace(/\D/g, '');
+  if (t.startsWith('0047')) t = t.slice(4); else if (t.startsWith('47') && t.length === 10) t = t.slice(2);
+  return /^[49]\d{7}$/.test(t) ? '+47' + t : '';
+};
+const MS = {hva: '', personer: null, medlemId: 0, okter: []};
+async function hentPersoner() {
+  if (MS.personer) return MS.personer;
+  const [m, p] = await Promise.all([api('medlemmer.php').catch(() => ({})), api('pameldte.php').catch(() => ({}))]);
+  const sett = new Map();
+  for (const x of m.medlemmer || []) { const t = norskMobil(x.telefon); if (t) sett.set(t + '|' + x.navn, {navn: x.navn, telefon: t, medlemId: Number(x.id) || 0}); }
+  for (const x of p.deltakere || []) { const t = norskMobil(x.tlf); if (t && !sett.has(t + '|' + x.navn)) sett.set(t + '|' + x.navn, {navn: x.navn, telefon: t, medlemId: Number(x.medlemId) || 0}); }
+  return (MS.personer = [...sett.values()]);
 }
-let PERSONER = null;
-async function arkVelgPerson() {
-  ark(`<div class="ark-head"><h2>Én person</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div><p class="muted">Henter medlemmene …</p>`);
-  if (!PERSONER) PERSONER = ((await api('medlemmer.php')).medlemmer || []).filter(m => m.epost || m.telefon);
-  ark(`<div class="ark-head"><h2>Én person</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
-    <label class="en-felt" style="max-width:none"><small>Søk etter navn</small><input id="nk-person-sok" class="felt" type="search" autocomplete="off"></label>
-    <div class="velg-liste" id="nk-personer"></div>`);
-  tegnPersoner('');
+const lukkKnapp = '<button class="lukk" data-k="lukk" aria-label="Lukk">×</button>';
+const navnFelt = (tekst) => `<label class="en-felt" style="max-width:none"><small>${tekst}</small><input id="ms-navn" class="felt" autocomplete="off"></label>
+  <div class="velg-liste" id="ms-forslag"></div>
+  <label class="en-felt" style="max-width:none"><small>Mobilnummer</small><input id="ms-tlf" class="felt" type="tel" inputmode="tel" autocomplete="off"></label>`;
+function arkSendBeskjed() {
+  Object.assign(MS, {hva: 'beskjed', medlemId: 0});
+  ark(`<div class="ark-head"><h2>Send beskjed</h2>${lukkKnapp}</div>
+    ${navnFelt('Navn')}
+    <label class="en-felt" style="max-width:none"><small>Beskjed</small><textarea id="ms-tekst" class="felt" rows="5"></textarea></label>
+    <div class="ark-fot"><button class="knapp" data-k="lukk">Avbryt</button><button class="knapp hoved" id="ms-ok" data-k="msBeskjedOk" disabled>Send SMS</button></div>`);
+  hentPersoner().then(msForslag).catch(() => {});
 }
-function tegnPersoner(q) {
-  const boks = document.getElementById('nk-personer'); if (!boks) return;
-  const s = q.trim().toLowerCase();
-  const treff = (PERSONER || []).filter(m => !s || String(m.navn).toLowerCase().includes(s)).slice(0, 40);
-  boks.innerHTML = treff.map(m => `<button type="button" class="rad-knapp" data-k="personValgt" data-id="${Number(m.id)}"><b>${esc(m.navn)}</b><small>${esc([m.epost, m.telefon].filter(Boolean).join(' · '))}</small></button>`).join('') || '<p class="muted">Ingen treff.</p>';
+async function arkSendKursbevis() {
+  Object.assign(MS, {hva: 'kursbevis', medlemId: 0});
+  ark(`<div class="ark-head"><h2>Send kursbevis</h2>${lukkKnapp}</div><p class="muted">Henter kursene …</p>`);
+  const i0 = idag();
+  const d = await hentPeriode(pluss(i0, -60), pluss(i0, 21));
+  MS.okter = (d.hendelser || []).filter(h => erOkt(h) && !h.avlyst).sort((a, b) => (a.dato + a.tid).localeCompare(b.dato + b.tid));
+  const valg = h => `<option value="${h.oktId}">${esc(h.tittel)} · ${esc(DAG[ukedag(h.dato)].slice(0, 3))} ${kortDato(h.dato)} kl. ${esc(h.tid)}</option>`;
+  const kommende = MS.okter.filter(h => h.dato >= i0), tidligere = MS.okter.filter(h => h.dato < i0).reverse();
+  ark(`<div class="ark-head"><h2>Send kursbevis</h2>${lukkKnapp}</div>
+    <label class="en-felt" style="max-width:none"><small>Kurs og dato</small><select id="ms-okt" class="felt"><option value="">Velg kurs og dato</option>
+      ${tidligere.length ? `<optgroup label="Tidligere">${tidligere.map(valg).join('')}</optgroup>` : ''}
+      ${kommende.length ? `<optgroup label="Kommende">${kommende.map(valg).join('')}</optgroup>` : ''}</select></label>
+    ${navnFelt('Navn (står på beviset)')}
+    <div class="ark-fot"><button class="knapp" data-k="lukk">Avbryt</button><button class="knapp hoved" id="ms-ok" data-k="msKursbevisOk" disabled>Send kursbevis</button></div>`);
+  hentPersoner().then(msForslag).catch(() => {});
 }
-document.addEventListener('input', e => { if (e.target.id === 'nk-person-sok') tegnPersoner(e.target.value); });
-H.personValgt = b => { const m = (PERSONER || []).find(x => Number(x.id) === +b.dataset.id); if (m) arkBeskjed({til: 'en', navn: m.navn, epost: m.epost || '', telefon: m.telefon || ''}); };
-H.tilHvem = b => {
-  const v = b.dataset.v;
-  if (v === 'okt') return velgOkt('Send beskjed', id => arkBeskjed(id));
-  if (v === 'en') return arkVelgPerson();
-  return arkBeskjed({til: 'medlemmer'});
+const msVerdi = id => (document.getElementById(id)?.value || '').trim();
+function msSjekk() {
+  const b = document.getElementById('ms-ok'); if (!b) return;
+  b.disabled = !(msVerdi('ms-navn') && msVerdi('ms-tlf') && (MS.hva === 'beskjed' ? msVerdi('ms-tekst').length >= 3 : +msVerdi('ms-okt') > 0));
+}
+function msForslag() {
+  const boks = document.getElementById('ms-forslag'); if (!boks) return;
+  const ord = msVerdi('ms-navn').toLocaleLowerCase('nb-NO').split(/\s+/).filter(Boolean);
+  const treff = ord.length && MS.personer ? MS.personer.filter(x => ord.every(o => String(x.navn).toLocaleLowerCase('nb-NO').includes(o))).slice(0, 6) : [];
+  boks.innerHTML = treff.map(x => `<button type="button" class="rad-knapp" data-k="msVelg" data-i="${MS.personer.indexOf(x)}"><b>${esc(x.navn)}</b><small>${esc(x.telefon)}</small></button>`).join('');
+}
+document.addEventListener('input', e => {
+  const id = e.target.id;
+  if (!['ms-navn', 'ms-tlf', 'ms-tekst', 'ms-okt'].includes(id)) return;
+  if (id === 'ms-navn' || id === 'ms-tlf') MS.medlemId = 0;
+  if (id === 'ms-navn') msForslag();
+  msSjekk();
+});
+document.addEventListener('change', e => { if (e.target.id === 'ms-okt') msSjekk(); });
+H.msVelg = b => {
+  const x = MS.personer?.[+b.dataset.i]; if (!x) return;
+  document.getElementById('ms-navn').value = x.navn;
+  document.getElementById('ms-tlf').value = x.telefon;
+  MS.medlemId = x.medlemId || 0;
+  document.getElementById('ms-forslag').innerHTML = '';
+  msSjekk();
+};
+H.msBeskjedOk = async b => {
+  const navn = msVerdi('ms-navn'), tlf = norskMobil(msVerdi('ms-tlf')), tekst = msVerdi('ms-tekst');
+  if (!tlf) return toast('Telefonnummeret ser ikke riktig ut.');
+  b.disabled = true;
+  try {
+    const r = await api('beskjed.php', {til: 'en', navn, telefon: tlf, tekst, norskMobil: 'ja', ...kanalFelt('sms')});
+    lukk(true); toast(`<b>Lagt i kø:</b> ${r.epost || 0} e-post og ${r.sms || 0} SMS til ${esc(r.hvem || '')}.${ikkeNaaddTekst(r.ikke_naadd || [])}`);
+  } catch (e) { b.disabled = false; throw e; }
+};
+H.msKursbevisOk = async b => {
+  const oktId = +msVerdi('ms-okt'), navn = msVerdi('ms-navn'), tlf = norskMobil(msVerdi('ms-tlf'));
+  if (!tlf) return toast('Telefonnummeret ser ikke riktig ut.');
+  const h = MS.okter.find(x => x.oktId === oktId); if (!h) return;
+  b.disabled = true;
+  // Står personen alt på økta med samme nummer, lages ingen ny påmelding: bare kursbeviset sendes.
+  const fra = (h.deltakere || []).find(d => norskMobil(d.tlf) === tlf);
+  let id = fra ? +fra.bookingId : 0, lagtTil = '';
+  if (!id) {
+    try {
+      const r = await api('pamelding.php', {handling: 'legg-til', oktId, navn, telefon: tlf, antall: 1, betaltMaate: 'Gratis', varsle: 'nei', ...(MS.medlemId ? {medlemId: MS.medlemId} : {})});
+      id = +r.id; lagtTil = r.beskjed || '';
+    } catch (e) { b.disabled = false; throw e; }
+  }
+  try {
+    const r = await api('pamelding.php', {handling: 'kursbevis', id, kanal: 'sms'});
+    lukk(true); toast(esc(r.beskjed || ''));
+  } catch (e) {
+    lukk(true); toast(`${lagtTil ? esc(lagtTil) + ' ' : ''}<b>Gikk ikke:</b> ${esc(e.message)}`);
+  }
+  if (lagtTil) await oppfrisk().catch(() => {});
 };
 async function send(hva) {
-  if (hva === 'beskjed') return arkTilHvem();
-  if (hva === 'kursbevis') return velgOkt('Send kursbevis', id => window.NA?.arkKursbevis?.(id));
-  if (hva === 'paaminnelse') return velgOkt('Send påminnelse', id => arkPaaminnelse(id));
-  if (hva === 'henting') return window.NA?.arkFerdigbrent?.();
+  if (hva === 'beskjed') return arkSendBeskjed();
+  if (hva === 'kursbevis') return arkSendKursbevis();
 }
 if (window.NA) Object.assign(window.NA, {send: (hva) => Promise.resolve(send(hva)).catch(e => toast(`<b>Gikk ikke:</b> ${esc(e.message)}`)), velgOkt, ovnSlutt});

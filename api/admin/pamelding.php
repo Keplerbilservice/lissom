@@ -898,7 +898,8 @@ if ($handling === 'kursbevis-maaned') {
 if ($handling === 'kursbevis') {
     $b = DB::en(
         "SELECT b.id, c.tittel, COALESCE(m.navn, b.gjest_navn) AS navn,
-                COALESCE(m.epost, b.gjest_epost) AS epost
+                COALESCE(m.epost, b.gjest_epost) AS epost,
+                COALESCE(m.telefon, b.gjest_telefon) AS telefon
            FROM bookings b
            JOIN courses c ON c.id = b.course_id
       LEFT JOIN members m ON m.id = b.member_id
@@ -913,6 +914,29 @@ if ($handling === 'kursbevis') {
         Svar::feil(DB::harKolonne('bookings', 'bevis_kode')
             ? 'Påmeldingen gir ikke kursbevis (ikke betalt, trukket tilbake, eller kurset er ikke ferdig).'
             : 'Vedlikeholdet må kjøres først (oppdatering 215).');
+    }
+    // «Send kursbevis» manuelt fra menyen i ny admin (eieren, GO 11. oktober
+    // 2026, vedtak send-manuelt): den samme kursbevis-SMS-en som etter kurset
+    // (malen kursbevis_sms med kort lenke /k/, som bin/cron.php anmeldelser),
+    // til nummeret paa paameldingen. Ingen e-post.
+    if (Foresporsel::tekst('kanal') === 'sms') {
+        $tlf = normaliser_telefon((string) ($b['telefon'] ?? ''));
+        if ($tlf === '') {
+            Svar::feil('Påmeldingen har ikke mobilnummer.');
+        }
+        if (!Varsel::smsMulig()) {
+            Svar::feil('SMS er ikke satt opp, så ingen SMS ble sendt.', 409);
+        }
+        $lagt = Varsel::mal('kursbevis_sms', ['telefon' => $tlf], [
+            'fornavn' => explode(' ', trim((string) $b['navn']))[0],
+            'kurs'    => (string) $b['tittel'],
+            'lenke'   => (string) preg_replace('~api/kursbevis\.php\?booking=(\d+)&k=([a-f0-9]{32})~', 'k/$1.$2', $url),
+        ], 'booking', $id);
+        if ($lagt === 0) {
+            Svar::feil('Kursbeviset ble ikke sendt: meldingen «Kursbevis (SMS)» er slått av under Maler.', 409);
+        }
+        revider('kursbevis_sendt', 'booking', $id, ['til' => $tlf, 'kanal' => 'sms']);
+        Svar::ok(['beskjed' => 'Kursbeviset er sendt til ' . $tlf . '.']);
     }
     $til = trim(Foresporsel::tekst('til'));
     $mottaker = $til !== '' ? $til : trim((string) $b['epost']);

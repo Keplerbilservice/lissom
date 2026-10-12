@@ -8679,6 +8679,26 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "kurs-grupper-gradient",
+            "dato": "2026-10-12",
+            "hva": "Eieren 12.10.2026: «Deltakere, Send, Datoen og Kurset, kan de få en svak gradient bakgrunn, så man ser at det er en slags kolonne». Hver gruppe på kursdatoen i ny admin har en svak gradient (sand øverst, tonet ut mot papir) og runde hjørner.",
+            "hvor": "Ny admin › kursdatoen (Deltakere · Send · Datoen · Kurset)",
+            "kode": [
+                {
+                    "fil": "ny-admin/ny-admin.css",
+                    "finnes": [
+                        ".hgruppe{display:grid;gap:8px;align-content:start;padding:12px 14px 14px;border-radius:14px;background:linear-gradient(180deg,var(--ground),var(--paper) 90%)}"
+                    ]
+                },
+                {
+                    "fil": "ny-admin/kalender.css",
+                    "finnes": [
+                        ".hgruppe{display:grid;gap:8px;align-content:start;padding:12px 14px 14px;border-radius:14px;background:linear-gradient(180deg,var(--ground),var(--paper) 90%)}"
+                    ]
+                }
+            ]
         }
     ]
 }

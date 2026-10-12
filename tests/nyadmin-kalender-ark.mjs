@@ -103,9 +103,10 @@ try{
   const kursRekt=await A.boundingBox();
   await A.click();await ark(p).waitFor();
   // PC (eieren 12.10.2026, «Over kurset»): arket åpnes over kurset, ikke festet til høyre kant, og helt innenfor skjermen.
-  {const r=await ark(p).boundingBox(),vp=p.viewportSize();
-   assert.ok(r.x<=Math.max(8,kursRekt.x)+2&&r.x+r.width>kursRekt.x,`arket står over kurset (ark x=${r.x}, kurs x=${kursRekt.x})`);
-   assert.ok(r.x+r.width<=vp.width-6&&r.y>=6&&r.y+r.height<=vp.height-6,'arket er innenfor skjermen');
+  // Arket glir inn (0,15 s, design.css): målt etter at det har lagt seg.
+  {await p.waitForTimeout(500);const r=await ark(p).boundingBox(),vp=p.viewportSize(),hvor=`ark ${JSON.stringify(r)}, kurs ${JSON.stringify(kursRekt)}, skjerm ${JSON.stringify(vp)}`;
+   assert.ok(r.x<=Math.max(8,kursRekt.x)+2&&r.x+r.width>kursRekt.x,`arket står over kurset (${hvor})`);
+   assert.ok(r.x+r.width<=vp.width-6&&r.y>=6&&r.y+r.height<=vp.height-6,`arket er innenfor skjermen (${hvor})`);
    assert.ok(r.x+r.width<vp.width-6||r.x>8,'ikke festet til høyre kant');}
   assert.equal(await ark(p).getByRole('tab',{name:'Deltakere (2)'}).getAttribute('aria-selected'),'true','Deltakere er valgt');
   assert.ok(await ark(p).getByRole('button',{name:'▶ Start kurset'}).count(),'Start kurset i arket');

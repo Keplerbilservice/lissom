@@ -142,7 +142,7 @@
       chat: () => knapp('Marker som lest', 'chat-lest', false, `data-k="${k}"`) + knapp('Svar', 'chat', true, `data-k="${k}"`),
       innboks: () => knapp('Svar', 'innboks', true, `data-k="${k}"`),
       venteliste: () => knapp('Tilby plassen til ' + esc(s.fornavn || 'første på lista'), 'venteliste', true, `data-k="${k}"`),
-      henting: () => knapp('Send «Klar til henting»', 'henting', true, `data-k="${k}"`),
+      henting: () => knapp('Merk hentet', 'hentet', false, `data-k="${k}"`) + knapp('Send «Klar til henting»', 'henting', true, `data-k="${k}"`),
       lager: () => knapp('Bestill mer', 'bestill', true, `data-k="${k}"`),
       feil: () => knapp('Løst', 'feil-lost', false, `data-k="${k}"`) + knapp('Les detaljer', 'feil', true, `data-k="${k}"`),
       /* Avlyst dato, betalt kontant/kort i kassa (eieren 09.10.2026): verkstedet gir pengene tilbake og merker det her. */
@@ -196,6 +196,30 @@
       if (slag === 'tomt') arkFerdigbrent();
       else NA.toast(`<b>${OVN[slag]}.</b> Medlemmene ser det på Min side.`);
     } catch (e) { NA.toast(esc(e.message)); tegn(NA.sist); }
+  }
+  /* «Merk hentet» (eieren 12.10.2026, valgt «Velg hvem»): deltakerne som alt har hentet krysses av før beskjeden sendes.
+     Samme lagring som gammel admin (ferdigbrent.php handling=hentet). De som er merket, får ikke «Klar til henting»;
+     har alle hentet, er saken borte (oversikt.php teller bare dem som ikke har hentet). */
+  async function arkHentet(s) {
+    const oktId = Number(s.id);
+    let d;
+    try { d = await NA.api('ferdigbrent.php?oktId=' + oktId); } catch (e) { NA.toast(esc(e.message)); return; }
+    const delt = d.deltakere || [];
+    const inn = NA.apneArk(`${NA.arkHode('Merk hentet')}
+      <p class="muted">${esc(String(s.tittel).replace(/^Klar til henting: /, ''))} · ${esc(String(s.under).split(' · ')[0])}</p>
+      <div>${delt.map(p => `<div class="rad"><label class="velg-rad"><input type="checkbox" value="${Number(p.id)}" ${p.hentet ? 'checked' : ''}><span><b>${esc(p.navn)}</b></span></label></div>`).join('') || '<p class="tom">Ingen deltakere.</p>'}</div>
+      <div class="ark-fot"><button class="knapp" type="button" data-lukk>Avbryt</button><button class="knapp hoved" type="button" data-lagre>Lagre</button></div>`);
+    const lagre = inn.querySelector('[data-lagre]');
+    lagre.onclick = async () => {
+      const endret = [...inn.querySelectorAll('input[type=checkbox]')].filter(i => i.checked !== !!delt.find(p => p.id === Number(i.value))?.hentet);
+      lagre.disabled = true;
+      try {
+        for (const i of endret) await NA.api('ferdigbrent.php', {data: {handling: 'hentet', bookingId: Number(i.value), hentet: i.checked ? 'ja' : 'nei'}});
+        const alle = delt.length && [...inn.querySelectorAll('input[type=checkbox]')].every(i => i.checked);
+        NA.lukkArk(true);
+        if (alle) ferdig(nokkel(s), 'Alle har hentet.'); else { NA.toast('Lagret.'); oppdater(true).catch(() => {}); }
+      } catch (e) { NA.toast(esc(e.message)); lagre.disabled = false; }
+    };
   }
   /* Kursdatoene som er klare til henting (samme liste som «Klar til henting» i Må gjøres). Ingenting er valgt på forhånd. */
   function arkFerdigbrent() {
@@ -600,6 +624,7 @@
         if (!await NA.bekreft('Avvis', 'Avvis bidraget. Opplastingen slettes.', 'Avvis')) return;
         return kall('medlemsforslag.php', {handling: 'avvis', id}, 'Bidraget er avvist.');
       case 'venteliste': return kall('venteliste.php', {handling: 'varsle', id}, 'Plassen er tilbudt.');
+      case 'hentet': return arkHentet(s);
       case 'henting':
         if (!await NA.bekreft('Send «Klar til henting»?', 'Publiser ' + String(s.tittel).replace(/^Klar til henting: /, '') + ' på lissom.no/ferdigbrent og legg beskjed i kø til de som ikke har fått den.', 'Send')) return;
         return kall('ferdigbrent.php', {handling: 'meld-alle', oktId: id}, 'Sendt.');

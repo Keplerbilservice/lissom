@@ -8679,6 +8679,27 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "merk-hentet-ma-gjores",
+            "dato": "2026-10-12",
+            "hva": "Eieren 12.10.2026: «de som har hentet keramikken sin, uten at jeg har sendt eller før jeg har sendt påminnelse, må kunne merkes utført … rett i påminnelsen, på samme sted som send». Valgt «Velg hvem»: «Merk hentet» ved siden av «Send «Klar til henting»» i Må gjøres åpner deltakerne med avkrysning (Avbryt / Lagre). De som er merket, får ikke beskjeden og telles ikke; har alle hentet, er saken borte.",
+            "hvor": "Ny admin › I dag › Må gjøres › Klar til henting",
+            "kode": [
+                {
+                    "fil": "ny-admin/idag.js",
+                    "finnes": [
+                        "henting: () => knapp('Merk hentet', 'hentet', false, `data-k=\"${k}\"`) + knapp('Send «Klar til henting»', 'henting', true, `data-k=\"${k}\"`),",
+                        "case 'hentet': return arkHentet(s);"
+                    ]
+                },
+                {
+                    "fil": "api/admin/oversikt.php",
+                    "finnes": [
+                        "$ikkeHentet = DB::harKolonne('bookings', 'hentet_at') ? ' AND b.hentet_at IS NULL' : '';"
+                    ]
+                }
+            ]
         }
     ]
 }

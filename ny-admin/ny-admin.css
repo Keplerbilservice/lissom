@@ -108,7 +108,8 @@ small{font-size:15px;color:var(--muted)}
 .tom{color:var(--muted);padding:6px 0}
 .valgknapper{display:flex;gap:8px;flex-wrap:wrap}
 .hgrupper{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
-.hgruppe{display:grid;gap:8px;align-content:start}
+.hgruppe{display:grid;gap:8px;align-content:start;padding:12px 14px 14px;border-radius:14px;background:linear-gradient(180deg,var(--ground),var(--paper) 90%)}
+/* Svak gradient bak hver gruppe, så de leses som kolonner (eieren 12.10.2026). */
 .faner{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px}
 .faner button{border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:7px 14px;min-height:44px;font-weight:700}
 .faner button[aria-pressed=true]{background:var(--ink);color:var(--paper);border-color:var(--ink)}

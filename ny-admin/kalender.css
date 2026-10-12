@@ -216,7 +216,8 @@ textarea.felt{min-height:110px;resize:vertical}
 .kurskort-navn{flex:1;min-width:200px;display:grid;gap:2px}
 .kurskort-navn b{font-size:20px}
 .hgrupper{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
-.hgruppe{display:grid;gap:8px;align-content:start}
+.hgruppe{display:grid;gap:8px;align-content:start;padding:12px 14px 14px;border-radius:14px;background:linear-gradient(180deg,var(--ground),var(--paper) 90%)}
+/* Svak gradient bak hver gruppe, så de leses som kolonner (eieren 12.10.2026). */
 .nk-kurs .rad .lenke{flex:1 1 200px;min-width:0}
 .nk-kurs .rad .lenke b{display:block}
 /* Hele deltakerraden er knappen (navn, merke og hjelpetekst); «Ta betalt» står ved siden av. */

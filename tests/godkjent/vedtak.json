@@ -8579,6 +8579,24 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "stempling-uten-pop",
+            "dato": "2026-10-12",
+            "hva": "Eieren 12.10.2026: «når medlemmene stempler inn, så kan de velge paint on pots, den vil jeg ta vekk». Ressursen «Paint on Pots» (plassgrensen fra migrasjon 258) vises ikke som valg ved innstempling på Min side, og lagres ikke om en gammel fane sender den. Ressursen og plassgrensen står som før.",
+            "hvor": "Min side › Stemple inn",
+            "kode": [
+                {
+                    "fil": "api/stempling.php",
+                    "finnes": [
+                        "WHERE aktiv = 1 AND navn <> 'Paint on Pots' ORDER BY navn",
+                        "AND navn <> 'Paint on Pots'\","
+                    ],
+                    "ikkeFinnes": [
+                        "DB::alle('SELECT id, navn, antall FROM ressurser WHERE aktiv = 1 ORDER BY navn')"
+                    ]
+                }
+            ]
         }
     ]
 }

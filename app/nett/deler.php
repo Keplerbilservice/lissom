@@ -157,7 +157,7 @@ final class Deler
             . ($compact ? '4px clamp(8px, 1.2vw, 20px)' : 'var(--space-4) clamp(var(--space-3), 1.6vw, var(--space-8))')
             . '; margin: 0 auto; min-width: 0; flex: 1; overflow: hidden; flex-wrap: nowrap;">';
         $lenker = self::LENKER;
-        $lenker[] = ['Handlekurv', '/kasse'];
+        $lenker[] = ['Handlekurv', '/handlekurv'];
         foreach ($lenker as [$navn, $href]) {
             $paa = $navn === $aktiv;
             $farge = $paa ? 'var(--lissom-brown)' : 'var(--brown-500)';

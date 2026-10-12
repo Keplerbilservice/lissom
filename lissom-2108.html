@@ -34479,7 +34479,7 @@ class Component extends DCLogic {
       { sti: '/nyttig-info/medlemsinfo',    side: 'plakatinfo' },
       { sti: '/nyttig-info/trivselsregler', side: 'plakattrivsel' },
       { sti: '/booking',       side: 'booking' },
-      { sti: '/kasse',         side: 'kasse' },
+      { sti: '/handlekurv',    side: 'kasse' },
       { sti: '/logg-inn',      side: 'login' },
       // Personvern og vilkaar hadde ingen adresse. Skjermene fantes, men den
       // som fikk en lenke til /personvern havnet paa forsiden — og en
@@ -37736,7 +37736,11 @@ class Component extends DCLogic {
     const k = this.state.valgtKurs || {};
     if (this.folgerApningstid()) return parseInt(this.katalogKurs().maksAntall, 10) || 12;
     const erDreiing = (k.tema === 'Dreiing') || ((k.title || '').toLowerCase().indexOf('dreie') >= 0);
-    return erDreiing ? 8 : 12;
+    // Aldri flere enn det er ledig paa datoen som staar valgt (eieren
+    // 12.10.2026: kunne velge 6 med 5 ledige). Serveren avviser det uansett.
+    const valgt = this.valgtKatDato();
+    const ledige = valgt ? Number(valgt.ledige) : 0;
+    return Math.min(erDreiing ? 8 : 12, ledige > 0 ? ledige : Infinity);
   }
 
   /** «onsdag 14. oktober, 17:00–19:00 · 2 personer» — det som blir booket. */
@@ -38131,7 +38135,7 @@ class Component extends DCLogic {
     // serveren (api/ordre.php) sjekker dem. Vipps-betaling krever fortsatt
     // innlogging.
     if (!this.state.innlogget && betaling !== 'henting') {
-      this.sendTilInnlogging('/kasse', 'Bestillingen ble ikke sendt.');
+      this.sendTilInnlogging('/handlekurv', 'Bestillingen ble ikke sendt.');
       return;
     }
     if (this._kjopPagaar) return;
@@ -42949,6 +42953,23 @@ class Component extends DCLogic {
         }
       })
       .catch(() => {});
+  }
+
+  // Katalogdatoen som staar valgt i bookingen: den trykkede oekta, ellers
+  // den ledige tida paa dagen som staar valgt (?dag= fra kurssida setter
+  // bare dagen), ellers den foerste. Samlingene og antall plasser leste
+  // bare bOktId, og viste den foerste datoen naar kunden kom med ?dag=
+  // (eieren 12.10.2026: valgte 7.–8. november, saa 4.–5.).
+  valgtKatDato() {
+    const k = this.state.valgtKurs || {};
+    const kat = (this.state.katalog || []).find(x => x.tittel === (k.title || k.tittel || ''));
+    const datoer = (kat && kat.datoer) || [];
+    if (this.state.bOktId) return datoer.find(d => d.oktId === this.state.bOktId) || null;
+    if (this.state.bDag) {
+      const paaDagen = datoer.filter(d => String(d.dag || d.dato || '') === this.state.bDag);
+      if (paaDagen.length) return paaDagen.find(d => d.ledige > 0) || paaDagen[0];
+    }
+    return datoer[0] || null;
   }
 
   // Datoene for kurset som bookes, hentet fra serveren. Hver dato baerer med
@@ -61120,7 +61141,7 @@ class Component extends DCLogic {
           return this.prisAv(k.title || '') || 0;
         })();
         const erDreiing = (k.tema === 'Dreiing') || ((k.title || '').toLowerCase().indexOf('dreie') >= 0);
-        const antall = ((k.tema || '') === 'Medlemskap') ? 1 : Math.min(this.state.bAntallN || 1, erDreiing ? 8 : 12);
+        const antall = this.valgtAntall();
         const rabatt = this.rabattFor(k, antall);
         const brutto = grunn * antall;
         // Medlemsrabatten gjelder medlemmets egen plass, og den stoerste av
@@ -73885,12 +73906,7 @@ class Component extends DCLogic {
       // Den som melder seg paa et kurs over flere dager skal se alle dagene
       // for hen betaler — ikke oppdage samling to etterpaa.
       ...(() => {
-        const k = this.state.valgtKurs || {};
-        const kat = (this.state.katalog || []).find(x => x.tittel === (k.title || k.tittel || ''));
-        const datoer = (kat && kat.datoer) || [];
-        const valgt = this.state.bOktId
-          ? datoer.find(d => d.oktId === this.state.bOktId)
-          : datoer[0];
+        const valgt = this.valgtKatDato();
         const samlinger = (valgt && valgt.samlinger) || [];
         return {
           bHarSamlinger: samlinger.length > 1,

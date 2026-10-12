@@ -8720,6 +8720,98 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "samlinger-folger-valgt-dato",
+            "dato": "2026-10-12",
+            "hva": "Eieren 12.10.2026: velger man dreiekurset 7.–8. november, sto samlingene fortsatt med 4.–5. november. Samlingene (og «Om denne datoen») følger nå datoen som er valgt, også når kunden kommer fra kurssida med ?dag= (valgtKatDato()).",
+            "hvor": "/kurs/<slug> › booking › Samlinger",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "  valgtKatDato() {",
+                        "        const valgt = this.valgtKatDato();\n        const samlinger = (valgt && valgt.samlinger) || [];"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "antall-maks-ledige",
+            "dato": "2026-10-12",
+            "hva": "Eieren 12.10.2026: skjemaet lot deg velge 6 plasser med 5 ledige. Antall plasser i bookingen er begrenset til ledige plasser på valgt dato (maksAntall()), og prisen regnes av samme antall. Serveren avviste det alt (Booking::reserverOgBetal, «Det er ikke nok ledige plasser igjen.»); test lagt til i tests/backend.php.",
+            "hvor": "/kurs/<slug> › booking › Antall plasser",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "    return Math.min(erDreiing ? 8 : 12, ledige > 0 ? ledige : Infinity);",
+                        "        const antall = this.valgtAntall();"
+                    ]
+                },
+                {
+                    "fil": "app/lib/booking.php",
+                    "finnes": [
+                        "if (self::ledigePlasser($oktId) < $antall) {",
+                        "if (self::ledigePlasser($oktId, true) < $antall) {"
+                    ]
+                },
+                {
+                    "fil": "tests/backend.php",
+                    "finnes": [
+                        "sjekk('flere plasser enn ledig avvises'"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "handlekurv-ikon-til-handlekurv",
+            "dato": "2026-10-12",
+            "hva": "Eieren 12.10.2026: handlekurvikonet gikk til verkstedets kasse-innlogging (/kasse er kassa på iPaden). Kundens handlekurv har nå adressen /handlekurv — ikonet i toppmenyen, appens adresse og retur etter innlogging.",
+            "hvor": "Toppmenyen › handlekurvikonet",
+            "kode": [
+                {
+                    "fil": "app/nett/deler.php",
+                    "finnes": [
+                        "$lenker[] = ['Handlekurv', '/handlekurv'];"
+                    ],
+                    "ikkeFinnes": [
+                        "$lenker[] = ['Handlekurv', '/kasse'];"
+                    ]
+                },
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "{ sti: '/handlekurv',    side: 'kasse' },",
+                        "this.sendTilInnlogging('/handlekurv', 'Bestillingen ble ikke sendt.');"
+                    ],
+                    "ikkeFinnes": [
+                        "{ sti: '/kasse',         side: 'kasse' },"
+                    ]
+                }
+            ],
+            "live": [
+                {
+                    "sti": "/kurs",
+                    "finnes": [
+                        "href=\"/handlekurv\""
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "tidsfilter-forste-passende-dato",
+            "dato": "2026-10-12",
+            "hva": "Eieren 12.10.2026: fra «Helg» valgte kurssida først en onsdag. Kortene under et tidsvalg (Helg, Dagtid, Kveldstid) lenker nå til kurssida med første ledige dato som passer valget (?dag=), og den står valgt.",
+            "hvor": "/kurs?tid=Helg › kurskortet",
+            "kode": [
+                {
+                    "fil": "app/nett/kort.php",
+                    "finnes": [
+                        "$href .= '?dag=' . rawurlencode($dag);"
+                    ]
+                }
+            ]
         }
     ]
 }

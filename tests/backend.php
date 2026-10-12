@@ -648,6 +648,11 @@ $litenOkt = DB::settInn('course_sessions', ['course_id'=>$liten,'start_tid'=>gmd
 Booking::reserverOgBetal($litenOkt, 1, 'Forste', 'a@example.com', '+4791234567', $medlemId);
 try { Booking::reserverOgBetal($litenOkt, 1, 'Andre', 'b@example.com', '+4791234568', $medlemId); sjekk('siste plass kan ikke bookes to ganger', false, 'slapp gjennom'); }
 catch (RuntimeException $e) { sjekk('siste plass kan ikke bookes to ganger', true, $e->getMessage()); }
+// Flere plasser i én bestilling enn det er ledig (eieren 12.10.2026: skjemaet
+// lot deg velge 6 med 5 ledige). Serveren skal avvise det, uansett skjemaet.
+$litenOkt2 = DB::settInn('course_sessions', ['course_id'=>$liten,'start_tid'=>gmdate('Y-m-d', time()+950400) . ' 10:00:00']);
+try { Booking::reserverOgBetal($litenOkt2, 2, 'Flere', 'c@example.com', '+4791234569', $medlemId); sjekk('flere plasser enn ledig avvises', false, 'slapp gjennom'); }
+catch (RuntimeException $e) { sjekk('flere plasser enn ledig avvises', str_contains($e->getMessage(), 'ledige plasser'), $e->getMessage()); }
 
 echo "\n== Norsk dato og kroner ==\n";
 sjekk('UTC blir norsk tid', Booking::norskDato('2026-09-02 15:30:00') === 'onsdag 2. september, 17:30', Booking::norskDato('2026-09-02 15:30:00'));

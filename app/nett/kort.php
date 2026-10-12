@@ -304,7 +304,20 @@ final class Kort
             return null;
         }
         $status = self::plasstekst($treff, (int) ($k['plasser'] ?? 0));
-        return array_merge($k, ['okter' => $treff, 'date' => self::kortDatoer($treff), 'status' => $status, 'cta' => $status === 'Fullbooket' ? 'Les mer' : 'Book plass']);
+        // Kortet lover en dato som passer valget. Da skal kurssida aapne paa
+        // den, ikke paa den foerste i rekka (eieren 12.10.2026: fra «Helg»
+        // valgte kurssida en onsdag). Foerste ledige dato som passer, med
+        // ?dag= som datoene paa kurssida bruker.
+        $href = (string) ($k['href'] ?? '');
+        $forste = null;
+        foreach ($treff as $o) {
+            if ((int) ($o['ledige'] ?? 0) > 0) { $forste = $o; break; }
+        }
+        $dag = (string) (($forste ?? $treff[0])['dag'] ?? '');
+        if ($href !== '' && $dag !== '' && $forste !== null) {
+            $href .= '?dag=' . rawurlencode($dag);
+        }
+        return array_merge($k, ['okter' => $treff, 'date' => self::kortDatoer($treff), 'status' => $status, 'cta' => $status === 'Fullbooket' ? 'Les mer' : 'Book plass', 'href' => $href]);
     }
 
     /** filtrerKurs() + sorterKurs() i nettsida. */

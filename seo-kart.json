@@ -1,5 +1,5 @@
 {
-  "laget": "2026-10-08",
+  "laget": "2026-10-12",
   "om": "Laget av bin/seokart.mjs. Rediger lissom-2108.html, ikke denne.",
   "stier": {
     "/": "forside",
@@ -47,7 +47,7 @@
     "/nyttig-info/medlemsinfo",
     "/nyttig-info/trivselsregler",
     "/booking",
-    "/kasse",
+    "/handlekurv",
     "/logg-inn",
     "/personvern",
     "/vilkar",

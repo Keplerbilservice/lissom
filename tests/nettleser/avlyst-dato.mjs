@@ -28,6 +28,20 @@ const VERT = new URL(ADR).hostname;
 
 const php = (kode) => JSON.parse(execFileSync('php', [path.join(HER, 'db.php'), '--php', kode], { cwd: ROT, encoding: 'utf8' }) || 'null');
 const db = (sql) => JSON.parse(execFileSync('php', [path.join(HER, 'db.php'), sql, '{}'], { cwd: ROT, encoding: 'utf8' }) || '[]');
+// Venter paa det riktige svaret, ikke paa faste sekunder: trykket og svaret fra
+// serveren (POST til gitt api-fil) tas sammen, deretter leses basen om til
+// betingelsen holder (maks 20 s). php -S tar en foresporsel om gangen, saa
+// svartiden varierer sterkt paa trege CI-maskiner.
+const medSvar = async (p, apiFil, trykk) => {
+  const svar = p.waitForResponse(r => r.url().includes(apiFil) && r.request().method() === 'POST', { timeout: 30000 });
+  await trykk();
+  return svar;
+};
+const vent = async (les, ferdig, ms = 20000) => {
+  const slutt = Date.now() + ms; let v = les();
+  while (!ferdig(v) && Date.now() < slutt) { await new Promise(r => setTimeout(r, 400)); v = les(); }
+  return v;
+};
 let ok = 0; const feil = [];
 const sjekk = (n, v, m = '') => { if (v) { ok++; console.log('  OK    ' + n); } else { feil.push(n); console.log('  FEIL  ' + n + (m ? '  — ' + m : '')); } };
 
@@ -99,19 +113,17 @@ try {
         sjekk('dialogen viser datoer å velge', !!dato);
         await knapper.filter({ hasText: dato }).first().tap();
         await p.waitForTimeout(800);
-        await p.getByText('Bytt til denne datoen', { exact: true }).tap();
-        await p.waitForTimeout(2500);
-        const b1 = db(`SELECT course_session_id, belop_ore, status FROM bookings WHERE id = ${S.b1}`)[0];
+        await medSvar(p, '/api/avlyst-plass.php', () => p.getByText('Bytt til denne datoen', { exact: true }).tap());
+        const b1 = (await vent(() => db(`SELECT course_session_id, belop_ore, status FROM bookings WHERE id = ${S.b1}`), r => Number(r[0]?.course_session_id) === S.ny1))[0];
         sjekk('plassen er flyttet, 500 kr, betalt', Number(b1.course_session_id) === S.ny1 && Number(b1.belop_ore) === 50000 && b1.status === 'betalt', JSON.stringify(b1));
-        await p.waitForTimeout(3000);
+        await p.locator('.ms-neste:visible, .msny-neste:visible').first().waitFor({ state: 'visible', timeout: 20000 }).catch(() => {});
         sjekk('… og nå er den nye datoen «Neste kurs»', (await p.locator('.ms-neste:visible, .msny-neste:visible').count()) >= 1);
         await kort.getByText('Få pengene tilbake', { exact: true }).first().tap();
         await p.waitForTimeout(1200);
         const d2 = await p.locator('body').innerText();
         sjekk('«Du får 500 kr tilbake» og «Ja, gi meg pengene tilbake»', /Du får 500[\s ]kr tilbake/.test(d2) && /ja, gi meg pengene tilbake/i.test(d2));
-        await p.getByText('Ja, gi meg pengene tilbake', { exact: true }).tap();
-        await p.waitForTimeout(3000);
-        const b2 = db(`SELECT b.status, p.refundert_ore FROM bookings b JOIN payments p ON p.id = b.payment_id WHERE b.id = ${S.b2}`)[0];
+        await medSvar(p, '/api/avbestill.php', () => p.getByText('Ja, gi meg pengene tilbake', { exact: true }).tap());
+        const b2 = (await vent(() => db(`SELECT b.status, p.refundert_ore FROM bookings b JOIN payments p ON p.id = b.payment_id WHERE b.id = ${S.b2}`), r => r[0]?.status === 'refundert' && Number(r[0]?.refundert_ore) === 50000))[0];
         sjekk('refundert 50000 i (falsk) Vipps, plassen refundert', b2.status === 'refundert' && Number(b2.refundert_ore) === 50000, JSON.stringify(b2));
       }
       await k.close();

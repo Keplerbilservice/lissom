@@ -41,3 +41,16 @@ nav[data-nett-mobilmeny]:not([hidden]) { display: flex !important; }
 @media (min-width: 761px) {
   div:has(> [data-kal-uke]) { min-width: 12em; }
 }
+
+/* Kurskortene: mens «Se flere datoer» er aapen i ett kort, holder de andre
+   i rada hoeyden de hadde (nett.js setter --lx-lukket-h). Eieren, 12.
+   oktober 2026 (oppsett A). */
+[data-nett-laast] > [data-nett-laast-kort] { height: var(--lx-lukket-h) !important; align-self: start !important; }
+[data-nett-laast] > [data-nett-kort]:not([data-nett-laast-kort]) { align-self: start; min-height: var(--lx-lukket-h); }
+
+/* Forsida paa PC: et gult baand bak toppmenyen (helt gult til 84 px, tonet
+   ut til 150 px), saa den gule kilen ved forstoerrelsesglasset forsvinner.
+   Eieren, 12. oktober 2026 (søk). */
+@media (min-width: 761px) {
+  .lx-hero::after { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 150px; background: linear-gradient(to bottom, rgb(255,207,56) 0, rgb(255,207,56) 84px, rgba(255,207,56,0) 150px); pointer-events: none; }
+}

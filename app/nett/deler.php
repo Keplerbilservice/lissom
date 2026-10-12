@@ -246,13 +246,13 @@ final class Deler
                 // Det foerste kortet paa sida er gjerne det stoerste som tegnes
                 // (LCP): det hentes med en gang; resten venter til de trengs.
                 . (!empty($k['eager']) ? ' fetchpriority="high"' : ' loading="lazy"') . ' decoding="async"'
-                . ' style="width: 100%; aspect-ratio: 16 / 10; height: auto; object-fit: cover; display: block;' . ($karusell ? ' transition: opacity 1.2s ease;' : '') . '"' . ($karusell ? ' data-nett-bilde' : '') . '>';
+                . ' style="width: 100%; aspect-ratio: 16 / 10; height: auto; object-fit: cover;' . self::fokusStil($bilde) . ' display: block;' . ($karusell ? ' transition: opacity 1.2s ease;' : '') . '"' . ($karusell ? ' data-nett-bilde' : '') . '>';
             if ($karusell) {
                 foreach (array_slice($bilder, 1) as $b) {
                     $ss2 = Nett::srcset($b);
                     $h .= '<img src="' . $e($b) . '"' . ($ss2 !== '' ? ' srcset="' . $e($ss2) . '" sizes="' . Nett::SIZES_KORT . '"' : '')
                         . ' alt="" aria-hidden="true" loading="lazy" decoding="async" data-nett-bilde'
-                        . ' style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; opacity: 0; transition: opacity 1.2s ease;">';
+                        . ' style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;' . self::fokusStil($b) . ' display: block; opacity: 0; transition: opacity 1.2s ease;">';
                 }
             }
         } else {
@@ -278,7 +278,16 @@ final class Deler
         $tekst = (string) ($k['text'] ?? '');
         $dato = (string) ($k['date'] ?? '');
         $varighet = (string) ($k['duration'] ?? '');
-        $h .= '<div style="min-height: 40px; height: ' . ($tekst !== '' ? 'auto' : '40px') . ';' . ($luft ? '' : ' overflow: hidden;') . '">';
+        // Dato og tid, oppsett A «Linjer» (eieren 12.10.2026): «Neste: …»,
+        // klokkeslettene under, og «Se flere datoer» som folder ut resten
+        // inne i kortet. Erstatter linja med kalender- og klokkeikonet.
+        $neste = (string) ($k['neste'] ?? '');
+        if ($neste !== '') {
+            $h .= self::naarBlokk($neste, (string) ($k['tid'] ?? ''), (array) ($k['liste'] ?? []));
+            $dato = '';
+            $varighet = '';
+        }
+        $h .= '<div style="min-height: ' . ($neste !== '' ? '0' : '40px') . '; height: ' . ($tekst !== '' ? 'auto' : ($neste !== '' ? '0' : '40px')) . ';' . ($luft ? '' : ' overflow: hidden;') . '">';
         if ($dato !== '' || $varighet !== '') {
             $h .= '<div style="display: flex; gap: var(--space-4); color: var(--text-muted); font-size: var(--text-sm); flex-wrap: wrap;">';
             if ($dato !== '') {
@@ -303,10 +312,57 @@ final class Deler
         }
         $h .= '</div>';
         $h .= '<div style="margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding-top: var(--space-2); flex-wrap: nowrap; height: 44px; box-sizing: border-box; overflow: hidden;">'
-            . '<span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--text-heading); white-space: nowrap;">' . $e((string) ($k['price'] ?? '')) . '</span>'
+            . '<span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--text-heading); white-space: nowrap;">'
+            . (!empty($k['fra']) && (string) ($k['price'] ?? '') !== '' ? '<span style="font-family: var(--font-sans); font-weight: 700; font-size: 16px; color: var(--brown-500);">fra</span> ' : '')
+            . $e((string) ($k['price'] ?? '')) . '</span>'
             . self::knapp((string) ($k['cta'] ?? 'Book plass'), ['size' => 'sm', 'attr' => 'tabindex="-1"'])
             . '</div></div></div>';
         return $h;
+    }
+
+    /**
+     * Dato og tid paa kurskortet (Kort::naar). «Se flere datoer» er en
+     * diskret, understreket tekst — eierens unntak fra «piller, ikke
+     * lenker», 12.10.2026. Lista er skjult til den trykkes fram, og ruller
+     * inne i kortet naar den er lang. nett.js aapner og lukker.
+     *
+     * @param list<array{0:string,1:string}> $liste
+     */
+    private static function naarBlokk(string $neste, string $tid, array $liste): string
+    {
+        $e = [self::class, 'e'];
+        static $nr = 0;
+        $h = '<div data-nett-naar style="display: flex; flex-direction: column; gap: 3px; padding: 10px 0 2px; border-top: 1px solid var(--border-subtle);">'
+            . '<span style="font-family: var(--font-display); font-weight: 700; font-size: 18px; line-height: 1.25; color: var(--text-heading);">' . $e($neste) . '</span>';
+        if ($tid !== '') {
+            $h .= '<span style="font-size: 16px; font-weight: 700; line-height: 1.35; color: var(--text-heading); font-variant-numeric: tabular-nums;">' . $e($tid) . '</span>';
+        }
+        $liste = array_values(array_filter($liste, static fn($r): bool => is_array($r) && (string) ($r[0] ?? '') !== ''));
+        if ($liste !== []) {
+            $id = 'lx-datoer-' . (++$nr);
+            $h .= '<button type="button" data-nett-flere aria-expanded="false" aria-controls="' . $id . '" style="display: flex; align-items: center; width: 100%; max-width: 100%; margin: 0; padding: 0; min-height: 44px; border: 0; background: transparent; font-family: var(--font-sans); font-weight: 400; font-size: 14px; line-height: 1.3; color: var(--brown-500); text-align: left; cursor: pointer;">'
+                . '<span style="text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px;">Se flere datoer</span></button>'
+                . '<ul id="' . $id . '" hidden style="list-style: none; margin: 2px 0 0; padding: 0 6px 0 0; border-top: 1px solid var(--border-subtle); max-height: 232px; overflow-y: auto; overscroll-behavior: contain;">';
+            foreach ($liste as $r) {
+                $h .= '<li style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 12px; padding: 8px 0; border-bottom: 1px solid var(--border-subtle); font-size: 15px;">'
+                    . '<span style="font-weight: 700; color: var(--text-heading);">' . $e((string) $r[0]) . '</span>'
+                    . '<span style="color: var(--brown-500); font-variant-numeric: tabular-nums;">' . $e((string) ($r[1] ?? '')) . '</span></li>';
+            }
+            $h .= '</ul>';
+        }
+        return $h . '</div>';
+    }
+
+    /**
+     * Fokuspunktet til et kortbilde (bilde_fokus, Nett::fokus), som butikken
+     * og kursoversikten bruker. Bare naar bildet har et lagret punkt: uten
+     * staar regelen i nett.css (.lx-kortgrid img) som foer. Eieren
+     * 12.10.2026: Date Night ble klippet feil paa events-kortet.
+     */
+    private static function fokusStil(string $bilde): string
+    {
+        $f = Nett::fokus($bilde, '');
+        return preg_match('/^\d{1,3}% \d{1,3}%$/', $f) === 1 ? ' object-position: ' . $f . ';' : '';
     }
 
     // ── Varekort ────────────────────────────────────────────────────────

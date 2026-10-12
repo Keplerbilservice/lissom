@@ -1769,6 +1769,8 @@ window.__resources = {
   a { color: var(--lissom-brown); text-decoration: none; }
   a:hover { color: var(--terracotta-500); }
   .lx-kortgrid img { object-position: center 32%; }
+  /* Filterpillene i butikken: kanten i clay-500 (3,51:1), saa de ser trykkbare ut. Eieren, 12. oktober 2026 (kontrast). */
+  .lx-butikkfilter span[style*="var(--border-default)"] { border-color: var(--clay-500) !important; }
   @keyframes lissomBolge { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
   @keyframes lissomPuls { 0% { transform: scale(1); } 40% { transform: scale(1.35); } 100% { transform: scale(1); } }
   button[aria-label="Meny"] { order: 3; }
@@ -3508,7 +3510,7 @@ window.__resources = {
 
       <section style="background: var(--clay-50); padding: var(--section-y) var(--space-8) var(--space-12);">
         <div style="max-width: var(--width-content); margin: 0 auto;">
-          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">{{ ooKicker }}</div>
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--brown-400); margin-bottom: var(--space-3);">{{ ooKicker }}</div>
           <h1 class="lx-omoss-h1" style="margin: 0 0 var(--space-10); font-size: var(--text-5xl); white-space: nowrap;">{{ ooTittel }}</h1>
           <div class="lx-split" style="display: grid; grid-template-columns: 1.4fr 1fr; gap: var(--space-8) var(--space-16); align-items: start;">
             <div>
@@ -3522,7 +3524,7 @@ window.__resources = {
             </div>
             <figure style="margin: calc(-1 * var(--space-6)) 0 0; position: sticky; top: 116px; width: min(420px, 100%);">
               <img src="uploads_foto-monica-o.jpg" srcset="uploads_foto-monica-o-400.jpg 400w, uploads_foto-monica-o-800.jpg 800w, uploads_foto-monica-o.jpg 1200w" sizes="(max-width: 760px) 92vw, 520px" alt="Monica, grunnlegger av Lissom" style="width: 100%; aspect-ratio: 3 / 4; object-fit: cover; object-position: 50% 20%; border-radius: var(--radius-lg); display: block;" loading="lazy" decoding="async" width="1400" height="1400">
-              <figcaption style="margin-top: var(--space-3); font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Monica — grunnlegger av Lissom</figcaption>
+              <figcaption style="margin-top: var(--space-3); font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--brown-400);">Monica — grunnlegger av Lissom</figcaption>
             </figure>
           </div>
         </div>
@@ -3531,7 +3533,7 @@ window.__resources = {
       <section style="background: var(--clay-100); padding: var(--space-14) var(--space-8);">
         <div class="lx-split" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 1fr 1.4fr; gap: var(--space-16); align-items: start;">
           <div>
-            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Vi tilbyr</div>
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--brown-400); margin-bottom: var(--space-3);">Vi tilbyr</div>
             <h2 style="margin: 0 0 var(--space-4); font-size: var(--text-3xl);">Mer enn keramikk</h2>
             <p style="margin: 0 0 var(--space-4); font-size: var(--text-base); color: var(--text-body); line-height: 1.65; max-width: 44ch; text-wrap: pretty;">Lissom handler ikke bare om keramikk. Det handler om å senke skuldrene, være kreativ, lære noe nytt og skape noe med egne hender. Vi ønsker at verkstedet skal være et sted hvor mennesker møtes, finner inspirasjon og opplever gleden ved å lage noe selv.</p>
             <p style="margin: 0; font-size: var(--text-base); font-weight: 700; color: var(--text-heading); text-wrap: pretty;">Velkommen til Lissom – et kreativt pusterom på Teie, rett utenfor Tønsberg</p>
@@ -4777,7 +4779,7 @@ window.__resources = {
       <x-import component-from-global-scope="LissomDesignSystem_8402ac.NavBar" links="{{ navLinks }}" active="Kurskalender" cta="Kontakt oss" asset-base="" on-navigate="{{ goNav }}" hint-size="100%,84px"></x-import>
       <section style="background: var(--clay-50); padding: var(--section-y) var(--space-8) var(--space-10);">
         <div style="max-width: var(--width-content); margin: 0 auto;">
-          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Kurskalender</div>
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--brown-400); margin-bottom: var(--space-3);">Kurskalender</div>
           <h1 style="margin: 0 0 var(--space-4); font-size: var(--text-5xl);">Alt som skjer, uke for uke</h1>
           <p style="margin: 0; color: var(--text-body); font-size: var(--text-lg); max-width: 52ch; text-wrap: pretty;">Kurs og events samlet, uke for uke. Trykk på en oppføring for å booke.</p>
         </div>
@@ -4848,9 +4850,9 @@ window.__resources = {
             <div class="lx-rull" style="{{ rullStil }}">
               <sc-for list="{{ rullDager }}" as="r" hint-placeholder-count="14">
                 <button type="button" data-rull-dag="{{ r.nokkel }}" data-rull-uke="{{ r.uke }}" data-rull-ukeid="{{ r.ukeId }}" data-rull-mnd="{{ r.mndAar }}" style="{{ r.stil }}">
-                  <span style="font-size: 10px; letter-spacing: var(--tracking-caps); text-transform: uppercase; opacity: .75;">{{ r.dagKort }}</span>
+                  <span style="font-size: 10px; letter-spacing: var(--tracking-caps); text-transform: uppercase;">{{ r.dagKort }}</span>
                   <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-lg); line-height: 1.1;">{{ r.dato }}</span>
-                  <span style="font-size: 10px; line-height: 1; opacity: .75;">{{ r.mnd }}</span>
+                  <span style="font-size: 10px; line-height: 1;">{{ r.mnd }}</span>
                   <span style="{{ r.prikkStil }}">{{ r.antall }}</span>
                 </button>
               </sc-for>
@@ -7827,22 +7829,22 @@ window.__resources = {
 
       <section style="background: var(--clay-50); padding: var(--section-y) var(--space-8) var(--space-10);">
         <div style="max-width: var(--width-content); margin: 0 auto;">
-          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">{{ btKicker }}</div>
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--brown-400); margin-bottom: var(--space-3);">{{ btKicker }}</div>
           <h1 style="margin: 0 0 var(--space-4); font-size: var(--text-5xl);">{{ btTittel }}</h1>
           <p style="margin: 0 0 var(--space-8); color: var(--text-body); font-size: var(--text-lg); max-width: 52ch; text-wrap: pretty;">{{ btIngress }}</p>
           <div class="lx-cols2" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-6); margin-bottom: var(--space-8);">
             <div onClick="{{ butikkVelgLissom }}" style="background: var(--surface-card); border: 2px solid {{ butikkLissomKant }}; border-radius: var(--radius-lg); padding: var(--space-6); cursor: pointer; transition: box-shadow var(--duration-base) var(--ease-clay);" style-hover="box-shadow: var(--shadow-md);">
-              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">{{ btKolleksjonTittel }}</div>
+              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--brown-400); margin-bottom: var(--space-2);">{{ btKolleksjonTittel }}</div>
               <p style="margin: 0; font-size: var(--text-sm); color: var(--text-body);">{{ btKolleksjonTekst }}</p>
             </div>
             <sc-if value="{{ visMedlemskolleksjon }}" hint-placeholder-val="{{ true }}">
               <div onClick="{{ butikkVelgMedlem }}" style="background: var(--surface-card); border: 2px solid {{ butikkMedlemKant }}; border-radius: var(--radius-lg); padding: var(--space-6); cursor: pointer; transition: box-shadow var(--duration-base) var(--ease-clay);" style-hover="box-shadow: var(--shadow-md);">
-                <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">{{ btMedlemTittel }}</div>
+                <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--brown-400); margin-bottom: var(--space-2);">{{ btMedlemTittel }}</div>
                 <p style="margin: 0; font-size: var(--text-sm); color: var(--text-body);">{{ btMedlemTekst }}</p>
               </div>
             </sc-if>
           </div>
-          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <div class="lx-butikkfilter" style="display: flex; gap: 8px; flex-wrap: wrap;">
             <sc-for list="{{ butikkFiltre }}" as="f" hint-placeholder-count="5">
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Tag" selected="{{ f.valgt }}" on-click="{{ f.velg }}" hint-size="auto,32px">{{ f.navn }}</x-import>
             </sc-for>
@@ -7856,7 +7858,7 @@ window.__resources = {
             <div class="lx-varekort" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; box-shadow: var(--shadow-sm); transition: box-shadow var(--duration-base) var(--ease-clay), transform var(--duration-base) var(--ease-clay);" style-hover="box-shadow: var(--shadow-md); transform: translateY(-2px);">
               <div onClick="{{ p.visInfo }}" role="button" aria-label="Se mer om {{ p.title }}" style="width: 100%; aspect-ratio: 1 / 1; background-color: var(--clay-200); background-image: {{ p.imageCss }}; background-size: cover; background-position: {{ p.fokus }}; cursor: pointer;"></div>
               <div style="padding: var(--space-5); display: flex; flex-direction: column; flex: 1; gap: 6px;">
-                <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">{{ p.badge }}</div>
+                <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--brown-400);">{{ p.badge }}</div>
                 <div onClick="{{ p.visInfo }}" style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading); cursor: pointer;">{{ p.title }}</div>
                 <p class="lx-varetekst" style="margin: 0; font-size: var(--text-sm); line-height: 1.5; color: var(--text-body); text-wrap: pretty;">{{ p.detalj }}</p>
                 <sc-if value="{{ p.harAntall }}" hint-placeholder-val="{{ false }}">
@@ -33167,9 +33169,9 @@ class Component extends DCLogic {
   ukePil(aktiv) {
     return {
       appearance: 'none', width: 40, height: 40, borderRadius: '50%', cursor: aktiv ? 'pointer' : 'default',
-      border: '2px solid ' + (aktiv ? 'var(--lissom-brown)' : 'var(--border-subtle)'),
-      background: 'transparent', color: aktiv ? 'var(--lissom-brown)' : 'var(--text-muted)',
-      fontSize: 20, lineHeight: 1, opacity: aktiv ? 1 : 0.5,
+      border: '2px solid ' + (aktiv ? 'var(--lissom-brown)' : 'var(--clay-500)'),
+      background: 'transparent', color: aktiv ? 'var(--lissom-brown)' : 'var(--clay-500)',
+      fontSize: 20, lineHeight: 1, opacity: 1,
     };
   }
 

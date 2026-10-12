@@ -29,12 +29,15 @@ $h .= '<section class="lx-hero" data-theme="sun" style="background: var(--lissom
     . '<div style="width: 100%; height: 100%; background: linear-gradient(160deg, var(--terracotta-500) 0%, var(--brown-500) 45%, var(--lissom-brown) 100%); -webkit-mask-image: url(\'uploads_logo-7df29c0f.png\'); mask-image: url(\'uploads_logo-7df29c0f.png\'); -webkit-mask-size: contain; mask-size: contain; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center;"></div>'
     . '</div>'
     . '<div class="lx-hero-hjerte" style="position: absolute; top: -30%; bottom: -46%; right: -16%; aspect-ratio: 1.036;">'
-    . '<div style="position: absolute; inset: 0; background-image: ' . Nett::cssUrl($heroBilde) . '; background-size: cover; background-position: center top; mask-image: url(\'heart-logo-mask.png\'); -webkit-mask-image: url(\'heart-logo-mask.png\'); mask-size: 100% 100%; -webkit-mask-size: 100% 100%; mask-repeat: no-repeat; -webkit-mask-repeat: no-repeat; mask-position: center; -webkit-mask-position: center;" role="img" aria-label="Keramiker former leire på dreieskiven"></div>'
+    . '<div style="position: absolute; inset: 0; background-image: ' . Nett::cssUrl($heroBilde) . '; background-size: cover; background-position: center top; mask-image: url(\'heart-logo-mask.png\'), linear-gradient(to bottom, #000 0, #000 60%, transparent 74%); -webkit-mask-image: url(\'heart-logo-mask.png\'), linear-gradient(to bottom, #000 0, #000 60%, transparent 74%); mask-size: 100% 100%, 100% 100%; -webkit-mask-size: 100% 100%, 100% 100%; mask-repeat: no-repeat; -webkit-mask-repeat: no-repeat; mask-position: center; -webkit-mask-position: center; mask-composite: intersect; -webkit-mask-composite: source-in;" role="img" aria-label="Keramiker former leire på dreieskiven"></div>'
     . '</div>'
     // Ett gult lag, og det slutter ved 56 % av bredden: over fotografiet er
     // det ingen gulfarge, mens teksten staar paa helt gult. Laget fra
     // hjoernet (8–58 %) er fjernet. Eieren, 12. oktober 2026 (punkt 1).
-    . '<div class="lx-hide-m lx-hero-grad" style="position: absolute; inset: 0; background: linear-gradient(100deg, var(--lissom-yellow) 36%, rgba(255,207,56,0.6) 44%, rgba(255,207,56,0) 56%); pointer-events: none;"></div>'
+    // Samme kveld (toppbildet, alternativ 1): toningen foelger en bue i
+    // stedet for en rett kant, og fotoet toner ut i gult de nederste ca.
+    // 160 px (masken over). Bare PC — mobilen viser ikke fotoet.
+    . '<div class="lx-hide-m lx-hero-grad" style="position: absolute; inset: 0; background: radial-gradient(ellipse 62% 120% at 0% 45%, var(--lissom-yellow) 62%, rgba(255,207,56,0.6) 78%, rgba(255,207,56,0) 100%); pointer-events: none;"></div>'
     . '<div class="lx-hero-pad" style="position: relative; width: 100%; max-width: none; margin: 0; padding: 150px var(--space-8) var(--space-24) max(var(--space-10), calc((100vw - var(--width-content)) / 2)); align-self: safe center;">'
     . '<div class="lx-hero-eb" style="font: var(--type-eyebrow); font-size: var(--text-lg); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--brown-500); margin-bottom: var(--space-6);">' . $e($innh('Forside/0/Kicker')) . '</div>'
     . '<h1 class="lx-hero-h1" data-nett-hero-h1 style="font-family: var(--font-display); font-weight: 800; font-size: clamp(40px, 4.6vw, 76px); line-height: 1.12; letter-spacing: var(--tracking-display); color: var(--lissom-brown); margin: 0 0 var(--space-8); max-width: none; text-wrap: balance; cursor: default;">'

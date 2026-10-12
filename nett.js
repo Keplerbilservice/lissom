@@ -66,6 +66,57 @@
     location.href = h;
   });
 
+  /* ── «Se flere datoer» paa kurskortene ──────────────────────────────── */
+  // Folder ut resten av datoene inne i kortet; nytt trykk lukker. Kortet
+  // selv gaar til kurset (data-href), saa trykket stoppes her. Mens en
+  // liste er aapen, holder de andre kortene i rada hoeyden de hadde, saa
+  // bare kortet som aapnes vokser. Eieren, 12. oktober 2026 (oppsett A).
+  var flere = d.querySelectorAll('[data-nett-flere]');
+  function kortAv(el) { return el.closest('[data-nett-kort]'); }
+  function kortIRad(kort) {
+    var rad = kort && kort.parentElement;
+    return rad ? rad.querySelectorAll(':scope > [data-nett-kort]') : [];
+  }
+  // Foer noe aapnes: hver korts hoeyde slik den staar lukket.
+  function maalRad(kort) {
+    var rad = kort && kort.parentElement;
+    if (!rad || rad.hasAttribute('data-nett-laast')) return;
+    var alle = kortIRad(kort);
+    for (var i = 0; i < alle.length; i++) alle[i].setAttribute('data-nett-h', String(alle[i].offsetHeight));
+  }
+  function laasRad(kort) {
+    var rad = kort && kort.parentElement;
+    if (!rad) return;
+    var alle = kortIRad(kort);
+    var aapne = rad.querySelectorAll('[data-nett-flere][aria-expanded="true"]').length;
+    if (aapne) rad.setAttribute('data-nett-laast', ''); else rad.removeAttribute('data-nett-laast');
+    for (var j = 0; j < alle.length; j++) {
+      var knapp = alle[j].querySelector('[data-nett-flere]');
+      var aapen = knapp && knapp.getAttribute('aria-expanded') === 'true';
+      if (aapne) alle[j].style.setProperty('--lx-lukket-h', (alle[j].getAttribute('data-nett-h') || '0') + 'px');
+      else alle[j].style.removeProperty('--lx-lukket-h');
+      if (aapne && !aapen) alle[j].setAttribute('data-nett-laast-kort', '');
+      else alle[j].removeAttribute('data-nett-laast-kort');
+    }
+  }
+  for (var f = 0; f < flere.length; f++) {
+    flere[f].addEventListener('click', function (e) {
+      e.stopPropagation();
+      var liste = d.getElementById(this.getAttribute('aria-controls'));
+      if (!liste) return;
+      var kort = kortAv(this);
+      maalRad(kort);
+      var aapen = this.getAttribute('aria-expanded') !== 'true';
+      this.setAttribute('aria-expanded', aapen ? 'true' : 'false');
+      if (aapen) liste.removeAttribute('hidden'); else liste.setAttribute('hidden', '');
+      laasRad(kort);
+    });
+  }
+  // Rulling og trykk i lista skal ikke aapne kurset.
+  d.addEventListener('click', function (e) {
+    if (e.target.closest && e.target.closest('[data-nett-naar] ul')) e.stopPropagation();
+  }, true);
+
   /* ── Hover-stilene («style-hover» i appen) ──────────────────────────── */
   d.addEventListener('mouseover', function (e) {
     var el = e.target.closest && e.target.closest('[data-hover]');
@@ -580,9 +631,10 @@
     for (var i = 0; i < p.length; i++) {
       var aktiv = naboUke(+p[i].getAttribute('data-kal-pil')) !== null;
       p[i].style.cursor = aktiv ? 'pointer' : 'default';
-      p[i].style.borderColor = aktiv ? 'var(--lissom-brown)' : 'var(--border-subtle)';
-      p[i].style.color = aktiv ? 'var(--lissom-brown)' : 'var(--text-muted)';
-      p[i].style.opacity = aktiv ? '1' : '0.5';
+      // Ikke aktiv: clay-500, synlig (eieren 12.10.2026, kontrast).
+      p[i].style.borderColor = aktiv ? 'var(--lissom-brown)' : 'var(--clay-500)';
+      p[i].style.color = aktiv ? 'var(--lissom-brown)' : 'var(--clay-500)';
+      p[i].style.opacity = '1';
     }
   }
   function vis(knapp) {

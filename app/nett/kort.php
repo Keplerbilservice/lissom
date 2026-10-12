@@ -164,8 +164,18 @@ final class Kort
         // Paint on Pots med prisnivaaer (migrasjon 260): kursprisen er
         // beloepet ved booking, ikke prisen. Kortet viser ingen enkeltpris;
         // nivaaene staar paa kurssida. Ingen «fra»-pris.
+        //
+        // Kurskortene, eieren 12.10.2026 (visningen «Kurskortene: dato og
+        // tid», oppsett A): «fra» og det laveste aktive prisnivaaet, hentet
+        // fra PopPris — ikke skrevet inn her.
+        $fra = false;
         if (!empty($kat['popNivaer'])) {
             $pris = '';
+            $lavest = min(array_map(static fn(array $n): int => (int) ($n['prisOre'] ?? 0), $kat['popNivaer']));
+            if ($lavest > 0) {
+                $pris = Booking::kroner($lavest);
+                $fra = true;
+            }
         }
         $slug = (string) ($kat['slug'] ?? '');
         $felles = [
@@ -179,6 +189,7 @@ final class Kort
             'plasser'  => (int) ($kat['plasser'] ?? 0),
             'title'    => (string) $d['title'],
             'price'    => $pris,
+            'fra'      => $fra,
             'image'    => (string) (($kat['bilde'] ?? '') !== '' ? $kat['bilde'] : $d['image']),
             'imageAlt' => (string) ($kat['bildeAlt'] ?? ''),
             'text'     => trim((string) ($kat['kortBeskrivelse'] ?? '')),
@@ -214,7 +225,7 @@ final class Kort
             ];
         }
         $status = self::plasstekst($datoer, (int) ($kat['plasser'] ?? 0));
-        return $felles + [
+        return $felles + self::naar($datoer, !empty($kat['folgerApningstid'])) + [
             'status'   => $status,
             'date'     => self::kortDatoer($datoer),
             'duration' => (string) ($kat['varighetVist'] ?? ''),
@@ -317,7 +328,7 @@ final class Kort
         if ($href !== '' && $dag !== '' && $forste !== null) {
             $href .= '?dag=' . rawurlencode($dag);
         }
-        return array_merge($k, ['okter' => $treff, 'date' => self::kortDatoer($treff), 'status' => $status, 'cta' => $status === 'Fullbooket' ? 'Les mer' : 'Book plass', 'href' => $href]);
+        return array_merge($k, self::naar($treff, !empty($k['folgerApningstid'])), ['okter' => $treff, 'date' => self::kortDatoer($treff), 'status' => $status, 'cta' => $status === 'Fullbooket' ? 'Les mer' : 'Book plass', 'href' => $href]);
     }
 
     /** filtrerKurs() + sorterKurs() i nettsida. */
@@ -339,6 +350,128 @@ final class Kort
             return strcoll((string) $a['title'], (string) $b['title']);
         });
         return $ut;
+    }
+
+    private const UKEDAG3 = ['man', 'tir', 'ons', 'tor', 'fre', 'lør', 'søn'];
+    private const MND3 = ['jan', 'feb', 'mar', 'apr', 'mai', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'des'];
+
+    /**
+     * Dato og tid paa kurskortet — oppsett A «Linjer», eieren 12.10.2026.
+     *
+     *   neste  «Neste: Ons 21. okt», to dager som par: «Neste: Ons 4. og tor 5. nov»
+     *   tid    «10:00–13:30 eller 17:00–20:30», «… begge dager» for to-dagers,
+     *          «Åpent 17:00–20:00» for kurs som foelger aapningstida
+     *   liste  resten av datoene, [dag, tid] per linje, i samme form
+     *
+     * Tider samme dag (eller samme par av dager) staar paa én linje med
+     * «eller». Et kurs over to dager kjennes paa samlingene (okt_samlinger).
+     *
+     * @param list<array<string,mixed>> $okter
+     * @return array{neste:string,tid:string,liste:list<array{0:string,1:string}>}
+     */
+    public static function naar(array $okter, bool $apent, ?DateTimeImmutable $naa = null): array
+    {
+        $grupper = [];
+        foreach ($okter as $o) {
+            $dager = [];
+            $tid = (string) ($o['klokke'] ?? '');
+            $lik = true;
+            $sam = is_array($o['samlinger'] ?? null) ? $o['samlinger'] : [];
+            if (count($sam) >= 2) {
+                $forste = null;
+                foreach ($sam as $s) {
+                    $d = (string) ($s['dato'] ?? '');
+                    if ($d !== '' && !in_array($d, $dager, true)) {
+                        $dager[] = $d;
+                    }
+                    $t = (string) ($s['fra'] ?? '') . ((string) ($s['til'] ?? '') !== '' ? "\u{2013}" . $s['til'] : '');
+                    if ($forste === null) {
+                        $forste = $t;
+                    } elseif ($t !== $forste) {
+                        $lik = false;
+                    }
+                }
+                sort($dager);
+                if ($lik && $forste !== null && $forste !== '') {
+                    $tid = $forste;
+                }
+            }
+            if (count($dager) < 2) {
+                $dag = (string) ($o['dagIso'] ?? '');
+                if ($dag === '' && !empty($o['startUtc'])) {
+                    try {
+                        $dag = (new DateTimeImmutable((string) $o['startUtc'], new DateTimeZone('UTC')))
+                            ->setTimezone(new DateTimeZone('Europe/Oslo'))->format('Y-m-d');
+                    } catch (Throwable) {
+                        $dag = '';
+                    }
+                }
+                if ($dag === '') {
+                    continue;
+                }
+                $dager = [$dag];
+                $lik = false;
+            }
+            $nokkel = implode(',', $dager);
+            if (!isset($grupper[$nokkel])) {
+                $grupper[$nokkel] = ['dager' => $dager, 'tider' => [], 'begge' => count($dager) === 2];
+            }
+            if ($tid !== '' && !in_array($tid, $grupper[$nokkel]['tider'], true)) {
+                $grupper[$nokkel]['tider'][] = $tid;
+            }
+            if (!$lik) {
+                $grupper[$nokkel]['begge'] = false;
+            }
+        }
+        if ($grupper === []) {
+            return ['neste' => '', 'tid' => '', 'liste' => []];
+        }
+        $naa ??= new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo'));
+        $linjer = [];
+        foreach ($grupper as $g) {
+            $tid = implode(' eller ', $g['tider']);
+            if ($tid !== '' && $apent) {
+                $tid = 'Åpent ' . $tid;
+            } elseif ($tid !== '' && $g['begge']) {
+                $tid .= ' begge dager';
+            }
+            $linjer[] = [self::dagTekst($g['dager'], $naa), $tid];
+        }
+        $foerst = array_shift($linjer);
+        return ['neste' => 'Neste: ' . $foerst[0], 'tid' => $foerst[1], 'liste' => $linjer];
+    }
+
+    /**
+     * «Ons 21. okt», «Ons 4. og tor 5. nov», «Fre 30. okt og lør 1. nov».
+     * Aaret staar bak maaneden naar den er tolv maaneder eller mer fram,
+     * saa «nov» ikke kan leses som i aar.
+     *
+     * @param list<string> $dager Y-m-d, sortert
+     */
+    private static function dagTekst(array $dager, DateTimeImmutable $naa): string
+    {
+        $deler = [];
+        foreach ($dager as $i => $iso) {
+            $d = DateTimeImmutable::createFromFormat('!Y-m-d', $iso, new DateTimeZone('Europe/Oslo'));
+            if ($d === false) {
+                $deler[] = $iso;
+                continue;
+            }
+            $tekst = self::UKEDAG3[(int) $d->format('N') - 1] . ' ' . (int) $d->format('j') . '.';
+            $nesteIso = $dager[$i + 1] ?? null;
+            $sammeMnd = $nesteIso !== null && substr($nesteIso, 0, 7) === substr($iso, 0, 7);
+            if (!$sammeMnd) {
+                $tekst .= ' ' . self::MND3[(int) $d->format('n') - 1];
+                $fram = ((int) $d->format('Y') * 12 + (int) $d->format('n')) - ((int) $naa->format('Y') * 12 + (int) $naa->format('n'));
+                if ($fram >= 12) {
+                    $tekst .= ' ' . $d->format('Y');
+                }
+            }
+            $deler[] = $tekst;
+        }
+        $siste = array_pop($deler);
+        $ut = $deler === [] ? (string) $siste : implode(', ', $deler) . ' og ' . $siste;
+        return mb_strtoupper(mb_substr($ut, 0, 1)) . mb_substr($ut, 1);
     }
 
     /** Tre datoer paa kortet: «9. sep · 16. sep · 7. okt +9». */

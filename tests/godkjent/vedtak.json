@@ -8888,13 +8888,13 @@
         {
             "id": "forside-mindre-gult",
             "dato": "2026-10-12",
-            "hva": "Eieren 12.10.2026, punkt 1 «Mindre gult over fotografiet» (OK): på PC er det gule laget fra hjørnet (8–58 %) fjernet, det andre gule laget slutter ved 56 % i stedet for 90 %, og over fotografiet er overlegget 0 % (var 35–75 %). Teksten står fortsatt på helt gult. Mobil uendret.",
+            "hva": "Eieren 12.10.2026, punkt 1 «Mindre gult over fotografiet» (OK): på PC er det gule laget fra hjørnet (8–58 %) fjernet, det andre gule laget slutter ved 56 % i stedet for 90 %, og over fotografiet er overlegget 0 % (var 35–75 %). Teksten står fortsatt på helt gult. Mobil uendret. Endret samme kveld (vedtak toppbilde-bue): toningen følger nå en bue (radial-gradient) i stedet for 100°-linja.",
             "hvor": "Forsiden › toppen (PC)",
             "kode": [
                 {
                     "fil": "app/nett/sider/forside.php",
                     "finnes": [
-                        "linear-gradient(100deg, var(--lissom-yellow) 36%, rgba(255,207,56,0.6) 44%, rgba(255,207,56,0) 56%)"
+                        "radial-gradient(ellipse 62% 120% at 0% 45%, var(--lissom-yellow) 62%, rgba(255,207,56,0.6) 78%, rgba(255,207,56,0) 100%)"
                     ],
                     "ikkeFinnes": [
                         "linear-gradient(to top left, var(--lissom-yellow) 8%",
@@ -8906,7 +8906,7 @@
                 {
                     "sti": "/",
                     "finnes": [
-                        "rgba(255,207,56,0) 56%"
+                        "rgba(255,207,56,0) 100%)"
                     ],
                     "ikkeFinnes": [
                         "to top left, var(--lissom-yellow) 8%"
@@ -9058,6 +9058,184 @@
                     "fil": "nett.css",
                     "finnes": [
                         "div:has(> [data-kal-uke]) { min-width: 12em; }"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "kurskort-dato-tid",
+            "dato": "2026-10-12",
+            "hva": "Eieren 12.10.2026 (visningen «Kurskortene: dato og tid», oppsett A «Linjer», ok): under tittelen «Neste: Ons 21. okt» (to dager som par: «Neste: Ons 4. og tor 5. nov»), så klokkeslettene («10:00–13:30 eller 17:00–20:30», «begge dager» for to-dagers, «Åpent 17:00–20:00» for Paint on Pots fra kursets tider). «Se flere datoer» er en diskret understreket tekst i dempet brun (eierens unntak fra «piller, ikke lenker») som folder ut resten av datoene inne i kortet; nytt trykk lukker, lista ruller i kortet. Ingen «Skjul datoer», ingen «N datoer til», ingen «per person». Ledige plasser står på bildet som før. Paint on Pots viser «fra» + laveste aktive prisnivå fra PopPris. Kalender- og klokkelinja er borte fra kurskortene.",
+            "hvor": "Kurskortene på forsiden, /kurs og /events",
+            "kode": [
+                {
+                    "fil": "app/nett/kort.php",
+                    "finnes": [
+                        "public static function naar(array $okter, bool $apent, ?DateTimeImmutable $naa = null): array",
+                        "$tid = implode(' eller ', $g['tider']);",
+                        "$tid = 'Åpent ' . $tid;",
+                        "$tid .= ' begge dager';",
+                        "return ['neste' => 'Neste: ' . $foerst[0], 'tid' => $foerst[1], 'liste' => $linjer];",
+                        "$lavest = min(array_map(static fn(array $n): int => (int) ($n['prisOre'] ?? 0), $kat['popNivaer']));"
+                    ]
+                },
+                {
+                    "fil": "app/nett/deler.php",
+                    "finnes": [
+                        "private static function naarBlokk(string $neste, string $tid, array $liste): string",
+                        ">Se flere datoer</span></button>",
+                        "max-height: 232px; overflow-y: auto; overscroll-behavior: contain;",
+                        "color: var(--brown-500);\">fra</span> "
+                    ],
+                    "ikkeFinnes": [
+                        "Skjul datoer",
+                        "datoer til"
+                    ]
+                },
+                {
+                    "fil": "nett.js",
+                    "finnes": [
+                        "var flere = d.querySelectorAll('[data-nett-flere]');",
+                        "if (aapen) liste.removeAttribute('hidden'); else liste.setAttribute('hidden', '');"
+                    ]
+                }
+            ],
+            "live": [
+                {
+                    "sti": "/kurs",
+                    "finnes": [
+                        "Neste: ",
+                        ">Se flere datoer</span>"
+                    ],
+                    "ikkeFinnes": [
+                        "Skjul datoer"
+                    ]
+                },
+                {
+                    "sti": "/events",
+                    "finnes": [
+                        "Neste: ",
+                        "Åpent "
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "kortbilde-fokus",
+            "dato": "2026-10-12",
+            "hva": "Eieren 12.10.2026: kortbildene (også karusellbildene i kortet) bruker fokuspunktet fra bilde_fokus (Nett::fokus), som butikken og kursoversikten. Bilder uten lagret punkt står som før. Migrasjon 275 setter Date Night (uploads_foto-datenight.jpg) til «50% 15%», så ansiktene og dreieskiva vises i 16:10-utsnittet.",
+            "hvor": "Kurskortene (forside, /kurs, /events)",
+            "kode": [
+                {
+                    "fil": "app/nett/deler.php",
+                    "finnes": [
+                        "object-fit: cover;' . self::fokusStil($bilde) . ' display: block;",
+                        "object-fit: cover;' . self::fokusStil($b) . ' display: block; opacity: 0;",
+                        "$f = Nett::fokus($bilde, '');"
+                    ]
+                },
+                {
+                    "fil": "db/migrations/275_datenight_fokus.sql",
+                    "finnes": [
+                        "INSERT INTO bilde_fokus (fil, fokus) VALUES ('uploads_foto-datenight.jpg', '50% 15%')",
+                        "ON DUPLICATE KEY UPDATE fokus = VALUES(fokus);",
+                        "CREATE TABLE IF NOT EXISTS bilde_fokus"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "toppbilde-bue",
+            "dato": "2026-10-12",
+            "hva": "Eieren 12.10.2026 (visningen «Toppfeltet, søk og kontrast», punkt 1, alternativ 1): på PC toner fotoet i toppen av forsiden ut i gult de nederste ca. 160 px, og den gule toningen følger en bue i stedet for en rett kant. Fotoet er like stort som før. Mobil uendret (viser ikke fotoet).",
+            "hvor": "Forsiden › toppen (PC)",
+            "kode": [
+                {
+                    "fil": "app/nett/sider/forside.php",
+                    "finnes": [
+                        "linear-gradient(to bottom, #000 0, #000 60%, transparent 74%)",
+                        "mask-composite: intersect; -webkit-mask-composite: source-in;",
+                        "radial-gradient(ellipse 62% 120% at 0% 45%"
+                    ]
+                }
+            ],
+            "live": [
+                {
+                    "sti": "/",
+                    "finnes": [
+                        "transparent 74%)",
+                        "radial-gradient(ellipse 62% 120% at 0% 45%"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "toppmeny-gult-baand",
+            "dato": "2026-10-12",
+            "hva": "Eieren 12.10.2026 (visningen «Toppfeltet, søk og kontrast», punkt 2): et gult bånd bak toppmenyen på forsiden (helt gult til 84 px, tonet ut til 150 px), så den gule flekken ved forstørrelsesglasset forsvinner. Bare PC.",
+            "hvor": "Forsiden › toppmenyen (PC)",
+            "kode": [
+                {
+                    "fil": "nett-egen.css",
+                    "finnes": [
+                        ".lx-hero::after { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 150px; background: linear-gradient(to bottom, rgb(255,207,56) 0, rgb(255,207,56) 84px, rgba(255,207,56,0) 150px); pointer-events: none; }"
+                    ]
+                },
+                {
+                    "fil": "nett.css",
+                    "finnes": [
+                        "rgb(255,207,56) 84px, rgba(255,207,56,0) 150px"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "kontrast-kalender-omoss-butikk",
+            "dato": "2026-10-12",
+            "hva": "Eieren 12.10.2026 (visningen «Toppfeltet, søk og kontrast», punkt 3–5): datoraden i kalenderen på mobil (ukedag og måned) uten gjennomsiktighet (#6f5d4c på tomme dager). Pila som ikke kan trykkes (forrige uke) i clay-500 #94806a. Overlinjene (og bildeteksten på Om oss) i brown-400 #834a2b på Kalender, Om oss og Butikk. Kanten på filterpillene i butikken i clay-500 #94806a.",
+            "hvor": "Kalender, Om oss, Butikk",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "<span style=\"font-size: 10px; letter-spacing: var(--tracking-caps); text-transform: uppercase;\">{{ r.dagKort }}</span>",
+                        "<span style=\"font-size: 10px; line-height: 1;\">{{ r.mnd }}</span>",
+                        "text-transform: uppercase; color: var(--brown-400); margin-bottom: var(--space-3);\">Kurskalender</div>",
+                        "text-transform: uppercase; color: var(--brown-400); margin-bottom: var(--space-3);\">Vi tilbyr</div>",
+                        "text-transform: uppercase; color: var(--brown-400); margin-bottom: var(--space-3);\">{{ btKicker }}</div>",
+                        "<div class=\"lx-butikkfilter\" style=\"display: flex; gap: 8px; flex-wrap: wrap;\">",
+                        ".lx-butikkfilter span[style*=\"var(--border-default)\"] { border-color: var(--clay-500) !important; }",
+                        "border: '2px solid ' + (aktiv ? 'var(--lissom-brown)' : 'var(--clay-500)'),"
+                    ],
+                    "ikkeFinnes": [
+                        "uppercase; opacity: .75;\">{{ r.dagKort }}</span>",
+                        "line-height: 1; opacity: .75;\">{{ r.mnd }}</span>"
+                    ]
+                },
+                {
+                    "fil": "app/nett/sider/kalender.php",
+                    "finnes": [
+                        "($aktiv ? 'var(--lissom-brown)' : 'var(--clay-500)') . '; background: transparent; color: ' . ($aktiv ? 'var(--lissom-brown)' : 'var(--clay-500)')"
+                    ]
+                },
+                {
+                    "fil": "nett.js",
+                    "finnes": [
+                        "p[i].style.borderColor = aktiv ? 'var(--lissom-brown)' : 'var(--clay-500)';"
+                    ]
+                }
+            ],
+            "live": [
+                {
+                    "sti": "/kalender",
+                    "finnes": [
+                        "color: var(--brown-400); margin-bottom: var(--space-3);\">Kurskalender</div>"
+                    ]
+                },
+                {
+                    "sti": "/om-oss",
+                    "finnes": [
+                        "color: var(--brown-400); margin-bottom: var(--space-3);\">Vi tilbyr</div>"
                     ]
                 }
             ]

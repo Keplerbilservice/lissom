@@ -5318,6 +5318,38 @@ sjekk('… viser hoyst tre', str_contains($sida2, 'const vist = dager.slice(0, 3
 sjekk('… og sier hvor mange flere det er',
     str_contains($sida2, "return { kdDato: flere > 0 ? vist + ' +' + flere : vist };"));
 
+// ── Dato og tid paa kurskortet, oppsett A (eieren 12.10.2026) ───────────
+//
+// «Neste: Ons 21. okt», klokkeslettene samme dag med «eller», to-dagers som
+// par med «begge dager», Paint on Pots som «Åpent …», og resten bak «Se
+// flere datoer». Kort::naar() er ren og kan sjekkes uten basen.
+require_once dirname(__DIR__) . '/app/nett/kort.php';
+$naIdag = new DateTimeImmutable('2026-10-12', new DateTimeZone('Europe/Oslo'));
+$naEndag = Kort::naar([
+    ['dagIso' => '2026-10-21', 'klokke' => '10:00–13:30', 'samlinger' => []],
+    ['dagIso' => '2026-10-21', 'klokke' => '17:00–20:30', 'samlinger' => []],
+    ['dagIso' => '2026-12-16', 'klokke' => '10:00–13:30', 'samlinger' => []],
+], false, $naIdag);
+sjekk('kurskortet: «Neste:» med ukedag, dato og maaned', $naEndag['neste'] === 'Neste: Ons 21. okt', $naEndag['neste']);
+sjekk('… tider samme dag med «eller»', $naEndag['tid'] === '10:00–13:30 eller 17:00–20:30', $naEndag['tid']);
+sjekk('… og resten i lista', $naEndag['liste'] === [['Ons 16. des', '10:00–13:30']], json_encode($naEndag['liste'], JSON_UNESCAPED_UNICODE));
+$naSam = static fn(string $a, string $b, string $fra, string $til): array => ['dagIso' => $a, 'klokke' => $fra, 'samlinger' => [
+    ['dato' => $a, 'fra' => $fra, 'til' => $til], ['dato' => $b, 'fra' => $fra, 'til' => $til]]];
+$naTodag = Kort::naar([
+    $naSam('2026-11-04', '2026-11-05', '10:00', '13:30'),
+    $naSam('2026-11-04', '2026-11-05', '17:00', '20:30'),
+    $naSam('2026-10-30', '2026-11-01', '09:30', '13:00'),
+], false, $naIdag);
+sjekk('… to dager som par', $naTodag['neste'] === 'Neste: Ons 4. og tor 5. nov', $naTodag['neste']);
+sjekk('… med «begge dager»', $naTodag['tid'] === '10:00–13:30 eller 17:00–20:30 begge dager', $naTodag['tid']);
+sjekk('… og paret over maanedsskiftet', ($naTodag['liste'][0][0] ?? '') === 'Fre 30. okt og søn 1. nov', json_encode($naTodag['liste'], JSON_UNESCAPED_UNICODE));
+$naPop = Kort::naar([['dagIso' => '2026-10-15', 'klokke' => '17:00–20:00', 'samlinger' => []]], true, $naIdag);
+sjekk('… Paint on Pots: «Åpent» og kursets tider, ingen liste', $naPop['tid'] === 'Åpent 17:00–20:00' && $naPop['liste'] === [], $naPop['tid']);
+sjekk('… uten datoer: ingenting', Kort::naar([], false, $naIdag)['neste'] === '');
+$naKortFil = (string) les_testfil(dirname(__DIR__) . '/app/nett/deler.php');
+sjekk('… «Se flere datoer» aapner lista inne i kortet (skjult til trykk)',
+    str_contains($naKortFil, '>Se flere datoer</span></button>') && str_contains($naKortFil, '<ul id="\' . $id . \'" hidden'));
+
 // Inne i kortet, ikke under det. «date» er kortets eget felt.
 sjekk('datoene staar i kortets eget datofelt',
     // Én kortliste igjen etter 21. september (74a6bcb): appens kopier av

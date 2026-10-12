@@ -321,7 +321,9 @@ try {
     // Da staar reserveteksten.
 }
 
-$pil = static fn(bool $aktiv): string => 'appearance: none; width: 40px; height: 40px; border-radius: 50%; cursor: ' . ($aktiv ? 'pointer' : 'default') . '; border: 2px solid ' . ($aktiv ? 'var(--lissom-brown)' : 'var(--border-subtle)') . '; background: transparent; color: ' . ($aktiv ? 'var(--lissom-brown)' : 'var(--text-muted)') . '; font-size: 20px; line-height: 1; opacity: ' . ($aktiv ? '1' : '0.5') . ';';
+// Pila som ikke kan trykkes: clay-500 (#94806a), synlig mot bakgrunnen.
+// Eieren, 12. oktober 2026 (kontrast).
+$pil = static fn(bool $aktiv): string => 'appearance: none; width: 40px; height: 40px; border-radius: 50%; cursor: ' . ($aktiv ? 'pointer' : 'default') . '; border: 2px solid ' . ($aktiv ? 'var(--lissom-brown)' : 'var(--clay-500)') . '; background: transparent; color: ' . ($aktiv ? 'var(--lissom-brown)' : 'var(--clay-500)') . '; font-size: 20px; line-height: 1; opacity: 1;';
 
 return [
     'kropp' => Mal::tegn('Kurskalender', [

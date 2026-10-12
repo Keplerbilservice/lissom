@@ -13,6 +13,8 @@ try {
   const p = await c.newPage(), feil = [];
   p.on('pageerror', e => feil.push(e.message));
   const liste = () => p.evaluate(async () => (await (await fetch('/api/admin/medlemmer.php')).json()));
+  // Siden lastes først: fetch med relativ adresse trenger en side å regne den fra.
+  await p.goto(`${BASE}/ny-admin#idag`, {waitUntil: 'networkidle'});
   let d = await liste();
   const for_ = d.medlemmer.find(m => m.id === medlem.admin);
   assert.ok(for_, 'medlemmet står i lista');

@@ -1601,3 +1601,9 @@ nav[data-nett-mobilmeny]:not([hidden]) { display: flex !important; }
 @media (max-width: 760px) {
   .lx-rullpanel + .lx-ukeliste { display: none !important; }
 }
+/* Uketallet og maaneden har fast bredde paa PC og nettbrett, saa pilene ved
+   siden av ikke flytter seg naar man blar. Eieren, 12. oktober 2026. */
+[data-kal-uke], [data-kal-mnd] { font-variant-numeric: tabular-nums; }
+@media (min-width: 761px) {
+  div:has(> [data-kal-uke]) { min-width: 12em; }
+}

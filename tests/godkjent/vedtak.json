@@ -9024,6 +9024,43 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "kalender-bla-i-ro",
+            "dato": "2026-10-12",
+            "hva": "Eieren 12.10.2026: «jeg kan ikke stå med musepekern å bla i uker». Forrige/neste uke står i ro på PC og iPad i Kalender i ny admin og i kurskalenderen på lissom.no: rulleposisjonen beholdes, kalenderen blir aldri lavere mens man blar, innholdet tømmes ikke mens neste uke hentes (ny admin: forrige uke står dempet), og ukenummer/dato har fast bredde (tabular-nums, min-width). Kurskalenderen på PC bytter bare kalenderdelen (ingen ny sidelasting). Målt: knapp og scrollY uendret etter 5 klikk fram og 5 tilbake, 1280 og 1024 px.",
+            "hvor": "Kalender (ny admin) og /kalender",
+            "kode": [
+                {
+                    "fil": "ny-admin/kalender.js",
+                    "finnes": [
+                        "const dekket = () => { const [a, b] = periode(); return !!K.data && a >= K.fra && b <= K.til; };",
+                        "if (scrollY !== y) scrollTo(scrollX, y);",
+                        "const holdHoyde = () =>",
+                        "<div class=\"eyebrow kal-tittel\">"
+                    ]
+                },
+                {
+                    "fil": "ny-admin/kalender.css",
+                    "finnes": [
+                        ".kal-tittel{font-variant-numeric:tabular-nums;min-width:21em}",
+                        ".kal-venter{opacity:.55;pointer-events:none"
+                    ]
+                },
+                {
+                    "fil": "nett.js",
+                    "finnes": [
+                        "var kalHenter = false, kalVent = 0, kalByttet = false;",
+                        "if (window.scrollY !== y || window.scrollX !== x) window.scrollTo(x, y);"
+                    ]
+                },
+                {
+                    "fil": "nett.css",
+                    "finnes": [
+                        "div:has(> [data-kal-uke]) { min-width: 12em; }"
+                    ]
+                }
+            ]
         }
     ]
 }

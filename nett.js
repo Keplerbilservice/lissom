@@ -676,4 +676,48 @@
       else vis(forrest());
     }
   }
+  // Eieren, 12. oktober 2026: «jeg kan ikke staa med musepekern aa bla i
+  // uker». Paa PC (raden er skjult) laster pilene ikke sida paa nytt: neste
+  // uke hentes, og bare kalenderen byttes. Rulleposisjonen og pilene staar
+  // der de var, og kalenderen blir aldri lavere mens man blar. Trykker man
+  // flere ganger mens en uke hentes, tas de med etterpaa. Gaar det ikke,
+  // lastes adressen som foer.
+  var kalHenter = false, kalVent = 0, kalByttet = false;
+  d.addEventListener('click', function (e) {
+    var pil = e.target.closest && e.target.closest('[data-kal-pil]');
+    if (!pil || radSynlig() || !window.fetch || !window.DOMParser) return;
+    var del = pil.closest('section');
+    if (!del) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    var retning = +pil.getAttribute('data-kal-pil');
+    if (kalHenter) { kalVent += retning; return; }
+    var h = pil.getAttribute('data-href');
+    if (!h) return;
+    kalHenter = true;
+    var x = window.scrollX, y = window.scrollY, hoyde = del.getBoundingClientRect().height;
+    fetch(h, { credentials: 'same-origin' }).then(function (r) {
+      if (!r.ok) throw new Error('feil');
+      return r.text();
+    }).then(function (t) {
+      var ny = new DOMParser().parseFromString(t, 'text/html');
+      var nyPil = ny.querySelector('[data-kal-pil]'), nyDel = nyPil && nyPil.closest('section');
+      if (!nyDel) throw new Error('feil');
+      nyDel = d.importNode(nyDel, true);
+      nyDel.style.minHeight = Math.ceil(Math.max(hoyde, parseFloat(del.style.minHeight) || 0)) + 'px';
+      del.parentNode.replaceChild(nyDel, del);
+      if (ny.title) d.title = ny.title;
+      try { history.pushState({ kalUke: 1 }, '', h); kalByttet = true; } catch (x2) { /* adressen blir staaende */ }
+      if (window.scrollY !== y || window.scrollX !== x) window.scrollTo(x, y);
+      kalHenter = false;
+      if (kalVent) {
+        var r2 = kalVent > 0 ? 1 : -1;
+        kalVent -= r2;
+        var neste = d.querySelector('[data-kal-pil="' + r2 + '"][data-href]');
+        if (neste) neste.click(); else kalVent = 0;
+      }
+    }).catch(function () { location.href = h; });
+  }, true);
+  // Tilbake/fram etter at uka er byttet paa sida: last uka adressen viser.
+  window.addEventListener('popstate', function () { if (kalByttet) location.reload(); });
 })();

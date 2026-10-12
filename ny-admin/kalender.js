@@ -133,9 +133,13 @@ async function hentKalender(tving) {
   const [fra, til] = periode();
   const n = fra + til;
   if (!tving && K.data && K.nokkel === n) return;
-  try { K.data = await hentPeriode(fra, til); K.nokkel = n; K.feil = ''; }
-  catch (e) { K.feil = e.message; }
+  // Blar man fort, kan et eldre svar komme etter et nyere: bare svaret for perioden som vises nå, tas i bruk.
+  const naa = () => periode().join('') === n;
+  try { const d = await hentPeriode(fra, til); if (!naa()) return; K.data = d; K.nokkel = n; K.fra = fra; K.til = til; K.feil = ''; }
+  catch (e) { if (naa()) K.feil = e.message; }
 }
+// Er perioden som vises, ferdig hentet? Hvis ikke, står forrige innhold (dempet) til dataene er her.
+const dekket = () => { const [a, b] = periode(); return !!K.data && a >= K.fra && b <= K.til; };
 export async function oppfrisk() {
   await hentKalender(true);
   if (K.el?.isConnected) tegnKalender();
@@ -326,8 +330,13 @@ function tegnKalender() {
   const n = K.valgt.size, p = [...K.valgt.values()].reduce((s, o) => s + o.pameldt, 0);
   const fm = tilDato(K.mnd), mndSlutt = iso(new Date(fm.getFullYear(), fm.getMonth() + 1, 0));
   const sum = uke ? sumTekst(hend, u, slutt, `Uke ${ukenr(u)}`) : sumTekst(hend, K.mnd, mndSlutt, STOR(MND[fm.getMonth()]));
-  el.innerHTML = `<div class="nk-kal">
-  <div class="head"><div><div class="eyebrow">${uke ? `Uke ${ukenr(u)} · ${tilDato(u).getDate()}. ${MND[tilDato(u).getMonth()]} – ${tilDato(slutt).getDate()}. ${MND[tilDato(slutt).getMonth()]}` : `${MND[fm.getMonth()]} ${fm.getFullYear()}`}</div><h1>Kalender</h1></div><button class="knapp hoved bare-stor" data-k="serie">＋ Nytt kurs eller serie</button></div>
+  // Bla i uker/måneder (eieren 12.10.2026): knappene står i ro. Siden blir aldri lavere mens man blar, rulleposisjonen
+  // beholdes, og innholdet tømmes ikke mens neste uke hentes.
+  const venter = !dekket() && K.sistVis === K.vis + tidsplan ? [...el.querySelectorAll('.kal-sum, .kal-hoved')] : [];
+  const y = scrollY;
+  K.sistVis = K.vis + tidsplan;
+  el.innerHTML = `<div class="nk-kal"${K.minH ? ` style="min-height:${K.minH}px"` : ''}>
+  <div class="head"><div><div class="eyebrow kal-tittel">${uke ? `Uke ${ukenr(u)} · ${tilDato(u).getDate()}. ${MND[tilDato(u).getMonth()]} – ${tilDato(slutt).getDate()}. ${MND[tilDato(slutt).getMonth()]}` : `${MND[fm.getMonth()]} ${fm.getFullYear()}`}</div><h1>Kalender</h1></div><button class="knapp hoved bare-stor" data-k="serie">＋ Nytt kurs eller serie</button></div>
   ${K.feil ? `<p class="merke rod">${esc(K.feil)}</p>` : ''}
   <div class="kal-verktoy">
     ${faner}
@@ -341,13 +350,16 @@ function tegnKalender() {
   <div class="kal-hoved">${hoved}</div>
   ${n ? `<div class="handlingslinje"><span><b>${n} valgt</b> · ${p} påmeldte</span><span style="display:flex;gap:8px;flex-wrap:wrap"><button class="knapp" data-k="avvelg">Fjern valg</button><button class="knapp" data-k="avlysValgte">Avlys ${n} kurs</button><button class="knapp hoved" data-k="flyttValgte">Flytt ${n} kurs</button></span></div>` : ''}
   </div>`;
+  if (venter.length === 2) { const ny = el.querySelectorAll('.kal-sum, .kal-hoved'); venter.forEach((g, i) => { g.classList.add('kal-venter'); ny[i].replaceWith(g); }); }
+  if (scrollY !== y) scrollTo(scrollX, y);
+  if (venter.length === 2) return;
   if (tidsplan) { leggUtTidsplan(); document.fonts?.ready.then(() => { if (K.el?.querySelector('.tp')) leggUtTidsplan(); }); }
 }
 
 registrer('kalender', {
   tittel: 'Kalender', ikon: '▦', mobil: true,
   async tegn(el) {
-    K.el = el;
+    K.el = el; K.minH = 0;
     if (!K.data) el.innerHTML = '<div class="nk-kal"><div class="head"><h1>Kalender</h1></div><p class="muted">Henter kalenderen …</p></div>';
     else tegnKalender();
     await hentKalender(false);
@@ -536,6 +548,8 @@ H.mFlytt = async b => {
 // «Velg dato»: samme minikalender på PC (hopper til uka) og mobil (hopper til dagen). Lukkes med «Lukk», Esc eller en dato.
 H.velgDato = () => { K.velgDato = !K.velgDato; KM.mini = KM.valgt.slice(0, 8) + '01'; tegnKalender(); };
 H.velgDatoLukk = () => { K.velgDato = false; tegnKalender(); };
+// Før man blar: siden skal ikke bli lavere enn den er nå (da ville nettleseren rulle og knappene flytte seg).
+const holdHoyde = () => { const k = K.el?.querySelector('.nk-kal'); if (k) K.minH = Math.max(K.minH || 0, Math.ceil(k.getBoundingClientRect().height)); };
 H.miniNav = async b => { const d = tilDato(K.mnd); d.setMonth(d.getMonth() + +b.dataset.d); K.mnd = iso(d).slice(0, 7) + '-01'; tegnKalender(); await tegnPaaNytt(); };
 H.mMini = b => { const d = tilDato(KM.mini || KM.valgt.slice(0, 8) + '01'); d.setMonth(d.getMonth() + +b.dataset.d); KM.mini = iso(d).slice(0, 7) + '-01'; tegnKalender(); };
 H.mVelg = async b => { KM.valgt = b.dataset.dato; K.velgDato = false; tegnKalender(); await tegnPaaNytt(); };
@@ -551,7 +565,8 @@ addEventListener('resize', () => {
 
 H.kal = async b => {
   const v = b.dataset.kal;
-  if (v === 'vis-aar') { K.vis = 'aar'; tegnKalender(); return hentAar(AR.aar); }
+  if (v === 'vis-aar') { K.vis = 'aar'; K.minH = 0; tegnKalender(); return hentAar(AR.aar); }
+  if (v.startsWith('vis-')) K.minH = 0; else holdHoyde();
   if (v === 'vis-uke') K.vis = 'uke';
   if (v === 'vis-mnd') { K.vis = 'mnd'; K.mnd = K.uke.slice(0, 7) + '-01'; }
   if (v === 'uke-1' || v === 'uke+1') { K.uke = pluss(K.uke, v === 'uke-1' ? -7 : 7); K.mnd = K.uke.slice(0, 7) + '-01'; }
@@ -559,7 +574,7 @@ H.kal = async b => {
   if (v === 'idag') { K.uke = mandag(idag()); K.mnd = idag().slice(0, 7) + '-01'; }
   tegnKalender(); await tegnPaaNytt();
 };
-H.tilDag = async b => { K.velgDato = false; K.uke = mandag(b.dataset.dato); K.vis = 'uke'; K.mnd = b.dataset.dato.slice(0, 7) + '-01'; tegnKalender(); await tegnPaaNytt(); };
+H.tilDag = async b => { holdHoyde(); K.velgDato = false; K.uke = mandag(b.dataset.dato); K.vis = 'uke'; K.mnd = b.dataset.dato.slice(0, 7) + '-01'; tegnKalender(); await tegnPaaNytt(); };
 document.addEventListener('change', e => {
   const boks = e.target.closest?.('input[data-velg]'); if (!boks) return;
   const id = +boks.dataset.velg, h = OKTER.get(id); if (!h) return;

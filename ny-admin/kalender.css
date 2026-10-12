@@ -60,6 +60,10 @@ textarea.felt{min-height:110px;resize:vertical}
 .nk-kal .nkm-pille[data-k="velgFlere"][aria-pressed=true]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 .kal-sum{margin:0 0 14px;font-weight:700;font-size:16px;line-height:1.35}
 .kal-hoved{min-width:0}
+/* Bla i uker (eieren 12.10.2026): ukenummer og datoer har fast bredde, og forrige innhold står dempet til neste uke er hentet. */
+.kal-tittel{font-variant-numeric:tabular-nums;min-width:21em}
+.kal-sum{font-variant-numeric:tabular-nums}
+.kal-venter{opacity:.55;pointer-events:none;transition:opacity .15s}
 .kal-velgdato{position:relative}
 .velg-dato-boks{position:absolute;top:calc(100% + 6px);left:0;z-index:20;width:min(340px,calc(100vw - 32px));background:var(--paper);border:1px solid var(--line);border-radius:16px;box-shadow:0 16px 50px #0003;padding:12px;display:grid;gap:8px}
 .vd-fot{display:flex;justify-content:flex-end}

@@ -34,6 +34,18 @@ try {
       if (/Noe gikk galt|ikke bygd ennå/.test(m.tekst)) her.push(`${id}: ${m.tekst.slice(0, 120)}`);
       const forventSperre = navn === 'mobil' && ['medlemmer', 'varer', 'mer', 'semedlem', 'innstillinger'].includes(id);
       if (sperret !== forventSperre) her.push(`${id}: «Brukes på iPad eller PC» ${sperret ? 'vises' : 'mangler'} (${navn})`);
+      // I dag (eieren 12.10.2026, «alle steder klikkbart»): en trykkbar rad i Må gjøres / Til info åpner et ark eller en annen side.
+      if (id === 'idag' && navn === 'PC') {
+        const rad = p.locator('#arbeid .klikkrad').first();
+        if (await rad.count()) {
+          const for2 = p.url();
+          await rad.locator('.tekst').click();
+          await p.waitForTimeout(800);
+          const aapnet = p.url() !== for2 || await p.locator('dialog[open], [role="dialog"]').count() > 0;
+          if (!aapnet) her.push('idag: raden i Må gjøres åpnet ingenting');
+          await p.goto(`${BASE}/ny-admin#idag`, {waitUntil: 'networkidle'});
+        } else console.log('idag: ingen trykkbare rader i testdataene');
+      }
       // Medlemmer (eieren 12.10.2026): status og betaling står hver for seg, «Aktiv» blir stående ved siden av betalingen.
       if (id === 'medlemmer' && !sperret) {
         const r = await p.evaluate(() => [...document.querySelectorAll('#mlm-liste .radknapp')].map(b => [...b.querySelectorAll('.merker .merke')].map(x => x.textContent)));

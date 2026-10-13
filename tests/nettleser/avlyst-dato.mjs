@@ -35,7 +35,8 @@ const db = (sql) => JSON.parse(execFileSync('php', [path.join(HER, 'db.php'), sq
 const medSvar = async (p, apiFil, trykk) => {
   const svar = p.waitForResponse(r => r.url().includes(apiFil) && r.request().method() === 'POST', { timeout: 30000 });
   await trykk();
-  return svar;
+  const r = await svar; try { console.log('  DEBUG ' + apiFil + ' ' + r.status() + ' ' + (await r.text()).slice(0, 400)); } catch (e) { console.log('  DEBUG les feilet ' + e.message); }
+  return r;
 };
 const vent = async (les, ferdig, ms = 20000) => {
   const slutt = Date.now() + ms; let v = les();
@@ -87,6 +88,7 @@ try {
   for (const [hva, bredde, mobil] of [['mobil 390', 390, true], ['PC 1280', 1280, false]]) {
     console.log(`\n── ${hva} ──`);
     const S = seed();
+    console.log('  DEBUG S ' + JSON.stringify(S) + ' okter ' + JSON.stringify(db(`SELECT id, start_tid, status FROM course_sessions WHERE course_id = ${S.kurs}`)) + ' rl ' + JSON.stringify(db("SELECT * FROM rate_limits WHERE nokkel LIKE 'avbestill%' OR nokkel LIKE 'avlyst-plass%'")));
     try {
       const k = await nettleser.newContext({ viewport: { width: bredde, height: 860 }, isMobile: mobil, hasTouch: mobil });
       await k.addCookies([{ name: 'lissom_sesjon', value: S.token, domain: VERT, path: '/', httpOnly: true }]);
@@ -111,6 +113,7 @@ try {
         const knapper = p.locator('[role="dialog"] button, dialog button');
         const dato = (await knapper.allInnerTexts()).find(t => /\d{2}:\d{2}/.test(t));
         sjekk('dialogen viser datoer å velge', !!dato);
+        console.log('  DEBUG knapper ' + JSON.stringify(await knapper.allInnerTexts()));
         await knapper.filter({ hasText: dato }).first().tap();
         await p.waitForTimeout(800);
         await medSvar(p, '/api/avlyst-plass.php', () => p.getByText('Bytt til denne datoen', { exact: true }).tap());

@@ -102,6 +102,7 @@ kjor "avmelding før kursdato" bash tests/nettleser/kjor.sh admin-ny-avmeld
 
 gruppe statisk
 kjor "forsidehero" php tests/forside-hero.php
+kjor "fast adminlenke i footer" php tests/footer-admin.php
 for f in adminsjekk autolastsjekk innholdssjekk karusellsjekk knappesjekk \
          listesjekk metodesjekk seosjekk skjemasjekk skriftsjekk toutgaversjekk; do
   kjor "$f" node "bin/$f.mjs"

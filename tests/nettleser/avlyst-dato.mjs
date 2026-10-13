@@ -35,8 +35,7 @@ const db = (sql) => JSON.parse(execFileSync('php', [path.join(HER, 'db.php'), sq
 const medSvar = async (p, apiFil, trykk) => {
   const svar = p.waitForResponse(r => r.url().includes(apiFil) && r.request().method() === 'POST', { timeout: 30000 });
   await trykk();
-  const r = await svar; try { console.log('  DEBUG ' + apiFil + ' ' + r.status() + ' ' + (await r.text()).slice(0, 400)); } catch (e) { console.log('  DEBUG les feilet ' + e.message); }
-  return r;
+  return svar;
 };
 const vent = async (les, ferdig, ms = 20000) => {
   const slutt = Date.now() + ms; let v = les();
@@ -88,7 +87,6 @@ try {
   for (const [hva, bredde, mobil] of [['mobil 390', 390, true], ['PC 1280', 1280, false]]) {
     console.log(`\n── ${hva} ──`);
     const S = seed();
-    console.log('  DEBUG S ' + JSON.stringify(S) + ' okter ' + JSON.stringify(db(`SELECT id, start_tid, status FROM course_sessions WHERE course_id = ${S.kurs}`)) + ' rl ' + JSON.stringify(db("SELECT * FROM rate_limits WHERE nokkel LIKE 'avbestill%' OR nokkel LIKE 'avlyst-plass%'")));
     try {
       const k = await nettleser.newContext({ viewport: { width: bredde, height: 860 }, isMobile: mobil, hasTouch: mobil });
       await k.addCookies([{ name: 'lissom_sesjon', value: S.token, domain: VERT, path: '/', httpOnly: true }]);
@@ -113,12 +111,16 @@ try {
         const knapper = p.locator('[role="dialog"] button, dialog button');
         const dato = (await knapper.allInnerTexts()).find(t => /\d{2}:\d{2}/.test(t));
         sjekk('dialogen viser datoer å velge', !!dato);
-        console.log('  DEBUG knapper ' + JSON.stringify(await knapper.allInnerTexts()));
         await knapper.filter({ hasText: dato }).first().tap();
         await p.waitForTimeout(800);
         await medSvar(p, '/api/avlyst-plass.php', () => p.getByText('Bytt til denne datoen', { exact: true }).tap());
-        const b1 = (await vent(() => db(`SELECT course_session_id, belop_ore, status FROM bookings WHERE id = ${S.b1}`), r => Number(r[0]?.course_session_id) === S.ny1))[0];
-        sjekk('plassen er flyttet, 500 kr, betalt', Number(b1.course_session_id) === S.ny1 && Number(b1.belop_ore) === 50000 && b1.status === 'betalt', JSON.stringify(b1));
+        // De to plassene staar paa samme avlyste dato, og rekkefoelgen mellom dem
+        // paa Min side er ikke fast. «Første» kort kan vaere hvilken som helst av
+        // dem: den som ble flyttet er flyttet, og den andre er den som refunderes.
+        const flyttet = await vent(() => db(`SELECT id, course_session_id, belop_ore, status FROM bookings WHERE id IN (${S.b1}, ${S.b2}) AND course_session_id = ${S.ny1}`), r => r.length === 1);
+        const b1 = flyttet[0] || {};
+        const andre = Number(b1.id) === S.b2 ? S.b1 : S.b2;
+        sjekk('plassen er flyttet, 500 kr, betalt', flyttet.length === 1 && Number(b1.belop_ore) === 50000 && b1.status === 'betalt', JSON.stringify(flyttet));
         await p.locator('.ms-neste:visible, .msny-neste:visible').first().waitFor({ state: 'visible', timeout: 20000 }).catch(() => {});
         sjekk('… og nå er den nye datoen «Neste kurs»', (await p.locator('.ms-neste:visible, .msny-neste:visible').count()) >= 1);
         await kort.getByText('Få pengene tilbake', { exact: true }).first().tap();
@@ -126,7 +128,7 @@ try {
         const d2 = await p.locator('body').innerText();
         sjekk('«Du får 500 kr tilbake» og «Ja, gi meg pengene tilbake»', /Du får 500[\s ]kr tilbake/.test(d2) && /ja, gi meg pengene tilbake/i.test(d2));
         await medSvar(p, '/api/avbestill.php', () => p.getByText('Ja, gi meg pengene tilbake', { exact: true }).tap());
-        const b2 = (await vent(() => db(`SELECT b.status, p.refundert_ore FROM bookings b JOIN payments p ON p.id = b.payment_id WHERE b.id = ${S.b2}`), r => r[0]?.status === 'refundert' && Number(r[0]?.refundert_ore) === 50000))[0];
+        const b2 = (await vent(() => db(`SELECT b.status, p.refundert_ore FROM bookings b JOIN payments p ON p.id = b.payment_id WHERE b.id = ${andre}`), r => r[0]?.status === 'refundert' && Number(r[0]?.refundert_ore) === 50000))[0];
         sjekk('refundert 50000 i (falsk) Vipps, plassen refundert', b2.status === 'refundert' && Number(b2.refundert_ore) === 50000, JSON.stringify(b2));
       }
       await k.close();

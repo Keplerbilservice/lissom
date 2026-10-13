@@ -25,6 +25,7 @@ foreach (Medlemskap::planer() as $i => $p) {
     $planer[] = [
         'navn'   => (string) $p['navn'],
         'pris'   => Booking::kroner((int) $p['pris_ore']),
+        'engangs' => $engangs,
         // Paa kortet og under «Alt som er inkludert»: maanedsprisen med
         // «/ mnd». Prøv Lissom betales én gang (eieren, 13. oktober 2026).
         'prisVist' => Booking::kroner((int) $p['pris_ore']) . ($engangs ? '' : ' / mnd'),
@@ -42,26 +43,81 @@ $h .= '<section style="background: var(--clay-50); padding: var(--section-y) var
     . '<div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">' . $e($innh('Medlemskap/0/Kicker')) . '</div>'
     . '<h1 style="margin: 0 0 var(--space-4); font-size: var(--text-5xl);">' . $e($innh('Medlemskap/0/Overskrift')) . '</h1>'
     . '<p style="margin: 0; color: var(--text-body); font-size: var(--text-lg); max-width: 54ch; text-wrap: pretty;">' . $e($innh('Medlemskap/0/Ingress')) . '</p></div></section>' . "\n";
-$h .= '<section style="background: var(--clay-50); padding: 0 var(--space-8) var(--space-12);"><div class="lx-kortgrid" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8); align-items: stretch;">';
-$hode = '';
-foreach ($planer as $i => $p) {
-    if ($i === 0) {
-        $ss = Nett::srcset($p['bilde']);
-        $hode = '<link rel="preload" as="image" fetchpriority="high" href="' . $e($p['bilde']) . '"' . ($ss !== '' ? ' imagesrcset="' . $e($ss) . '" imagesizes="' . Nett::SIZES_KORT . '"' : '') . '>' . "\n";
+// Kortene (designet 13. oktober 2026): Prøv Lissom som et bredt kort øverst
+// med gul kant og «Start her», og medlemskapene tre i bredden. Hvert kort har
+// hele punktlisten fra «Alt som er inkludert», som derfor er tatt bort lenger
+// ned. Kortene i en rad er like høye, og knappen står nederst.
+$hake = '<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"></path></svg>';
+$punktliste = static function (array $punkter, string $klasse) use ($e, $hake): string {
+    $u = '<ul class="' . $klasse . '">';
+    foreach ($punkter as $pk) {
+        $u .= '<li>' . $hake . '<span>' . $e((string) $pk) . '</span></li>';
     }
-    $h .= Deler::kurskort(['level' => $p['merke'], 'title' => $p['navn'], 'text' => $p['beskrivelse'], 'price' => $p['prisVist'], 'duration' => $p['periode'], 'image' => $p['bilde'], 'cta' => 'Les mer', 'href' => '/medlemskap?plan=' . rawurlencode($p['navn']), 'eager' => $i === 0]);
+    return $u . '</ul>';
+};
+$prov = null;
+$vanlige = [];
+foreach ($planer as $p) {
+    if ($p['engangs'] && $prov === null) {
+        $prov = $p;
+    } else {
+        $vanlige[] = $p;
+    }
+}
+$hode = '';
+$foerste = $prov ?? ($vanlige[0] ?? null);
+if ($foerste !== null) {
+    $ss = Nett::srcset($foerste['bilde']);
+    $hode = '<link rel="preload" as="image" fetchpriority="high" href="' . $e($foerste['bilde']) . '"' . ($ss !== '' ? ' imagesrcset="' . $e($ss) . '" imagesizes="' . Nett::SIZES_KORT . '"' : '') . '>' . "\n";
+}
+$planHref = static fn(array $p): string => '/medlemskap?plan=' . rawurlencode($p['navn']);
+$h .= '<section style="background: var(--clay-50); padding: 0 var(--space-8) var(--space-12);"><div style="max-width: var(--width-content); margin: 0 auto;">';
+if ($prov !== null) {
+    $ss = Nett::srcset($prov['bilde']);
+    $h .= '<article class="lx-mk-prov">'
+        . '<img src="' . $e($prov['bilde']) . '"' . ($ss !== '' ? ' srcset="' . $e($ss) . '" sizes="(max-width: 760px) 100vw, 360px"' : '') . ' alt="' . $e($prov['navn']) . '" fetchpriority="high" decoding="async">'
+        . '<div class="lx-mk-inni">'
+        . '<div class="lx-mk-topp"><span class="lx-mk-starther">Start her</span><span class="lx-mk-over">' . $e($prov['merke']) . '</span></div>'
+        . '<h2 class="lx-mk-tittel">' . $e($prov['navn']) . '</h2>'
+        . '<div class="lx-mk-timer">' . $e($prov['periode']) . '</div>'
+        . ($prov['beskrivelse'] !== '' ? '<p class="lx-mk-tekst">' . $e($prov['beskrivelse']) . '</p>' : '')
+        . $punktliste($prov['punkter'], 'lx-mk-punkter lx-mk-punkter2')
+        . '<div class="lx-mk-bunn"><span class="lx-mk-pris">' . $e($prov['pris']) . '</span>'
+        . Deler::knapp('Les mer', ['href' => $planHref($prov), 'lenke' => true, 'size' => 'sm']) . '</div>'
+        . '</div></article>';
+}
+if ($vanlige !== []) {
+    $h .= '<div class="lx-mk-grid">';
+    foreach ($vanlige as $p) {
+        $ss = Nett::srcset($p['bilde']);
+        $h .= '<article class="lx-mk-kort">'
+            . '<img src="' . $e($p['bilde']) . '"' . ($ss !== '' ? ' srcset="' . $e($ss) . '" sizes="' . Nett::SIZES_KORT . '"' : '') . ' alt="' . $e($p['navn']) . '" loading="lazy" decoding="async">'
+            . '<div class="lx-mk-inni">'
+            . '<div class="lx-mk-over">' . $e($p['merke']) . '</div>'
+            . '<h3 class="lx-mk-tittel">' . $e($p['navn']) . '</h3>'
+            . '<div class="lx-mk-timer">' . $e($p['periode']) . '</div>'
+            . ($p['beskrivelse'] !== '' ? '<p class="lx-mk-tekst">' . $e($p['beskrivelse']) . '</p>' : '')
+            . '<div class="lx-mk-prislinje"><span class="lx-mk-pris">' . $e($p['pris']) . '</span>' . ($p['engangs'] ? '' : '<span class="lx-mk-mnd"> / mnd</span>') . '</div>'
+            . $punktliste($p['punkter'], 'lx-mk-punkter')
+            . Deler::knapp('Les mer', ['href' => $planHref($p), 'lenke' => true, 'size' => 'sm'])
+            . '</div></article>';
+    }
+    $h .= '</div>';
 }
 $h .= '</div></section>' . "\n";
 
 $avsnitt = 'margin: 0 0 var(--space-4); color: var(--text-body); font-size: var(--text-base); line-height: var(--leading-relaxed, 1.65); text-wrap: pretty;';
-$h .= '<section style="background: var(--clay-50); padding: 0 var(--space-8) var(--space-12);"><div class="lx-cols2" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-10); align-items: start;">'
+// Paa mobil: bare foerste avsnitt, og «Les mer ⌄» aapner resten (designet
+// 13. oktober 2026). «Som medlem får du» staar som foer.
+$miljo = $innh('Medlemskap/1/Miljø');
+$h .= '<section data-nett-mer style="background: var(--clay-50); padding: 0 var(--space-8) var(--space-12);"><div class="lx-cols2" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-10); align-items: start;">'
     . '<div><div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">' . $e($innh('Medlemskap/1/Kicker')) . '</div>'
     . '<h2 style="margin: 0 0 var(--space-4); font-size: var(--text-3xl);">' . $e($innh('Medlemskap/1/Overskrift')) . '</h2>'
-    . ($innh('Medlemskap/1/Miljø') !== '' ? '<p style="' . $avsnitt . '">' . $e($innh('Medlemskap/1/Miljø')) . '</p>' : '')
-    . '<p style="' . $avsnitt . '">Et medlemskap hos Lissom gir deg mer enn bare tilgang til et verksted. Du blir en del av et kreativt, sosialt og faglig fellesskap hvor du kan utvikle deg videre i ditt eget tempo.</p>'
-    . '<p style="' . $avsnitt . '">For mange er medlemskap faktisk rimeligere enn å bygge opp et eget keramikkverksted hjemme. Du slipper investeringer i utstyr, verktøy, brenning og plass, samtidig som du får tilgang til et fullt utstyrt verksted og et inspirerende miljø.</p>'
-    . '<p style="' . $avsnitt . '">Mange opplever at de lærer minst like mye av samtalene rundt arbeidsbordet som av selve kursene. Som medlem blir du en del av et miljø hvor man inspirerer hverandre, deler erfaringer og utvikler seg sammen.</p>'
-    . '<p style="margin: 0; color: var(--text-body); font-size: var(--text-base); line-height: var(--leading-relaxed, 1.65); text-wrap: pretty;">Enten du har gått kurs hos oss tidligere eller ønsker et sted å dyrke interessen din videre, er medlemskapet en flott måte å få mer tid med leire, flere kreative opplevelser og et fellesskap å høre til i.</p></div>'
+    . ($miljo !== '' ? '<p style="' . $avsnitt . '">' . $e($miljo) . '</p>' : '')
+    . '<p' . ($miljo !== '' ? ' class="lx-mer-skjul"' : '') . ' style="' . $avsnitt . '">Et medlemskap hos Lissom gir deg mer enn bare tilgang til et verksted. Du blir en del av et kreativt, sosialt og faglig fellesskap hvor du kan utvikle deg videre i ditt eget tempo.</p>'
+    . '<p class="lx-mer-skjul" style="' . $avsnitt . '">For mange er medlemskap faktisk rimeligere enn å bygge opp et eget keramikkverksted hjemme. Du slipper investeringer i utstyr, verktøy, brenning og plass, samtidig som du får tilgang til et fullt utstyrt verksted og et inspirerende miljø.</p>'
+    . '<p class="lx-mer-skjul" style="' . $avsnitt . '">Mange opplever at de lærer minst like mye av samtalene rundt arbeidsbordet som av selve kursene. Som medlem blir du en del av et miljø hvor man inspirerer hverandre, deler erfaringer og utvikler seg sammen.</p>'
+    . '<p class="lx-mer-skjul" style="margin: 0; color: var(--text-body); font-size: var(--text-base); line-height: var(--leading-relaxed, 1.65); text-wrap: pretty;">Enten du har gått kurs hos oss tidligere eller ønsker et sted å dyrke interessen din videre, er medlemskapet en flott måte å få mer tid med leire, flere kreative opplevelser og et fellesskap å høre til i.</p>' . Deler::lesMer() . '</div>'
     . '<div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-8);">'
     . '<div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-4);">' . $e($innh('Medlemskap/1/Overskrift, fordeler')) . '</div>'
     . '<div style="display: flex; flex-direction: column; gap: 12px;">';
@@ -110,19 +166,10 @@ foreach ([['uploads_verksted-1.jpg', 'Langbordet og hyllene i verkstedet på Lis
 $h .= '</div></div></div></section>' . "
 ";
 
-$h .= '<section style="background: var(--clay-50); padding: 0 var(--space-8) var(--section-y);"><div style="max-width: var(--width-content); margin: 0 auto;">'
-    . '<h2 style="margin: 0 0 var(--space-8); font-size: var(--text-3xl);">' . $e($innh('Medlemskap/2/Overskrift')) . '</h2>'
-    . '<div class="lx-cols4" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8);">';
-foreach ($planer as $p) {
-    $h .= '<div><div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">' . $e($p['merke']) . '</div>'
-        . '<h3 style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading); margin: 0 0 var(--space-4);">' . $e($p['navn']) . ' · ' . $e($p['prisVist']) . '</h3>'
-        . '<ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px;">';
-    foreach ($p['punkter'] as $pk) {
-        $h .= '<li style="display: flex; gap: 10px; align-items: flex-start; font-size: var(--text-sm); color: var(--text-body);"><span style="width: 6px; height: 6px; border-radius: 50%; background: var(--terracotta-500); margin-top: 8px; flex: 0 0 auto;"></span><span>' . $e((string) $pk) . '</span></li>';
-    }
-    $h .= '</ul></div>';
-}
-$h .= '</div><div class="lx-cols4" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-6); margin-top: var(--space-10);">';
+$h .= '<section style="background: var(--clay-50); padding: 0 var(--space-8) var(--section-y);"><div style="max-width: var(--width-content); margin: 0 auto;">';
+// «Alt som er inkludert» er tatt bort: punktlistene staar i kortene oeverst
+// (designet 13. oktober 2026). «Viktig å vite» staar som foer.
+$h .= '<div class="lx-cols4" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-6);">';
 foreach ([['Én hylleplass', 'Hvert medlemskap inkluderer én hylle til arbeidene dine.'], ['Brenning følger planen', 'Vi brenner etter verkstedets brenningsplan, vanligvis ukentlig.'], ['Verkstedets regler', 'Egne materialer og glasurer må godkjennes, og HMS- og ordensreglene gjelder alle medlemmer.']] as [$vt, $vx]) {
     $h .= '<div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);"><div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Viktig å vite</div><h3 style="margin: 0 0 var(--space-2); font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading);">' . $e($vt) . '</h3><p style="margin: 0; font-size: var(--text-sm); line-height: 1.5; color: var(--text-body); text-wrap: pretty;">' . $e($vx) . '</p></div>';
 }

@@ -8772,13 +8772,13 @@
         {
             "id": "handlekurv-ikon-til-handlekurv",
             "dato": "2026-10-12",
-            "hva": "Eieren 12.10.2026: handlekurvikonet gikk til verkstedets kasse-innlogging (/kasse er kassa på iPaden). Kundens handlekurv har nå adressen /handlekurv — ikonet i toppmenyen, appens adresse og retur etter innlogging.",
+            "hva": "Eieren 12.10.2026: handlekurvikonet gikk til verkstedets kasse-innlogging (/kasse er kassa på iPaden). Kundens handlekurv har nå adressen /handlekurv — ikonet i toppmenyen, appens adresse og retur etter innlogging. Fra 13.10.2026 (designet) står ikonet til høyre ved søk og «Kontakt oss», med aria-label «Handlekurv».",
             "hvor": "Toppmenyen › handlekurvikonet",
             "kode": [
                 {
                     "fil": "app/nett/deler.php",
                     "finnes": [
-                        "$lenker[] = ['Handlekurv', '/handlekurv'];"
+                        "$h .= '<a href=\"/handlekurv\" aria-label=\"Handlekurv\"'"
                     ],
                     "ikkeFinnes": [
                         "$lenker[] = ['Handlekurv', '/kasse'];"
@@ -9071,7 +9071,7 @@
         {
             "id": "kurskort-dato-tid",
             "dato": "2026-10-12",
-            "hva": "Eieren 12.10.2026 (visningen «Kurskortene: dato og tid», oppsett A «Linjer», ok): under tittelen «Neste: Ons 21. okt» (to dager som par: «Neste: Ons 4. og tor 5. nov»), så klokkeslettene («10:00–13:30 eller 17:00–20:30», «begge dager» for to-dagers, «Åpent 17:00–20:00» for Paint on Pots fra kursets tider). «Se flere datoer» er en diskret understreket tekst i dempet brun (eierens unntak fra «piller, ikke lenker») som folder ut resten av datoene inne i kortet; nytt trykk lukker, lista ruller i kortet. Ingen «Skjul datoer», ingen «N datoer til», ingen «per person». Ledige plasser står på bildet som før. Paint on Pots viser «fra» + laveste aktive prisnivå fra PopPris. Kalender- og klokkelinja er borte fra kurskortene.",
+            "hva": "Eieren 12.10.2026 (visningen «Kurskortene: dato og tid», oppsett A «Linjer», ok): under tittelen «Neste: Ons 21. okt» (to dager som par: «Neste: Ons 4. og tor 5. nov»), så klokkeslettene («10:00–13:30 eller 17:00–20:30», «begge dager» for to-dagers, «Åpent 17:00–20:00» for Paint on Pots fra kursets tider). «Se flere datoer» er en diskret understreket tekst i dempet brun (eierens unntak fra «piller, ikke lenker») som folder ut resten av datoene inne i kortet; nytt trykk lukker, lista ruller i kortet. Ingen «Skjul datoer», ingen «N datoer til», ingen «per person». Ledige plasser står på bildet som før. Paint on Pots viser «fra» + laveste aktive prisnivå fra PopPris. Kalender- og klokkelinja er borte fra kurskortene. Erstattet 13.10.2026 av datobrikkene (vedtak design-kurskort-datobrikker): «Neste:» og «Se flere datoer» står ikke lenger på kortene med datoer. Kort::naar() finnes fortsatt.",
             "hvor": "Kurskortene på forsiden, /kurs og /events",
             "kode": [
                 {
@@ -9108,19 +9108,8 @@
             ],
             "live": [
                 {
-                    "sti": "/kurs",
-                    "finnes": [
-                        "Neste: ",
-                        ">Se flere datoer</span>"
-                    ],
-                    "ikkeFinnes": [
-                        "Skjul datoer"
-                    ]
-                },
-                {
                     "sti": "/events",
                     "finnes": [
-                        "Neste: ",
                         "Åpent "
                     ]
                 }
@@ -9514,6 +9503,209 @@
                     "finnes": [
                         "SET nivaa_tekst = ''Nybegynner'' WHERE slug = ''dreiekurs''",
                         "-- godkjent av eieren: 2026-10-13"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "design-kurskort-datobrikker",
+            "dato": "2026-10-13",
+            "hva": "Designet 13.10.2026 (2.1): kurskortet med datoer i bredden på forsiden («Kommende datoer») og /kurs. Bilde med plassmerket oppe til høyre, «Velg dato» og «Alle datoer →», opptil fire datobrikker (button aria-pressed i role=group «Velg dato», aria-label med hel dato), «Tid» med én pille per klokkeslett for valgt dato, og knappen «Book <dato>» til bookingen (kurssida med ?dag=). To dager er én brikke («ONS+TOR», «4.–5.», «begge dager», «Book 4.–5. nov»). Full dato: «Fullt» under måneden og «Les mer». Neste år: «MAR ’27». Tre i bredden fra 1024 px, to på nettbrett, ett på mobil.",
+            "hvor": "app/nett/kort.php (Kort::brikker), app/nett/deler.php (kurskortDatoer), nett.js, nett-egen.css",
+            "kode": [
+                {
+                    "fil": "app/nett/kort.php",
+                    "finnes": [
+                        "public static function brikker(array $okter, bool $apent, string $href, ?DateTimeImmutable $naa = null): array",
+                        "'brikker'  => self::brikker($datoer, !empty($kat['folgerApningstid']), $felles['href']),"
+                    ]
+                },
+                {
+                    "fil": "app/nett/deler.php",
+                    "finnes": [
+                        "<div class=\"lx-dk-brikker\" role=\"group\" aria-label=\"Velg dato\">",
+                        "<span class=\"lx-dk-etikett\">Velg dato</span><a href=\"",
+                        "Alle datoer →",
+                        "<span class=\"lx-dk-etikett\">Tid</span>",
+                        ">begge dager</span>",
+                        "'<span class=\"lx-dk-fullt\">Fullt</span>'"
+                    ]
+                },
+                {
+                    "fil": "nett.js",
+                    "finnes": [
+                        "var b = e.target.closest && e.target.closest('.lx-dk-brikke');",
+                        "knapp.setAttribute('href', b.getAttribute('data-dk-href') || '');"
+                    ]
+                },
+                {
+                    "fil": "nett-egen.css",
+                    "finnes": [
+                        ".lx-dkgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; align-items: stretch; }",
+                        ".lx-dk-brikke[aria-pressed=\"true\"] { background: var(--lissom-brown, #4D1D12);"
+                    ]
+                }
+            ],
+            "live": [
+                {
+                    "sti": "/kurs",
+                    "finnes": [
+                        "class=\"lx-dk-brikker\" role=\"group\" aria-label=\"Velg dato\"",
+                        "Alle datoer →"
+                    ],
+                    "ikkeFinnes": [
+                        ">Se flere datoer</span>"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "design-forside-20261013",
+            "dato": "2026-10-13",
+            "hva": "Designet 13.10.2026 (2.2), heroen urørt: handlekurven til høyre i toppen; «Kommende datoer» med tre kurskort (2.1), også på mobil, med knappen under; referansen uten navnet over sitatet når logoen står der, og navnet ca. 18 px under sitatet; galleriet uten «Lissom» under bildene og uten knappen til butikken; «Admin» i bunnen bare for innloggede administratorer, og «Min side» på én linje.",
+            "hvor": "app/nett/sider/forside.php, app/nett/deler.php, nett.js",
+            "kode": [
+                {
+                    "fil": "app/nett/sider/forside.php",
+                    "finnes": [
+                        "    . '<div class=\"lx-dkgrid\">';",
+                        "foreach (array_slice($kort, 0, 3) as $k) {",
+                        "margin: 18px 0 var(--space-5);"
+                    ],
+                    "ikkeFinnes": [
+                        "Nett::kursTeller($kort)"
+                    ]
+                },
+                {
+                    "fil": "app/nett/deler.php",
+                    "finnes": [
+                        "(self::erAdmin() ? '<a href=\"/admin\" class=\"lx-bunnpille\"",
+                        "' white-space: nowrap;\"",
+                        "(string) $g['navn'] !== 'Lissom'"
+                    ]
+                },
+                {
+                    "fil": "nett.js",
+                    "finnes": [
+                        "q('stikktittel').style.display = r.logo ? 'none' : '';"
+                    ]
+                }
+            ],
+            "live": [
+                {
+                    "sti": "/",
+                    "finnes": [
+                        "aria-label=\"Handlekurv\"",
+                        "class=\"lx-dkgrid\""
+                    ],
+                    "ikkeFinnes": [
+                        ">Admin</a>"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "design-les-mer-mobil",
+            "dato": "2026-10-13",
+            "hva": "Designet 13.10.2026: på mobil viser velkomstteksten på /kurs og «Hvorfor bli medlem?» på /medlemskap bare første avsnitt, med «Les mer ⌄» / «Vis mindre ⌃» (aria-expanded). PC som før. Skjules bare når nett.js er lastet (html.lx-js-mer).",
+            "hvor": "app/nett/deler.php (lesMer), app/nett/sider/kurs.php, app/nett/sider/medlemskap.php, nett.js, lissom-2108.html (stilene)",
+            "kode": [
+                {
+                    "fil": "app/nett/deler.php",
+                    "finnes": [
+                        "data-nett-merknapp>Les mer ⌄</button>"
+                    ]
+                },
+                {
+                    "fil": "nett.js",
+                    "finnes": [
+                        "k.textContent = aapen ? 'Vis mindre ⌃' : 'Les mer ⌄';",
+                        "d.documentElement.classList.add(\"lx-js-mer\");"
+                    ]
+                },
+                {
+                    "fil": "app/nett/sider/kurs.php",
+                    "finnes": [
+                        "<section data-nett-mer style=",
+                        "Deler::lesMer()"
+                    ]
+                },
+                {
+                    "fil": "app/nett/sider/medlemskap.php",
+                    "finnes": [
+                        "<section data-nett-mer style=",
+                        "Deler::lesMer()"
+                    ]
+                },
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "html.lx-js-mer [data-nett-mer]:not([data-nett-mer-aapen]) .lx-mer-skjul { display: none !important; }"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "design-medlemskap-20261013",
+            "dato": "2026-10-13",
+            "hva": "Designet 13.10.2026 (2.4): Prøv Lissom som bredt kort øverst med gul kant og pillen «Start her» (bilde 360 px, punktlisten i to spalter, pris og «Les mer»); de andre medlemskapene tre i bredden med bilde, overtittel, navn, timer, tekst, pris med «/ mnd», hele punktlisten og «Les mer» nederst. «Alt som er inkludert» er fjernet. «Viktig å vite» og resten som før.",
+            "hvor": "app/nett/sider/medlemskap.php, nett-egen.css",
+            "kode": [
+                {
+                    "fil": "app/nett/sider/medlemskap.php",
+                    "finnes": [
+                        "<span class=\"lx-mk-starther\">Start her</span>",
+                        "'<article class=\"lx-mk-prov\">'",
+                        "'<div class=\"lx-mk-grid\">'"
+                    ],
+                    "ikkeFinnes": [
+                        "$e($innh('Medlemskap/2/Overskrift'))"
+                    ]
+                },
+                {
+                    "fil": "nett-egen.css",
+                    "finnes": [
+                        ".lx-mk-prov { background: var(--surface-card, #fff); border: 2px solid var(--lissom-yellow, #FFCF38);"
+                    ]
+                }
+            ],
+            "live": [
+                {
+                    "sti": "/medlemskap",
+                    "finnes": [
+                        "lx-mk-starther",
+                        "lx-mk-grid"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "design-kursene-vare-20261013",
+            "dato": "2026-10-13",
+            "hva": "Designet 13.10.2026 (2.5): hvert kurs på /kursene-vare som én rad: bilde 260 px, tekst i midten og en faktaboks på 300 px i lys sand (<dl>) med «● Ledige plasser» i grønt eller «● Fullbooket» i rustrødt og knappen nederst. Mobil: lite bilde (104 px) ved overtittel, navn og status, faktaene i to spalter, beskrivelsen bak «Les mer ⌄» og knappen alltid synlig. Felter som mangler vises ikke.",
+            "hvor": "lissom-2108.html (malen «Kursene våre» og stilene), app/nett/sider/kursoversikt.php",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "<article class=\"lx-ko\" data-nett-mer>",
+                        "<dl class=\"lx-ko-fakta\">",
+                        ".lx-ko-status { font-size: 13px; font-weight: 700; color: #3F6B3A; }"
+                    ]
+                },
+                {
+                    "fil": "app/nett/sider/kursoversikt.php",
+                    "finnes": [
+                        "'statusKlasseM'  => 'lx-ko-status lx-ko-kunm'"
+                    ]
+                }
+            ],
+            "live": [
+                {
+                    "sti": "/kursene-vare",
+                    "finnes": [
+                        "class=\"lx-ko\"",
+                        "class=\"lx-ko-fakta\""
                     ]
                 }
             ]

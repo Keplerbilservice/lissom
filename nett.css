@@ -2261,6 +2261,50 @@ img{max-width:100%;display:block}
   html.lx-innebygd .lx-kalflik,
   html.lx-innebygd .lx-admkal { display: none !important; }
   html.lx-innebygd .lx-adminaside + main { padding-bottom: 24px !important; }
+  /* «Kursene våre» (designet 13. oktober 2026, 2.5). PC: bilde 260 px, tekst
+     i midten og en faktaboks på 300 px i lys sand med status og knapp nederst.
+     Mobil: lite bilde (104 px) ved overtittel, navn og status, faktaene i to
+     spalter, beskrivelsen bak «Les mer ⌄» og knappen alltid synlig. */
+  .lx-ko { background: var(--surface-card, #fff); border: 1px solid var(--border-subtle, #EADFD2); border-radius: 22px; overflow: hidden; display: grid;
+    grid-template-columns: 260px minmax(0, 1fr) 300px; grid-template-rows: auto 1fr auto;
+    grid-template-areas: "bilde hode fakta" "bilde tekst fakta" "bilde tekst bunn"; }
+  .lx-ko-bilde { grid-area: bilde; min-height: 240px; }
+  .lx-ko-bilde > * { width: 100%; height: 100%; min-height: 240px; }
+  .lx-ko-hode { grid-area: hode; padding: 28px 28px 0; min-width: 0; }
+  .lx-ko-over { font: var(--type-eyebrow); font-size: 12px; letter-spacing: 1.8px; text-transform: uppercase; color: var(--terracotta-600, #A2502B); }
+  .lx-ko-tittel { margin: 4px 0 10px; font-family: var(--font-display); font-size: 26px; font-weight: 700; line-height: 1.2; color: var(--text-heading, #4D1D12); }
+  .lx-ko-tekst { grid-area: tekst; padding: 0 28px 28px; min-width: 0; }
+  .lx-ko-tekst p { margin: 0; font-size: 16px; line-height: 1.6; color: var(--text-body); text-wrap: pretty; }
+  .lx-ko-punkter { list-style: none; margin: 12px 0 0; padding: 0; }
+  .lx-ko-punkter li { display: flex; gap: 8px; font-size: 15px; line-height: 1.45; padding: 3px 0; color: var(--text-body); }
+  .lx-ko-punkter li > span:first-child { color: var(--brown-500, #66300F); font-weight: 700; flex: none; }
+  .lx-ko-fakta { grid-area: fakta; margin: 0; padding: 24px 24px 8px; background: #FBF6EF; border-left: 1px solid var(--border-subtle, #EADFD2); }
+  .lx-ko-fakta > div { padding: 6px 0; }
+  .lx-ko-fakta dt { font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--terracotta-600, #A2502B); }
+  .lx-ko-fakta dd { margin: 2px 0 0; font-size: 15px; font-weight: 700; color: var(--text-heading, #4D1D12); }
+  .lx-ko-bunn { grid-area: bunn; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 24px 24px; background: #FBF6EF; border-left: 1px solid var(--border-subtle, #EADFD2); }
+  .lx-ko-status { font-size: 13px; font-weight: 700; color: #3F6B3A; }
+  .lx-ko-status.lx-ko-full { color: var(--terracotta-600, #A2502B); }
+  .lx-ko-status.lx-ko-tom, .lx-ko-kunm { display: none; }
+  .lx-ko-mer { grid-area: mer; }
+  /* «Les mer ⌄» / «Vis mindre ⌃»: bare på mobil, og bare der skriptet som
+     åpner finnes (nett.js setter lx-js-mer). Uten det vises alt. */
+  .lx-mer-knapp { display: none; }
+  @media (max-width: 760px) {
+    html.lx-js-mer [data-nett-mer]:not([data-nett-mer-aapen]) .lx-mer-skjul { display: none !important; }
+    html.lx-js-mer .lx-mer-knapp { display: inline-flex; align-items: center; justify-content: center; grid-column: 1 / -1; justify-self: start; align-self: start; min-height: 44px; padding: 0 18px; border: 1.5px solid var(--lissom-brown, #4D1D12); border-radius: 999px; background: transparent; color: var(--lissom-brown, #4D1D12); font-family: var(--font-sans); font-size: 13px; font-weight: 700; letter-spacing: .9px; text-transform: uppercase; cursor: pointer; }
+    .lx-ko { border-radius: 20px; grid-template-columns: 104px minmax(0, 1fr); grid-template-rows: auto; grid-template-areas: "bilde hode" "fakta fakta" "tekst tekst" "mer mer" "bunn bunn"; }
+    .lx-ko-bilde, .lx-ko-bilde > * { min-height: 120px; }
+    .lx-ko-hode { padding: 14px 14px 10px; }
+    .lx-ko-tittel { font-size: 20px; margin: 2px 0 6px; }
+    .lx-ko-kunm { display: inline; }
+    .lx-ko-kunpc { display: none; }
+    .lx-ko-status.lx-ko-tom { display: none; }
+    .lx-ko-fakta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 12px; padding: 4px 14px 0; background: transparent; border-left: 0; }
+    .lx-ko-tekst { padding: 8px 14px 0; }
+    .lx-ko-mer { margin: 6px 14px 0; }
+    .lx-ko-bunn { padding: 12px 14px 16px; background: transparent; border-left: 0; justify-content: flex-start; }
+  }
 
 '
     + o.stil.replace(/<\/style/gi, '<\\/style') + '
@@ -2321,4 +2365,86 @@ nav[data-nett-mobilmeny]:not([hidden]) { display: flex !important; }
    Eieren, 12. oktober 2026 (søk). */
 @media (min-width: 761px) {
   .lx-hero::after { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 150px; background: linear-gradient(to bottom, rgb(255,207,56) 0, rgb(255,207,56) 84px, rgba(255,207,56,0) 150px); pointer-events: none; }
+}
+
+/* ── Kurskortet med datoer i bredden (designet 13. oktober 2026, 2.1) ──
+   Deler::kurskortDatoer + nett.js. Tre i bredden fra 1024 px, to paa
+   nettbrett, ett paa mobil. Kortene i samme rad er like hoeye, og pris og
+   knapp staar nederst. */
+.lx-dkgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; align-items: stretch; }
+@media (max-width: 1023px) { .lx-dkgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .lx-dkgrid { grid-template-columns: minmax(0, 1fr); gap: 20px; } }
+.lx-dk { background: var(--surface-card, #fff); border: 1px solid var(--border-subtle, #EADFD2); border-radius: 22px; overflow: hidden; display: flex; flex-direction: column; min-width: 0; cursor: pointer; }
+.lx-dk-bilde { position: relative; height: 200px; overflow: hidden; background: var(--clay-200); }
+.lx-dk-bilde img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.lx-dk-bilde img.lx-dk-lag { position: absolute; inset: 0; }
+.lx-dk-merke { position: absolute; top: 12px; right: 12px; background: #fff; color: var(--lissom-brown, #4D1D12); font-family: var(--font-sans); font-size: 11px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; padding: 4px 9px; border-radius: 999px; white-space: nowrap; }
+.lx-dk-inni { padding: 20px; display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.lx-dk-over { font-family: var(--font-sans); font-size: 12px; font-weight: 700; letter-spacing: 1.8px; text-transform: uppercase; color: var(--terracotta-600, #A2502B); }
+.lx-dk-tittel { margin: 4px 0 16px; font-family: var(--font-display); font-size: 22px; font-weight: 700; line-height: 1.2; color: var(--text-heading, #4D1D12); }
+.lx-dk-tittel a { color: inherit; text-decoration: none; }
+.lx-dk-velg { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 8px; }
+.lx-dk-velg a { font-size: 13px; color: var(--brown-500, #66300F); min-height: 44px; display: inline-flex; align-items: center; }
+.lx-dk-etikett { font-family: var(--font-sans); font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--terracotta-600, #A2502B); }
+.lx-dk-brikker { display: flex; gap: 8px; }
+.lx-dk-brikke { flex: 1 1 0; min-width: 0; min-height: 68px; border: 1.5px solid var(--border-subtle, #EADFD2); background: #FBF6EF; border-radius: 12px; padding: 6px 0; cursor: pointer; font-family: inherit; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.lx-dk-brikke > span { display: block; }
+.lx-dk-uke { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--terracotta-600, #A2502B); white-space: nowrap; }
+.lx-dk-dag { font-family: var(--font-display); font-size: 22px; font-weight: 700; line-height: 1.1; color: var(--lissom-brown, #4D1D12); white-space: nowrap; }
+.lx-dk-mnd { font-size: 12px; text-transform: uppercase; color: var(--brown-500, #66300F); white-space: nowrap; }
+.lx-dk-fullt { font-size: 10px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: var(--terracotta-600, #A2502B); margin-top: 2px; }
+.lx-dk-brikke[aria-pressed="true"] { background: var(--lissom-brown, #4D1D12); border-color: var(--lissom-brown, #4D1D12); }
+.lx-dk-brikke[aria-pressed="true"] .lx-dk-uke,
+.lx-dk-brikke[aria-pressed="true"] .lx-dk-fullt { color: var(--lissom-yellow, #FFCF38); }
+.lx-dk-brikke[aria-pressed="true"] .lx-dk-dag { color: #fff; }
+.lx-dk-brikke[aria-pressed="true"] .lx-dk-mnd { color: #F4EBDE; }
+.lx-dk-brikke:focus-visible { outline: 3px solid var(--lissom-yellow, #FFCF38); outline-offset: 2px; }
+.lx-dk-tider { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 12px; }
+.lx-dk-tider [data-dk-tidliste] { display: contents; }
+.lx-dk-tider .lx-dk-etikett { margin-right: 2px; }
+.lx-dk-tid { background: #FBF6EF; border: 1px solid var(--border-subtle, #EADFD2); color: var(--lissom-brown, #4D1D12); font-size: 14px; font-weight: 700; padding: 2px 10px; border-radius: 999px; font-variant-numeric: tabular-nums; }
+.lx-dk-begge { font-size: 14px; color: var(--brown-500, #66300F); }
+.lx-dk-tekst { margin: 16px 0 18px; font-size: 15px; line-height: 1.45; color: var(--brown-500, #66300F); flex: 1; text-wrap: pretty; }
+.lx-dk-bunn { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; margin-top: auto; }
+.lx-dk-pris { font-size: 17px; font-weight: 700; color: var(--lissom-brown, #4D1D12); white-space: nowrap; }
+.lx-dk-fra { font-weight: 700; color: var(--brown-500, #66300F); }
+@media (max-width: 640px) { .lx-dk-bilde { height: 170px; } }
+
+/* ── Medlemskap (designet 13. oktober 2026, 2.4) ─────────────────────────
+   Prøv Lissom som bredt kort med gul kant og «Start her», medlemskapene
+   tre i bredden med hele punktlisten. */
+.lx-mk-prov { background: var(--surface-card, #fff); border: 2px solid var(--lissom-yellow, #FFCF38); border-radius: 22px; overflow: hidden; display: grid; grid-template-columns: 360px minmax(0, 1fr); margin-bottom: 24px; }
+.lx-mk-prov > img { width: 100%; height: 100%; min-height: 220px; object-fit: cover; display: block; }
+.lx-mk-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; align-items: stretch; }
+.lx-mk-kort { background: var(--surface-card, #fff); border: 1px solid var(--border-subtle, #EADFD2); border-radius: 22px; overflow: hidden; display: flex; flex-direction: column; min-width: 0; }
+.lx-mk-kort > img { width: 100%; height: 190px; object-fit: cover; display: block; }
+.lx-mk-inni { padding: 22px; display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.lx-mk-prov .lx-mk-inni { padding: 28px 30px; gap: 10px; }
+.lx-mk-topp { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.lx-mk-starther { background: var(--lissom-yellow, #FFCF38); color: var(--lissom-brown, #4D1D12); font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; }
+.lx-mk-over { font-size: 12px; font-weight: 700; letter-spacing: 1.8px; text-transform: uppercase; color: var(--terracotta-600, #A2502B); }
+.lx-mk-tittel { margin: 4px 0 6px; font-family: var(--font-display); font-size: 26px; font-weight: 700; color: var(--text-heading, #4D1D12); line-height: 1.2; }
+.lx-mk-prov .lx-mk-tittel { margin: 0; font-size: 30px; }
+.lx-mk-timer { font-size: 15px; color: var(--brown-500, #66300F); margin-bottom: 10px; }
+.lx-mk-prov .lx-mk-timer { margin-bottom: 0; }
+.lx-mk-tekst { margin: 0 0 14px; font-size: 15px; line-height: 1.5; color: var(--text-body); text-wrap: pretty; }
+.lx-mk-prov .lx-mk-tekst { margin: 0; font-size: 16px; }
+.lx-mk-prislinje { margin-bottom: 14px; }
+.lx-mk-pris { font-family: var(--font-display); font-size: 28px; font-weight: 700; color: var(--text-heading, #4D1D12); white-space: nowrap; }
+.lx-mk-prov .lx-mk-pris { font-family: var(--font-sans); font-size: 22px; }
+.lx-mk-mnd { font-size: 16px; color: var(--brown-500, #66300F); }
+.lx-mk-punkter { list-style: none; margin: 0 0 18px; padding: 14px 0 0; border-top: 1px solid var(--border-subtle, #EADFD2); flex: 1; }
+.lx-mk-prov .lx-mk-punkter { margin: 4px 0 0; padding: 0; border-top: 0; flex: none; }
+.lx-mk-punkter2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 24px; }
+.lx-mk-punkter li { display: flex; gap: 8px; font-size: 15px; line-height: 1.45; padding: 3px 0; color: var(--text-body); }
+.lx-mk-punkter svg { flex: none; margin-top: 3px; color: var(--brown-500, #66300F); }
+.lx-mk-bunn { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 8px; flex-wrap: wrap; }
+.lx-mk-kort .lx-mk-inni > a:last-child { align-self: flex-start; }
+@media (max-width: 1023px) { .lx-mk-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 760px) {
+  .lx-mk-prov { grid-template-columns: minmax(0, 1fr); }
+  .lx-mk-prov > img { height: 200px; min-height: 0; }
+  .lx-mk-prov .lx-mk-inni { padding: 22px; }
+  .lx-mk-punkter2 { grid-template-columns: minmax(0, 1fr); }
+  .lx-mk-grid { grid-template-columns: minmax(0, 1fr); gap: 20px; }
 }

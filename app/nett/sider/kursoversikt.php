@@ -42,11 +42,14 @@ foreach (Kort::kurs() as $k) {
         'harPunkter' => $punkter !== [],
         'punkter'   => $punkter,
         'status'    => (string) ($k['status'] ?? ''),
+        // Designet 13. oktober 2026: grønn prikk, eller rustrød ved «Fullbooket».
+        'statusKlasseM'  => 'lx-ko-status lx-ko-kunm' . (($k['status'] ?? '') === 'Fullbooket' ? ' lx-ko-full' : '') . (($k['status'] ?? '') === '' ? ' lx-ko-tom' : ''),
+        'statusKlassePc' => 'lx-ko-status lx-ko-kunpc' . (($k['status'] ?? '') === 'Fullbooket' ? ' lx-ko-full' : '') . (($k['status'] ?? '') === '' ? ' lx-ko-tom' : ''),
         'knapp'     => (string) ($k['cta'] ?? 'Book plass'),
         'href'      => $k['href'],
         'altTekst'  => $k['title'] . ' hos Lissom i Tønsberg',
         'bildeSti'  => $k['image'],
-        'bildeStil' => 'width: 100%; aspect-ratio: 4 / 3; border-radius: var(--radius-lg); background-color: var(--clay-200); background-image: ' . ($k['image'] !== '' ? Nett::cssUrl($k['image']) : 'none') . '; background-size: cover; background-position: ' . Nett::fokus($k['image']) . ';',
+        'bildeStil' => 'width: 100%; height: 100%; background-color: var(--clay-200); background-image: ' . ($k['image'] !== '' ? Nett::cssUrl($k['image']) : 'none') . '; background-size: cover; background-position: ' . Nett::fokus($k['image']) . ';',
     ];
 }
 $forste = $ko[0] ?? null;
@@ -64,7 +67,7 @@ $kropp = (string) preg_replace_callback('~<div style="[^"]*" role="img" aria-lab
     $ss = Nett::srcset($k['bildeSti']);
     return '<img src="' . Nett::e($k['bildeSti']) . '"' . ($ss !== '' ? ' srcset="' . Nett::e($ss) . '" sizes="' . Nett::SIZES_KORT . '"' : '')
         . ' alt="' . $m[1] . '" width="4" height="3"' . ($nr === 1 ? ' fetchpriority="high"' : ' loading="lazy"') . ' decoding="async"'
-        . ' style="width: 100%; height: auto; aspect-ratio: 4 / 3; border-radius: var(--radius-lg); background: var(--clay-200); object-fit: cover; object-position: ' . Nett::fokus($k['bildeSti']) . '; display: block;">';
+        . ' style="width: 100%; height: 100%; background: var(--clay-200); object-fit: cover; object-position: ' . Nett::fokus($k['bildeSti']) . '; display: block;">';
 }, $kropp);
 return [
     'kropp' => $kropp . "\n" . Deler::bunn(true),

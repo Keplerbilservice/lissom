@@ -5,6 +5,9 @@
 (function () {
   'use strict';
   var d = document;
+  // «Les mer ⌄» skjuler tekst paa mobil bare naar skriptet som aapner finnes
+  // (designet 13. oktober 2026; se .lx-mer-knapp i lissom-2108.html).
+  d.documentElement.classList.add("lx-js-mer");
 
   /* ── Vervelenka ─────────────────────────────────────────────────────── */
   // lissom.no/medlemskap?verv=KODE tegnes av serveren. Koden huskes her, og
@@ -50,6 +53,10 @@
   d.addEventListener('click', function (e) {
     var el = e.target.closest && e.target.closest('[data-href]');
     if (!el) return;
+    // En ekte lenke eller knapp inne i et kort (datobrikkene, «Book …»,
+    // «Alle datoer →») gjoer sin egen ting; kortet skal ikke ta over.
+    var inni = e.target.closest('a[href], button');
+    if (inni && inni !== el && el.contains(inni)) return;
     var h = el.getAttribute('data-href');
     // Et anker paa samme side (dagbrikkene i ukekalenderen) skal rulle dit.
     // Sidene har <base href="/">, saa «location.href = '#…'» gikk til
@@ -64,6 +71,50 @@
       return;
     }
     location.href = h;
+  });
+
+  /* ── «Les mer ⌄» / «Vis mindre ⌃» paa mobil (designet 13.10.2026) ──── */
+  d.addEventListener('click', function (e) {
+    var k = e.target.closest && e.target.closest('[data-nett-merknapp]');
+    if (!k) return;
+    var boks = k.closest('[data-nett-mer]');
+    if (!boks) return;
+    var aapen = k.getAttribute('aria-expanded') !== 'true';
+    k.setAttribute('aria-expanded', aapen ? 'true' : 'false');
+    k.textContent = aapen ? 'Vis mindre ⌃' : 'Les mer ⌄';
+    if (aapen) boks.setAttribute('data-nett-mer-aapen', ''); else boks.removeAttribute('data-nett-mer-aapen');
+  });
+
+  /* ── Datobrikkene paa kurskortene (designet 13. oktober 2026, 2.1) ───── */
+  // Trykk paa en dato: den blir valgt, tidene byttes, og knappen blir
+  // «Book <dato>» (eller «Les mer» naar datoen er full) med adressen til
+  // den datoen. Alt staar paa brikken fra serveren (Deler::kurskortDatoer).
+  d.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('.lx-dk-brikke');
+    if (!b) return;
+    var kort = b.closest('[data-dk]');
+    if (!kort) return;
+    var alle = kort.querySelectorAll('.lx-dk-brikke');
+    for (var i = 0; i < alle.length; i++) alle[i].setAttribute('aria-pressed', alle[i] === b ? 'true' : 'false');
+    var liste = kort.querySelector('[data-dk-tidliste]');
+    if (liste) {
+      var tider = [];
+      try { tider = JSON.parse(b.getAttribute('data-dk-tider') || '[]'); } catch (x) { tider = []; }
+      liste.textContent = '';
+      for (var t = 0; t < tider.length; t++) {
+        var s = d.createElement('span');
+        s.className = 'lx-dk-tid';
+        s.textContent = tider[t];
+        liste.appendChild(s);
+      }
+    }
+    var begge = kort.querySelector('[data-dk-beggetekst]');
+    if (begge) begge.hidden = b.getAttribute('data-dk-begge') !== '1';
+    var knapp = kort.querySelector('[data-dk-knapp]');
+    if (knapp) {
+      knapp.textContent = b.getAttribute('data-dk-book') || '';
+      knapp.setAttribute('href', b.getAttribute('data-dk-href') || '');
+    }
   });
 
   /* ── «Se flere datoer» paa kurskortene ──────────────────────────────── */
@@ -181,6 +232,8 @@
     var q = function (s) { return el.querySelector('[data-rot="' + s + '"]'); };
     var bilde = q('bilde'); bilde.src = r.bilde; bilde.alt = r.alt;
     q('stikktittel').textContent = r.stikktittel;
+    // Navnet over sitatet staar ikke naar logoen gjoer det (designet 13.10.2026).
+    q('stikktittel').style.display = r.logo ? 'none' : '';
     q('tittel').textContent = r.tittel;
     q('tekst').textContent = r.tekst; q('tekst').style.display = r.tekst ? '' : 'none';
     var logo = q('logo'); logo.style.display = r.logo ? 'block' : 'none';

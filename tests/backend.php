@@ -21293,8 +21293,10 @@ sjekk('forsida viser galleriet naar det finnes bilder',
     str_contains($glForside, '$galleri = Galleri::kort();')
     && str_contains($glForside, '>Galleri</div>')
     && str_contains($glForside, '<h2 style="margin: 0;">Bilder fra verkstedet vårt</h2>'));
-sjekk('… og knappen til butikken er den samme',
-    substr_count($glForside, "Deler::knapp(\$innh('Forside/3/Knapp'), ['href' => '/butikk', 'variant' => 'secondary', 'size' => 'sm', 'iconAfter' => 'arrow-right'])") === 2);
+// Designet 13. oktober 2026: galleriet har ikke lenger knappen til
+// butikken. Den staar bare igjen i butikkfeltet (naar det ikke er galleri).
+sjekk('… uten knappen til butikken (bare i butikkfeltet)',
+    substr_count($glForside, "Deler::knapp(\$innh('Forside/3/Knapp'), ['href' => '/butikk', 'variant' => 'secondary', 'size' => 'sm', 'iconAfter' => 'arrow-right'])") === 1);
 sjekk('… ellers staar varene som foer',
     str_contains($glForside, '$produkter = $galleri === [] ? Kort::forsideProdukter() : [];')
     && str_contains($glForside, 'if ($galleri === []) {'));

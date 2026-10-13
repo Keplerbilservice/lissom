@@ -226,6 +226,7 @@ final class Kort
         }
         $status = self::plasstekst($datoer, (int) ($kat['plasser'] ?? 0));
         return $felles + self::naar($datoer, !empty($kat['folgerApningstid'])) + [
+            'brikker'  => self::brikker($datoer, !empty($kat['folgerApningstid']), $felles['href']),
             'status'   => $status,
             'date'     => self::kortDatoer($datoer),
             'duration' => (string) ($kat['varighetVist'] ?? ''),
@@ -473,6 +474,118 @@ final class Kort
         $ut = $deler === [] ? (string) $siste : implode(', ', $deler) . ' og ' . $siste;
         return mb_strtoupper(mb_substr($ut, 0, 1)) . mb_substr($ut, 1);
     }
+
+    /**
+     * Datobrikkene paa kurskortet (designet 13. oktober 2026, komponent 2.1).
+     *
+     * Opptil fire datoer side om side. Et kurs over to dager (samlinger paa
+     * to dager) er én brikke: «ONS+TOR», «4.–5.», «NOV». Hver brikke har
+     * klokkeslettene for dagen, om alle tidene er fulle, og adressen til
+     * bookingen (kurssida med ?dag=, som datoene paa kurssida). Ukedag og
+     * maaned staar med smaa bokstaver; CSS gjoer dem store.
+     *
+     * @return list<array{uke:string,dag:string,mnd:string,lang:string,tider:list<string>,begge:bool,fullt:bool,book:string,href:string}>
+     */
+    public static function brikker(array $okter, bool $apent, string $href, ?DateTimeImmutable $naa = null): array
+    {
+        $naa ??= new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo'));
+        $grupper = [];
+        foreach ($okter as $o) {
+            $sam = is_array($o['samlinger'] ?? null) ? $o['samlinger'] : [];
+            $dager = [];
+            $tider = [];
+            if (count($sam) >= 2) {
+                foreach ($sam as $s) {
+                    $d = (string) ($s['dato'] ?? '');
+                    if ($d !== '' && !in_array($d, $dager, true)) {
+                        $dager[] = $d;
+                    }
+                    $t = (string) ($s['fra'] ?? '') . ((string) ($s['til'] ?? '') !== '' ? "\u{2013}" . $s['til'] : '');
+                    if ($t !== '' && !in_array($t, $tider, true)) {
+                        $tider[] = $t;
+                    }
+                }
+                sort($dager);
+            }
+            // To dager med samme tid: én pille og «begge dager». Ulike tider
+            // paa dagene: klokkeslettet paa oekta, som foer.
+            $begge = count($dager) === 2 && count($tider) === 1;
+            if (count($dager) < 2) {
+                $dag = (string) ($o['dagIso'] ?? '');
+                if ($dag === '' && !empty($o['startUtc'])) {
+                    try {
+                        $dag = (new DateTimeImmutable((string) $o['startUtc'], new DateTimeZone('UTC')))
+                            ->setTimezone(new DateTimeZone('Europe/Oslo'))->format('Y-m-d');
+                    } catch (Throwable) {
+                        $dag = '';
+                    }
+                }
+                if ($dag === '') {
+                    continue;
+                }
+                $dager = [$dag];
+            }
+            $tid = $begge ? $tider[0] : (string) ($o['klokke'] ?? '');
+            $nokkel = implode(',', array_slice($dager, 0, 2));
+            if (!isset($grupper[$nokkel])) {
+                if (count($grupper) >= 4) {
+                    break;
+                }
+                $grupper[$nokkel] = ['dager' => array_slice($dager, 0, 2), 'tider' => [], 'begge' => $begge,
+                    'fullt' => true, 'param' => (string) (($o['dag'] ?? '') ?: ($o['dato'] ?? ''))];
+            }
+            if ($tid !== '' && !in_array($tid, $grupper[$nokkel]['tider'], true)) {
+                $grupper[$nokkel]['tider'][] = $tid;
+            }
+            if ((int) ($o['ledige'] ?? 0) > 0) {
+                $grupper[$nokkel]['fullt'] = false;
+            }
+        }
+        $ut = [];
+        foreach ($grupper as $g) {
+            $d = [];
+            foreach ($g['dager'] as $iso) {
+                $x = DateTimeImmutable::createFromFormat('!Y-m-d', $iso, new DateTimeZone('Europe/Oslo'));
+                if ($x !== false) {
+                    $d[] = $x;
+                }
+            }
+            if ($d === []) {
+                continue;
+            }
+            $f = $d[0];
+            $s = $d[count($d) - 1];
+            $to = count($d) === 2;
+            $mnd = static fn(DateTimeImmutable $x): string => self::MND3[(int) $x->format('n') - 1];
+            $aar = (int) $s->format('Y') !== (int) $naa->format('Y') ? " \u{2019}" . $s->format('y') : '';
+            $mndVist = $to && $f->format('n') !== $s->format('n') ? $mnd($f) . "\u{2013}" . $mnd($s) : $mnd($s);
+            $dag = $to ? $f->format('j') . ".\u{2013}" . $s->format('j') . '.' : $f->format('j');
+            $lang = static fn(DateTimeImmutable $x, bool $medMnd): string => self::UKEDAG[(int) $x->format('N') - 1] . ' ' . $x->format('j') . '.'
+                . ($medMnd ? ' ' . self::MND[(int) $x->format('n') - 1] . ((int) $x->format('Y') !== (int) $naa->format('Y') ? ' ' . $x->format('Y') : '') : '');
+            $langTekst = $to
+                ? $lang($f, $f->format('n') !== $s->format('n')) . ' og ' . mb_strtolower($lang($s, true))
+                : $lang($f, true);
+            $tider = $g['tider'];
+            if ($apent) {
+                $tider = array_map(static fn(string $t): string => 'Åpent ' . $t, $tider);
+            }
+            $ut[] = [
+                'uke'   => $to ? self::UKEDAG3[(int) $f->format('N') - 1] . '+' . self::UKEDAG3[(int) $s->format('N') - 1] : self::UKEDAG3[(int) $f->format('N') - 1],
+                'dag'   => $dag,
+                'mnd'   => $mndVist . $aar,
+                'lang'  => $langTekst,
+                'tider' => $tider,
+                'begge' => $g['begge'],
+                'fullt' => $g['fullt'],
+                'book'  => 'Book ' . ($to ? $f->format('j') . ".\u{2013}" . $s->format('j') . '. ' . $mndVist : $f->format('j') . '. ' . $mndVist),
+                'href'  => $href . ($g['param'] !== '' ? '?dag=' . rawurlencode($g['param']) : ''),
+            ];
+        }
+        return $ut;
+    }
+
+    private const UKEDAG = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag'];
+    private const MND = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember'];
 
     /** Tre datoer paa kortet: «9. sep · 16. sep · 7. okt +9». */
     private static function kortDatoer(array $okter): string

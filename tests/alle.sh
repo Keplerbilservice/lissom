@@ -97,6 +97,7 @@ kjor() { # kjor "navn" kommando...
 
 # --- Sjekkene av nettsida og admin (leser filene) --------------------------
 gruppe statisk
+kjor "forsidehero" php tests/forside-hero.php
 for f in adminsjekk autolastsjekk innholdssjekk karusellsjekk knappesjekk \
          listesjekk metodesjekk seosjekk skjemasjekk skriftsjekk toutgaversjekk; do
   kjor "$f" node "bin/$f.mjs"

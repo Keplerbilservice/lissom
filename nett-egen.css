@@ -128,6 +128,47 @@ nav[data-nett-mobilmeny]:not([hidden]) { display: flex !important; }
 .lx-mk-punkter svg { flex: none; margin-top: 3px; color: var(--brown-500, #66300F); }
 .lx-mk-bunn { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 8px; flex-wrap: wrap; }
 .lx-mk-kort .lx-mk-inni > a:last-child { align-self: flex-start; }
+
+/* Valgt forsidehero, 13. oktober 2026. Bare denne seksjonen paavirkes. */
+.lx-hero-fellesskap { min-height: 750px !important; }
+.lx-hero-fellesskap::after { display: none; }
+.lx-hero-fellesskap .lx-hero-pad {
+  z-index: 2; max-width: 1440px !important; margin: 0 auto !important;
+  padding: 170px 60px 65px !important;
+}
+.lx-hero-fellesskap .lx-hero-copy { width: 49%; }
+.lx-hero-fellesskap .lx-hero-eb { font-size: 13px !important; max-width: 440px; }
+.lx-hero-fellesskap .lx-hero-h1 { font-size: clamp(42px, 4.3vw, 64px) !important; }
+.lx-hero-fellesskap .lx-hero-h1 em { display: block; }
+.lx-hero-fellesskap .lx-hero-p { max-width: 465px; font-size: 21px !important; }
+.lx-hero-fellesskap .lx-hero-cta { zoom: 1 !important; gap: 12px !important; }
+.lx-hero-foto { position: absolute; inset: 100px 0 0 35%; overflow: hidden; }
+.lx-hero-foto img { width: 100%; height: 100%; object-fit: cover; object-position: 73% 45%; display: block; }
+.lx-hero-foto::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(90deg, var(--lissom-yellow) 0%, rgba(255,207,56,.99) 5%, rgba(255,207,56,.92) 16%, rgba(255,207,56,.60) 28%, rgba(255,207,56,.12) 42%, transparent 55%),
+    linear-gradient(180deg, var(--lissom-yellow) 0%, rgba(255,207,56,.55) 5%, transparent 17%, transparent 88%, var(--lissom-yellow) 100%);
+}
+@media (min-width: 761px) and (max-width: 1150px) {
+  .lx-hero-fellesskap .lx-hero-pad { padding: 155px 32px 60px !important; }
+  .lx-hero-fellesskap .lx-hero-copy { width: 54%; }
+  .lx-hero-fellesskap .lx-hero-h1 { font-size: 46px !important; }
+  .lx-hero-fellesskap .lx-hero-p { font-size: 19px !important; }
+  .lx-hero-foto { left: 30%; }
+}
+@media (max-width: 760px) {
+  .lx-hero-fellesskap { min-height: 0 !important; display: flex !important; flex-direction: column; }
+  .lx-hero-fellesskap .lx-hero-pad { padding: 130px 24px 12px !important; }
+  .lx-hero-fellesskap .lx-hero-copy { width: 100%; }
+  .lx-hero-fellesskap .lx-hero-eb { font-size: 11px !important; }
+  .lx-hero-fellesskap .lx-hero-h1 { font-size: clamp(36px, 10.8vw, 48px) !important; }
+  .lx-hero-fellesskap .lx-hero-p { font-size: 19px !important; }
+  .lx-hero-foto { position: relative; inset: auto; width: 100%; height: 340px; flex: none; }
+  .lx-hero-foto img { position: relative; width: 145%; max-width: none; left: -45%; object-position: 90% 44%; }
+  .lx-hero-foto::after {
+    background: linear-gradient(180deg, var(--lissom-yellow) 0%, rgba(255,207,56,.8) 5%, rgba(255,207,56,.12) 18%, transparent 30%, transparent 80%, var(--lissom-yellow) 100%);
+  }
+}
 @media (max-width: 1023px) { .lx-mk-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 760px) {
   .lx-mk-prov { grid-template-columns: minmax(0, 1fr); }

@@ -23,25 +23,20 @@ $h .= Deler::topp('Forside', true);
 
 // ── Heroen ───────────────────────────────────────────────────────────────
 $heroBilde = $innh('Forside/0/Hero-bilde');
-$h .= '<section class="lx-hero" data-theme="sun" style="background: var(--lissom-yellow); position: relative; overflow: clip; display: grid; min-height: 82vh;">'
-    . '<img src="mark-cup.svg" alt="" aria-hidden="true" style="position: absolute; left: -140px; bottom: -180px; width: 560px; opacity: 0.07; pointer-events: none;" loading="lazy" decoding="async" width="192" height="112">'
-    . '<div class="lx-hjertelogo" aria-hidden="true" style="display: none; position: absolute; left: -320px; top: -40px; width: 900px; height: 870px; opacity: 0.12; pointer-events: none; transform: rotate(-8deg); -webkit-mask-image: linear-gradient(215deg, black 25%, transparent 80%); mask-image: linear-gradient(215deg, black 25%, transparent 80%);">'
-    . '<div style="width: 100%; height: 100%; background: linear-gradient(160deg, var(--terracotta-500) 0%, var(--brown-500) 45%, var(--lissom-brown) 100%); -webkit-mask-image: url(\'uploads_logo-7df29c0f.png\'); mask-image: url(\'uploads_logo-7df29c0f.png\'); -webkit-mask-size: contain; mask-size: contain; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center;"></div>'
-    . '</div>'
-    . '<div class="lx-hero-hjerte" style="position: absolute; top: -30%; bottom: -46%; right: -16%; aspect-ratio: 1.036;">'
-    . '<div style="position: absolute; inset: 0; background-image: ' . Nett::cssUrl($heroBilde) . '; background-size: cover; background-position: center top; mask-image: url(\'heart-logo-mask.png\'), linear-gradient(to bottom, #000 0, #000 60%, transparent 74%); -webkit-mask-image: url(\'heart-logo-mask.png\'), linear-gradient(to bottom, #000 0, #000 60%, transparent 74%); mask-size: 100% 100%, 100% 100%; -webkit-mask-size: 100% 100%, 100% 100%; mask-repeat: no-repeat; -webkit-mask-repeat: no-repeat; mask-position: center; -webkit-mask-position: center; mask-composite: intersect; -webkit-mask-composite: source-in;" role="img" aria-label="Keramiker former leire på dreieskiven"></div>'
-    . '</div>'
-    // Ett gult lag, og det slutter ved 56 % av bredden: over fotografiet er
-    // det ingen gulfarge, mens teksten staar paa helt gult. Laget fra
-    // hjoernet (8–58 %) er fjernet. Eieren, 12. oktober 2026 (punkt 1).
-    // Samme kveld (toppbildet, alternativ 1): toningen foelger en bue i
-    // stedet for en rett kant, og fotoet toner ut i gult de nederste ca.
-    // 160 px (masken over). Bare PC — mobilen viser ikke fotoet.
-    . '<div class="lx-hide-m lx-hero-grad" style="position: absolute; inset: 0; background: radial-gradient(ellipse 62% 120% at 0% 45%, var(--lissom-yellow) 62%, rgba(255,207,56,0.6) 78%, rgba(255,207,56,0) 100%); pointer-events: none;"></div>'
+// Det tidligere standardmotivet erstattes uten aa skrive i innholdet eller
+// overskrive et annet bilde valgt i admin. Tomt felt beholdes ogsaa tomt.
+if (ltrim($heroBilde, '/') === 'assets_photos_dreiekurs-smil.jpg') {
+    $heroBilde = 'assets_hero-fellesskap-20261013.webp';
+}
+$heroAlt = $heroBilde === 'assets_hero-fellesskap-20261013.webp'
+    ? 'KI-generert motiv basert på verkstedbilder: Monica og en liten gruppe lager keramikk sammen'
+    : 'Keramikk og fellesskap på Lissom';
+$h .= '<section class="lx-hero lx-hero-fellesskap" data-theme="sun" style="background: var(--lissom-yellow); position: relative; overflow: clip; display: grid; min-height: 82vh;">'
     . '<div class="lx-hero-pad" style="position: relative; width: 100%; max-width: none; margin: 0; padding: 150px var(--space-8) var(--space-24) max(var(--space-10), calc((100vw - var(--width-content)) / 2)); align-self: safe center;">'
+    . '<div class="lx-hero-copy">'
     . '<div class="lx-hero-eb" style="font: var(--type-eyebrow); font-size: var(--text-lg); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--brown-500); margin-bottom: var(--space-6);">' . $e($innh('Forside/0/Kicker')) . '</div>'
     . '<h1 class="lx-hero-h1" data-nett-hero-h1 style="font-family: var(--font-display); font-weight: 800; font-size: clamp(40px, 4.6vw, 76px); line-height: 1.12; letter-spacing: var(--tracking-display); color: var(--lissom-brown); margin: 0 0 var(--space-8); max-width: none; text-wrap: balance; cursor: default;">'
-    . $e($innh('Forside/0/Overskrift')) . ' <em style="font-style: italic; font-weight: 700;">' . $e($innh('Forside/0/Overskrift, kursiv del')) . '</em></h1>'
+    . $e($innh('Forside/0/Overskrift')) . ' <em style="font-style: italic; font-weight: 600;">' . $e($innh('Forside/0/Overskrift, kursiv del')) . '</em></h1>'
     . '<div style="max-width: 980px;">'
     . '<p class="lx-hero-p" style="font: var(--type-body); font-size: clamp(17px, 1.2vw, 21px); line-height: 1.55; color: var(--brown-500); margin: 0; text-wrap: pretty;">' . $e($innh('Forside/0/Brødtekst')) . '</p>';
 
@@ -71,7 +66,12 @@ if (Nett::bryterPaa('kursvelger') && !Nett::mobilSkjult('kursvelger')) {
     $h .= '<p class="lx-hero-p lx-hero-hj2" style="margin: var(--space-3) 0 0; font-size: clamp(17px, 1.2vw, 21px); line-height: 1.5; color: var(--brown-500);">' . $e($innh('Forside/0/Kursvelgerlinje'))
         . ' <a href="/kurs#kursvelger" style="' . $lenkeStil . '">' . $e($innh('Forside/0/Kursvelgerlenke')) . '</a></p>';
 }
-$h .= '</div></div></section>' . "\n";
+$h .= '</div></div></div>';
+if ($heroBilde !== '') {
+    $h .= '<div class="lx-hero-foto"><img src="' . $e($heroBilde) . '" alt="' . $e($heroAlt)
+        . '" width="1536" height="1024" fetchpriority="high" decoding="async"></div>';
+}
+$h .= '</section>' . "\n";
 
 // ── Banneret under heroen ────────────────────────────────────────────────
 // Alt i det settes i admin under Oversikt — bannerNaa() i nettsida.
@@ -322,10 +322,7 @@ $rotJson = json_encode(array_map(static fn(array $r): array => [
 return [
     'kropp'  => $h,
     'aktiv'  => 'Forside',
-    // Bildet i hjertet er det stoerste som tegnes paa PC (LCP). Det ligger
-    // som bakgrunn i en div, saa nettleseren finner det foerst naar CSS-en
-    // er lest — med mindre vi sier fra her. Bare paa PC: paa telefon er
-    // hjertet skjult, og der skal ikke bildet lastes i det hele tatt.
-    'hode'   => '<link rel="preload" as="image" fetchpriority="high" href="' . $e($heroBilde) . '" media="(min-width: 761px)">' . "\n",
+    // Toppbildet vises paa begge skjermbredder og lastes med hoey prioritet.
+    'hode'   => $heroBilde !== '' ? '<link rel="preload" as="image" fetchpriority="high" href="' . $e($heroBilde) . '">' . "\n" : '',
     'skript' => 'window.lissomRot = ' . str_replace('</', '<\/', (string) $rotJson) . ';',
 ];

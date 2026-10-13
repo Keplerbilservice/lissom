@@ -5,6 +5,7 @@
  *   POST handling=legg-til   { oktId, navn, epost, telefon, antall,
  *                              betaltMaate, belop, notat, varsle, medlemId? }
  *   POST handling=fjern      { id }
+ *   POST handling=avmeld-behold-betaling { id } avmeld, refunder separat
  *   POST handling=flytt      { id, oktId }   samme person, ny dato
  *   POST handling=til-venteliste { id }    gir fra seg plassen, staar i koen
  *   POST handling=kontakt  { id, epost?, telefon? }  retter kontaktinfoen
@@ -112,7 +113,10 @@ if ($handling === 'sett') {
 //
 // Raden slettes ikke. En avbestilt booking frigir plassen, men beholder
 // sporet — hvem som var paameldt og naar det ble endret.
-if ($handling === 'fjern') {
+if ($handling === 'fjern' || $handling === 'avmeld-behold-betaling') {
+    // Eieren 13.10.2026: avmeld betalt deltaker naa, refunder separat senere.
+    // Bare denne uttrykkelige handlingen tillater at betalingen blir staaende.
+    $beholdBetaling = $handling === 'avmeld-behold-betaling';
     $b = DB::en(
         'SELECT b.id, b.gjest_navn, b.member_id, b.payment_id, b.status,
                 p.status AS betalingsstatus
@@ -134,14 +138,14 @@ if ($handling === 'fjern') {
     //
     // Det som betyr noe er om pengene faktisk er trukket.
     $BETALT = ['autorisert', 'betalt', 'delvis_refundert'];
-    if ($b['payment_id'] !== null && in_array((string) $b['betalingsstatus'], $BETALT, true)) {
+    if (!$beholdBetaling && $b['payment_id'] !== null && in_array((string) $b['betalingsstatus'], $BETALT, true)) {
         Svar::feil('Denne er betalt gjennom Vipps. Bruk refusjon, ikke sletting.');
     }
     // Ogsaa en Vipps-betaling som bare peker hit fra «payments.booking_id»
     // (bookings.payment_id kan peke paa en manuell rad, eller staa tom) —
     // samme sjekk som «Registrer betaling» (api/admin/kursbetaling.php).
     // Pengehull 4, 4. oktober 2026.
-    if (DB::harKolonne('payments', 'booking_id') && DB::verdi(
+    if (!$beholdBetaling && DB::harKolonne('payments', 'booking_id') && DB::verdi(
         "SELECT id FROM payments
           WHERE booking_id = :b AND type <> 'manuell'
             AND status IN ('autorisert','betalt','delvis_refundert')
@@ -162,8 +166,9 @@ if ($handling === 'fjern') {
     // Kunden skal vite det. Eieren, 27. september 2026: «en avbestilling fra
     // admin, må sende epost til kunden» — testet paa lissom.no samme dag:
     // koen sto stille. Samme mal som naar kunden avbestiller selv, og samme
-    // bryter i Tekst maler. Her refunderes ingenting (en Vipps-betaling
-    // stoppes over), saa refusjonsfeltene staar tomme og radene blir borte.
+    // bryter i Tekst maler. Her refunderes ingenting. Vanlig fjern stopper
+    // en Vipps-betaling; uttrykkelig avmelding beholder den til separat refusjon.
+    // Refusjonsfeltene staar derfor tomme.
     $k = DB::en(
         'SELECT COALESCE(m.navn, b.gjest_navn) AS navn,
                 COALESCE(m.epost, b.gjest_epost) AS epost,
@@ -189,7 +194,7 @@ if ($handling === 'fjern') {
 
     revider('pamelding_fjernet', 'booking', $id,
             ['navn' => $b['gjest_navn'], 'betaling' => (string) ($b['betalingsstatus'] ?? 'ingen'),
-             'kunden_varslet' => $varslet]);
+             'kunden_varslet' => $varslet, 'betaling_beholdt' => $beholdBetaling]);
     Svar::ok(['beskjed' => 'Plassen er frigitt.']);
 }
 

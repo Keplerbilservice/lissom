@@ -53,9 +53,25 @@ try {
     const rows=r.data.betalinger;
     assert.deepEqual(rows.map(x=>x.id).sort((a,b)=>a-b),paid.slice(0,2).sort((a,b)=>a-b),`${name}: begge betalingskoblinger, ingen uvedkommende betaling`);
     assert.equal(status(),'betalt',`${name}: betalt paamelding staar til refusjonen bekreftes`);
+    const paymentState=()=>php(`echo json_encode(DB::alle('SELECT id,status,belop_ore,refundert_ore FROM payments WHERE member_id=:i ORDER BY id',['i'=>${s.admin}]));`).trim();
+    const before=paymentState();
+    await open();
+    await p.getByRole('button',{name:'Avmeld og behold betalingen',exact:true}).click();
+    await p.getByRole('button',{name:'Avbryt',exact:true}).click();
+    assert.equal(status(),'betalt',`${name}: Avbryt beholder betalt deltaker`);
+    assert.equal(paymentState(),before);
+    await p.getByRole('button',{name:'Avmeld deltaker',exact:true}).click();
+    await p.getByRole('button',{name:'Avmeld og behold betalingen',exact:true}).click();
+    await p.getByRole('button',{name:'Ja, avmeld og behold betalingen',exact:true}).click();
+    await p.getByRole('dialog').waitFor({state:'hidden'});
+    assert.equal(status(),'avbestilt',`${name}: betalt deltaker avmeldt foer kursdato`);
+    assert.equal(paymentState(),before,`${name}: betalingsstatus, beloep og refusjon beholdt`);
+    assert.deepEqual(posts.slice(count),[{handling:'avmeld-behold-betaling',id:s.booking}]);
+    const retained=await p.evaluate(async id=>{const r=await fetch(`/api/admin/betalinger.php?bookingId=${id}`);return (await r.json()).betalinger;},s.booking);
+    assert.deepEqual(retained.map(x=>x.id).sort((a,b)=>a-b),paid.slice(0,2).sort((a,b)=>a-b),`${name}: betalingene kan finnes igjen etter avmelding`);
     assert.deepEqual(errors,[]);
     assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true);
     await c.close();
-    console.log(`OK ${name}: avmeld foer dato, avbryt, betalt refusjonsflyt og riktig betalingsutvalg`);
+    console.log(`OK ${name}: avmeld foer dato, avbryt, betalt refusjonsflyt, avmeld betalt med beholdt betaling og riktig betalingsutvalg`);
   }
 } finally {await browser.close();php(`DB::oppdater('bookings',['payment_id'=>null],['id'=>${s.booking}]);`);fixture('cleanup',s);}

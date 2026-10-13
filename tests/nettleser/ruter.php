@@ -31,8 +31,20 @@ if (preg_match('~^/avmelding/?$~', $sti)) { return $skript('/api/avmelding.php')
 if (preg_match('~^/nyttig-info/([a-z0-9-]+)/?$~', $sti, $m)) { return $skript('/guide.php', ['slug' => $m[1]]); }
 if ($sti === '/sitemap.xml') { return $skript('/api/sitemap.php'); }
 if (preg_match('~^/admin-ny/?$~', $sti)) { header('Content-Type: text/html; charset=UTF-8'); readfile($rot . '/admin-ny.html'); return true; }
-// Den nye adminen (eieren 8. oktober 2026), samme omskriving som .htaccess.
-if (preg_match('~^/ny-admin/?$~', $sti)) { header('Content-Type: text/html; charset=UTF-8'); readfile($rot . '/ny-admin.html'); return true; }
+// Den nye adminen (eieren 8. oktober 2026), samme omskriving som .htaccess. Fra 12. oktober 2026 ligger den på
+// /admin; /ny-admin og /admin2 sendes dit (302). /admin?gammel=1 og informasjonskapselen admin_gammel gir gammel admin.
+$gammelAdmin = (($_GET['gammel'] ?? '') === '1') || (($_COOKIE['admin_gammel'] ?? '') === '1');
+$nyAdmin = static function () use ($rot): bool { header('Content-Type: text/html; charset=UTF-8'); readfile($rot . '/ny-admin.html'); return true; };
+if (preg_match('~^/ny-admin/?$~', $sti)) {
+    if ($gammelAdmin) { return $nyAdmin(); }
+    $q = (string) ($_SERVER['QUERY_STRING'] ?? '');
+    header('Location: /admin' . ($q !== '' ? '?' . $q : ''), true, 302); return true;
+}
+if (preg_match('~^/admin2(\.html)?/?$~', $sti)) { $q = (string) ($_SERVER['QUERY_STRING'] ?? ''); header('Location: /admin' . ($q !== '' ? '?' . $q : ''), true, 302); return true; }
+if (preg_match('~^/admin(/.*)?$~', $sti)) {
+    if (($_GET['gammel'] ?? '') === '1') { setcookie('admin_gammel', '1', ['expires' => time() + 43200 * 60, 'path' => '/', 'httponly' => true]); }
+    elseif (!$gammelAdmin) { return $nyAdmin(); }
+}
 if (preg_match('~^/kasse/?$~', $sti)) { header('Content-Type: text/html; charset=UTF-8'); readfile($rot . '/kasse.html'); return true; }
 // Messevisningen og skjemaet bak QR-koden (eieren 9. oktober 2026), samme omskriving som .htaccess.
 if (preg_match('~^/messe/?$~', $sti)) { return $skript('/messe.php'); }

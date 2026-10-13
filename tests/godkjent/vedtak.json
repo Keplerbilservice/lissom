@@ -1928,7 +1928,7 @@
                 {
                     "fil": ".htaccess",
                     "finnes": [
-                        "RewriteRule ^admin2(\\.html)?/?$ /ny-admin [R=302,L]"
+                        "RewriteRule ^admin2(\\.html)?/?$ /admin [R=302,L]"
                     ]
                 },
                 {
@@ -1939,7 +1939,7 @@
                     ]
                 }
             ],
-            "endret": "2026-10-01",
+            "endret": "2026-10-01 12.10.2026: ny admin ligger på /admin (vedtak ny-admin-paa-admin).",
             "tillegg": "Eieren valgte egen selvstendig admin («ja jeg vil gå for din»), ferdig før publisering. Prøv nytt admin peker nå på /admin-ny; /admin2 bevares som tidligere utgave."
         },
         {
@@ -4529,13 +4529,14 @@
                 {
                     "fil": ".htaccess",
                     "finnes": [
-                        "RewriteRule ^admin2(\\.html)?/?$ /ny-admin [R=302,L]"
+                        "RewriteRule ^admin2(\\.html)?/?$ /admin [R=302,L]"
                     ],
                     "ikkeFinnes": [
                         "RewriteRule ^admin2/?$ /admin2.html [L]"
                     ]
                 }
-            ]
+            ],
+            "endret": "12.10.2026: ny admin ligger på /admin (vedtak ny-admin-paa-admin)."
         },
         {
             "id": "topp-ovn-inne-idag-kurs",
@@ -4831,10 +4832,11 @@
                 {
                     "fil": ".htaccess",
                     "finnes": [
-                        "RewriteRule ^admin2(\\.html)?/?$ /ny-admin [R=302,L]"
+                        "RewriteRule ^admin2(\\.html)?/?$ /admin [R=302,L]"
                     ]
                 }
-            ]
+            ],
+            "endret": "12.10.2026: ny admin ligger på /admin (vedtak ny-admin-paa-admin)."
         },
         {
             "id": "adminny-toppen-diskret",
@@ -7722,7 +7724,7 @@
                         "pille('✕ Lukk',lukkKassa,'k-lukk')",
                         "pille('Lukk likevel'",
                         "pille('Avbryt'",
-                        "location.href='/ny-admin#'+tilbakeSide;",
+                        "location.href='/admin#'+tilbakeSide;",
                         "if(s.admin)fraNyAdmin=true;"
                     ]
                 },
@@ -7732,7 +7734,8 @@
                         "'admin'        => Sesjon::erAdmin() && !Sesjon::erKasse(),"
                     ]
                 }
-            ]
+            ],
+            "endret": "12.10.2026: ny admin ligger på /admin (vedtak ny-admin-paa-admin)."
         },
         {
             "id": "nyadmin-vedlikehold-logo-rediger",
@@ -8523,8 +8526,8 @@
                 {
                     "fil": ".htaccess",
                     "finnes": [
-                        "RewriteRule ^admin2(\\.html)?/?$ /ny-admin [R=302,L]",
-                        "RewriteRule ^admin(/.*)?$ /ny-admin [R=302,L]",
+                        "RewriteRule ^admin2(\\.html)?/?$ /admin [R=302,L]",
+                        "RewriteRule ^admin(/.*)?$ /ny-admin.html [L]",
                         "RewriteCond %{QUERY_STRING} (^|&)gammel=1(&|$)",
                         "RewriteRule ^admin-ny/?$ /admin-ny.html [L]"
                     ],
@@ -8559,7 +8562,8 @@
                         "<a href=\"/admin-ny\" style=\"{{ tmAdmin2Stil }}\">Prøv nytt admin</a>"
                     ]
                 }
-            ]
+            ],
+            "endret": "12.10.2026: ny admin ligger på /admin (vedtak ny-admin-paa-admin)."
         },
         {
             "id": "til-info-betalt",
@@ -9320,6 +9324,32 @@
                     "sti": "/kurs",
                     "finnes": [
                         "Torsdag&nbsp;10–20"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "ny-admin-paa-admin",
+            "dato": "2026-10-12",
+            "hva": "Eieren 12.10.2026: ny admin ligger på /admin i stedet for /ny-admin. /admin (og /admin/) viser ny-admin.html direkte, og adressen blir stående (omskriving, ikke videresending). /ny-admin og /admin2 sendes til /admin med 302; ?parametre følger med, og nettleseren beholder #-delen, så gamle bokmerker virker. Reserven /admin?gammel=1 med informasjonskapselen admin_gammel gir gammel admin som før; med den svarer /ny-admin fortsatt med ny admin direkte. /admin-ny er uendret. «✕ Lukk» i kassa går til /admin#<side>. Ressursene under ny-admin/ har samme sti.",
+            "hvor": ".htaccess, tests/nettleser/ruter.php, admin-ny/kasse.js",
+            "kode": [
+                {
+                    "fil": ".htaccess",
+                    "finnes": [
+                        "RewriteRule ^ny-admin/?$ /admin [R=302,L]",
+                        "RewriteRule ^admin2(\\.html)?/?$ /admin [R=302,L]",
+                        "RewriteRule ^admin(/.*)?$ /ny-admin.html [L]",
+                        "RewriteRule ^admin(/.*)?$ - [CO=admin_gammel:1:%{HTTP_HOST}:43200:/:secure:httponly]"
+                    ],
+                    "ikkeFinnes": [
+                        "RewriteRule ^admin(/.*)?$ /ny-admin [R=302,L]"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kasse.js",
+                    "finnes": [
+                        "location.href='/admin#'+tilbakeSide;"
                     ]
                 }
             ]

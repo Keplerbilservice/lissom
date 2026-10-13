@@ -29,7 +29,13 @@ RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L,NE]
 RewriteRule ^admin-ny/?$ /admin-ny.html [L]
 # Ny admin ved siden av /admin-ny (eieren 8. oktober 2026). Samme grunn: siden
 # deler navn med ressursmappen ny-admin/.
+# Eieren 12. oktober 2026: ny admin ligger på /admin (se nederst). /ny-admin
+# sendes dit (302; ?parametre følger med, og nettleseren beholder #-delen),
+# så gamle bokmerker virker. Med reserven til gammel admin (admin_gammel) viser
+# /admin den gamle, så da svarer /ny-admin fortsatt med ny admin direkte.
+RewriteCond %{HTTP_COOKIE} (^|;\s*)admin_gammel=1
 RewriteRule ^ny-admin/?$ /ny-admin.html [L]
+RewriteRule ^ny-admin/?$ /admin [R=302,L]
 
 # Kassa på iPaden i verkstedet (eieren 8. oktober 2026). Egen innlogging
 # (rollen «kasse») og PIN; siden selv er bare skallet, alt bak den krever
@@ -410,7 +416,8 @@ RewriteRule ^nyttig-info/([a-z0-9-]+)/?$ /guide.php?slug=$1 [L,QSA]
 # så det bare finnes ett nytt admin. 302, så det kan snus.
 # Eieren 11. oktober 2026: ny admin (/ny-admin) er standard. /admin-ny virker
 # fortsatt direkte, og pillen «Gammel admin» i ny admin går dit.
-RewriteRule ^admin2(\.html)?/?$ /ny-admin [R=302,L]
+# Eieren 12. oktober 2026: /admin2 går til /admin, der ny admin ligger nå.
+RewriteRule ^admin2(\.html)?/?$ /admin [R=302,L]
 
 # Eieren 8. oktober 2026: gamle /admin sendes til det nye admin. Det gamle
 # ligger skjult en måned som reserve: /admin?gammel=1 slipper inn og setter
@@ -418,9 +425,11 @@ RewriteRule ^admin2(\.html)?/?$ /ny-admin [R=302,L]
 # 302, så det kan snus.
 RewriteCond %{QUERY_STRING} (^|&)gammel=1(&|$)
 RewriteRule ^admin(/.*)?$ - [CO=admin_gammel:1:%{HTTP_HOST}:43200:/:secure:httponly]
+# Eieren 12. oktober 2026: ny admin vises på /admin, og adressen blir stående
+# (omskriving, ikke videresending). Reserven over er uendret.
 RewriteCond %{QUERY_STRING} !(^|&)gammel=1(&|$)
 RewriteCond %{HTTP_COOKIE} !(^|;\s*)admin_gammel=1
-RewriteRule ^admin(/.*)?$ /ny-admin [R=302,L]
+RewriteRule ^admin(/.*)?$ /ny-admin.html [L]
 
 # Kort lenke til kursbeviset i SMS-en (eieren 8. oktober 2026): /k/<påmelding>.<kode>.
 # Samme kontroll som den lange lenken: api/kursbevis.php sjekker koden.

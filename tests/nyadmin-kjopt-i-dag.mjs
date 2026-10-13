@@ -14,7 +14,7 @@ try{
   assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,width+' px');assert.deepEqual(errors,[]);
   console.log(width+' px: oversikt.php har kursdato og ledige på dagens kurskjøp.');
   // Samme linje i gamle admin (Dagens bestillinger) — eieren 04.10: «du må endre overalt».
-  await p.goto('http://lokal.lissom.no:8140/admin');const g=p.locator('.lx-ovrad',{hasText:s.tag}).first();await g.waitFor({timeout:20000});const tg=await g.innerText();
+  await p.goto('http://lokal.lissom.no:8140/admin?gammel=1');const g=p.locator('.lx-ovrad',{hasText:s.tag}).first();await g.waitFor({timeout:20000});const tg=await g.innerText();
   assert.ok(tg.includes(b.kursNaar)&&tg.includes(b.ledige+' ledige'),'gamle admin: '+tg);
   assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,width+' px gamle admin');assert.deepEqual(errors,[]);
   console.log(width+' px: gamle admin viser kursdato og ledige.');await c.close();

@@ -478,7 +478,7 @@ try {
     sjekk('11: uferdig salg: «Det ligger varer i kurven» med «Lukk likevel» / «Avbryt»', str_contains($lk, "ark('Det ligger varer i kurven'")
         && str_contains($lk, "pille('Lukk likevel'") && str_contains($lk, "pille('Avbryt'") && str_contains($lk, 'if(!ok||ikkeNaa())return;')
         && strpos($lk, 'if(ikkeNaa())return;') < strpos($lk, "ark('Det ligger"), $lk);
-    sjekk('11: går til /ny-admin#<tilbake> (I dag som standard)', str_contains($lk, "location.href='/ny-admin#'+tilbakeSide;")
+    sjekk('11: går til /admin#<tilbake> (I dag som standard)', str_contains($lk, "location.href='/admin#'+tilbakeSide;")
         && str_contains($js, "const tilbakeSide=(s=>/^[a-z]{2,20}$/.test(s)?s:'idag')(sok.get('tilbake')||'');"));
 
     $ferdig = true;

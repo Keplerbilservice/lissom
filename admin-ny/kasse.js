@@ -48,7 +48,7 @@ async function lukkKassa(){
   if(!ok||ikkeNaa())return;
  }
  stopPoll();stoppListe();
- location.href='/ny-admin#'+tilbakeSide;
+ location.href='/admin#'+tilbakeSide;
 }
 function topp(tittel,...hoyre){return el('header',{class:'k-topp'},el('span',{class:'k-tittel',text:tittel}),el('div',{class:'k-valg'},...hoyre,lukkKnapp()));}
 // «Dagens oppgjør» og «Lås» ligger i menyen ⋯ (eieren 08.10.2026).

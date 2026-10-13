@@ -9223,6 +9223,13 @@
                     "finnes": [
                         "p[i].style.borderColor = aktiv ? 'var(--lissom-brown)' : 'var(--clay-500)';"
                     ]
+                },
+                {
+                    "fil": "app/nett/sider/butikk.php",
+                    "finnes": [
+                        "($paa ? 'var(--lissom-brown)' : 'var(--clay-500)')",
+                        "color: var(--brown-400); margin-bottom: var(--space-3);\">' . $e($innh('Butikk/0/Kicker'))"
+                    ]
                 }
             ],
             "live": [
@@ -9236,6 +9243,12 @@
                     "sti": "/om-oss",
                     "finnes": [
                         "color: var(--brown-400); margin-bottom: var(--space-3);\">Vi tilbyr</div>"
+                    ]
+                },
+                {
+                    "sti": "/butikk",
+                    "finnes": [
+                        "color: var(--brown-400); margin-bottom: var(--space-3);"
                     ]
                 }
             ]

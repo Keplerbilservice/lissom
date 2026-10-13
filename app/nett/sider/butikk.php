@@ -82,10 +82,11 @@ $vist = $filter === null ? $varer : array_values(array_filter(
 $h = '<div role="main" data-screen-label="Butikk">' . "\n";
 $h .= Deler::topp('Butikk');
 
+// Kanten i clay-500 (#94806a, 3,51:1), saa pillene ser trykkbare ut. Eieren, 12. oktober 2026 (kontrast).
 // Pille som lenke — samme som Tag i ds-bundle.js, og samme som kurssida.
 $tag = static function (string $navn, bool $paa, string $href) use ($e): string {
     return '<a href="' . $e($href) . '" style="display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: var(--radius-pill); font-family: var(--font-sans); font-size: var(--text-sm); font-weight: 500; cursor: pointer; text-decoration: none; border: 1px solid '
-        . ($paa ? 'var(--lissom-brown)' : 'var(--border-default)') . '; background: ' . ($paa ? 'var(--lissom-brown)' : 'transparent') . '; color: ' . ($paa ? 'var(--clay-50)' : 'var(--text-body)')
+        . ($paa ? 'var(--lissom-brown)' : 'var(--clay-500)') . '; background: ' . ($paa ? 'var(--lissom-brown)' : 'transparent') . '; color: ' . ($paa ? 'var(--clay-50)' : 'var(--text-body)')
         . '; transform: none; transition: var(--transition-base);"' . ($paa ? ' aria-current="true"' : ' data-hover="border-color: var(--lissom-brown); background: var(--clay-100); color: var(--lissom-brown); transform: translateY(-1px);"') . '>' . $e($navn) . '</a>';
 };
 
@@ -145,12 +146,12 @@ if ($valgt !== null) {
 $h .= '<section style="background: var(--clay-50); padding: ' . ($valgt !== null ? '0' : 'var(--section-y)') . ' var(--space-8) var(--space-10);">'
     . '<div style="max-width: var(--width-content); margin: 0 auto;">';
 if ($valgt === null) {
-    $h .= '<div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">' . $e($innh('Butikk/0/Kicker')) . '</div>'
+    $h .= '<div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--brown-400); margin-bottom: var(--space-3);">' . $e($innh('Butikk/0/Kicker')) . '</div>'
         . '<h1 style="margin: 0 0 var(--space-4); font-size: var(--text-5xl);">' . $e($innh('Butikk/0/Overskrift')) . '</h1>'
         . '<p style="margin: 0 0 var(--space-8); color: var(--text-body); font-size: var(--text-lg); max-width: 52ch; text-wrap: pretty;">' . $e($innh('Butikk/0/Ingress')) . '</p>'
         . '<div class="lx-cols2" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-6); margin-bottom: var(--space-8);">'
         . '<div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-6);">'
-        . '<div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">' . $e($innh('Butikk/1/Overskrift')) . '</div>'
+        . '<div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--brown-400); margin-bottom: var(--space-2);">' . $e($innh('Butikk/1/Overskrift')) . '</div>'
         . '<p style="margin: 0; font-size: var(--text-sm); color: var(--text-body);">' . $e($innh('Butikk/1/Tekst')) . '</p>'
         . '</div>';
     // Medlemskolleksjonen. Den falt ut da butikken ble tegnet her — eieren,
@@ -159,7 +160,7 @@ if ($valgt === null) {
     // med ?kolleksjon=medlem (Nett::kan() sier nei, appen tar over).
     if (Nett::bryterPaa('medlemssalg')) {
         $h .= '<a href="' . $e($base . '?kolleksjon=medlem') . '" style="display: block; text-decoration: none; background: var(--surface-card); border: 2px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); cursor: pointer; transition: box-shadow var(--duration-base) var(--ease-clay);" data-hover="box-shadow: var(--shadow-md);">'
-            . '<div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">' . $e($innh('Butikk/2/Overskrift')) . '</div>'
+            . '<div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--brown-400); margin-bottom: var(--space-2);">' . $e($innh('Butikk/2/Overskrift')) . '</div>'
             . '<p style="margin: 0; font-size: var(--text-sm); color: var(--text-body);">' . $e($innh('Butikk/2/Tekst')) . '</p>'
             . '</a>';
     }

@@ -43,8 +43,17 @@ final class Kursmal
      *
      * Naa staar den ett sted: her, som standard for «ferdigTid». «Dette faar
      * du med hjem» sier hva du faar med deg, dette sier naar.
+     *
+     * Eieren, 13. oktober 2026: «noen uker» paa alle kurs der man former
+     * leire. Paint on Pots beholder «tre uker» — den brennes én gang — og
+     * har derfor sin egen (HENTING_POP).
      */
-    public const HENTING = 'Den er klar til henting etter tre uker. Du får beskjed når den er klar. '
+    public const HENTING = 'Den er klar til henting etter noen uker. Du får beskjed når den er klar. '
+        . 'Du kan også se selv når din keramikk er klar på lissom.no/ferdigbrent, '
+        . 'eller ved å logge inn på Min side.';
+
+    /** Paint on Pots: brennes én gang, og staar fortsatt med tre uker. */
+    public const HENTING_POP = 'Den er klar til henting etter tre uker. Du får beskjed når den er klar. '
         . 'Du kan også se selv når din keramikk er klar på lissom.no/ferdigbrent, '
         . 'eller ved å logge inn på Min side.';
 
@@ -83,7 +92,7 @@ final class Kursmal
                     . 'Du får også en enkel innføring i hvordan keramikken kan dekoreres.',
                 'lagerDu'         => 'Du lager din egen keramikk på dreieskiven. '
                     . 'Resultatet vil variere ut fra hva du får til og ønsker å lage.',
-                'medHjem'         => 'Du får med deg kreasjonen du klarer å lage på dreieskiven. '
+                'medHjem'         => 'Det du lager på dreieskiven, ferdig glasert og brent. '
                     . 'Vi ferdigstiller, glaserer og brenner den for deg.',
                 'ferdigTid'       => self::HENTING,
             ],
@@ -149,7 +158,7 @@ final class Kursmal
                     . 'for deg etter at du har malt den.',
                 'tillegg'         => 'Produktene prises individuelt. Aktuelle priser vises i verkstedet '
                     . 'og oppdateres fortløpende. Du velger selv produkt når du kommer.',
-                'ferdigTid'       => self::HENTING,
+                'ferdigTid'       => self::HENTING_POP,
             ],
 
             '*' => [
@@ -382,6 +391,15 @@ final class Kursmal
         // kategorien, saa ingen «klar til henting» kommer tilbake den veien.
         // Tomt «medHjem»/«ferdigTid» skjuler faktalinjene og seksjonene.
         // Tekstene er godkjent av eieren samme dag.
+        // Paint on Pots beholder «tre uker» (eieren, 13. oktober 2026) —
+        // ogsaa naar kurset har faatt Events-malen eller Events-standarden,
+        // som sier «noen uker». En egen tekst paa kurset gaar uansett foran
+        // (Katalog::offentlig), saa dette gjelder bare reserven.
+        if (mb_strpos(mb_strtolower($tittel), 'paint on pots') !== false) {
+            $ferdig = (string) ($mal['ferdigTid'] ?? '');
+            $mal['ferdigTid'] = $ferdig === '' ? self::HENTING_POP : str_replace('noen uker', 'tre uker', $ferdig);
+        }
+
         if (mb_strtolower($tittel) === 'date night') {
             $mal = array_merge($mal, [
                 'laererKort' => 'Å forme leiren med hendene',
@@ -391,7 +409,7 @@ final class Kursmal
                 'ferdigTid'  => '',
                 'punkter'    => "Ingen erfaring nødvendig — vi viser deg alt underveis.\n"
                     . "Leire og verktøy er inkludert.\n"
-                    . "Passer venninnekvelder, utdrikningslag, bedrifter og par.\n"
+                    . "Passer for par, eller to som vil ha en annerledes kveld sammen.\n"
                     . "Én kveld – ingenting å ta med hjem, bare en god opplevelse.",
             ]);
         }

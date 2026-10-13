@@ -7,11 +7,27 @@ $katalog = [];
 foreach (Katalog::offentlig(false) as $k) {
     $katalog[(string) $k['slug']] = $k;
 }
+// Nivå, Passer for og Teknikk lagres som noekler («handbygging»,
+// «nybegynner,litt»), fordi veilederen matcher paa dem. Her vises de som
+// ord: «Håndbygging», «Nybegynner, litt erfaring». Eieren, 13. oktober 2026.
+// Samme tabell som visRaadata i koKurs i lissom-2108.html.
+$visRaadata = static function (string $raa): string {
+    $ORD = ['litt' => 'litt erfaring', 'handbygging' => 'håndbygging', 'begge' => 'dreiing og håndbygging'];
+    $deler = [];
+    foreach (explode(',', $raa) as $x) {
+        $x = trim($x);
+        if ($x !== '') {
+            $deler[] = $ORD[mb_strtolower($x)] ?? $x;
+        }
+    }
+    $t = implode(', ', $deler);
+    return $t === '' ? '' : mb_strtoupper(mb_substr($t, 0, 1)) . mb_substr($t, 1);
+};
 $ko = [];
 foreach (Kort::kurs() as $k) {
     $kat = $katalog[$k['slug']] ?? [];
     $fakta = [];
-    foreach ([['Varighet', (string) ($k['duration'] ?? '')], ['Tid', (string) ($kat['varighet'] ?? '')], ['Pris', (string) ($k['price'] ?? '')], ['Nivå', (string) ($kat['passerNivaa'] ?? '')], ['Passer for', (string) ($kat['passerHvem'] ?? '')], ['Teknikk', (string) ($kat['metode'] ?? '')]] as [$n, $v]) {
+    foreach ([['Varighet', (string) ($k['duration'] ?? '')], ['Tid', (string) ($kat['varighet'] ?? '')], ['Pris', (string) ($k['price'] ?? '')], ['Nivå', $visRaadata((string) ($kat['passerNivaa'] ?? ''))], ['Passer for', $visRaadata((string) ($kat['passerHvem'] ?? ''))], ['Teknikk', $visRaadata((string) ($kat['metode'] ?? ''))]] as [$n, $v]) {
         if ($v !== '') {
             $fakta[] = ['navn' => $n, 'verdi' => $v];
         }

@@ -25,6 +25,9 @@ foreach (Medlemskap::planer() as $i => $p) {
     $planer[] = [
         'navn'   => (string) $p['navn'],
         'pris'   => Booking::kroner((int) $p['pris_ore']),
+        // Paa kortet og under «Alt som er inkludert»: maanedsprisen med
+        // «/ mnd». Prøv Lissom betales én gang (eieren, 13. oktober 2026).
+        'prisVist' => Booking::kroner((int) $p['pris_ore']) . ($engangs ? '' : ' / mnd'),
         'periode' => (string) (($p['undertekst'] ?? '') ?: $timetekst),
         'merke'  => (string) (($p['merke'] ?? '') ?: ($engangs ? 'Prøveperiode' : 'Medlemskap')),
         'beskrivelse' => (string) ($p['beskrivelse'] ?? ''),
@@ -46,7 +49,7 @@ foreach ($planer as $i => $p) {
         $ss = Nett::srcset($p['bilde']);
         $hode = '<link rel="preload" as="image" fetchpriority="high" href="' . $e($p['bilde']) . '"' . ($ss !== '' ? ' imagesrcset="' . $e($ss) . '" imagesizes="' . Nett::SIZES_KORT . '"' : '') . '>' . "\n";
     }
-    $h .= Deler::kurskort(['level' => $p['merke'], 'title' => $p['navn'], 'text' => $p['beskrivelse'], 'price' => $p['pris'], 'duration' => $p['periode'], 'image' => $p['bilde'], 'cta' => 'Les mer', 'href' => '/medlemskap?plan=' . rawurlencode($p['navn']), 'eager' => $i === 0]);
+    $h .= Deler::kurskort(['level' => $p['merke'], 'title' => $p['navn'], 'text' => $p['beskrivelse'], 'price' => $p['prisVist'], 'duration' => $p['periode'], 'image' => $p['bilde'], 'cta' => 'Les mer', 'href' => '/medlemskap?plan=' . rawurlencode($p['navn']), 'eager' => $i === 0]);
 }
 $h .= '</div></section>' . "\n";
 
@@ -112,7 +115,7 @@ $h .= '<section style="background: var(--clay-50); padding: 0 var(--space-8) var
     . '<div class="lx-cols4" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8);">';
 foreach ($planer as $p) {
     $h .= '<div><div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">' . $e($p['merke']) . '</div>'
-        . '<h3 style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading); margin: 0 0 var(--space-4);">' . $e($p['navn']) . ' · ' . $e($p['pris']) . '</h3>'
+        . '<h3 style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading); margin: 0 0 var(--space-4);">' . $e($p['navn']) . ' · ' . $e($p['prisVist']) . '</h3>'
         . '<ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px;">';
     foreach ($p['punkter'] as $pk) {
         $h .= '<li style="display: flex; gap: 10px; align-items: flex-start; font-size: var(--text-sm); color: var(--text-body);"><span style="width: 6px; height: 6px; border-radius: 50%; background: var(--terracotta-500); margin-top: 8px; flex: 0 0 auto;"></span><span>' . $e((string) $pk) . '</span></li>';

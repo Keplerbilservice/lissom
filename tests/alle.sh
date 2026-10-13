@@ -140,6 +140,7 @@ kjor "vakt, datasjekk" php tests/vaktdata-regler.php
 kjor "anmeldelser"   php tests/anmeldelser.php
 kjor "Paint on Pots uten kursbevis" php tests/pop-kursbevis.php
 kjor "morgenmelding til Monica" php tests/morgenmelding.php
+kjor "tekstpakke 13. oktober" php tests/tekstpakke.php
 kjor "meldinger 03.10 (anmeldelse kl. 10, maler av)" php tests/meldinger-0310.php
 kjor "AI-kommentarsvar" php tests/autosvar.php
 kjor "galleri"       php tests/galleri.php

@@ -9707,7 +9707,7 @@
         {
             "id": "forside-fellesskap-hero",
             "dato": "2026-10-13",
-            "hva": "Eieren valgte gruppemotivet med retusjert Monica, myk overgang til gult, todelt overskrift med kursiv andrelinje og bilde også på mobil. Eksisterende menyer, kursruter, banner og øvrig forside beholdes. Bilde valgt særskilt i admin overskrives ikke.",
+            "hva": "Eieren valgte gruppemotivet med retusjert Monica, myk overgang til gult, todelt overskrift med kursiv andrelinje og bilde også på mobil. Eksisterende menyer, kursruter, banner og øvrig forside beholdes. Bilde valgt særskilt i admin overskrives ikke. Eieren presiserte senere samme dag: overskriften skal ikke ha fast linjedeling, men beholde kursiv del. På PC står den samlet, mobil bryter naturlig.",
             "hvor": "Forsiden › hero",
             "kode": [
                 {
@@ -9726,7 +9726,7 @@
                 {
                     "fil": "nett-egen.css",
                     "finnes": [
-                        ".lx-hero-fellesskap .lx-hero-h1 em { display: block; }",
+                        ".lx-hero-fellesskap .lx-hero-h1 em { display: inline; }",
                         ".lx-hero-foto::after {"
                     ]
                 },
@@ -9744,6 +9744,36 @@
                         "assets_hero-fellesskap-20261013.webp",
                         "lx-hero-fellesskap",
                         "lx-hero-foto"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "avmeld-deltaker-foer-kursdato",
+            "dato": "2026-10-13",
+            "hva": "Eieren vil kunne avmelde en deltaker før kursdatoen uten Rediger påmelding. Ubetalte plasser avmeldes etter bekreftelse via eksisterende backend. Betalte plasser åpner eksisterende refusjonsflyt for akkurat påmeldingen; åpning sender ingen betaling eller avmelding.",
+            "hvor": "Admin › Kurs › deltaker",
+            "kode": [
+                {
+                    "fil": "ny-admin/kurs.js",
+                    "finnes": [
+                        "data-k=\"dAvmeld\"",
+                        "H.dAvmeldOk = async b =>",
+                        "/admin-ny#betalinger?booking=${d.bookingId}",
+                        "{handling: 'fjern', id: d.bookingId}"
+                    ]
+                },
+                {
+                    "fil": "api/admin/betalinger.php",
+                    "finnes": [
+                        "$_GET['bookingId']",
+                        "$bookingParam"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/app.js",
+                    "finnes": [
+                        "'?bookingId='+bookingId"
                     ]
                 }
             ]

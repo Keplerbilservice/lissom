@@ -22,7 +22,7 @@
 set -uo pipefail
 cd "$(dirname "$0")/.."
 
-GRUPPER=(statisk backend betaling diverse flyter1 flyter2 flyter3 flyter4 minside nyadmin)
+GRUPPER=(statisk backend betaling diverse flyter1 flyter2 flyter3 flyter4 minside nyadmin avmelding)
 if [ "${1:-}" = "--grupper" ]; then printf '%s\n' "${GRUPPER[@]}"; exit 0; fi
 
 # Nettleserflytene (tests/nettleser/flyter.mjs) deles etter navnets begynnelse

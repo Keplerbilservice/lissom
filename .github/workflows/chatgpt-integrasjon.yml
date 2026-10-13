@@ -4,6 +4,7 @@ on:
     paths:
       - 'api/admin/kursbilde-kontrollert.php'
       - '.github/workflows/chatgpt-integrasjon.yml'
+      - 'tests/chatgpt-kursbilde.php'
 permissions:
   contents: read
 jobs:
@@ -16,4 +17,7 @@ jobs:
           php-version: '8.3'
           coverage: none
       - name: Sjekk PHP-syntaks
-        run: php -l api/admin/kursbilde-kontrollert.php
+        run: |
+          php -l api/admin/kursbilde-kontrollert.php
+          php -l tests/chatgpt-kursbilde.php
+          php tests/chatgpt-kursbilde.php

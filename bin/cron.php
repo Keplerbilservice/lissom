@@ -273,6 +273,15 @@ switch ($jobb) {
 
     // -----------------------------------------------------------------------
     case 'varsler':
+        // Morgenmeldingen til Monica (app/lib/morgenmelding.php) legges i
+        // koeen foer den toemmes, saa den gaar i samme kjoering. Feiler den,
+        // skal resten av varslene likevel ut.
+        try {
+            Morgenmelding::kjor($si);
+        } catch (Throwable $e) {
+            logg_feil('Morgenmeldingen feilet', $e);
+            $si('Morgenmelding feilet: ' . $e->getMessage());
+        }
         [$sendt, $feilet] = Utsending::tomKo(50);
         if ($sendt > 0 || $feilet > 0) {
             logg('Varselkø tømt', ['sendt' => $sendt, 'feilet' => $feilet]);

@@ -3427,6 +3427,23 @@ final class Booking
      */
     public const MAATER_UTEN_PENGER = ['Gavekort', 'Gratis', 'Ikke betalt', 'Betaler ved oppmøte'];
 
+    /**
+     * Statusen en «Møtte ikke opp» gaar tilbake til naar den angres.
+     *
+     * Ingen egen kolonne: betalt naar plassen er gjort opp (betalt fullt,
+     * uten beloep, eller fort med en maate), ellers reservert. Brukt av
+     * «Start dagens kurs» (kursstart3.php) og deltakerarket i kalenderen
+     * (kalender.php, eieren 13. oktober 2026), saa begge angrer likt.
+     */
+    public static function statusForIkkeMott(int $bookingId, int $belopOre, string $maate): string
+    {
+        $bet = self::betalingerFor($bookingId);
+        $gjortOpp = $belopOre <= 0
+            || ($bet['rader'] !== [] && $bet['sum'] >= $belopOre)
+            || self::maateGirPenger($maate) || in_array($maate, ['Gratis', 'Gavekort'], true);
+        return $gjortOpp ? 'betalt' : 'reservert';
+    }
+
     /** Kom det penger inn paa denne maaten? Tom maate teller ikke. */
     public static function maateGirPenger(string $maate): bool
     {

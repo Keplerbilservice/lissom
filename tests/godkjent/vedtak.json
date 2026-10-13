@@ -9385,6 +9385,34 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "ikke-mott-fra-kurset",
+            "dato": "2026-10-13",
+            "hva": "Eieren 13.10.2026: «når jeg går inn på kalender og trykker på kurset, så må jeg og kunne trykke ikke møtt». Deltakerarket på kurssiden i ny admin (kalender → kurset → deltakeren) har «Møtte ikke opp» (status ikke_mott, samme som «Ikke møtt» i Start dagens kurs) og «Møtte likevel» når den alt står som ikke møtt. «Møtte likevel» setter statusen tilbake etter samme regel som Start dagens kurs (Booking::statusForIkkeMott).",
+            "hvor": "ny-admin/kurs.js, api/admin/kalender.php, app/lib/booking.php, api/admin/kursstart3.php",
+            "kode": [
+                {
+                    "fil": "ny-admin/kurs.js",
+                    "finnes": [
+                        "data-k=\"dMott\" data-v=\"ikke_mott\">Møtte ikke opp</button>",
+                        ">Møtte likevel</button>",
+                        "${mottKnapp(d)}<button class=\"knapp rod\" data-k=\"dSperr\">"
+                    ]
+                },
+                {
+                    "fil": "api/admin/kalender.php",
+                    "finnes": [
+                        "Booking::statusForIkkeMott((int) $b['id']"
+                    ]
+                },
+                {
+                    "fil": "api/admin/kursstart3.php",
+                    "finnes": [
+                        "Booking::statusForIkkeMott($id,"
+                    ]
+                }
+            ]
         }
     ]
 }

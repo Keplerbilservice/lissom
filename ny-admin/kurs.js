@@ -249,7 +249,19 @@ H.deltaker = b => {
   ark(`<div class="ark-head"><h2>${esc(d.navn)}</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
    <p class="muted">${[d.tlf, d.epost].filter(Boolean).map(esc).join(' · ') || 'Ingen kontaktinfo'}${d.antall > 1 ? ` · ${d.antall} plasser` : ''} · ${merke(d, erPop(aktiv()?.kursId))}</p>
    ${d.merknad ? `<p class="sms">${esc(d.merknad)}</p>` : ''}
-   <div class="valgknapper"><button class="knapp" data-k="dRediger">Rediger påmelding (antall, rabatt)</button><button class="knapp" data-k="dBekreft">Send bekreftelse på nytt</button><button class="knapp" data-k="dFlytt">Flytt til annen dato</button><button class="knapp" data-k="dVente">Flytt til venteliste</button>${kanForHaand(d, aktiv()?.kursId) ? `<button class="knapp" data-k="tbHaand" data-booking="${d.bookingId}">Registrer betaling for hånd</button>` : ''}<button class="knapp rod" data-k="dSperr">Sperr kursbevis</button></div>`);
+   <div class="valgknapper"><button class="knapp" data-k="dRediger">Rediger påmelding (antall, rabatt)</button><button class="knapp" data-k="dBekreft">Send bekreftelse på nytt</button><button class="knapp" data-k="dFlytt">Flytt til annen dato</button><button class="knapp" data-k="dVente">Flytt til venteliste</button>${kanForHaand(d, aktiv()?.kursId) ? `<button class="knapp" data-k="tbHaand" data-booking="${d.bookingId}">Registrer betaling for hånd</button>` : ''}${mottKnapp(d)}<button class="knapp rod" data-k="dSperr">Sperr kursbevis</button></div>`);
+};
+// «Møtte ikke opp» rett fra kurset i kalenderen (eieren 13.10.2026). Samme status som «Ikke møtt» i Start dagens kurs:
+// ikke_mott, og «Møtte likevel» setter den tilbake til forStatus (Booking::statusForIkkeMott). Kan angres med ett trykk.
+function mottKnapp(d) {
+  if (d.status === 'Betalt' || d.status === 'Ikke betalt') return '<button class="knapp" data-k="dMott" data-v="ikke_mott">Møtte ikke opp</button>';
+  if (d.status === 'Møtte ikke opp' && d.forStatus) return `<button class="knapp" data-k="dMott" data-v="${esc(d.forStatus)}">Møtte likevel</button>`;
+  return '';
+}
+H.dMott = async b => {
+  b.disabled = true;
+  const r = await api('pamelding.php', {handling: 'status', id: KS.delt.bookingId, status: b.dataset.v});
+  lukk(true); toast(esc(r.beskjed || 'Statusen er endret.')); await oppfrisk();
 };
 // Rabatt eller beløp: ett felt gjelder om gangen, og det andre låses (kontrolløren 09.10.2026). Før ble et innskrevet
 // beløp forkastet uten beskjed når rabatten også var endret. Rabatten: beløpet regnes som på serveren

@@ -11,7 +11,7 @@ php(`DB::oppdater('course_sessions',['start_tid'=>gmdate('Y-m-d H:i:s',time()+20
 const browser=await chromium.launch({args:['--host-resolver-rules=MAP lokal.lissom.no 127.0.0.1']});
 try {
   for(const [name,viewport] of [['PC',{width:1280,height:900}],['mobil',{width:390,height:844}]]) {
-    php(`DB::oppdater('bookings',['status'=>'reservert','payment_id'=>null],['id'=>${s.booking}]);DB::kjor('DELETE FROM payments WHERE member_id=:i',['i'=>${s.admin}]);`);
+    php(`DB::oppdater('bookings',['status'=>'reservert','payment_id'=>null,'avbestilt_at'=>null],['id'=>${s.booking}]);DB::kjor('DELETE FROM payments WHERE member_id=:i',['i'=>${s.admin}]);`);
     const c=await browser.newContext({viewport});
     await c.addCookies([{name:'lissom_sesjon',value:s.token,domain:'lokal.lissom.no',path:'/'}]);
     const p=await c.newPage(), posts=[], errors=[];
@@ -33,11 +33,11 @@ try {
     assert.equal(status(),'avbestilt',`${name}: fremtidig paamelding avmeldes`);
     assert.deepEqual(posts,[{handling:'fjern',id:s.booking}],`${name}: eksisterende avmelding, ingen refusjon`);
     const paid=JSON.parse(php(`
-      DB::oppdater('bookings',['status'=>'betalt'],['id'=>${s.booking}]);
-      $p1=DB::settInn('payments',['member_id'=>${s.admin},'type'=>'epayment','formal'=>'Test legacy','belop_ore'=>10000,'status'=>'betalt','idempotency_key'=>Vipps::uuid(),'vipps_reference'=>Vipps::uuid()]);
+      DB::oppdater('bookings',['status'=>'betalt','avbestilt_at'=>null],['id'=>${s.booking}]);
+      $p1=DB::settInn('payments',['member_id'=>${s.admin},'type'=>'epayment','formal'=>'booking','belop_ore'=>10000,'status'=>'betalt','idempotency_key'=>Vipps::uuid(),'vipps_reference'=>Vipps::uuid()]);
       DB::oppdater('bookings',['payment_id'=>$p1],['id'=>${s.booking}]);
-      $p2=DB::settInn('payments',['member_id'=>${s.admin},'booking_id'=>${s.booking},'type'=>'epayment','formal'=>'Test delbetaling','belop_ore'=>5000,'status'=>'betalt','idempotency_key'=>Vipps::uuid(),'vipps_reference'=>Vipps::uuid()]);
-      $p3=DB::settInn('payments',['member_id'=>${s.admin},'type'=>'epayment','formal'=>'Uvedkommende betaling','belop_ore'=>9000,'status'=>'betalt','idempotency_key'=>Vipps::uuid(),'vipps_reference'=>Vipps::uuid()]);
+      $p2=DB::settInn('payments',['member_id'=>${s.admin},'booking_id'=>${s.booking},'type'=>'epayment','formal'=>'booking','belop_ore'=>5000,'status'=>'betalt','idempotency_key'=>Vipps::uuid(),'vipps_reference'=>Vipps::uuid()]);
+      $p3=DB::settInn('payments',['member_id'=>${s.admin},'type'=>'epayment','formal'=>'booking','belop_ore'=>9000,'status'=>'betalt','idempotency_key'=>Vipps::uuid(),'vipps_reference'=>Vipps::uuid()]);
       echo json_encode([$p1,$p2,$p3]);
     `));
     await open();

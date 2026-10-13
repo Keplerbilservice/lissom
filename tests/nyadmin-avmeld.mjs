@@ -48,9 +48,9 @@ try {
     await p.getByRole('button',{name:'Refunder',exact:true}).first().waitFor();
     assert.match(p.url(),new RegExp(`#betalinger\\?booking=${s.booking}$`));
     assert.equal(posts.length,count,`${name}: aapning refunderer eller avmelder ikke`);
-    const r=await c.request.get(`${BASE}/api/admin/betalinger.php?bookingId=${s.booking}`);
-    assert.equal(r.status(),200);
-    const rows=(await r.json()).betalinger;
+    const r=await p.evaluate(async id=>{const r=await fetch(`/api/admin/betalinger.php?bookingId=${id}`);return {status:r.status,data:await r.json()};},s.booking);
+    assert.equal(r.status,200);
+    const rows=r.data.betalinger;
     assert.deepEqual(rows.map(x=>x.id).sort((a,b)=>a-b),paid.slice(0,2).sort((a,b)=>a-b),`${name}: begge betalingskoblinger, ingen uvedkommende betaling`);
     assert.equal(status(),'betalt',`${name}: betalt paamelding staar til refusjonen bekreftes`);
     assert.deepEqual(errors,[]);
@@ -58,4 +58,4 @@ try {
     await c.close();
     console.log(`OK ${name}: avmeld foer dato, avbryt, betalt refusjonsflyt og riktig betalingsutvalg`);
   }
-} finally {await browser.close();fixture('cleanup',s);}
+} finally {await browser.close();php(`DB::oppdater('bookings',['payment_id'=>null],['id'=>${s.booking}]);`);fixture('cleanup',s);}

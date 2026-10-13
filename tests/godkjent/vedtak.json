@@ -9751,7 +9751,7 @@
         {
             "id": "avmeld-deltaker-foer-kursdato",
             "dato": "2026-10-13",
-            "hva": "Eieren vil kunne avmelde en deltaker før kursdatoen uten Rediger påmelding. Ubetalte plasser avmeldes etter bekreftelse via eksisterende backend. Betalte plasser åpner eksisterende refusjonsflyt for akkurat påmeldingen; åpning sender ingen betaling eller avmelding.",
+            "hva": "Eieren vil kunne avmelde en deltaker før kursdatoen uten Rediger påmelding, også når deltakeren har betalt. Betalt deltaker kan avmeldes med beholdt betaling etter særskilt bekreftelse; refusjon gjøres separat. Betalingslisten er avgrenset til påmeldingen; åpning sender ingen betaling eller avmelding.",
             "hvor": "Admin › Kurs › deltaker",
             "kode": [
                 {
@@ -9759,6 +9759,8 @@
                     "finnes": [
                         "data-k=\"dAvmeld\"",
                         "H.dAvmeldOk = async b =>",
+                        "H.dAvmeldBetaltOk = async b =>",
+                        "{handling: 'avmeld-behold-betaling', id: d.bookingId}",
                         "/admin-ny#betalinger?booking=${d.bookingId}",
                         "{handling: 'fjern', id: d.bookingId}"
                     ]

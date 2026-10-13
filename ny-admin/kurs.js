@@ -314,18 +314,32 @@ H.dBekreft = async () => { const r = await api('pamelding.php', {handling: 'bekr
 // «Er du sikker?» før det som ikke kan angres med ett trykk (brukertesten 08.10.2026).
 const sikker = (tittel, tekst, ja, k) => ark(`${tilbakeDelt()}<div class="ark-head"><h2>${tittel}</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
   <p>${tekst}</p><div class="ark-fot"><button class="knapp" data-k="deltaker" data-booking="${KS.delt.bookingId}">Avbryt</button><button class="knapp rod" data-k="${k}">${ja}</button></div>`);
-// Avmelding er tilgjengelig ogsaa foer kursdatoen. Betalte plasser gaar til
-// eksisterende betalings-/refusjonsflyt, uten noe automatisk pengetrekk.
+// Avmelding er tilgjengelig ogsaa foer kursdatoen. Betalingen kan beholdes,
+// og eventuell refusjon gjores separat i eksisterende refusjonsflyt.
 H.dAvmeld = () => {
   const d = KS.delt;
   if (!d || !['Betalt', 'Ikke betalt'].includes(d.status)) return;
   if (d.status === 'Betalt') {
     ark(`${tilbakeDelt()}<div class="ark-head"><h2>Avmeld deltaker</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
-      <p>${esc(d.navn)} har en betalt påmelding. Kontroller betalingen og refusjonen før avmelding. Å åpne betalingsoversikten avmelder ingen og tilbakebetaler ikke penger.</p>
-      <div class="ark-fot"><button class="knapp" data-k="deltaker" data-booking="${d.bookingId}">Avbryt</button><a class="knapp hoved" href="/admin-ny#betalinger?booking=${d.bookingId}">Åpne refusjonsflyten</a></div>`);
+      <p>${esc(d.navn)} har en betalt påmelding. Du kan avmelde deltakeren og beholde betalingen, eller åpne refusjonsflyten. Å åpne betalingsoversikten avmelder ingen og tilbakebetaler ikke penger.</p>
+      <div class="ark-fot"><button class="knapp" data-k="deltaker" data-booking="${d.bookingId}">Avbryt</button><button class="knapp rod" data-k="dAvmeldBetalt">Avmeld og behold betalingen</button><a class="knapp hoved" href="/admin-ny#betalinger?booking=${d.bookingId}">Åpne refusjonsflyten</a></div>`);
     return;
   }
   sikker('Avmeld deltaker?', `Avmeld ${esc(d.navn)} fra ${esc(aktiv()?.tittel || 'kurset')} (${d.antall} ${d.antall === 1 ? 'plass' : 'plasser'}). Plassen blir ledig for andre. Ingen penger tilbakebetales. Kunden kan få avbestillingsbekreftelse på e-post etter gjeldende varselinnstilling.`, 'Ja, avmeld deltaker', 'dAvmeldOk');
+};
+H.dAvmeldBetalt = () => {
+  const d = KS.delt;
+  if (!d || d.status !== 'Betalt') return;
+  sikker('Avmeld og behold betalingen?', `Avmeld ${esc(d.navn)} fra ${esc(aktiv()?.tittel || 'kurset')} (${d.antall} ${d.antall === 1 ? 'plass' : 'plasser'}). Plassen blir ledig for andre. Betalingen og betalingshistorikken beholdes. Ingen penger tilbakebetales. Eventuell refusjon må gjøres separat. Kunden kan få avbestillingsbekreftelse på e-post etter gjeldende varselinnstilling.`, 'Ja, avmeld og behold betalingen', 'dAvmeldBetaltOk');
+};
+H.dAvmeldBetaltOk = async b => {
+  const d = KS.delt;
+  if (!d || d.status !== 'Betalt') return;
+  b.disabled = true;
+  try {
+    const r = await api('pamelding.php', {handling: 'avmeld-behold-betaling', id: d.bookingId});
+    lukk(true); toast(esc(r.beskjed || 'Påmeldingen er avmeldt. Betalingen er beholdt.')); KS.delt = null; await oppfrisk();
+  } catch (e) { b.disabled = false; throw e; }
 };
 H.dAvmeldOk = async b => {
   const d = KS.delt;

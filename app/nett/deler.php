@@ -156,8 +156,9 @@ final class Deler
         $h .= '<nav style="display: ' . ($tight ? 'none' : 'flex') . '; align-items: center; justify-content: center; gap: '
             . ($compact ? '4px clamp(8px, 1.2vw, 20px)' : 'var(--space-4) clamp(var(--space-3), 1.6vw, var(--space-8))')
             . '; margin: 0 auto; min-width: 0; flex: 1; overflow: hidden; flex-wrap: nowrap;">';
+        // Handlekurven staar til hoeyre ved soek og «Kontakt oss» (designet
+        // 13. oktober 2026), ikke blant lenkene i menyen.
         $lenker = self::LENKER;
-        $lenker[] = ['Handlekurv', '/handlekurv'];
         foreach ($lenker as [$navn, $href]) {
             $paa = $navn === $aktiv;
             $farge = $paa ? 'var(--lissom-brown)' : 'var(--brown-500)';
@@ -189,6 +190,8 @@ final class Deler
             $h .= '<button type="button" data-href="/kurs?sok=1" aria-label="Søk" style="width: 44px; height: 44px; display: inline-grid; place-items: center; border-radius: var(--radius-pill); cursor: pointer; opacity: 1; background: transparent; color: var(--text-body); border: 2px solid transparent; transition: background var(--duration-base) var(--ease-clay); zoom: ' . ($compact ? 1 : 1.35) . ';" data-hover="background: var(--clay-100);">'
                 . self::ikon('search', 19) . '</button>';
         }
+        $h .= '<a href="/handlekurv" aria-label="Handlekurv"' . ($aktiv === 'Handlekurv' ? ' aria-current="page"' : '') . ' style="width: 44px; height: 44px; display: inline-grid; place-items: center; border-radius: var(--radius-pill); color: var(--lissom-brown); text-decoration: none; zoom: ' . ($compact ? 1 : 1.35) . ';" data-hover="background: var(--clay-100);">'
+            . self::ikon('shopping-cart', 24) . '</a>';
         // En <button>, ikke en lenke: nett.css sikter paa «header button[…]»
         // naar den gjoer «Kontakt oss» mindre. nett.js foelger data-href.
         $h .= self::knapp('Kontakt oss', ['href' => '/kontakt', 'variant' => 'ink', 'size' => $compact ? 'md' : 'lg', 'style' => ' zoom: ' . ($compact ? 1 : 1.35) . ';']);
@@ -218,6 +221,10 @@ final class Deler
      */
     public static function kurskort(array $k, string $ekstraStil = ''): string
     {
+        // Kurs med datoer: kortet med datobrikker (designet 13. oktober 2026).
+        if (!empty($k['brikker']) && empty($k['luft'])) {
+            return self::kurskortDatoer($k, $ekstraStil);
+        }
         $e = [self::class, 'e'];
         $href = (string) $k['href'];
         // «luft»: overlinje, tittel og tekst brytes i stedet for aa kuttes med
@@ -321,6 +328,81 @@ final class Deler
     }
 
     /**
+     * Kurskortet med datoer i bredden (designet 13. oktober 2026, 2.1).
+     *
+     * Bilde med plassmerket oppe til hoeyre, overtittel og navn, «Velg dato»
+     * med «Alle datoer →» til kurssida, opptil fire datobrikker, «Tid» med
+     * én pille per klokkeslett for brikken som er valgt, kort tekst, og pris
+     * med «Book <dato>» nederst. Den foerste brikken er valgt; nett.js bytter
+     * tidene og knappen naar en annen trykkes (data-dk-*). En full dato faar
+     * «Fullt» under maaneden, og knappen blir «Les mer» til kurssida.
+     * Erstatter «Neste: …» og «Se flere datoer» (oppsett A, 12.10.2026).
+     */
+    private static function kurskortDatoer(array $k, string $ekstraStil = ''): string
+    {
+        $e = [self::class, 'e'];
+        $href = (string) $k['href'];
+        $brikker = array_values((array) $k['brikker']);
+        $h = '<article class="lx-dk" data-href="' . $e($href) . '" data-nett-kort data-dk' . ($ekstraStil !== '' ? ' style="' . $e($ekstraStil) . '"' : '') . '>';
+        // Bildet, med karusellen som foer.
+        $bilder = array_values(array_filter((array) ($k['bilder'] ?? []), 'is_string'));
+        $karusell = count($bilder) >= 2;
+        $h .= '<div class="lx-dk-bilde"' . ($karusell ? ' data-nett-karusell="' . (int) ($k['sekunder'] ?? 5) . '"' : '') . '>';
+        $bilde = (string) ($k['image'] ?? '');
+        if ($bilde !== '') {
+            $ss = Nett::srcset($bilde);
+            $h .= '<img src="' . $e($bilde) . '"' . ($ss !== '' ? ' srcset="' . $e($ss) . '" sizes="' . Nett::SIZES_KORT . '"' : '')
+                . ' alt="' . $e((string) ($k['imageAlt'] ?? '') !== '' ? (string) $k['imageAlt'] : (string) $k['title']) . '"'
+                . (!empty($k['eager']) ? ' fetchpriority="high"' : ' loading="lazy"') . ' decoding="async"'
+                . ' style="' . trim(self::fokusStil($bilde)) . ($karusell ? ' transition: opacity 1.2s ease;' : '') . '"' . ($karusell ? ' data-nett-bilde' : '') . '>';
+            foreach ($karusell ? array_slice($bilder, 1) : [] as $b) {
+                $ss2 = Nett::srcset($b);
+                $h .= '<img src="' . $e($b) . '"' . ($ss2 !== '' ? ' srcset="' . $e($ss2) . '" sizes="' . Nett::SIZES_KORT . '"' : '')
+                    . ' alt="" aria-hidden="true" loading="lazy" decoding="async" data-nett-bilde class="lx-dk-lag"'
+                    . ' style="' . trim(self::fokusStil($b)) . ' opacity: 0; transition: opacity 1.2s ease;">';
+            }
+        }
+        $status = (string) ($k['status'] ?? '');
+        if ($status !== '') {
+            $h .= '<span class="lx-dk-merke">' . $e($status) . '</span>';
+        }
+        $h .= '</div>';
+        $h .= '<div class="lx-dk-inni">';
+        $level = (string) ($k['level'] ?? '');
+        $h .= '<div class="lx-dk-over">' . ($level !== '' ? $e($level) : '&nbsp;') . '</div>'
+            . '<h3 class="lx-dk-tittel"><a href="' . $e($href) . '">' . $e((string) $k['title']) . '</a></h3>';
+        $h .= '<div class="lx-dk-velg"><span class="lx-dk-etikett">Velg dato</span><a href="' . $e($href) . '">Alle datoer →</a></div>';
+        $h .= '<div class="lx-dk-brikker" role="group" aria-label="Velg dato">';
+        foreach ($brikker as $i => $b) {
+            $h .= '<button type="button" class="lx-dk-brikke" aria-pressed="' . ($i === 0 ? 'true' : 'false') . '" aria-label="' . $e($b['lang'] . ($b['fullt'] ? ', fullt' : '')) . '"'
+                . ' data-dk-tider="' . $e((string) json_encode($b['tider'], JSON_UNESCAPED_UNICODE)) . '"'
+                . ' data-dk-begge="' . ($b['begge'] ? '1' : '0') . '"'
+                . ' data-dk-book="' . $e($b['fullt'] ? 'Les mer' : $b['book']) . '"'
+                . ' data-dk-href="' . $e($b['fullt'] ? $href : $b['href']) . '">'
+                . '<span class="lx-dk-uke">' . $e($b['uke']) . '</span>'
+                . '<span class="lx-dk-dag">' . $e($b['dag']) . '</span>'
+                . '<span class="lx-dk-mnd">' . $e($b['mnd']) . '</span>'
+                . ($b['fullt'] ? '<span class="lx-dk-fullt">Fullt</span>' : '')
+                . '</button>';
+        }
+        $h .= '</div>';
+        $b0 = $brikker[0];
+        $h .= '<div class="lx-dk-tider"><span class="lx-dk-etikett">Tid</span><span data-dk-tidliste>';
+        foreach ($b0['tider'] as $t) {
+            $h .= '<span class="lx-dk-tid">' . $e($t) . '</span>';
+        }
+        $h .= '</span><span class="lx-dk-begge" data-dk-beggetekst' . ($b0['begge'] ? '' : ' hidden') . '>begge dager</span></div>';
+        $tekst = (string) ($k['text'] ?? '');
+        $h .= '<p class="lx-dk-tekst">' . $e($tekst) . '</p>';
+        $h .= '<div class="lx-dk-bunn"><span class="lx-dk-pris">'
+            . (!empty($k['fra']) && (string) ($k['price'] ?? '') !== '' ? '<span class="lx-dk-fra">fra</span> ' : '')
+            . $e((string) ($k['price'] ?? '')) . '</span>'
+            . self::knapp($b0['fullt'] ? 'Les mer' : $b0['book'], ['size' => 'sm', 'lenke' => true, 'href' => $b0['fullt'] ? $href : $b0['href'], 'attr' => 'data-dk-knapp'])
+            . '</div>';
+        return $h . '</div></article>';
+    }
+
+    /**
      * Dato og tid paa kurskortet (Kort::naar). «Se flere datoer» er en
      * diskret, understreket tekst — eierens unntak fra «piller, ikke
      * lenker», 12.10.2026. Lista er skjult til den trykkes fram, og ruller
@@ -401,7 +483,9 @@ final class Deler
             . ' alt="' . $e($g['alt']) . '" loading="lazy" decoding="async" style="display: block; width: 100%; aspect-ratio: 1 / 1; object-fit: cover; background: var(--clay-200);">'
             . '<div style="padding: var(--space-5); display: flex; flex-direction: column; gap: 4px;">'
             . '<div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">' . $e($g['tittel']) . '</div>'
-            . '<div style="font-size: var(--text-sm); color: var(--text-muted);">' . $e($g['navn']) . '</div>'
+            // «Lissom» under hvert bilde er tatt bort (designet 13. oktober
+            // 2026); et medlems eget navn staar som foer.
+            . ((string) $g['navn'] !== '' && (string) $g['navn'] !== 'Lissom' ? '<div style="font-size: var(--text-sm); color: var(--text-muted);">' . $e($g['navn']) . '</div>' : '')
             . '</div></div>';
     }
 
@@ -505,10 +589,32 @@ final class Deler
             . '<span style="text-transform: none; letter-spacing: 0; opacity: .68; display: inline-flex; align-items: center; gap: 6px;">EDB system av<svg viewBox="0 0 290 74" width="100" height="26" role="img" aria-label="Joika Design" style="display: block;"><defs><linearGradient id="jdToning" gradientUnits="userSpaceOnUse" x1="150" y1="4" x2="150" y2="70"><stop offset="0" stop-color="currentColor" stop-opacity=".82"></stop><stop offset=".42" stop-color="currentColor" stop-opacity=".38"></stop><stop offset=".66" stop-color="currentColor" stop-opacity=".12"></stop><stop offset="1" stop-color="currentColor" stop-opacity=".05"></stop></linearGradient></defs><g fill="none" stroke="url(#jdToning)" stroke-linejoin="round" stroke-linecap="round"><path stroke-width="3.4" d="M74 59 L54 27 L110 47 L97 9 L150 40 L204 4 L226 59"></path><rect x="70" y="57" width="160" height="13" rx="6.5" stroke-width="3.4"></rect></g><text x="145" y="54" text-anchor="middle" font-family="Georgia, \'Times New Roman\', serif" font-size="31" font-weight="700" letter-spacing="0.4" fill="currentColor">Joika Design</text></svg></span>'
             . '</div>'
             . '<div class="lx-bunnpiller" style="display: flex; align-items: stretch; gap: var(--space-3); flex: 1 1 auto; max-width: 460px;">'
-            . '<a href="/min-side" class="lx-bunnpille" style="' . $pille . '" data-hover="color: var(--lissom-yellow); border-color: var(--lissom-yellow);">' . self::ikon('user', 14) . 'Min side</a>'
-            . '<a href="/admin" class="lx-bunnpille" style="' . $pille . '" data-hover="color: var(--lissom-yellow); border-color: var(--lissom-yellow);">' . self::ikon('lock', 14) . 'Admin</a>'
+            . '<a href="/min-side" class="lx-bunnpille" style="' . $pille . ' white-space: nowrap;" data-hover="color: var(--lissom-yellow); border-color: var(--lissom-yellow);">' . self::ikon('user', 14) . 'Min side</a>'
+            // «Admin» bare for innloggede administratorer (designet 13. oktober 2026).
+            . (self::erAdmin() ? '<a href="/admin" class="lx-bunnpille" style="' . $pille . '" data-hover="color: var(--lissom-yellow); border-color: var(--lissom-yellow);">' . self::ikon('lock', 14) . 'Admin</a>' : '')
             . '</div></div>';
         return $h . '</div></footer>';
+    }
+
+    /**
+     * «Les mer ⌄» / «Vis mindre ⌃» paa mobil (designet 13. oktober 2026).
+     * Staar inne i et element med data-nett-mer; det som har klassen
+     * lx-mer-skjul er skjult paa mobil til knappen trykkes. nett.js bytter
+     * aria-expanded og teksten. Paa PC vises alt, og knappen er borte.
+     */
+    public static function lesMer(): string
+    {
+        return '<button type="button" class="lx-mer-knapp" aria-expanded="false" data-nett-merknapp>Les mer ⌄</button>';
+    }
+
+    /** Er den som ser sida logget inn som administrator? Feiler oppslaget: nei. */
+    private static function erAdmin(): bool
+    {
+        try {
+            return class_exists('Sesjon') && Sesjon::erAdmin();
+        } catch (Throwable) {
+            return false;
+        }
     }
 
     // ── Samtykke til besoeksmaaling ─────────────────────────────────────

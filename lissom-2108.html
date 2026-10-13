@@ -3137,6 +3137,50 @@ window.__resources = {
   html.lx-innebygd .lx-kalflik,
   html.lx-innebygd .lx-admkal { display: none !important; }
   html.lx-innebygd .lx-adminaside + main { padding-bottom: 24px !important; }
+  /* «Kursene våre» (designet 13. oktober 2026, 2.5). PC: bilde 260 px, tekst
+     i midten og en faktaboks på 300 px i lys sand med status og knapp nederst.
+     Mobil: lite bilde (104 px) ved overtittel, navn og status, faktaene i to
+     spalter, beskrivelsen bak «Les mer ⌄» og knappen alltid synlig. */
+  .lx-ko { background: var(--surface-card, #fff); border: 1px solid var(--border-subtle, #EADFD2); border-radius: 22px; overflow: hidden; display: grid;
+    grid-template-columns: 260px minmax(0, 1fr) 300px; grid-template-rows: auto 1fr auto;
+    grid-template-areas: "bilde hode fakta" "bilde tekst fakta" "bilde tekst bunn"; }
+  .lx-ko-bilde { grid-area: bilde; min-height: 240px; }
+  .lx-ko-bilde > * { width: 100%; height: 100%; min-height: 240px; }
+  .lx-ko-hode { grid-area: hode; padding: 28px 28px 0; min-width: 0; }
+  .lx-ko-over { font: var(--type-eyebrow); font-size: 12px; letter-spacing: 1.8px; text-transform: uppercase; color: var(--terracotta-600, #A2502B); }
+  .lx-ko-tittel { margin: 4px 0 10px; font-family: var(--font-display); font-size: 26px; font-weight: 700; line-height: 1.2; color: var(--text-heading, #4D1D12); }
+  .lx-ko-tekst { grid-area: tekst; padding: 0 28px 28px; min-width: 0; }
+  .lx-ko-tekst p { margin: 0; font-size: 16px; line-height: 1.6; color: var(--text-body); text-wrap: pretty; }
+  .lx-ko-punkter { list-style: none; margin: 12px 0 0; padding: 0; }
+  .lx-ko-punkter li { display: flex; gap: 8px; font-size: 15px; line-height: 1.45; padding: 3px 0; color: var(--text-body); }
+  .lx-ko-punkter li > span:first-child { color: var(--brown-500, #66300F); font-weight: 700; flex: none; }
+  .lx-ko-fakta { grid-area: fakta; margin: 0; padding: 24px 24px 8px; background: #FBF6EF; border-left: 1px solid var(--border-subtle, #EADFD2); }
+  .lx-ko-fakta > div { padding: 6px 0; }
+  .lx-ko-fakta dt { font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--terracotta-600, #A2502B); }
+  .lx-ko-fakta dd { margin: 2px 0 0; font-size: 15px; font-weight: 700; color: var(--text-heading, #4D1D12); }
+  .lx-ko-bunn { grid-area: bunn; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 24px 24px; background: #FBF6EF; border-left: 1px solid var(--border-subtle, #EADFD2); }
+  .lx-ko-status { font-size: 13px; font-weight: 700; color: #3F6B3A; }
+  .lx-ko-status.lx-ko-full { color: var(--terracotta-600, #A2502B); }
+  .lx-ko-status.lx-ko-tom, .lx-ko-kunm { display: none; }
+  .lx-ko-mer { grid-area: mer; }
+  /* «Les mer ⌄» / «Vis mindre ⌃»: bare på mobil, og bare der skriptet som
+     åpner finnes (nett.js setter lx-js-mer). Uten det vises alt. */
+  .lx-mer-knapp { display: none; }
+  @media (max-width: 760px) {
+    html.lx-js-mer [data-nett-mer]:not([data-nett-mer-aapen]) .lx-mer-skjul { display: none !important; }
+    html.lx-js-mer .lx-mer-knapp { display: inline-flex; align-items: center; justify-content: center; grid-column: 1 / -1; justify-self: start; align-self: start; min-height: 44px; padding: 0 18px; border: 1.5px solid var(--lissom-brown, #4D1D12); border-radius: 999px; background: transparent; color: var(--lissom-brown, #4D1D12); font-family: var(--font-sans); font-size: 13px; font-weight: 700; letter-spacing: .9px; text-transform: uppercase; cursor: pointer; }
+    .lx-ko { border-radius: 20px; grid-template-columns: 104px minmax(0, 1fr); grid-template-rows: auto; grid-template-areas: "bilde hode" "fakta fakta" "tekst tekst" "mer mer" "bunn bunn"; }
+    .lx-ko-bilde, .lx-ko-bilde > * { min-height: 120px; }
+    .lx-ko-hode { padding: 14px 14px 10px; }
+    .lx-ko-tittel { font-size: 20px; margin: 2px 0 6px; }
+    .lx-ko-kunm { display: inline; }
+    .lx-ko-kunpc { display: none; }
+    .lx-ko-status.lx-ko-tom { display: none; }
+    .lx-ko-fakta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 12px; padding: 4px 14px 0; background: transparent; border-left: 0; }
+    .lx-ko-tekst { padding: 8px 14px 0; }
+    .lx-ko-mer { margin: 6px 14px 0; }
+    .lx-ko-bunn { padding: 12px 14px 16px; background: transparent; border-left: 0; justify-content: flex-start; }
+  }
 </style>
 <script>
   // Bare naar siden faktisk ligger i en ramme i /admin2 paa samme nettsted.
@@ -4733,41 +4777,36 @@ window.__resources = {
       <section style="background: var(--clay-50); padding: 0 var(--space-8) var(--section-y);">
         <div style="max-width: var(--width-content); margin: 0 auto; display: flex; flex-direction: column; gap: var(--space-8);">
           <sc-for list="{{ koKurs }}" as="k" hint-placeholder-count="4">
-            <div class="lx-split" style="display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--space-10); align-items: start; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);">
-              <div style="{{ k.bildeStil }}" role="img" aria-label="{{ k.altTekst }}"></div>
-              <div style="min-width: 0;">
-                <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">{{ k.merke }}</div>
-                <h2 style="margin: 0 0 var(--space-3); font-size: var(--text-3xl);">{{ k.tittel }}</h2>
-                <p style="margin: 0 0 var(--space-5); color: var(--text-body); line-height: 1.65; text-wrap: pretty;">{{ k.om }}</p>
-
-                <sc-if value="{{ k.harFakta }}" hint-placeholder-val="{{ true }}">
-                  <div style="display: flex; flex-wrap: wrap; gap: var(--space-3) var(--space-6); margin-bottom: var(--space-5); padding-bottom: var(--space-5); border-bottom: 1px solid var(--border-subtle);">
-                    <sc-for list="{{ k.fakta }}" as="f" hint-placeholder-count="3">
-                      <div style="min-width: 120px;">
-                        <div style="font-size: var(--text-xs); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ f.navn }}</div>
-                        <div style="font-size: var(--text-base); font-weight: 600; color: var(--text-heading);">{{ f.verdi }}</div>
-                      </div>
-                    </sc-for>
-                  </div>
-                </sc-if>
-
-                <sc-if value="{{ k.harPunkter }}" hint-placeholder-val="{{ true }}">
-                  <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: var(--space-6);">
-                    <sc-for list="{{ k.punkter }}" as="pt" hint-placeholder-count="3">
-                      <div style="display: flex; gap: 10px; align-items: flex-start; font-size: var(--text-sm); color: var(--text-body);">
-                        <span style="color: var(--sage-600); font-weight: 700; flex: 0 0 auto;">✓</span>
-                        <span>{{ pt }}</span>
-                      </div>
-                    </sc-for>
-                  </div>
-                </sc-if>
-
-                <div style="display: flex; gap: var(--space-4); align-items: center; flex-wrap: wrap;">
-                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon-after="arrow-right" on-click="{{ k.book }}" hint-size="auto,44px">{{ k.knapp }}</x-import>
-                  <span style="font-size: var(--text-sm); color: var(--text-muted);">{{ k.status }}</span>
-                </div>
+            <article class="lx-ko" data-nett-mer>
+              <div class="lx-ko-bilde"><div style="{{ k.bildeStil }}" role="img" aria-label="{{ k.altTekst }}"></div></div>
+              <div class="lx-ko-hode">
+                <div class="lx-ko-over">{{ k.merke }}</div>
+                <h2 class="lx-ko-tittel">{{ k.tittel }}</h2>
+                <span class="{{ k.statusKlasseM }}">● {{ k.status }}</span>
               </div>
-            </div>
+              <div class="lx-ko-tekst lx-mer-skjul">
+                <p>{{ k.om }}</p>
+                <sc-if value="{{ k.harPunkter }}" hint-placeholder-val="{{ true }}">
+                  <ul class="lx-ko-punkter">
+                    <sc-for list="{{ k.punkter }}" as="pt" hint-placeholder-count="3">
+                      <li><span aria-hidden="true">✓</span><span>{{ pt }}</span></li>
+                    </sc-for>
+                  </ul>
+                </sc-if>
+              </div>
+              <sc-if value="{{ k.harFakta }}" hint-placeholder-val="{{ true }}">
+                <dl class="lx-ko-fakta">
+                  <sc-for list="{{ k.fakta }}" as="f" hint-placeholder-count="3">
+                    <div><dt>{{ f.navn }}</dt><dd>{{ f.verdi }}</dd></div>
+                  </sc-for>
+                </dl>
+              </sc-if>
+              <button type="button" class="lx-mer-knapp lx-ko-mer" aria-expanded="false" data-nett-merknapp>Les mer ⌄</button>
+              <div class="lx-ko-bunn">
+                <span class="{{ k.statusKlassePc }}">● {{ k.status }}</span>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ k.book }}" hint-size="auto,44px">{{ k.knapp }}</x-import>
+              </div>
+            </article>
           </sc-for>
         </div>
       </section>
@@ -74699,9 +74738,12 @@ class Component extends DCLogic {
               knapp: k.cta || 'Book plass',
               book: k.book,
               altTekst: k.title + ' hos Lissom i Tønsberg',
+              // Designet 13. oktober 2026: «● Ledige plasser» i grønt, «● Fullbooket»
+              // i rustrødt — samme klasser som på serveren (kursoversikt.php).
+              statusKlasseM: 'lx-ko-status lx-ko-kunm' + (k.status === 'Fullbooket' ? ' lx-ko-full' : '') + (k.status ? '' : ' lx-ko-tom'),
+              statusKlassePc: 'lx-ko-status lx-ko-kunpc' + (k.status === 'Fullbooket' ? ' lx-ko-full' : '') + (k.status ? '' : ' lx-ko-tom'),
               bildeStil: {
-                width: '100%', aspectRatio: '4 / 3',
-                borderRadius: 'var(--radius-lg)',
+                width: '100%', height: '100%',
                 backgroundColor: 'var(--clay-200)',
                 backgroundImage: k.image ? "url('" + k.image + "')" : 'none',
                 backgroundSize: 'cover',

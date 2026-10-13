@@ -123,15 +123,15 @@ $h .= '<section style="background: var(--clay-100); padding: var(--section-y) va
     . '<h2 style="margin: 0;">' . $e($innh('Forside/2/Overskrift')) . '</h2></div>'
     . '<span class="lx-hide-m">' . Deler::knapp($innh('Forside/2/Knapp'), ['href' => '/kurs', 'variant' => 'secondary', 'size' => 'sm', 'iconAfter' => 'arrow-right']) . '</span>'
     . '</div>'
-    . '<div class="lx-kortgrid lx-hide-m" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8);">';
-foreach (array_slice($kort, 0, 4) as $k) {
+    // Tre kurs i bredden med datobrikkene (designet 13. oktober 2026, 2.1).
+    // Paa mobil staar de samme kortene under hverandre, med knappen under —
+    // foer viste mobilen bare antallet datoer og knappen.
+    . '<div class="lx-dkgrid">';
+foreach (array_slice($kort, 0, 3) as $k) {
     $h .= Deler::kurskort($k);
 }
 $h .= '</div>';
-// Paa mobil: én knapp i stedet for fire kort — kursTeller i nettsida.
-$antall = count($kort);
-$h .= '<div class="lx-kunmobil">'
-    . '<p style="margin: 0 0 var(--space-5); font-size: var(--text-base); color: var(--text-body); text-wrap: pretty;">' . $e(Nett::kursTeller($kort)) . '</p>'
+$h .= '<div class="lx-kunmobil" style="margin-top: var(--space-5);">'
     . Deler::knapp($innh('Forside/2/Knapp på mobil'), ['href' => '/kurs', 'variant' => 'ink', 'iconAfter' => 'arrow-right', 'full' => true])
     . '</div></div></section>' . "\n";
 
@@ -166,6 +166,8 @@ if (Nett::bryterPaa('referanser') && DB::harTabell('referansekunder')) {
 // enn ingenting — og «$rot[0]» finnes ikke aa tegne det foerste kortet med.
 if ($rot !== []) {
     $r0 = $rot[0];
+    // Designet 13. oktober 2026: navnet over sitatet («KEPLER») staar ikke naar
+    // logoen gjoer det, og navnet under sitatet faar ca. 18 px luft.
     $h .= '<section class="lx-tettbunn" style="background: var(--clay-50); padding: var(--section-y) var(--space-8);">'
         . '<div class="lx-split" data-tone="rot" data-nett-rot="rot" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 0.75fr 1.25fr; gap: var(--space-16); align-items: center; opacity: 1; transition: opacity 0.8s var(--ease-clay, ease); background: var(--clay-50);">'
         . '<img data-rot="bilde" src="' . $e($r0['bilde']) . '" alt="' . $e($r0['alt']) . '" style="width: 100%; height: 440px; object-fit: cover; border-radius: var(--radius-xl, 22px); display: block;" fetchpriority="high" decoding="async">'
@@ -174,9 +176,9 @@ if ($rot !== []) {
         // «display: none» og fikk bilde foerst naar nett.js byttet kort, 12 s
         // senere — eieren, 21. september 2026: «kepler logoen mangler».
         . '<div data-rot="logo" role="img"' . ((string) ($r0['logo'] ?? '') !== '' ? ' aria-label="' . $e('Logoen til ' . $r0['stikktittel']) . '"' : '') . ' style="display: ' . ((string) ($r0['logo'] ?? '') !== '' ? 'block' : 'none') . '; width: 132px; height: 60px; margin-bottom: var(--space-4); background-size: contain; background-repeat: no-repeat; background-position: left center; mix-blend-mode: multiply;' . ((string) ($r0['logo'] ?? '') !== '' ? ' background-image: ' . Nett::cssUrl((string) $r0['logo']) . ';' : '') . '"></div>'
-        . '<div data-rot="stikktittel" style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">' . $e($r0['stikktittel']) . '</div>'
+        . '<div data-rot="stikktittel" style="' . ((string) ($r0['logo'] ?? '') !== '' ? 'display: none; ' : '') . 'font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">' . $e($r0['stikktittel']) . '</div>'
         . '<h2 data-rot="tittel" style="margin: 0 0 var(--space-5);">' . $e($r0['tittel']) . '</h2>'
-        . '<div data-rot="undertekst" style="display: none; margin: calc(var(--space-5) * -1) 0 var(--space-5); font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);"></div>'
+        . '<div data-rot="undertekst" style="display: ' . ((string) ($r0['undertekst'] ?? '') !== '' ? 'block' : 'none') . '; margin: 18px 0 var(--space-5); font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">' . $e((string) ($r0['undertekst'] ?? '')) . '</div>'
         . '<p data-rot="tekst" style="margin: 0 0 var(--space-4); font-size: var(--text-lg); line-height: 1.55; color: var(--text-body); max-width: 50ch; text-wrap: pretty;">' . $e($r0['tekst']) . '</p>'
         . '<a data-rot="lenke" href="#" target="_blank" rel="noopener noreferrer" style="display: none; margin-top: var(--space-4); font: var(--type-body-sm); font-weight: 700; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;"></a>';
     if (count($rot) > 1) {
@@ -227,7 +229,7 @@ if ($galleri !== []) {
         . '<div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-8);">'
         . '<div><div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Galleri</div>'
         . '<h2 style="margin: 0;">Bilder fra verkstedet vårt</h2></div>'
-        . Deler::knapp($innh('Forside/3/Knapp'), ['href' => '/butikk', 'variant' => 'secondary', 'size' => 'sm', 'iconAfter' => 'arrow-right'])
+        // Knappen til butikken er tatt bort (designet 13. oktober 2026).
         . '</div>'
         . '<div class="lx-galleri" aria-label="Bilder fra verkstedet vårt"><div class="lx-galleri-spor" data-galleri-spor data-vakt-karusell="' . count($galleri) . '">';
     foreach ($galleri as $g) {

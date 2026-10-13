@@ -107,7 +107,8 @@ $h .= '</div></section>' . "\n";
 
 // Kortene.
 $h .= '<section id="kursliste" style="background: var(--clay-50); padding: 0 var(--space-8) var(--space-12);">'
-    . '<div class="lx-kortgrid" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8);">';
+    // Kurskortet med datobrikker, tre i bredden (designet 13. oktober 2026).
+    . '<div class="lx-dkgrid" style="max-width: var(--width-content); margin: 0 auto;">';
 $hode = '';
 foreach ($vist as $i => $k) {
     if ($i === 0 && $k['image'] !== '') {
@@ -131,20 +132,22 @@ if (!$erEvents) {
 }
 
 // Velkommen.
-$h .= '<section style="background: var(--clay-50); padding: 0 var(--space-8) var(--space-12);">'
+// Paa mobil: bare foerste avsnitt, og «Les mer ⌄» aapner resten (designet
+// 13. oktober 2026). PC som foer, i to spalter.
+$h .= '<section data-nett-mer style="background: var(--clay-50); padding: 0 var(--space-8) var(--space-12);">'
     . '<div class="lx-cols2" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-10); align-items: start; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-10);">'
     . '<div>'
     . '<div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">' . $e($innh('Kurs og events/2/Kicker')) . '</div>'
     . '<h2 style="margin: 0 0 var(--space-4); font-size: var(--text-3xl);">' . $e($innh('Kurs og events/2/Overskrift')) . '</h2>'
     . '<p style="margin: 0 0 var(--space-4); color: var(--text-body); line-height: 1.65; text-wrap: pretty;">Det handler om å senke skuldrene. Om å koble av fra en travel hverdag. Om å oppleve den gode følelsen av å være helt til stede i øyeblikket.</p>'
-    . '<p style="margin: 0 0 var(--space-4); color: var(--text-body); line-height: 1.65; text-wrap: pretty;">Når hendene får arbeide med leiren, skjer det noe. Tankene roer seg, tiden går litt saktere, og du får rom til å være kreativ uten prestasjonspress. Mange blir overrasket over hvor avslappende det er. Andre oppdager en skaperglede de ikke visste at de hadde.</p>'
-    . '<p style="margin: 0; color: var(--text-body); line-height: 1.65; text-wrap: pretty;">Enten du velger dreiekurs eller plateteknikk, trenger du ingen forkunnskaper. Vi hjelper deg hele veien, i et trygt og inkluderende miljø hvor det er lov å prøve, feile, lære og le.</p>'
-    . '</div><div>'
+    . '<p class="lx-mer-skjul" style="margin: 0 0 var(--space-4); color: var(--text-body); line-height: 1.65; text-wrap: pretty;">Når hendene får arbeide med leiren, skjer det noe. Tankene roer seg, tiden går litt saktere, og du får rom til å være kreativ uten prestasjonspress. Mange blir overrasket over hvor avslappende det er. Andre oppdager en skaperglede de ikke visste at de hadde.</p>'
+    . '<p class="lx-mer-skjul" style="margin: 0; color: var(--text-body); line-height: 1.65; text-wrap: pretty;">Enten du velger dreiekurs eller plateteknikk, trenger du ingen forkunnskaper. Vi hjelper deg hele veien, i et trygt og inkluderende miljø hvor det er lov å prøve, feile, lære og le.</p>'
+    . '</div><div class="lx-mer-skjul">'
     . '<p style="margin: 0 0 var(--space-4); color: var(--text-body); line-height: 1.65; text-wrap: pretty;">Hos oss møtes mennesker i alle aldre og med ulik erfaring. Noen kommer for å lære et håndverk. Andre kommer for å finne ro. Mange kommer tilbake fordi de finner begge deler.</p>'
     . '<p style="margin: 0 0 var(--space-4); color: var(--text-body); line-height: 1.65; text-wrap: pretty;">Du vil kjenne gleden når leiren tar form mellom hendene dine. Stoltheten når noe du har laget selv står ferdig. Og kanskje viktigst av alt: den sjeldne følelsen av å få være akkurat den du er.</p>'
     . '<p style="margin: 0 0 var(--space-4); color: var(--text-body); line-height: 1.65; text-wrap: pretty;">Lissom er et verksted for kreativitet, mestring og fellesskap. Et sted hvor du kan puste ut, slippe fantasien løs og skape noe helt unikt.</p>'
     . '<p style="margin: 0; color: var(--text-heading); font-weight: 700; line-height: 1.65;">Vi gleder oss til å ønske deg velkommen.</p>'
-    . '</div></div></section>' . "\n";
+    . '</div>' . Deler::lesMer() . '</div></section>' . "\n";
 
 // Introboksene.
 $bokser = $valgt === 'Events' ? [

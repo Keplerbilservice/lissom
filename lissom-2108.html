@@ -4337,7 +4337,7 @@ window.__resources = {
                  foelger med staar paa sida under. Eieren, 2. september: «og
                  knappene paa alle medlemskapene maa naa hete les mer».
                  Samme form som kurskortene. -->
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ a.merke }}" title="{{ a.navn }}" text="{{ a.beskrivelse }}" price="{{ a.pris }}" duration="{{ a.periode }}" image="{{ a.bilde }}" cta-label="Les mer" on-book="{{ a.lesMer }}" hint-size="100%,420px"></x-import>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ a.merke }}" title="{{ a.navn }}" text="{{ a.beskrivelse }}" price="{{ a.prisVist }}" duration="{{ a.periode }}" image="{{ a.bilde }}" cta-label="Les mer" on-book="{{ a.lesMer }}" hint-size="100%,420px"></x-import>
           </sc-for>
         </div>
         
@@ -4393,7 +4393,7 @@ window.__resources = {
             <sc-for list="{{ abonnementer }}" as="a" hint-placeholder-count="3">
               <div>
                 <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">{{ a.merke }}</div>
-                <h3 style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading); margin: 0 0 var(--space-4);">{{ a.navn }} · {{ a.pris }}</h3>
+                <h3 style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading); margin: 0 0 var(--space-4);">{{ a.navn }} · {{ a.prisVist }}</h3>
                 <!-- «Passer for: deg som ...» sto her.
                      Eieren, 2. september: «fjern dette du har lagt ut under
                      passer deg og ikke for deg». Linja sto mellom navnet og
@@ -31818,14 +31818,14 @@ const SIDEINNHOLD = {
     { navn: 'Topptekst', type: 'Tittel og ingress', synlig: 'Publisert', felter: [
       { l: 'Kicker', v: 'Kursene våre' },
       { l: 'Overskrift', v: 'Hva du lærer, kurs for kurs' },
-      { l: 'Ingress', v: 'Her står hvert kurs med sin egen beskrivelse: hva du gjør, hvor lenge det varer, hva som er inkludert og hvem det passer for. Datoene og prisene finner du under Kurs.', lang: true } ] },
+      { l: 'Ingress', v: 'Her står hvert kurs med sin egen beskrivelse: hva du gjør, hvor lenge det varer, hva som er inkludert og hvem det passer for. Datoene finner du under Kurs.', lang: true } ] },
     { navn: 'Kursene', type: 'Bilde og tekst hentes fra hvert kurs under Kurs og medlemskap', synlig: 'Publisert', felter: [] },
   ],
   'Medlemskap': [
     { navn: 'Topp', type: 'Overskrift og ingress', synlig: 'Publisert', felter: [
       { l: 'Kicker', v: 'Medlemskap' },
       { l: 'Overskrift', v: 'Verkstedet er ditt, døgnet rundt' },
-      { l: 'Ingress', v: 'Abonnementet løper fra måned til måned og kan sies opp når du vil. Du må ha tatt et kurs hos oss, eller ha erfaring fra før.', lang: true } ] },
+      { l: 'Ingress', v: 'Prøv Lissom har ingen binding. Mini 15 og Basis 30 har to måneders binding, deretter én måneds oppsigelse. Årsmedlemskap har tolv måneders binding. Du må ha tatt et kurs hos oss, eller ha erfaring fra før.', lang: true } ] },
     { navn: 'Hvorfor bli medlem', type: 'Tekst og lister', synlig: 'Publisert', felter: [
       { l: 'Kicker', v: 'Fellesskapet' },
       { l: 'Overskrift', v: 'Hvorfor bli medlem?' },
@@ -31880,7 +31880,7 @@ const SIDEINNHOLD = {
       { l: 'Kort 1 tekst', v: 'To timer ved dreieskiven eller med plateteknikk, med veiledning hele veien. Vi dekker langbordet, dere kan ta med mat og drikke.', lang: true },
       { l: 'Kort 1 pris', v: 'Fra kr. 990 per person' },
       { l: 'Kort 2 tittel', v: 'Utdrikningslag' },
-      { l: 'Kort 2 tekst', v: 'Hovedpersonen på skiva, resten heier og lager hver sin ting. Vi glaserer og brenner alt — klart til henting etter tre uker.', lang: true },
+      { l: 'Kort 2 tekst', v: 'Hovedpersonen på skiva, resten heier og lager hver sin ting. Vi glaserer og brenner alt — klart til henting etter noen uker.', lang: true },
       { l: 'Kort 2 pris', v: 'Fra kr. 990 per person' },
       { l: 'Kort 3 tittel', v: 'Bursdag og jubileum' },
       { l: 'Kort 3 tekst', v: 'Paint on Pots eller enkel håndbygging for store og små. Passer fra 6 år. Dere velger selv hvor lenge dere vil holde på.', lang: true },
@@ -31924,7 +31924,7 @@ const SIDEINNHOLD = {
       { l: 'Spørsmål 1', v: 'Må jeg kunne noe om keramikk fra før?' },
       { l: 'Svar 1', v: 'Nei. Kursene starter fra bunnen, og vi veileder deg gjennom hele prosessen.', lang: true },
       { l: 'Spørsmål 2', v: 'Hvor lang tid tar det før keramikken er ferdig?' },
-      { l: 'Svar 2', v: 'Etter kurset må arbeidene tørke, brennes, glaseres og brennes på nytt. Det tar tre uker før keramikken er klar til henting. Vi sender deg beskjed så snart arbeidene dine er ferdige — og du finner den på Min side og på lissom.no/ferdigbrent.', lang: true },
+      { l: 'Svar 2', v: 'Etter kurset må arbeidene tørke, brennes, glaseres og brennes på nytt. Det tar noen uker før keramikken er klar til henting. Vi sender deg beskjed så snart arbeidene dine er ferdige — og du finner den på Min side og på lissom.no/ferdigbrent.', lang: true },
       { l: 'Spørsmål 3', v: 'Hvor lenge oppbevarer dere ferdige arbeider?' },
       { l: 'Svar 3', v: 'Vi oppbevarer ferdige arbeider i tre uker etter at du har fått beskjed om at de er klare. Trenger du lengre tid, ta kontakt.', lang: true },
       { l: 'Spørsmål 4', v: 'Kan jeg bli medlem uten å ha tatt kurs hos dere?' },
@@ -32390,9 +32390,9 @@ class Component extends DCLogic {
 
   kursKort() {
     this._kursListe = this.medUndertemaer([
-        { level: 'Nybegynner', title: 'Nybegynner dreiekurs', date: 'Starter 19. aug', duration: '2 økter, 2 dager', price: 'Fra kr. 2 800,-', status: '3 plasser igjen', image: 'uploads_shutterstock_2630283113.jpg', tema: 'Dreiing', om: 'To økter over to dager. Første kveld lærer du å sentrere og dreie, andre kveld dreier du videre og lærer å trimme foten. Vi glaserer og brenner arbeidene for deg.', punkter: ['Leire, verktøy, glasur og to brenninger er inkludert.', 'Arbeidene er klare til henting etter tre uker. Vi sender beskjed.', 'Passer fra 15 år. Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Onsdag 19. august', tid: '18:00 – 21:00, to økter', plasser: '3 av 8 plasser', valgt: true }, { dato: 'Onsdag 2. september', tid: '18:00 – 21:00, to økter', plasser: '6 av 8 plasser' }, { dato: 'Onsdag 16. september', tid: '18:00 – 21:00, to økter', plasser: 'Fullbooket', full: true }] },
+        { level: 'Nybegynner', title: 'Nybegynner dreiekurs', date: 'Starter 19. aug', duration: '2 økter, 2 dager', price: 'Fra kr. 2 800,-', status: '3 plasser igjen', image: 'uploads_shutterstock_2630283113.jpg', tema: 'Dreiing', om: 'To økter over to dager. Første kveld lærer du å sentrere og dreie, andre kveld dreier du videre og lærer å trimme foten. Vi glaserer og brenner arbeidene for deg.', punkter: ['Leire, verktøy, glasur og to brenninger er inkludert.', 'Arbeidene er klare til henting etter noen uker. Vi sender beskjed.', 'Passer fra 15 år. Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Onsdag 19. august', tid: '18:00 – 21:00, to økter', plasser: '3 av 8 plasser', valgt: true }, { dato: 'Onsdag 2. september', tid: '18:00 – 21:00, to økter', plasser: '6 av 8 plasser' }, { dato: 'Onsdag 16. september', tid: '18:00 – 21:00, to økter', plasser: 'Fullbooket', full: true }] },
         { level: 'Kurs', title: 'Kurs boller', date: 'man. 24. aug', duration: '17:00 – 20:00', price: 'Fra kr. 1 490,-', status: '3 plasser igjen', image: FOTO + 'handbygging.jpg', tema: 'Plateteknikk', om: 'En kveld med plateteknikk. Du kjevler ut leira, former boller i flere størrelser og lærer hvordan du får jevne kanter og rene sammenføyninger. Du velger glasur til slutt.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Du tar med deg to til tre boller hjem.', 'Passer for nybegynnere.'], datoer: [{ dato: 'Mandag 24. august', tid: '17:00 – 20:00', plasser: '3 plasser', valgt: true }, { dato: 'Mandag 7. september', tid: '17:00 – 20:00', plasser: '8 plasser' }] },
-        { level: 'Kurs', title: 'Store fat kurs', date: 'tir. 8. sep', duration: '10:00 – 13:00', price: 'Fra kr. 1 490,-', status: '2 plasser igjen', image: 'uploads_shutterstock_2830576133.jpg', tema: 'Plateteknikk', om: 'Formiddagskurs i plateteknikk der du bygger store fat over form. Vi jobber med utkjevling, kanter og dekor med stempler.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Fatene er klare til henting etter tre uker.', 'Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Tirsdag 8. september', tid: '10:00 – 13:00', plasser: '2 plasser', valgt: true }, { dato: 'Tirsdag 8. september', tid: '10:00 – 13:00', plasser: '6 plasser' }] },
+        { level: 'Kurs', title: 'Store fat kurs', date: 'tir. 8. sep', duration: '10:00 – 13:00', price: 'Fra kr. 1 490,-', status: '2 plasser igjen', image: 'uploads_shutterstock_2830576133.jpg', tema: 'Plateteknikk', om: 'Formiddagskurs i plateteknikk der du bygger store fat over form. Vi jobber med utkjevling, kanter og dekor med stempler.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Fatene er klare til henting etter noen uker.', 'Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Tirsdag 8. september', tid: '10:00 – 13:00', plasser: '2 plasser', valgt: true }, { dato: 'Tirsdag 8. september', tid: '10:00 – 13:00', plasser: '6 plasser' }] },
         { level: 'Event · For dere to', title: 'Date Night', date: 'fre. 28. aug', duration: '18:00 – 21:00', price: 'Fra kr. 1 190,-', status: 'Fullbooket', image: 'uploads_655787162_26415535508077928_8440401554777300898_n.jpg', tema: 'Events', om: 'En kveld ved dreieskiva for to. Dere får hver deres skive, veiledning underveis, og noe å drikke.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Seks par per kveld.', 'Ta med det dere vil drikke, vi har glass.', 'Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Fredag 28. august', tid: '18:00 – 21:00', plasser: 'Fullbooket', full: true, valgt: true }] },
         { level: 'Event · Den enkleste', title: 'Paint on Pots', date: 'Flere datoer', duration: 'Ca. 1,5 timer', price: 'Fra kr. 690,-', status: '7 plasser igjen', image: 'uploads_foto-paintonpots.jpg', tema: 'Events', temaer: ['Paint on pots'], om: 'Du velger en ferdig brent gjenstand og maler den slik du vil. Vi glaserer og brenner etterpå. Passer for barn og voksne. Prisen gjelder én gjenstand per person.', punkter: ['Gjenstand, farger og brenning er inkludert.', 'Tar cirka halvannen time.', 'Klar til henting etter tre uker.', 'Barn fra 6 år, med voksen.'], datoer: [{ dato: 'Søndag 23. august', tid: '12:00 – 14:00', plasser: '7 plasser', valgt: true }, { dato: 'Søndag 6. september', tid: '12:00 – 14:00', plasser: '10 plasser' }] },
     ]);
@@ -61218,7 +61218,8 @@ class Component extends DCLogic {
         'Ingen erfaring nødvendig — vi viser deg alt underveis.',
         'Leire, materialer, glasering og brenning er inkludert.',
         'Passer venninnekvelder, utdrikningslag, bedrifter og par.',
-        'Arbeidene brennes og er klare til henting etter tre uker.',
+        // Paint on Pots beholder «tre uker» (eieren, 13. oktober 2026).
+        'Arbeidene brennes og er klare til henting etter ' + (/paint on pots/i.test(k.title || '') ? 'tre uker' : 'noen uker') + '.',
       ] : [
         'Leire, verktøy, glasur og brenning er inkludert.',
         'Ingen forkunnskaper nødvendig.',
@@ -67549,7 +67550,7 @@ class Component extends DCLogic {
 
           kFerdigTid: st.kFerdigTid ?? '',
           settKFerdigTid: e => this.setState({ kFerdigTid: e.target.value }),
-          kFerdigTidMal: kort(mal.ferdigTid || 'Den er klar til henting etter tre uker. Du får beskjed når den er klar. Du kan også se selv når din keramikk er klar på lissom.no/ferdigbrent, eller ved å logge inn på Min side.', 160),
+          kFerdigTidMal: kort(mal.ferdigTid || 'Den er klar til henting etter noen uker. Du får beskjed når den er klar. Du kan også se selv når din keramikk er klar på lissom.no/ferdigbrent, eller ved å logge inn på Min side.', 160),
 
           // «Godt aa vite» har ikke lenger felt — se seksjon 08. Verdien
           // ligger igjen i state og gaar med i lagringa, saa teksten som
@@ -67608,7 +67609,7 @@ class Component extends DCLogic {
         const EKSEMPEL = {
           punkter: 'Leire, glasur og brenning er inkludert.\nIngen forkunnskaper nødvendig.',
           praktisk: 'F.eks. Møt opp ti minutter før. Bruk klær som tåler leire. Parkering bak bygget.',
-          ferdigTid: 'Den er klar til henting etter tre uker. Du får beskjed når den er klar. Du kan også se selv når din keramikk er klar på lissom.no/ferdigbrent, eller ved å logge inn på Min side.',
+          ferdigTid: 'Den er klar til henting etter noen uker. Du får beskjed når den er klar. Du kan også se selv når din keramikk er klar på lissom.no/ferdigbrent, eller ved å logge inn på Min side.',
         };
         const lag = (felt, sti) => {
           const naa = String(this.state[sti] || '').trim();
@@ -69765,6 +69766,9 @@ class Component extends DCLogic {
       // staar paa dem.
       abonnementer: this.planer().map(pl => abo(Object.assign({}, pl, {
         mork: !!pl.fremhevet,
+        // Maanedsprisen med «/ mnd» paa kortet og under «Alt som er
+        // inkludert». Prøv Lissom betales én gang (eieren, 13. oktober 2026).
+        prisVist: pl.engangs ? pl.pris : pl.pris + ' / mnd',
         merke: pl.merke || (pl.engangs ? 'Prøveperiode' : ''),
       }))),
       steg: [
@@ -70973,7 +70977,7 @@ class Component extends DCLogic {
         const hent = (l, fb) => il['Bedrift og event/' + seksjon + '/' + l] ?? fb;
         return [
           { navn: hent('Kort 1 tittel', 'Bedriftsevent og teambuilding'), tekst: hent('Kort 1 tekst', 'To timer ved dreieskiven eller med plateteknikk, med veiledning hele veien. Vi dekker langbordet, dere kan ta med mat og drikke.'), pris: hent('Kort 1 pris', 'Fra kr. 990 per person'), bilde: 'uploads_foto-teambuilding.jpg' },
-          { navn: hent('Kort 2 tittel', 'Utdrikningslag'), tekst: hent('Kort 2 tekst', 'Hovedpersonen på skiva, resten heier og lager hver sin ting. Vi glaserer og brenner alt — klart til henting etter tre uker.'), pris: hent('Kort 2 pris', 'Fra kr. 990 per person'), bilde: 'uploads_foto-utdrikningslag.jpg' },
+          { navn: hent('Kort 2 tittel', 'Utdrikningslag'), tekst: hent('Kort 2 tekst', 'Hovedpersonen på skiva, resten heier og lager hver sin ting. Vi glaserer og brenner alt — klart til henting etter noen uker.'), pris: hent('Kort 2 pris', 'Fra kr. 990 per person'), bilde: 'uploads_foto-utdrikningslag.jpg' },
           { navn: hent('Kort 3 tittel', 'Bursdag og jubileum'), tekst: hent('Kort 3 tekst', 'Paint on Pots eller enkel håndbygging for store og små. Passer fra 6 år. Dere velger selv hvor lenge dere vil holde på.'), pris: hent('Kort 3 pris', 'Fra kr. 990 per person'), bilde: 'uploads_barn2.jpg' },
         ].map(t => {
           // Filnavnene her begynner alt med «uploads_». Regelen la paa
@@ -71269,7 +71273,7 @@ class Component extends DCLogic {
         const hent = (l, fallback) => il['Spørsmål og svar/' + seksjon + '/' + l] ?? fallback;
         return [
         { q: 'Må jeg kunne noe om keramikk fra før?', a: 'Nei. Kursene starter fra bunnen, og vi veileder deg gjennom hele prosessen.' },
-        { q: 'Hvor lang tid tar det før keramikken er ferdig?', a: 'Etter kurset må arbeidene tørke, brennes, glaseres og brennes på nytt. Det tar tre uker før keramikken er klar til henting. Vi sender deg beskjed så snart arbeidene dine er ferdige — og du finner den på Min side og på lissom.no/ferdigbrent.' },
+        { q: 'Hvor lang tid tar det før keramikken er ferdig?', a: 'Etter kurset må arbeidene tørke, brennes, glaseres og brennes på nytt. Det tar noen uker før keramikken er klar til henting. Vi sender deg beskjed så snart arbeidene dine er ferdige — og du finner den på Min side og på lissom.no/ferdigbrent.' },
         { q: 'Hvor lenge oppbevarer dere ferdige arbeider?', a: 'Vi oppbevarer ferdige arbeider i tre uker etter at du har fått beskjed om at de er klare. Trenger du lengre tid, ta kontakt.' },
         { q: 'Kan jeg bli medlem uten å ha tatt kurs hos dere?', a: 'Du må ha tatt et kurs hos oss, eller ha erfaring fra før. Send oss en e-post til monica@lissom.no eller ring 94 13 46 01.' },
         { q: 'Kan jeg bruke verkstedet når jeg vil?', a: 'Som medlem har du tilgang døgnet rundt med egen dørkode. Du booker verkstedtid på Min side, så alle får plass ved skivene.' },
@@ -73927,8 +73931,8 @@ class Component extends DCLogic {
         return {
           bHarSamlinger: samlinger.length > 1,
           bSamlingerTittel: samlinger.length + ' samlinger',
-          bSamlingerLedd: 'Du melder deg på hele kurset. Alle '
-            + samlinger.length + ' samlingene er med i prisen.',
+          bSamlingerLedd: 'Du melder deg på hele kurset. '
+            + (samlinger.length === 2 ? 'Begge' : 'Alle ' + samlinger.length) + ' samlingene er med i prisen.',
           bSamlinger: samlinger.map(sa => ({
             merke: 'Samling ' + sa.nummer,
             naar: sa.naar,
@@ -74663,13 +74667,21 @@ class Component extends DCLogic {
           koIngress: this.innh('Kursene våre/0/Ingress'),
           koTomt: kort.length === 0,
           koKurs: kort.map(k => {
+            // Noeklene («handbygging», «nybegynner,litt») som ord. Eieren,
+            // 13. oktober 2026. Samme tabell som app/nett/sider/kursoversikt.php.
+            const visRaadata = (raa) => {
+              const ORD = { litt: 'litt erfaring', handbygging: 'håndbygging', begge: 'dreiing og håndbygging' };
+              const t = String(raa || '').split(',').map(x => x.trim()).filter(Boolean)
+                .map(x => ORD[x.toLowerCase()] || x).join(', ');
+              return t ? t.charAt(0).toUpperCase() + t.slice(1) : '';
+            };
             const fakta = [
               k.duration ? { navn: 'Varighet', verdi: k.duration } : null,
               k.varighet ? { navn: 'Tid', verdi: k.varighet } : null,
               k.price ? { navn: 'Pris', verdi: k.price } : null,
-              k.passerNivaa ? { navn: 'Nivå', verdi: k.passerNivaa } : null,
-              k.passerHvem ? { navn: 'Passer for', verdi: k.passerHvem } : null,
-              k.metode ? { navn: 'Teknikk', verdi: k.metode } : null,
+              visRaadata(k.passerNivaa) ? { navn: 'Nivå', verdi: visRaadata(k.passerNivaa) } : null,
+              visRaadata(k.passerHvem) ? { navn: 'Passer for', verdi: visRaadata(k.passerHvem) } : null,
+              visRaadata(k.metode) ? { navn: 'Teknikk', verdi: visRaadata(k.metode) } : null,
             ].filter(Boolean);
 
             return {

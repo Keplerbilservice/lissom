@@ -238,7 +238,7 @@ if ($fakta !== []) {
 $punkter = (array) ($kat['punkter'] ?? []);
 if ($punkter === []) {
     $punkter = $erEvent
-        ? ['Ingen erfaring nødvendig — vi viser deg alt underveis.', 'Leire, materialer, glasering og brenning er inkludert.', 'Passer venninnekvelder, utdrikningslag, bedrifter og par.', 'Arbeidene brennes og er klare til henting etter tre uker.']
+        ? ['Ingen erfaring nødvendig — vi viser deg alt underveis.', 'Leire, materialer, glasering og brenning er inkludert.', 'Passer venninnekvelder, utdrikningslag, bedrifter og par.', 'Arbeidene brennes og er klare til henting etter ' . ($erPop ? 'tre uker' : 'noen uker') . '.']
         : ['Leire, verktøy, glasur og brenning er inkludert.', 'Ingen forkunnskaper nødvendig.'];
 }
 $plasser = $plasserN;
@@ -343,7 +343,7 @@ $valgt = $datoer[0] ?? null;
 $samlinger = (array) ($valgt['samlinger'] ?? []);
 if (count($samlinger) > 1) {
     $h .= '<div style="margin-top: var(--space-8); max-width: 56ch;"><div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">' . count($samlinger) . ' samlinger</div>'
-        . '<p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Du melder deg på hele kurset. Alle ' . count($samlinger) . ' samlingene er med i prisen.</p>'
+        . '<p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Du melder deg på hele kurset. ' . (count($samlinger) === 2 ? 'Begge' : 'Alle ' . count($samlinger)) . ' samlingene er med i prisen.</p>'
         . '<div style="display: flex; flex-direction: column; gap: var(--space-3);">';
     foreach ($samlinger as $sa) {
         $h .= '<div style="background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5);"><div style="display: flex; align-items: baseline; gap: var(--space-3); flex-wrap: wrap;"><span style="font-size: 12px; font-weight: 700; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); white-space: nowrap;">Samling ' . $e((string) ($sa['nummer'] ?? '')) . '</span><span style="font-size: var(--text-sm); font-weight: 700; color: var(--text-heading);">' . $e((string) ($sa['naar'] ?? '')) . '</span></div>'

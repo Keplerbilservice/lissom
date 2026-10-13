@@ -6868,7 +6868,7 @@
         {
             "id": "ny-info-monica-verksted-tre-uker-20261008",
             "dato": "2026-10-08",
-            "hva": "Eieren, «ok, godkjent» 8. oktober 2026 (fremvisning YGp25LcNzhN9Xi3eUHSDTE): Monica holder kurset (boks med bilde og merkelapp «Med Monica»), verkstedboks på kurssidene og kort versjon på Paint on Pots, «Hva har jeg på meg?» med forkle og håndkle til låns, gratis parkering, barn fra 6 år på Paint on Pots, «Slik blir du medlem» og utstyr på medlemssiden, tre nye spørsmål, telefontid hver dag kl. 08–21 i bunnen og på kontaktsiden, og hentetid tre uker overalt.",
+            "hva": "Eieren, «ok, godkjent» 8. oktober 2026 (fremvisning YGp25LcNzhN9Xi3eUHSDTE): Monica holder kurset (boks med bilde og merkelapp «Med Monica»), verkstedboks på kurssidene og kort versjon på Paint on Pots, «Hva har jeg på meg?» med forkle og håndkle til låns, gratis parkering, barn fra 6 år på Paint on Pots, «Slik blir du medlem» og utstyr på medlemssiden, tre nye spørsmål, telefontid hver dag kl. 08–21 i bunnen og på kontaktsiden, og hentetid tre uker overalt. Hentetiden ble endret 13.10.2026 (tekstpakke-20261013): «noen uker» på alle kurs der man former leire; Paint on Pots beholder «tre uker».",
             "hvor": "lissom.no/kurs/*, /kurs/paint-on-pots, /medlemskap, /sporsmal-og-svar, /kontakt, bunnen",
             "kode": [
                 {
@@ -6903,7 +6903,8 @@
                 {
                     "fil": "app/lib/kursmal.php",
                     "finnes": [
-                        "klar til henting etter tre uker"
+                        "klar til henting etter noen uker",
+                        "HENTING_POP = 'Den er klar til henting etter tre uker."
                     ],
                     "ikke": [
                         "2–4 uker"
@@ -8243,7 +8244,7 @@
         {
             "id": "hentevarsel-tre-uker",
             "dato": "2026-10-11",
-            "hva": "Eieren 11.10.2026: «Klar til henting» kom for tidlig i admin-varselet; skal komme etter hentetiden nettsiden lover («samme som står på nettsiden» = tre uker). Saken «Klar til henting» i I dag › Må gjøres (api/admin/oversikt.php) vises først FIRE uker etter at kurset er ferdig (eieren 11.10.2026, presisert: «det er 4 uker etter kurset er ferdig»). Admin kan fortsatt melde når som helst fra «Ovn er tømt» og «Klar til henting» (ma-gjores-mer.php uendret).",
+            "hva": "Eieren 11.10.2026: «Klar til henting» kom for tidlig i admin-varselet; skal komme etter hentetiden nettsiden lover («samme som står på nettsiden» = tre uker). Saken «Klar til henting» i I dag › Må gjøres (api/admin/oversikt.php) vises først FIRE uker etter at kurset er ferdig (eieren 11.10.2026, presisert: «det er 4 uker etter kurset er ferdig»). Admin kan fortsatt melde når som helst fra «Ovn er tømt» og «Klar til henting» (ma-gjores-mer.php uendret). Fra 13.10.2026 lover nettsiden «noen uker» (tekstpakke-20261013); varselet etter fire uker står uendret.",
             "kode": [
                 {
                     "fil": "api/admin/oversikt.php",
@@ -9375,6 +9376,82 @@
                     "fil": "bin/cron.php",
                     "finnes": [
                         "Morgenmelding::kjor($si);"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "tekstpakke-20261013",
+            "dato": "2026-10-13",
+            "hva": "Eieren 13.10.2026 (lissom-tekstendringer.md, hvert punkt godkjent): hentetid «noen uker» på alle kurs der man former leire, Paint on Pots beholder «tre uker»; forsida «To ganger ved dreieskiva»; Medlemskap-ingressen om binding, «/ mnd» bak månedsprisene (ikke Prøv Lissom), «deg som deg» rettet; Kursene våre uten «og prisene», Nivå/Passer for/Teknikk vist som ord (Håndbygging, Nybegynner, litt erfaring); Date Night-punktet «Passer for par, eller to som vil ha en annerledes kveld sammen.»; dreiekurset: merket «Nybegynner», «gang» i stedet for «kveld», «Begge samlingene», og «Det du lager på dreieskiven, ferdig glasert og brent.» under Med hjem. Databasetekstene i migrasjon 277.",
+            "hvor": "lissom.no/, /medlemskap, /kursene-vare, /kurs/*, /bedrift, /sporsmal-og-svar, nyhetene",
+            "kode": [
+                {
+                    "fil": "app/lib/kursmal.php",
+                    "finnes": [
+                        "klar til henting etter noen uker",
+                        "HENTING_POP",
+                        "Det du lager på dreieskiven, ferdig glasert og brent.",
+                        "Passer for par, eller to som vil ha en annerledes kveld sammen."
+                    ]
+                },
+                {
+                    "fil": "app/nett/sider/forside.php",
+                    "finnes": [
+                        "To ganger ved dreieskiva:"
+                    ],
+                    "ikkeFinnes": [
+                        "To kvelder ved dreieskiva:"
+                    ]
+                },
+                {
+                    "fil": "app/nett/sider/kursside.php",
+                    "finnes": [
+                        "(count($samlinger) === 2 ? 'Begge'",
+                        "($erPop ? 'tre uker' : 'noen uker')"
+                    ]
+                },
+                {
+                    "fil": "app/nett/sider/medlemskap.php",
+                    "finnes": [
+                        "($engangs ? '' : ' / mnd')"
+                    ]
+                },
+                {
+                    "fil": "app/nett/sider/kursoversikt.php",
+                    "finnes": [
+                        "'handbygging' => 'håndbygging'",
+                        "$visRaadata((string) ($kat['metode'] ?? ''))"
+                    ]
+                },
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "Datoene finner du under Kurs.",
+                        "prisVist: pl.engangs ? pl.pris : pl.pris + ' / mnd'",
+                        "Det tar noen uker før keramikken",
+                        "handbygging: 'håndbygging'",
+                        "(samlinger.length === 2 ? 'Begge'"
+                    ],
+                    "ikkeFinnes": [
+                        "Datoene og prisene finner du under Kurs."
+                    ]
+                },
+                {
+                    "fil": "innhold-standard.json",
+                    "finnes": [
+                        "Prøv Lissom har ingen binding.",
+                        "klart til henting etter noen uker"
+                    ],
+                    "ikkeFinnes": [
+                        "Abonnementet løper fra måned til måned"
+                    ]
+                },
+                {
+                    "fil": "db/migrations/277_tekstpakke_oktober.sql",
+                    "finnes": [
+                        "SET nivaa_tekst = ''Nybegynner'' WHERE slug = ''dreiekurs''",
+                        "-- godkjent av eieren: 2026-10-13"
                     ]
                 }
             ]

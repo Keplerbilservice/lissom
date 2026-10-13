@@ -314,7 +314,8 @@ const aapentDagArk = () => document.querySelector('dialog[open] [data-dagark]')?
 function tegnKalender() {
   const el = K.el; if (!el) return;
   if (erMobil()) return tegnMobil();
-  const faner = `<div class="faner" style="margin:0"><button data-k="kal" data-kal="vis-uke" aria-pressed="${K.vis === 'uke'}">Uke</button><button data-k="kal" data-kal="vis-mnd" aria-pressed="${K.vis === 'mnd'}">Måned</button><button data-k="kal" data-kal="vis-aar" aria-pressed="${K.vis === 'aar'}">År</button></div>`;
+  // Verktøylinja, forslag A (eierens «Ok, bygg det» 12.10.2026): alt står til venstre. Uke · Måned · År er én segmentvelger.
+  const faner = `<div class="nkm-seg kal-seg" role="group" aria-label="Kalendervisning"><button type="button" class="nkm-pille" data-k="kal" data-kal="vis-uke" aria-pressed="${K.vis === 'uke'}">Uke</button><button type="button" class="nkm-pille" data-k="kal" data-kal="vis-mnd" aria-pressed="${K.vis === 'mnd'}">Måned</button><button type="button" class="nkm-pille" data-k="kal" data-kal="vis-aar" aria-pressed="${K.vis === 'aar'}">År</button></div>`;
   if (K.vis === 'aar') {
     el.innerHTML = `<div class="nk-kal">
     <div class="head"><div><div class="eyebrow">Årsplan ${AR.aar}</div><h1>Kalender</h1></div></div>
@@ -336,15 +337,17 @@ function tegnKalender() {
   const y = scrollY;
   K.sistVis = K.vis + tidsplan;
   el.innerHTML = `<div class="nk-kal"${K.minH ? ` style="min-height:${K.minH}px"` : ''}>
-  <div class="head"><div><div class="eyebrow kal-tittel">${uke ? `Uke ${ukenr(u)} · ${tilDato(u).getDate()}. ${MND[tilDato(u).getMonth()]} – ${tilDato(slutt).getDate()}. ${MND[tilDato(slutt).getMonth()]}` : `${MND[fm.getMonth()]} ${fm.getFullYear()}`}</div><h1>Kalender</h1></div><button class="knapp hoved bare-stor" data-k="serie">＋ Nytt kurs eller serie</button></div>
+  <div class="head kal-head"><h1>Kalender</h1><button class="knapp hoved bare-stor" data-k="serie">＋ Nytt kurs eller serie</button></div>
   ${K.feil ? `<p class="merke rod">${esc(K.feil)}</p>` : ''}
   <div class="kal-verktoy">
+    <div class="kal-bla"><button type="button" class="kal-pil" data-k="kal" data-kal="${uke ? 'uke-1' : 'mnd-1'}" aria-label="Forrige ${uke ? 'uke' : 'måned'}"><span aria-hidden="true">‹</span></button><span class="kal-tittel">${uke ? `<b>Uke ${ukenr(u)}</b> · ${tilDato(u).getDate()}. ${MND[tilDato(u).getMonth()]} – ${tilDato(slutt).getDate()}. ${MND[tilDato(slutt).getMonth()]}` : `<b>${STOR(MND[fm.getMonth()])} ${fm.getFullYear()}</b>`}</span><button type="button" class="kal-pil" data-k="kal" data-kal="${uke ? 'uke+1' : 'mnd+1'}" aria-label="Neste ${uke ? 'uke' : 'måned'}"><span aria-hidden="true">›</span></button></div>
+    <button type="button" class="nkm-pille" data-k="kal" data-kal="idag">I dag</button>
+    <span class="kal-skille" aria-hidden="true"></span>
     ${faner}
-    <div class="kal-nav"><button class="knapp" data-k="kal" data-kal="${uke ? 'uke-1' : 'mnd-1'}">Forrige ${uke ? 'uke' : 'måned'}</button><button class="knapp" data-k="kal" data-kal="idag">I dag</button><button class="knapp" data-k="kal" data-kal="${uke ? 'uke+1' : 'mnd+1'}">Neste ${uke ? 'uke' : 'måned'}</button></div>
   </div>
   ${uke ? `<div class="kal-verktoy">
-    <div class="kal-venstre">${velgDato(hend, {mnd: K.mnd, markert: d => mandag(d) === K.uke, k: 'tilDag', nav: 'miniNav'})}<button type="button" class="nkm-pille" data-k="velgFlere" aria-pressed="${K.velg}">${K.velg ? 'Avbryt' : 'Velg flere'}</button></div>
-    ${erBred() ? `<div class="nkm-seg kal-seg" role="group" aria-label="Ukevisning"><button type="button" class="nkm-pille" data-k="ukevis" data-v="liste" aria-pressed="${!tidsplan}">Liste</button><button type="button" class="nkm-pille" data-k="ukevis" data-v="tidsplan" aria-pressed="${tidsplan}">Tidsplan</button></div>` : ''}
+    ${erBred() ? `<div class="nkm-seg kal-seg" role="group" aria-label="Ukevisning"><button type="button" class="nkm-pille" data-k="ukevis" data-v="liste" aria-pressed="${!tidsplan}">Liste</button><button type="button" class="nkm-pille" data-k="ukevis" data-v="tidsplan" aria-pressed="${tidsplan}">Tidsplan</button></div><span class="kal-skille" aria-hidden="true"></span>` : ''}
+    ${velgDato(hend, {mnd: K.mnd, markert: d => mandag(d) === K.uke, k: 'tilDag', nav: 'miniNav'})}<button type="button" class="nkm-pille kal-stille" data-k="velgFlere" aria-pressed="${K.velg}">${K.velg ? 'Avbryt' : 'Velg flere'}</button>
   </div>` : ''}
   <p class="kal-sum">${esc(sum)}</p>
   <div class="kal-hoved">${hoved}</div>

@@ -9037,13 +9037,13 @@
                         "const dekket = () => { const [a, b] = periode(); return !!K.data && a >= K.fra && b <= K.til; };",
                         "if (scrollY !== y) scrollTo(scrollX, y);",
                         "const holdHoyde = () =>",
-                        "<div class=\"eyebrow kal-tittel\">"
+                        "<span class=\"kal-tittel\">"
                     ]
                 },
                 {
                     "fil": "ny-admin/kalender.css",
                     "finnes": [
-                        ".kal-tittel{font-variant-numeric:tabular-nums;min-width:21em}",
+                        ".kal-tittel{font-variant-numeric:tabular-nums;min-width:15.5em",
                         ".kal-venter{opacity:.55;pointer-events:none"
                     ]
                 },
@@ -9060,7 +9060,8 @@
                         "div:has(> [data-kal-uke]) { min-width: 12em; }"
                     ]
                 }
-            ]
+            ],
+            "endret": "12.10.2026: uketeksten står nå mellom pilene (verktøylinja A), fast bredde 15,5em."
         },
         {
             "id": "kurskort-dato-tid",
@@ -9249,6 +9250,36 @@
                     "sti": "/butikk",
                     "finnes": [
                         "color: var(--brown-400); margin-bottom: var(--space-3);"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "kalender-verktoylinje-a",
+            "dato": "2026-10-12",
+            "hva": "Eieren 12.10.2026 valgte forslag A («Ok, bygg det», visning Uxm3M1aHPQmMbXt9pdR2yQ): i Kalender i ny admin (PC og iPad) står alt til venstre. Linje 1: små runde piler ‹ › (aria-label «Forrige uke»/«Neste uke», trykkflate 44 px) rundt uketeksten med fast bredde, så «I dag» og Uke · Måned · År som én segmentvelger. Linje 2: Liste · Tidsplan, «Velg dato» og «Velg flere» (stille piller). «＋ Nytt kurs eller serie» står ved overskriften «Kalender». Ingenting står til høyre. Ingen ny tekst.",
+            "sitat": "datovelger-pilene på admin, kan de gjøres mer diskret, men i passende design og flyttes til venstre, det er rotete å ha ting på høyre siden også",
+            "hvor": "Kalender (ny admin)",
+            "kode": [
+                {
+                    "fil": "ny-admin/kalender.js",
+                    "finnes": [
+                        "<div class=\"head kal-head\"><h1>Kalender</h1><button class=\"knapp hoved bare-stor\" data-k=\"serie\">＋ Nytt kurs eller serie</button></div>",
+                        "class=\"kal-pil\" data-k=\"kal\" data-kal=\"${uke ? 'uke-1' : 'mnd-1'}\" aria-label=\"Forrige ${uke ? 'uke' : 'måned'}\"",
+                        "<div class=\"nkm-seg kal-seg\" role=\"group\" aria-label=\"Kalendervisning\">"
+                    ],
+                    "ikkeFinnes": [
+                        "<div class=\"kal-nav\">"
+                    ]
+                },
+                {
+                    "fil": "ny-admin/kalender.css",
+                    "finnes": [
+                        ".kal-verktoy{display:flex;flex-wrap:wrap;justify-content:flex-start;",
+                        ".kal-pil span{width:34px;height:34px;border-radius:50%;"
+                    ],
+                    "ikkeFinnes": [
+                        ".kal-verktoy{display:flex;flex-wrap:wrap;justify-content:space-between;"
                     ]
                 }
             ]

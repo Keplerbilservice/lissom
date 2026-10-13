@@ -53,7 +53,7 @@ textarea.felt{min-height:110px;resize:vertical}
 
 /* Kalender, PC og iPad. Runde 2 (eierens GO 11.10.2026): minikalenderen er flyttet til pillen «Velg dato», tallene står
    på én linje over uka, kortene har status på egen linje og navn som brytes på ord (ikke midt i ordet). */
-.kal-verktoy{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+.kal-verktoy{display:flex;flex-wrap:wrap;justify-content:flex-start;align-items:center;gap:10px 12px;margin-bottom:12px}
 .kal-nav,.kal-venstre{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .nk-kal .kal-seg{flex:0 0 auto}
 .nk-kal .kal-seg .nkm-pille{flex:0 0 auto;padding:0 16px}
@@ -61,7 +61,18 @@ textarea.felt{min-height:110px;resize:vertical}
 .kal-sum{margin:0 0 14px;font-weight:700;font-size:16px;line-height:1.35}
 .kal-hoved{min-width:0}
 /* Bla i uker (eieren 12.10.2026): ukenummer og datoer har fast bredde, og forrige innhold står dempet til neste uke er hentet. */
-.kal-tittel{font-variant-numeric:tabular-nums;min-width:21em}
+.kal-tittel{font-variant-numeric:tabular-nums;min-width:15.5em;text-align:center;white-space:nowrap;font-size:17px;color:var(--muted)}
+.kal-tittel b{color:var(--ink);font-weight:800}
+/* Verktøylinja, forslag A (eierens «Ok, bygg det» 12.10.2026): alt til venstre, små runde piler rundt uketeksten
+   (trykkflaten er 44 px), «＋ Nytt kurs eller serie» ved overskriften, «Velg dato» og «Velg flere» stille. */
+.nk-kal .kal-head{justify-content:flex-start;align-items:center;margin-bottom:18px}
+.kal-bla{display:inline-flex;align-items:center;gap:2px}
+.kal-pil{width:44px;height:44px;display:inline-grid;place-items:center;border:0;background:none;padding:0;color:var(--muted);font-size:24px;line-height:1}
+.kal-pil span{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--paper);display:grid;place-items:center;padding-bottom:3px}
+.kal-pil:hover span{border-color:#c6b1a0;color:var(--ink)}
+.kal-skille{width:1px;height:26px;background:var(--line)}
+.nk-kal:not(.nkm) .kal-velgdato>.nkm-pille,.nk-kal .kal-stille{background:none;border-color:transparent;color:var(--muted)}
+.nk-kal:not(.nkm) .kal-velgdato>.nkm-pille:hover,.nk-kal .kal-stille:hover{border-color:var(--line);color:var(--ink)}
 .kal-sum{font-variant-numeric:tabular-nums}
 .kal-venter{opacity:.55;pointer-events:none;transition:opacity .15s}
 .kal-velgdato{position:relative}

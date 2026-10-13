@@ -121,7 +121,7 @@ if ($oktIder !== []) {
     $rabattKol = DB::harKolonne('bookings', 'rabatt_prosent') ? 'b.rabatt_prosent' : '0';
     foreach (DB::alle(
         "SELECT b.id, b.course_session_id, b.member_id, b.status, b.antall,
-                b.belop_ore, {$rabattKol} AS rabatt_prosent,
+                b.belop_ore, b.betalt_maate, {$rabattKol} AS rabatt_prosent,
                 " . Booking::betaltSql('b') . " AS betalt_ore,
                 " . Booking::vippsPaaVeiSql('b') . " AS vipps_paa_vei,
                 b.created_at, {$allergi} AS merknad,
@@ -504,6 +504,11 @@ foreach ($okter as $o) {
             // brikka og teksten forst naar okta er aapnet — det er
             // helseopplysninger, og de skal ikke lyse paa en skjerm som staar
             // oppe i verkstedet.
+            // «Møtte likevel» i deltakerarket (eieren 13. oktober 2026):
+            // statusen den gaar tilbake til, samme regel som Start dagens kurs.
+            'forStatus' => (string) $b['status'] === 'ikke_mott'
+                ? Booking::statusForIkkeMott((int) $b['id'], (int) $b['belop_ore'], (string) ($b['betalt_maate'] ?? ''))
+                : null,
             'merknad' => trim((string) ($b['merknad'] ?? '')),
             'ny'      => $erNy,
             // Navnet skal kunne klikkes, ogsaa for dem uten konto.

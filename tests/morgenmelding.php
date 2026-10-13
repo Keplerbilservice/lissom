@@ -27,19 +27,25 @@ function sjekk(string $navn, bool $v, string $mer = ''): void {
 echo "\n── Morgenmelding til Monica ─────────────────────────────────\n";
 
 // ── Teksten, slik eieren godkjente den ──────────────────────────────
+// Malene fra migrasjon 276, flettet slik Varsel::mal fletter dem.
+$tekst = static function (array $kurs, array $notater): string {
+    [$navn, $felter] = Morgenmelding::mal($kurs, $notater);
+    $mal = (string) (DB::verdi('SELECT tekst FROM notification_templates WHERE navn = :n', ['n' => $navn]) ?? '');
+    return Varsel::flett($mal, $felter);
+};
 sjekk('ingenting i dag: kort og hyggelig',
-    Morgenmelding::tekst([], []) === "God morgen, Monica! ☀️\nIngen kurs og ingenting i kalenderen i dag. Nyt dagen! 🤍");
+    $tekst([], []) === "God morgen, Monica! ☀️\nIngen kurs og ingenting i kalenderen i dag. Nyt dagen! 🤍", $tekst([], []));
 
-$full = Morgenmelding::tekst(
+$full = $tekst(
     [['tid' => '10:00', 'tittel' => 'Dreiekurs', 'antall' => 6], ['tid' => '18:00', 'tittel' => 'Date Night', 'antall' => 8]],
     [['tid' => '09:00', 'tekst' => 'Bestille leire']]
 );
 sjekk('kurs og kalender: hele meldingen', $full === "God morgen, Monica! ☀️\nHer er dagen din:\n\nKurs i dag:\n• 10:00 Dreiekurs – 6 påmeldte\n• 18:00 Date Night – 8 påmeldte\n\nI kalenderen:\n• 09:00 Bestille leire\n\nHa en nydelig dag i verkstedet! 🤍", $full);
 
-$bareKurs = Morgenmelding::tekst([['tid' => '10:00', 'tittel' => 'Dreiekurs', 'antall' => 1]], []);
+$bareKurs = $tekst([['tid' => '10:00', 'tittel' => 'Dreiekurs', 'antall' => 1]], []);
 sjekk('uten notater: «I kalenderen» staar ikke', !str_contains($bareKurs, 'I kalenderen'));
 sjekk('én deltaker: «1 påmeldt»', str_contains($bareKurs, '– 1 påmeldt'));
-$bareNotat = Morgenmelding::tekst([], [['tid' => '09:00', 'tekst' => 'Ovnen til service']]);
+$bareNotat = $tekst([], [['tid' => '09:00', 'tekst' => 'Ovnen til service']]);
 sjekk('uten kurs: «Kurs i dag» staar ikke', !str_contains($bareNotat, 'Kurs i dag'));
 
 // ── Dagen hentes fra basen ──────────────────────────────────────────

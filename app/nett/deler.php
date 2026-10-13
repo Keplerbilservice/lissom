@@ -438,44 +438,9 @@ final class Deler
         $adr1 = $komma === false ? $hel : trim(substr($hel, 0, $komma));
         $adr2 = $komma === false ? '' : trim(substr($hel, $komma + 1));
 
-        // Aapningstidene — som ftApning* i nettsida.
-        $apning1 = $innh('Footer/2/Linje 1');
-        $apning2 = $innh('Footer/2/Linje 2');
-        $apningNeste = '';
-        try {
-            $dager = Apent::dager(Apent::DAGER_FRAM)['dager'] ?? [];
-            $bemannet = Stempling::verkstedetBemannet();
-            $idag = null;
-            foreach ($dager as $d) {
-                if (!empty($d['idag'])) { $idag = $d; break; }
-            }
-            if ($bemannet['apen'] ?? false) {
-                if ($idag !== null) {
-                    $idag['stengt'] = false;
-                    $idag['tid'] = 'Åpent nå';
-                } else {
-                    $idag = ['stengt' => false, 'tid' => 'Åpent nå', 'merknad' => ''];
-                }
-            }
-            if ($idag !== null) {
-                $apning1 = !empty($idag['stengt'])
-                    ? 'I dag: ' . ((string) ($idag['merknad'] ?? '') !== '' ? $idag['merknad'] : 'stengt')
-                    : 'I dag: ' . (string) ($idag['tid'] ?? '') . ((string) ($idag['merknad'] ?? '') !== '' ? ' · ' . $idag['merknad'] : '');
-            } else {
-                $apning1 = 'Ingen planlagte kurs i dag — verkstedet er åpent etter avtale';
-            }
-            if ($bemannet['apen'] ?? false) {
-                $apning2 = 'Det er noen i verkstedet nå — bare kom innom';
-            }
-            foreach ($dager as $d) {
-                if (empty($d['idag']) && empty($d['stengt'])) {
-                    $apningNeste = 'Neste: ' . mb_strtolower((string) $d['dag']) . ' ' . $d['naar'] . ', ' . $d['tid'];
-                    break;
-                }
-            }
-        } catch (Throwable) {
-            // Da staar det eieren har skrevet under Innhold.
-        }
+        // Aapningstidene: én fast linje, «Torsdag 10–20». Eieren 13.10.2026:
+        // «fjern slik åpningstid er laget og skriv torsdag 10-20». Ingen
+        // orddeling (hardt mellomrom og bindestrek, hyphens: none).
 
         $lagret = Nett::lagret();
         $hent = static function (string $felt, string $reserve) use ($lagret): string {
@@ -515,9 +480,7 @@ final class Deler
             . ($innh('Footer/1/Parkering') !== '' ? '<span style="padding: 3px 0; font-size: var(--text-sm); color: var(--clay-300);">' . $e($innh('Footer/1/Parkering')) . '</span>' : '')
             . '<div style="margin-top: 10px; font-size: var(--text-sm); line-height: 1.45; color: var(--clay-300); display: flex; flex-direction: column;">'
             . '<span style="font: var(--type-label); font-size: 11px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-yellow); margin-bottom: 2px;">' . $e($innh('Footer/2/Overskrift')) . '</span>'
-            . '<span>' . $e($apning1) . '</span>'
-            . ($apningNeste !== '' ? '<span>' . $e($apningNeste) . '</span>' : '')
-            . '<span>' . $e($apning2) . '</span>'
+            . '<span style="hyphens: none; -webkit-hyphens: none; white-space: nowrap;">Torsdag&nbsp;10–20</span>'
             . '</div></div></div>';
         // Lissom.
         $h .= '<div><div style="font: var(--type-label); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-yellow); margin-bottom: var(--space-5);">Lissom</div>'

@@ -9283,6 +9283,46 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "footer-apningstid-torsdag",
+            "dato": "2026-10-13",
+            "hva": "Eieren 13.10.2026: «footer på mobil – orddeling på åpningstider, fjern slik åpningstid er laget og skriv torsdag 10-20». Åpningstidene i footeren er én fast linje «Torsdag 10–20» under overskriften, uten orddeling (hardt mellomrom, hyphens: none, nowrap). De utregnede linjene (I dag / Neste / noen i verkstedet) er fjernet fra footeren på alle sider.",
+            "hvor": "Footeren på alle sider (server og app)",
+            "kode": [
+                {
+                    "fil": "app/nett/deler.php",
+                    "finnes": [
+                        "<span style=\"hyphens: none; -webkit-hyphens: none; white-space: nowrap;\">Torsdag&nbsp;10–20</span>"
+                    ],
+                    "ikkeFinnes": [
+                        "$apningNeste = "
+                    ]
+                },
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "<span style=\"hyphens: none; -webkit-hyphens: none; white-space: nowrap;\">Torsdag&nbsp;10–20</span>"
+                    ],
+                    "ikkeFinnes": [
+                        "<span>{{ ftApning1 }}</span>"
+                    ]
+                }
+            ],
+            "live": [
+                {
+                    "sti": "/",
+                    "finnes": [
+                        "Torsdag&nbsp;10–20"
+                    ]
+                },
+                {
+                    "sti": "/kurs",
+                    "finnes": [
+                        "Torsdag&nbsp;10–20"
+                    ]
+                }
+            ]
         }
     ]
 }

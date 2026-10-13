@@ -9413,6 +9413,33 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "pop-uten-kursbevis",
+            "dato": "2026-10-13",
+            "hva": "Eieren 13.10.2026: «man skal ikke få kursbevis for paint on pots». Valgte «Bare Paint on Pots» (ikke alle events). Booking::utenKursbevis (slug paint-on-pots eller navnet Paint on Pots) stopper kursbeviset i takk for sist-e-posten, SMS-en, utsendingen fra admin, Min side og kursbevissida. Takk for sist går fortsatt, uten kursbevis-avsnittet.",
+            "hvor": "app/lib/booking.php, api/mine-plasser.php, api/kursbevis.php",
+            "kode": [
+                {
+                    "fil": "app/lib/booking.php",
+                    "finnes": [
+                        "public static function utenKursbevis(int $kursId): bool",
+                        "slug = 'paint-on-pots' OR tittel LIKE 'Paint on Pots%'"
+                    ]
+                },
+                {
+                    "fil": "api/mine-plasser.php",
+                    "finnes": [
+                        "Booking::utenKursbevis((int) $b['course_id'])"
+                    ]
+                },
+                {
+                    "fil": "api/kursbevis.php",
+                    "finnes": [
+                        "|| Booking::utenKursbevis((int) $b['course_id'])"
+                    ]
+                }
+            ]
         }
     ]
 }

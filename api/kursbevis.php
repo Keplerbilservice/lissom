@@ -67,7 +67,7 @@ $holderJoin = $holderFelt === '' ? '' :
      LEFT JOIN kursholdere khk ON khk.id = c.kursholder_id';
 
 $b = DB::en(
-    "SELECT b.id, b.member_id, b.gjest_navn, b.status,
+    "SELECT b.id, b.member_id, b.gjest_navn, b.status, b.course_id,
             {$bevisFelt}
             c.tittel, c.type, c.instruktor, c.instruktor_signatur,
             {$holderFelt}
@@ -93,7 +93,9 @@ if ($medKode) {
     // 404 og ikke 403: vi bekrefter ikke at en fremmed pamelding finnes.
     Svar::feil('Fant ikke påmeldingen.', 404);
 }
-if (!empty($b['bevis_sperret'])) {
+// Paint on Pots gir ikke kursbevis (eieren, 13. oktober 2026): samme svar
+// som et trukket bevis, ogsaa for lenker sendt ut foer dette.
+if (!empty($b['bevis_sperret']) || Booking::utenKursbevis((int) $b['course_id'])) {
     // Verkstedet har trukket beviset — noen gikk fra kurset for tidlig, eller
     // det ble utstedt ved en feil. Samme beskjed til alle: at det ikke finnes.
     Svar::feil('Det er ikke utstedt kursbevis for denne påmeldingen.', 404);

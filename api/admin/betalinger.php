@@ -47,10 +47,24 @@ if (Foresporsel::metode() === 'GET') {
     // Radene slettes ikke. De staar i basen som for; de vises bare ikke
     // som penger. Dagsoppgjoret og omsetningen har skilt likedan hele
     // tida — se api/admin/dagsoppgjor.php og api/admin/okonomi.php.
+    // Avmeldingsknappen aapner historikken for akkurat denne paameldingen.
+    // Ta med begge koblingene: eldre betalinger via bookings.payment_id,
+    // og delbetalinger/manuelle rader via payments.booking_id.
+    $bookingId = max(0, (int) ($_GET['bookingId'] ?? 0));
+    $harBookingId = DB::harKolonne('payments', 'booking_id');
+    $bookingFelt = $harBookingId
+        ? 'COALESCE(p.booking_id, (SELECT b.id FROM bookings b WHERE b.payment_id = p.id LIMIT 1))'
+        : '(SELECT b.id FROM bookings b WHERE b.payment_id = p.id LIMIT 1)';
+    $bookingFilter = $bookingId > 0
+        ? ' AND (' . ($harBookingId ? 'p.booking_id = :bookingA OR ' : '')
+            . 'EXISTS (SELECT 1 FROM bookings bf WHERE bf.id = :bookingB AND bf.payment_id = p.id))'
+        : '';
+    $bookingParam = $bookingId > 0 ? ['bookingB' => $bookingId] : [];
+    if ($bookingId > 0 && $harBookingId) { $bookingParam['bookingA'] = $bookingId; }
     $betalinger = DB::alle(
         "SELECT p.id, p.vipps_reference, p.formal, p.type, p.belop_ore, p.refundert_ore,
                 p.status, p.created_at, m.navn AS medlem, {$maateFelt},
-                (SELECT b.id FROM bookings b WHERE b.payment_id = p.id LIMIT 1) AS booking_id,
+                {$bookingFelt} AS booking_id,
                 (SELECT o.id FROM orders o WHERE o.payment_id = p.id LIMIT 1) AS ordre_id,
                 -- Hva betalinga gjaldt, ikke bare naar den kom.
                 --
@@ -68,9 +82,10 @@ if (Foresporsel::metode() === 'GET') {
                   WHERE b.payment_id = p.id LIMIT 1) AS kurs_start
            FROM payments p
       LEFT JOIN members m ON m.id = p.member_id
-         WHERE p.status IN ('betalt', 'delvis_refundert', 'refundert')
+         WHERE p.status IN ('betalt', 'delvis_refundert', 'refundert') {$bookingFilter}
           ORDER BY p.id DESC
-          LIMIT 1000"
+          LIMIT 1000",
+        $bookingParam
     );
 
     // ── Hvordan kom pengene inn? ────────────────────────────────────────

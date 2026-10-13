@@ -22,7 +22,7 @@
 set -uo pipefail
 cd "$(dirname "$0")/.."
 
-GRUPPER=(statisk backend betaling diverse flyter1 flyter2 flyter3 flyter4 minside nyadmin)
+GRUPPER=(statisk backend betaling diverse flyter1 flyter2 flyter3 flyter4 minside nyadmin avmelding)
 if [ "${1:-}" = "--grupper" ]; then printf '%s\n' "${GRUPPER[@]}"; exit 0; fi
 
 # Nettleserflytene (tests/nettleser/flyter.mjs) deles etter navnets begynnelse
@@ -96,6 +96,9 @@ kjor() { # kjor "navn" kommando...
 }
 
 # --- Sjekkene av nettsida og admin (leser filene) --------------------------
+gruppe avmelding
+kjor "avmelding før kursdato" bash tests/nettleser/kjor.sh admin-ny-avmeld
+
 gruppe statisk
 kjor "forsidehero" php tests/forside-hero.php
 for f in adminsjekk autolastsjekk innholdssjekk karusellsjekk knappesjekk \

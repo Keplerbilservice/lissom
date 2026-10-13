@@ -2450,8 +2450,8 @@ nav[data-nett-mobilmeny]:not([hidden]) { display: flex !important; }
 }
 .lx-hero-fellesskap .lx-hero-copy { width: 49%; }
 .lx-hero-fellesskap .lx-hero-eb { font-size: 13px !important; max-width: 440px; }
-.lx-hero-fellesskap .lx-hero-h1 { font-size: clamp(42px, 4.3vw, 64px) !important; }
-.lx-hero-fellesskap .lx-hero-h1 em { display: block; }
+.lx-hero-fellesskap .lx-hero-h1 { font-size: clamp(28px, 3.7vw, 58px) !important; white-space: nowrap; }
+.lx-hero-fellesskap .lx-hero-h1 em { display: inline; }
 .lx-hero-fellesskap .lx-hero-p { max-width: 465px; font-size: 21px !important; }
 .lx-hero-fellesskap .lx-hero-cta { zoom: 1 !important; gap: 12px !important; }
 .lx-hero-foto { position: absolute; inset: 100px 0 0 35%; overflow: hidden; }
@@ -2464,7 +2464,7 @@ nav[data-nett-mobilmeny]:not([hidden]) { display: flex !important; }
 @media (min-width: 761px) and (max-width: 1150px) {
   .lx-hero-fellesskap .lx-hero-pad { padding: 155px 32px 60px !important; }
   .lx-hero-fellesskap .lx-hero-copy { width: 54%; }
-  .lx-hero-fellesskap .lx-hero-h1 { font-size: 46px !important; }
+  .lx-hero-fellesskap .lx-hero-h1 { font-size: clamp(28px, 3.7vw, 42px) !important; }
   .lx-hero-fellesskap .lx-hero-p { font-size: 19px !important; }
   .lx-hero-foto { left: 30%; }
 }
@@ -2473,7 +2473,7 @@ nav[data-nett-mobilmeny]:not([hidden]) { display: flex !important; }
   .lx-hero-fellesskap .lx-hero-pad { padding: 130px 24px 12px !important; }
   .lx-hero-fellesskap .lx-hero-copy { width: 100%; }
   .lx-hero-fellesskap .lx-hero-eb { font-size: 11px !important; }
-  .lx-hero-fellesskap .lx-hero-h1 { font-size: clamp(36px, 10.8vw, 48px) !important; }
+  .lx-hero-fellesskap .lx-hero-h1 { font-size: clamp(36px, 10.8vw, 48px) !important; white-space: normal; }
   .lx-hero-fellesskap .lx-hero-p { font-size: 19px !important; }
   .lx-hero-foto { position: relative; inset: auto; width: 100%; height: 340px; flex: none; }
   .lx-hero-foto img { position: relative; width: 145%; max-width: none; left: -45%; object-position: 90% 44%; }

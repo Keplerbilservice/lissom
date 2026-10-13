@@ -3227,6 +3227,9 @@ final class Booking
         if (!DB::harKolonne('bookings', 'bevis_kode')) {
             return null;
         }
+        if (self::utenKursbevis((int) (DB::verdi('SELECT course_id FROM bookings WHERE id = :i', ['i' => $bookingId]) ?? 0))) {
+            return null;
+        }
         $b = DB::en(
             'SELECT b.id, b.status, b.bevis_kode, '
             . (DB::harKolonne('bookings', 'bevis_sperret') ? 'b.bevis_sperret, ' : '0 AS bevis_sperret, ')
@@ -3426,6 +3429,45 @@ final class Booking
      * ned, og det har sin egen rad med «gavekort_ore».
      */
     public const MAATER_UTEN_PENGER = ['Gavekort', 'Gratis', 'Ikke betalt', 'Betaler ved oppmøte'];
+
+    /**
+     * Kurs som aldri gir kursbevis.
+     *
+     * Eieren, 13. oktober 2026: «man skal ikke faa kursbevis for paint on
+     * pots» — og valgte «Bare Paint on Pots», ikke alle events. Kjent paa
+     * adressen (paint-on-pots, som kurssida) eller navnet. Gjelder lenken i
+     * «takk for sist», SMS-en, utsendingen fra admin, Min side og selve
+     * kursbevissida.
+     */
+    public static function utenKursbevis(int $kursId): bool
+    {
+        static $svar = [];
+        if ($kursId <= 0) {
+            return false;
+        }
+        return $svar[$kursId] ??= (int) DB::verdi(
+            "SELECT COUNT(*) FROM courses
+              WHERE id = :i AND (slug = 'paint-on-pots' OR tittel LIKE 'Paint on Pots%')",
+            ['i' => $kursId]
+        ) > 0;
+    }
+
+    /**
+     * Statusen en «Møtte ikke opp» gaar tilbake til naar den angres.
+     *
+     * Ingen egen kolonne: betalt naar plassen er gjort opp (betalt fullt,
+     * uten beloep, eller fort med en maate), ellers reservert. Brukt av
+     * «Start dagens kurs» (kursstart3.php) og deltakerarket i kalenderen
+     * (kalender.php, eieren 13. oktober 2026), saa begge angrer likt.
+     */
+    public static function statusForIkkeMott(int $bookingId, int $belopOre, string $maate): string
+    {
+        $bet = self::betalingerFor($bookingId);
+        $gjortOpp = $belopOre <= 0
+            || ($bet['rader'] !== [] && $bet['sum'] >= $belopOre)
+            || self::maateGirPenger($maate) || in_array($maate, ['Gratis', 'Gavekort'], true);
+        return $gjortOpp ? 'betalt' : 'reservert';
+    }
 
     /** Kom det penger inn paa denne maaten? Tom maate teller ikke. */
     public static function maateGirPenger(string $maate): bool

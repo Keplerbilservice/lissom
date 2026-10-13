@@ -9358,24 +9358,86 @@
         {
             "id": "morgenmelding-monica",
             "dato": "2026-10-13",
-            "hva": "Eieren 13.10.2026: SMS til Monica hver morgen kl. 07:30 norsk tid med dagens kurs og antall påmeldte, og notatene i adminkalenderen. Er det ikke noe, står det ikke noe; er det ingenting i det hele tatt, går den korte «Ingen kurs og ingenting i kalenderen i dag». Teksten ble godkjent ordrett. Nummeret er telefonfeltet på Monicas bruker (Brukere). Går i varsler-jobben, én gang i døgnet, ikke etter 10:00.",
-            "hvor": "app/lib/morgenmelding.php, bin/cron.php (varsler)",
+            "hva": "Eieren 13.10.2026: SMS til Monica hver morgen kl. 07:30 norsk tid med dagens kurs og antall påmeldte, og notatene i adminkalenderen. Er det ikke noe, står det ikke noe; er det ingenting i det hele tatt, går den korte «Ingen kurs og ingenting i kalenderen i dag». Teksten ble godkjent ordrett. Nummeret er telefonfeltet på Monicas bruker (Brukere). Går i varsler-jobben, én gang i døgnet, ikke etter 10:00. Teksten ligger i malene intern_morgenmelding og intern_morgenmelding_tom (migrasjon 276), så den kan endres og slås av under Tekst maler.",
+            "hvor": "app/lib/morgenmelding.php, db/migrations/276_morgenmelding_mal.sql, app/lib/maler.php, bin/cron.php (varsler)",
             "kode": [
+                {
+                    "fil": "db/migrations/276_morgenmelding_mal.sql",
+                    "finnes": [
+                        "Her er dagen din:",
+                        "{dagen}",
+                        "Ha en nydelig dag i verkstedet! 🤍",
+                        "Ingen kurs og ingenting i kalenderen i dag. Nyt dagen! 🤍"
+                    ]
+                },
                 {
                     "fil": "app/lib/morgenmelding.php",
                     "finnes": [
-                        "Her er dagen din:",
                         "Kurs i dag:",
                         "I kalenderen:",
-                        "Ha en nydelig dag i verkstedet! 🤍",
-                        "Ingen kurs og ingenting i kalenderen i dag. Nyt dagen! 🤍",
-                        "if ($klokka < '07:30' || $klokka >= '10:00') {"
+                        "if ($klokka < '07:30' || $klokka >= '10:00') {",
+                        "Varsel::mal($mal,"
                     ]
                 },
                 {
                     "fil": "bin/cron.php",
                     "finnes": [
                         "Morgenmelding::kjor($si);"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "ikke-mott-fra-kurset",
+            "dato": "2026-10-13",
+            "hva": "Eieren 13.10.2026: «når jeg går inn på kalender og trykker på kurset, så må jeg og kunne trykke ikke møtt». Deltakerarket på kurssiden i ny admin (kalender → kurset → deltakeren) har «Møtte ikke opp» (status ikke_mott, samme som «Ikke møtt» i Start dagens kurs) og «Møtte likevel» når den alt står som ikke møtt. «Møtte likevel» setter statusen tilbake etter samme regel som Start dagens kurs (Booking::statusForIkkeMott).",
+            "hvor": "ny-admin/kurs.js, api/admin/kalender.php, app/lib/booking.php, api/admin/kursstart3.php",
+            "kode": [
+                {
+                    "fil": "ny-admin/kurs.js",
+                    "finnes": [
+                        "data-k=\"dMott\" data-v=\"ikke_mott\">Møtte ikke opp</button>",
+                        ">Møtte likevel</button>",
+                        "${mottKnapp(d)}<button class=\"knapp rod\" data-k=\"dSperr\">"
+                    ]
+                },
+                {
+                    "fil": "api/admin/kalender.php",
+                    "finnes": [
+                        "Booking::statusForIkkeMott((int) $b['id']"
+                    ]
+                },
+                {
+                    "fil": "api/admin/kursstart3.php",
+                    "finnes": [
+                        "Booking::statusForIkkeMott($id,"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "pop-uten-kursbevis",
+            "dato": "2026-10-13",
+            "hva": "Eieren 13.10.2026: «man skal ikke få kursbevis for paint on pots». Valgte «Bare Paint on Pots» (ikke alle events). Booking::utenKursbevis (slug paint-on-pots eller navnet Paint on Pots) stopper kursbeviset i takk for sist-e-posten, SMS-en, utsendingen fra admin, Min side og kursbevissida. Takk for sist går fortsatt, uten kursbevis-avsnittet.",
+            "hvor": "app/lib/booking.php, api/mine-plasser.php, api/kursbevis.php",
+            "kode": [
+                {
+                    "fil": "app/lib/booking.php",
+                    "finnes": [
+                        "public static function utenKursbevis(int $kursId): bool",
+                        "slug = 'paint-on-pots' OR tittel LIKE 'Paint on Pots%'"
+                    ]
+                },
+                {
+                    "fil": "api/mine-plasser.php",
+                    "finnes": [
+                        "Booking::utenKursbevis((int) $b['course_id'])"
+                    ]
+                },
+                {
+                    "fil": "api/kursbevis.php",
+                    "finnes": [
+                        "|| Booking::utenKursbevis((int) $b['course_id'])"
                     ]
                 }
             ]

@@ -44,6 +44,10 @@ $kursbevis = static function (array $b, bool $betalt): ?string {
     if (!empty($b['bevis_sperret'])) {
         return null;
     }
+    // Paint on Pots gir ikke kursbevis (eieren, 13. oktober 2026).
+    if (Booking::utenKursbevis((int) $b['course_id'])) {
+        return null;
+    }
     // Interne samlinger er kurs, og de gir bevis som alle andre: et medlem
     // som har vaert paa glasurkveld har vaert paa kurs, selv om samlingen
     // ikke sto i den aapne lista.

@@ -56,6 +56,10 @@ async function side(hvem, bredde = 1358, hoyde = 900) {
   if (hvem) {
     await k.addCookies([{ name: 'lissom_sesjon', value: S[hvem].token, domain: VERT, path: '/', httpOnly: true }]);
   }
+  // Fra 12. oktober 2026 viser /admin den nye adminen (1e3c73ed). Disse flytene
+  // klikker i den gamle, som fortsatt er reserven: samme informasjonskapsel som
+  // /admin?gammel=1 setter. Den nye adminen har egne tester.
+  await k.addCookies([{ name: 'admin_gammel', value: '1', domain: VERT, path: '/', httpOnly: true }]);
   // Samtykkebanneret lagrer valget i nettleseren; uten valg dekker det bunnen.
   await k.addInitScript(() => { try { localStorage.setItem('lissom-samtykke', 'nei'); } catch (e) {} });
   const p = await k.newPage();

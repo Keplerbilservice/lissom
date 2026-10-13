@@ -137,12 +137,7 @@ foreach ($rader as $r) {
     // cron «anmeldelser»), aldri til ikke møtt.
     $forStatus = null;
     if ((string) $r['status'] === 'ikke_mott') {
-        $bet = Booking::betalingerFor($id);
-        $m = (string) ($r['betalt_maate'] ?? '');
-        $gjortOpp = (int) $r['belop_ore'] <= 0
-            || ($bet['rader'] !== [] && $bet['sum'] >= (int) $r['belop_ore'])
-            || Booking::maateGirPenger($m) || in_array($m, ['Gratis', 'Gavekort'], true);
-        $forStatus = $gjortOpp ? 'betalt' : 'reservert';
+        $forStatus = Booking::statusForIkkeMott($id, (int) $r['belop_ore'], (string) ($r['betalt_maate'] ?? ''));
     }
     $deltakere[] = [
         'bookingId'  => $id,

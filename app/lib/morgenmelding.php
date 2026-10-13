@@ -5,7 +5,9 @@
  * Eieren, 13. oktober 2026: «sms paaminnelse hver morgen kl 07:30 som sendes
  * til monica, her er det dagens kurs og paameldingen, og det hun evnt har lagt
  * inn i kalenderen, er det ikke noe, saa staar det ikke noe, lag den med en
- * soet og hyggelig tone». Teksten under ble vist ordrett og godkjent samme dag.
+ * soet og hyggelig tone». Teksten ble vist ordrett og godkjent samme dag, og
+ * staar i malene intern_morgenmelding og intern_morgenmelding_tom (migrasjon
+ * 276), saa den kan endres og slaas av under Tekst maler.
  *
  * Nummeret er telefonfeltet paa Monicas egen bruker (Brukere i admin) —
  * eieren valgte det framfor secrets.php. Ingen ny innstilling.
@@ -54,8 +56,11 @@ final class Morgenmelding
             $si('Morgenmelding: fant ikke Monicas nummer. Ingenting sendt.');
             return;
         }
-        $id = Varsel::sms($tlf, self::tekst($kurs, $notater), 'morgenmelding');
-        $si('Morgenmelding: ' . ($id > 0 ? 'lagt i kø' : 'ikke sendt (se feilloggen)') . '.');
+        // Malene staar under Tekst maler og kan endres og slaas av der
+        // (migrasjon 276). Er malen av, gaar ingenting.
+        [$mal, $felter] = self::mal($kurs, $notater);
+        $n = Varsel::mal($mal, ['navn' => 'Monica', 'telefon' => $tlf], $felter, 'morgenmelding');
+        $si('Morgenmelding: ' . ($n > 0 ? 'lagt i kø' : 'ikke sendt (malen er av, eller SMS er ikke satt opp)') . '.');
     }
 
     /** Telefonnummeret paa Monicas bruker, eller '' om det mangler. */
@@ -127,29 +132,35 @@ final class Morgenmelding
     }
 
     /**
-     * Selve meldingen. Godkjent av eieren 13. oktober 2026.
+     * Hvilken mal, og lista som flettes inn som {dagen}. Teksten rundt staar
+     * i malene (migrasjon 276), godkjent av eieren 13. oktober 2026. Er det
+     * ikke noe, staar det ikke noe: uten kurs faller «Kurs i dag» bort, uten
+     * notater «I kalenderen», og uten noen av dem gaar den korte malen.
      *
      * @param list<array{tid: string, tittel: string, antall: int}> $kurs
      * @param list<array{tid: string, tekst: string}> $notater
+     * @return array{0: string, 1: array<string, string>}
      */
-    public static function tekst(array $kurs, array $notater): string
+    public static function mal(array $kurs, array $notater): array
     {
         if ($kurs === [] && $notater === []) {
-            return "God morgen, Monica! ☀️\nIngen kurs og ingenting i kalenderen i dag. Nyt dagen! 🤍";
+            return ['intern_morgenmelding_tom', []];
         }
-        $t = "God morgen, Monica! ☀️\nHer er dagen din:";
+        $deler = [];
         if ($kurs !== []) {
-            $t .= "\n\nKurs i dag:";
+            $t = 'Kurs i dag:';
             foreach ($kurs as $k) {
                 $t .= "\n• {$k['tid']} {$k['tittel']} – {$k['antall']} " . ($k['antall'] === 1 ? 'påmeldt' : 'påmeldte');
             }
+            $deler[] = $t;
         }
         if ($notater !== []) {
-            $t .= "\n\nI kalenderen:";
+            $t = 'I kalenderen:';
             foreach ($notater as $n) {
                 $t .= "\n• {$n['tid']} {$n['tekst']}";
             }
+            $deler[] = $t;
         }
-        return $t . "\n\nHa en nydelig dag i verkstedet! 🤍";
+        return ['intern_morgenmelding', ['dagen' => implode("\n\n", $deler)]];
     }
 }

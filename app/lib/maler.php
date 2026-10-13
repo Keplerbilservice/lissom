@@ -448,6 +448,20 @@ final class Maler
                 'melding'  => 'Meldingen de skrev, eller tom',
             ],
         ],
+        // Migrasjon 276 (eieren 13. oktober 2026). Sendes av bin/cron.php
+        // varsler, app/lib/morgenmelding.php.
+        'intern_morgenmelding' => [
+            'tittel' => 'Til Monica: morgenmelding (SMS)',
+            'hvor'   => 'Sendes til Monica hver morgen kl. 07:30 når det er kurs eller notater i kalenderen den dagen.',
+            'felter' => [
+                'dagen' => 'Dagens kurs med antall påmeldte, og notatene i kalenderen',
+            ],
+        ],
+        'intern_morgenmelding_tom' => [
+            'tittel' => 'Til Monica: morgenmelding uten kurs (SMS)',
+            'hvor'   => 'Sendes til Monica kl. 07:30 når det verken er kurs eller notater i kalenderen den dagen.',
+            'felter' => [],
+        ],
         'intern_nytt_medlem_sms' => [
             'tittel' => 'Til deg: nytt medlem (SMS)',
             'hvor'   => 'Sendes som SMS til verkstedet når noen melder seg inn.',

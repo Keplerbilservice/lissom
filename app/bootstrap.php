@@ -104,6 +104,7 @@ spl_autoload_register(static function (string $klasse): void {
         'Vaktdata' => 'vaktdata.php',
         'Medlemsordre' => 'medlemsordre.php',
         'Messe' => 'messe.php',
+        'Morgenmelding' => 'morgenmelding.php',
         'Aktivitet' => 'aktivitet.php',
         'Oppfolging' => 'oppfolging.php',
         'Oppmote' => 'oppmote.php',

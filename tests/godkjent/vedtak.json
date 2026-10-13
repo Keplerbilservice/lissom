@@ -9353,6 +9353,31 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "morgenmelding-monica",
+            "dato": "2026-10-13",
+            "hva": "Eieren 13.10.2026: SMS til Monica hver morgen kl. 07:30 norsk tid med dagens kurs og antall påmeldte, og notatene i adminkalenderen. Er det ikke noe, står det ikke noe; er det ingenting i det hele tatt, går den korte «Ingen kurs og ingenting i kalenderen i dag». Teksten ble godkjent ordrett. Nummeret er telefonfeltet på Monicas bruker (Brukere). Går i varsler-jobben, én gang i døgnet, ikke etter 10:00.",
+            "hvor": "app/lib/morgenmelding.php, bin/cron.php (varsler)",
+            "kode": [
+                {
+                    "fil": "app/lib/morgenmelding.php",
+                    "finnes": [
+                        "Her er dagen din:",
+                        "Kurs i dag:",
+                        "I kalenderen:",
+                        "Ha en nydelig dag i verkstedet! 🤍",
+                        "Ingen kurs og ingenting i kalenderen i dag. Nyt dagen! 🤍",
+                        "if ($klokka < '07:30' || $klokka >= '10:00') {"
+                    ]
+                },
+                {
+                    "fil": "bin/cron.php",
+                    "finnes": [
+                        "Morgenmelding::kjor($si);"
+                    ]
+                }
+            ]
         }
     ]
 }

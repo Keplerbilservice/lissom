@@ -6592,14 +6592,17 @@ sjekk('ruta fra kalenderen viser ikke feltene som er fjernet',
 // den ferdig» fantes — og paa kurssida sto de rett under hverandre og sa
 // «2–3 uker» og «2-4 uker». Eieren, 31. august: «2-4 uker er riktig».
 $mal = les_testfil(__DIR__ . '/../app/lib/kursmal.php');
+// Fra 13. oktober 2026 er det to: HENTING («noen uker») og HENTING_POP
+// («tre uker», Paint on Pots). Begge staar bare i «Naar er den ferdig».
 sjekk('hentetiden staar bare i «Naar er den ferdig»',
-    substr_count($mal, 'self::HENTING') === 6
+    substr_count($mal, "'ferdigTid'       => self::HENTING,") === 5
+    && substr_count($mal, "'ferdigTid'       => self::HENTING_POP,") === 1
     && !preg_match("~'medHjem'[^\n]*(\n\s*\.[^\n]*)*self::HENTING~", $mal));
 // Alle malene maa ha den. Uten en standard staar feltet tomt, og da sier
 // kurssida ingenting om naar keramikken er klar. Det var seks; «Drop-in» gikk
 // ut da tilbudet ble revet ut 2. september.
 sjekk('… og alle fem malene har den, med reservemalen',
-    substr_count($mal, "'ferdigTid'       => self::HENTING,") === 6);
+    substr_count($mal, "'ferdigTid'       => self::HENTING,") + substr_count($mal, "'ferdigTid'       => self::HENTING_POP,") === 6);
 // Og eieren ba om at det skal staa hvor man ser det selv.
 sjekk('… og teksten sier hvor man kan se det selv',
     str_contains($mal, 'tre uker')
@@ -8497,10 +8500,13 @@ sjekk('butikken lover ikke aa holde av varen',
     !str_contains($sida, 'Nordre Løkkevei 15, 3120 Nøtterøy. Vi holder av varen')
     && str_contains($sida, "tekst: 'Nordre Løkkevei 15, 3120 Nøtterøy.' }"));
 
-// Brennetida er noe annet: tre uker (eieren, 8. oktober 2026).
-sjekk('brennetida er tre uker, og staar ett sted',
-    str_contains(les_testfil(dirname(__DIR__) . '/app/lib/kursmal.php'),
-                 "const HENTING = 'Den er klar til henting etter tre uker."));
+// Brennetida er noe annet: tre uker (eieren, 8. oktober 2026). Fra 13.
+// oktober 2026 «noen uker» paa kurs der man former leire, og tre uker paa
+// Paint on Pots, som brennes én gang.
+$kmKilde = les_testfil(dirname(__DIR__) . '/app/lib/kursmal.php');
+sjekk('brennetida er noen uker, tre uker paa Paint on Pots, og staar ett sted',
+    str_contains($kmKilde, "const HENTING = 'Den er klar til henting etter noen uker.")
+    && str_contains($kmKilde, "const HENTING_POP = 'Den er klar til henting etter tre uker."));
 // Oppbevaring skal si tre uker; brennetiden er fortsatt to til fire uker.
 sjekk('ingen oppbevaringstekst lover to uker lenger',
     !preg_match('~oppbevar\w*[^.]{0,40}to uker~iu', $sida)

@@ -323,6 +323,6 @@ return [
     'kropp'  => $h,
     'aktiv'  => 'Forside',
     // Toppbildet vises paa begge skjermbredder og lastes med hoey prioritet.
-    'hode'   => $heroBilde !== '' ? '<link rel="preload" as="image" fetchpriority="high" href="' . $e($heroBilde) . '">' . "\n" : '',
+    'hode'   => $heroBilde !== '' ? '<link rel="preload" as="image" fetchpriority="high" media="(min-width: 761px)" href="' . $e($heroBilde) . '">' . "\n" : '',
     'skript' => 'window.lissomRot = ' . str_replace('</', '<\/', (string) $rotJson) . ';',
 ];

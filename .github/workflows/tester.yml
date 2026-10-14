@@ -6,8 +6,6 @@ name: Tester
 on:
   workflow_call:
   workflow_dispatch:
-  push:
-    branches-ignore: [main]
 
 jobs:
   # Eieren, 2. oktober 2026: testene tok ~30 min i én jobb. Naa deles de i

@@ -4,10 +4,11 @@
         {
             "id": "chatgpt-lukket-testplass-lissom",
             "dato": "2026-10-14",
-            "hva": "Eieren valgte test.lissom.no på Lissoms eksisterende webhotell etter at Kepler-kontoens databasekvote var full. Forbered separat, lukket testpakke med syntetiske data; valg av testplass er ikke serveraktivering.",
+            "hva": "Eieren valgte test.lissom.no på Lissoms eksisterende webhotell og godkjente deretter uttrykkelig oppsett av lukket test med egen database, egen testbruker, vern mot indeksering og bare testdata. Godkjenningen gjelder bare dette testmiljøet; ingen produksjonssetting eller sammenslåing.",
             "hvor": "Testpakken for Lissom; ingen serverendringer",
             "kode": [
                 {"fil": "app/integrasjon/testserver/README.md", "finnes": ["https://test.lissom.no", "rbvapxvz_lissom_mcp_test"]},
+                {"fil": "app/integrasjon/testserver/closed.htaccess", "finnes": ["RewriteEngine On", "RewriteRule ^ - [F,L]", "Require all denied"]},
                 {"fil": "app/integrasjon/testserver/api-boot.php", "finnes": ["/lissom-mcp-test-private/bootstrap.php"], "ikkeFinnes": ["for ($nivaa", "/lissom-app/app/bootstrap.php"]}
             ]
         },

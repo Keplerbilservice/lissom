@@ -25,6 +25,7 @@ with tempfile.TemporaryDirectory(prefix='lissom-mcp-package-') as temporary:
         sums = json.loads(archive.read('SHA256SUMS.json'))
         check(all(hashlib.sha256(archive.read(name)).hexdigest()==digest for name,digest in sums.items()), 'all package hashes verified')
         check('Require all denied' in archive.read('public/.htaccess').decode(), 'test root closed before activation')
+        check('RewriteEngine On' in archive.read('public/.htaccess').decode() and 'RewriteRule ^ - [F,L]' in archive.read('public/.htaccess').decode(), 'closed test overrides parent customer redirects')
         check('X-Robots-Tag' in archive.read('public/.htaccess').decode(), 'test host noindex configured')
         check(set(name for name in names if name.startswith('public/')) == {
             'public/.htaccess','public/index.html','public/api/_boot.php','public/api/integrasjon/kobling.php',

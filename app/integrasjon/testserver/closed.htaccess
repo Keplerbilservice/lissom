@@ -1,5 +1,8 @@
 # LISSOM TEST - CLOSED UNTIL THE OWNER APPROVES AND ACCESS CONTROL IS VERIFIED.
 # Install only in the separate test document root; never in production.
+RewriteEngine On
+# Override the parent site's redirects while the separate test host is closed.
+RewriteRule ^ - [F,L]
 Require all denied
 Header always set X-Robots-Tag "noindex, nofollow, noarchive"
 Header always set Cache-Control "no-store"

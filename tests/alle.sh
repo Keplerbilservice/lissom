@@ -97,6 +97,7 @@ kjor() { # kjor "navn" kommando...
 
 # --- Sjekkene av nettsida og admin (leser filene) --------------------------
 gruppe avmelding
+kjor "Min side før betaling" bash tests/nettleser/kjor.sh minside-ubetalt
 kjor "fjern fra venteliste" bash tests/nettleser/kjor.sh admin-ny-venteliste-fjern
 kjor "avmelding før kursdato" bash tests/nettleser/kjor.sh admin-ny-avmeld
 

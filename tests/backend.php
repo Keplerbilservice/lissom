@@ -5030,7 +5030,9 @@ foreach (glob(dirname(__DIR__) . '/{api,api/admin,app/lib}/*.php', GLOB_BRACE) a
     $kort = basename($f);
     // varsler.php ER avsenderen. beskjed.php sender det Monica selv skriver
     // i skjemaet — der finnes ingen tekst aa lagre som en mal.
-    if (in_array($kort, ['varsler.php', 'beskjed.php', 'test-varsel.php'], true)) {
+    // Driftvakta sender en teknisk alarm til den særskilte vaktadressen fra
+    // secrets.php. Den er ikke en kunde- eller adminmal.
+    if (in_array($kort, ['varsler.php', 'beskjed.php', 'test-varsel.php', 'driftvakt.php'], true)) {
         continue;
     }
     $kode = les_testfil($f);
@@ -19263,7 +19265,8 @@ sjekk('Ovnkortet: tre piller i kortet paa Min side og kalenderen, statusen oever
     // ikke bare paa kalenderen. Like mange av hver.
     ($ovnAnt = substr_count($mkSida, '<sc-if value="{{ ovnVis }}" hint-placeholder-val="{{ true }}">')) >= 2
     && substr_count($mkSida, '<button type="button" onClick="{{ ovnRaabrannNaa }}" style="{{ ovnPilleStil }}">Råbrann satt</button>') === $ovnAnt
-    && substr_count($mkSida, 'aria-label="Glasurbrann satt" value="{{ ovnGlasurValg }}" onChange="{{ ovnGlasurVelg }}"') === $ovnAnt
+    // Den samme nedtrekkslista står også én gang i den faste admin-toppen.
+    && substr_count($mkSida, 'aria-label="Glasurbrann satt" value="{{ ovnGlasurValg }}" onChange="{{ ovnGlasurVelg }}"') === $ovnAnt + 1
     && substr_count($mkSida, '<button type="button" onClick="{{ ovnTomtNaa }}" style="{{ ovnPilleStil }}">Ovn er tømt</button>') === $ovnAnt
     && !str_contains($mkSida, 'class="ms-ovn"')
     && substr_count($mkSida, '<h3 style="margin: 0 0 4px; font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">{{ ovnTittel }}</h3>') === 2

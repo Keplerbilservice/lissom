@@ -97,10 +97,12 @@ kjor() { # kjor "navn" kommando...
 
 # --- Sjekkene av nettsida og admin (leser filene) --------------------------
 gruppe avmelding
+kjor "fjern fra venteliste" bash tests/nettleser/kjor.sh admin-ny-venteliste-fjern
 kjor "avmelding før kursdato" bash tests/nettleser/kjor.sh admin-ny-avmeld
 
 gruppe statisk
 kjor "forsidehero" php tests/forside-hero.php
+kjor "fast adminlenke i footer" php tests/footer-admin.php
 for f in adminsjekk autolastsjekk innholdssjekk karusellsjekk knappesjekk \
          listesjekk metodesjekk seosjekk skjemasjekk skriftsjekk toutgaversjekk; do
   kjor "$f" node "bin/$f.mjs"

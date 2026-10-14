@@ -590,8 +590,8 @@ final class Deler
             . '</div>'
             . '<div class="lx-bunnpiller" style="display: flex; align-items: stretch; gap: var(--space-3); flex: 1 1 auto; max-width: 460px;">'
             . '<a href="/min-side" class="lx-bunnpille" style="' . $pille . ' white-space: nowrap;" data-hover="color: var(--lissom-yellow); border-color: var(--lissom-yellow);">' . self::ikon('user', 14) . 'Min side</a>'
-            // «Admin» bare for innloggede administratorer (designet 13. oktober 2026).
-            . (self::erAdmin() ? '<a href="/admin" class="lx-bunnpille" style="' . $pille . '" data-hover="color: var(--lissom-yellow); border-color: var(--lissom-yellow);">' . self::ikon('lock', 14) . 'Admin</a>' : '')
+            // Innloggingslenken skal ogsaa finnes uten en aktiv adminsesjon.
+            . '<a href="/admin" class="lx-bunnpille" style="' . $pille . '" data-hover="color: var(--lissom-yellow); border-color: var(--lissom-yellow);">' . self::ikon('lock', 14) . 'Admin</a>'
             . '</div></div>';
         return $h . '</div></footer>';
     }
@@ -605,16 +605,6 @@ final class Deler
     public static function lesMer(): string
     {
         return '<button type="button" class="lx-mer-knapp" aria-expanded="false" data-nett-merknapp>Les mer ⌄</button>';
-    }
-
-    /** Er den som ser sida logget inn som administrator? Feiler oppslaget: nei. */
-    private static function erAdmin(): bool
-    {
-        try {
-            return class_exists('Sesjon') && Sesjon::erAdmin();
-        } catch (Throwable) {
-            return false;
-        }
     }
 
     // ── Samtykke til besoeksmaaling ─────────────────────────────────────

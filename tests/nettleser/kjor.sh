@@ -68,7 +68,9 @@ for _ in $(seq 1 30); do
 done
 
 SEED=$(php tests/nettleser/seed.php) || { echo "Fikk ikke laget testdata."; exit 1; }
-if [ "${1:-}" = "admin-ny-avmeld" ]; then
+if [ "${1:-}" = "admin-ny-venteliste-fjern" ]; then
+  node tests/nyadmin-venteliste-fjern.mjs
+elif [ "${1:-}" = "admin-ny-avmeld" ]; then
   node tests/nyadmin-avmeld.mjs
 elif [ "${1:-}" = "admin-ny" ]; then
   for fil in admin-ny admin-ny-penger regnskapsforer-nyadmin nyadmin-regnskap-innlogging nyadmin-medlemsbetaling nyadmin-medlem-endre nyadmin-merk-hentet nyadmin-kursbetaling nyadmin-refusjon-ui nyadmin-avsluttende nyadmin-butikk nyadmin-utkast nyadmin-samling nyadmin-kalender-mobil nyadmin-kalender-pc nyadmin-kalender-ark nyadmin-kursstart kursstart-krav nyadmin-kalender-gjenta kalender-gjenta nyadmin-kalender-meny ubetalt-medlem minside-moduler-ut nyadmin-minside nyadmin-gammel-inn minside-ny nyadmin-stemple-meny nyadmin-kursholder-bruker nyadmin-kjopt-i-dag nyadmin-toppen nyadmin-butikk-lager nyadmin-varer nyadmin-ikke-mott nyadmin-avmeld nyadmin-royk trekkplan trekk-l5-l6-l10 frys-trekk; do

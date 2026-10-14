@@ -9556,7 +9556,7 @@
         {
             "id": "design-forside-20261013",
             "dato": "2026-10-13",
-            "hva": "Designet 13.10.2026 (2.2), heroen urørt: handlekurven til høyre i toppen; «Kommende datoer» med tre kurskort (2.1), også på mobil, med knappen under; referansen uten navnet over sitatet når logoen står der, og navnet ca. 18 px under sitatet; galleriet uten «Lissom» under bildene og uten knappen til butikken; «Admin» i bunnen bare for innloggede administratorer, og «Min side» på én linje.",
+            "hva": "Designet 13.10.2026 (2.2), heroen urørt: handlekurven til høyre i toppen; «Kommende datoer» med tre kurskort (2.1), også på mobil, med knappen under; referansen uten navnet over sitatet når logoen står der, og navnet ca. 18 px under sitatet; galleriet uten «Lissom» under bildene og uten knappen til butikken; «Admin» i bunnen alltid synlig som innloggingslenke (rettet etter eierens melding 13.10.2026 om at lenken forsvinner), og «Min side» på én linje.",
             "hvor": "app/nett/sider/forside.php, app/nett/deler.php, nett.js",
             "kode": [
                 {
@@ -9573,7 +9573,7 @@
                 {
                     "fil": "app/nett/deler.php",
                     "finnes": [
-                        "(self::erAdmin() ? '<a href=\"/admin\" class=\"lx-bunnpille\"",
+                        ". '<a href=\"/admin\" class=\"lx-bunnpille\"",
                         "' white-space: nowrap;\"",
                         "(string) $g['navn'] !== 'Lissom'"
                     ]

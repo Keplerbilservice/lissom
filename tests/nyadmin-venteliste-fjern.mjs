@@ -1,0 +1,49 @@
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+import {execFileSync} from 'node:child_process';
+const {chromium}=createRequire(import.meta.url)('playwright');
+const fixture=(mode,s)=>JSON.parse(execFileSync('php',['tests/nettleser/henting-fixture.php',mode,JSON.stringify(s||{})],{encoding:'utf8'}));
+const php=code=>execFileSync('php',['-r',`require 'tests/nettleser/testdatabase.php';krev_testdatabase(getcwd());require 'app/bootstrap.php';${code}`],{encoding:'utf8'}).trim();
+const s=fixture('seed');
+const ids=JSON.parse(php(`
+ DB::oppdater('course_sessions',['start_tid'=>gmdate('Y-m-d H:i:s',time()+20*86400)],['id'=>${s.session}]);
+ $a=DB::settInn('waitlist',['course_id'=>${s.course},'course_session_id'=>${s.session},'navn'=>'${s.tag}-A','posisjon'=>1,'status'=>'venter']);
+ $b=DB::settInn('waitlist',['course_id'=>${s.course},'course_session_id'=>${s.session},'navn'=>'${s.tag}-B','posisjon'=>2,'status'=>'varslet','frist_at'=>gmdate('Y-m-d H:i:s',time()+86400)]);
+ echo json_encode([$a,$b]);`));
+const inspect=()=>php(`echo json_encode(DB::alle('SELECT id,status FROM waitlist WHERE course_id=:i ORDER BY id',['i'=>${s.course}]));`);
+const booking=()=>php(`echo json_encode(DB::en('SELECT status,payment_id,antall,belop_ore FROM bookings WHERE id=:i',['i'=>${s.booking}]));`);
+const browser=await chromium.launch({args:['--host-resolver-rules=MAP lokal.lissom.no 127.0.0.1']});
+try {
+ for(const width of [1280,390]) {
+  php(`DB::oppdater('waitlist',['status'=>'venter'],['id'=>${ids[0]}]);DB::oppdater('waitlist',['status'=>'varslet'],['id'=>${ids[1]}]);`);
+  const before=booking(), c=await browser.newContext({viewport:{width,height:900}});
+  await c.addCookies([{name:'lissom_sesjon',value:s.token,domain:'lokal.lissom.no',path:'/'}]);
+  const p=await c.newPage(),posts=[],errors=[];
+  p.on('pageerror',e=>errors.push(e.message));
+  p.on('request',r=>{if(r.method()==='POST'&&r.url().includes('/api/admin/'))posts.push(r.postDataJSON());});
+  await p.goto(`http://lokal.lissom.no:${process.env.E2E_PORT||8140}/admin#kurs?okt=${s.session}&fra=kalender`,{waitUntil:'networkidle'});
+  await p.getByRole('button',{name:/^Venteliste 2/}).click();
+  await p.getByRole('button',{name:`Fjern ${s.tag}-A fra ventelisten`,exact:true}).click();
+  await p.getByRole('button',{name:'Avbryt',exact:true}).click();
+  assert.equal(posts.length,0);
+  assert.deepEqual(JSON.parse(inspect()).map(x=>x.status),['venter','varslet']);
+  await p.getByRole('button',{name:`Fjern ${s.tag}-A fra ventelisten`,exact:true}).click();
+  await p.getByRole('button',{name:'Ja, fjern fra ventelisten',exact:true}).click();
+  await p.getByRole('dialog').waitFor({state:'hidden'});
+  await p.getByRole('button',{name:/^Venteliste 1/}).waitFor();
+  assert.deepEqual(JSON.parse(inspect()).map(x=>x.status),['fjernet','varslet']);
+  assert.equal(booking(),before,'paamelding og betaling uroert');
+  assert.deepEqual(posts,[{handling:'fjern',id:ids[0]}]);
+  await p.getByRole('button',{name:/^Venteliste 1/}).click();
+  assert.equal(await p.getByRole('button',{name:`Fjern ${s.tag}-A fra ventelisten`,exact:true}).count(),0);
+  await p.getByRole('button',{name:`Fjern ${s.tag}-B fra ventelisten`,exact:true}).click();
+  await p.getByRole('button',{name:'Ja, fjern fra ventelisten',exact:true}).click();
+  await p.getByRole('button',{name:'Venteliste 0',exact:true}).waitFor();
+  assert.deepEqual(JSON.parse(inspect()).map(x=>x.status),['fjernet','fjernet']);
+  assert.equal(booking(),before);
+  assert.equal(php(`echo DB::verdi("SELECT COUNT(*) FROM notifications WHERE ref_type='waitlist' AND ref_id IN (${ids.join(',')})");`),'0');
+  assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true);
+  assert.deepEqual(errors,[]);
+  await c.close();console.log(`OK ${width}: avbryt, fjern ventende og varslet, oppdatert liste, ingen endring av paamelding eller varsler`);
+ }
+} finally {await browser.close();fixture('cleanup',s);}

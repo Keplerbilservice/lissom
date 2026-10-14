@@ -5,6 +5,11 @@ on:
       - 'api/admin/kursbilde-kontrollert.php'
       - '.github/workflows/chatgpt-integrasjon.yml'
       - 'tests/chatgpt-kursbilde.php'
+      - 'api/integrasjon/chatgpt-kurser.php'
+      - 'app/lib/chatgptkurser.php'
+      - 'bin/chatgpt-mcp/**'
+      - 'tests/chatgpt-kurser.php'
+      - 'tests/fixtures/chatgpt-kurser-router.php'
 permissions:
   contents: read
 jobs:
@@ -21,3 +26,18 @@ jobs:
           php -l api/admin/kursbilde-kontrollert.php
           php -l tests/chatgpt-kursbilde.php
           php tests/chatgpt-kursbilde.php
+          php -l api/integrasjon/chatgpt-kurser.php
+          php -l app/lib/chatgptkurser.php
+          php -l tests/fixtures/chatgpt-kurser-router.php
+          php tests/chatgpt-kurser.php
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: bin/chatgpt-mcp/package-lock.json
+      - name: Installer separat MCP-tjeneste og test med syntetiske data
+        working-directory: bin/chatgpt-mcp
+        run: |
+          npm ci --ignore-scripts
+          npm test
+          npm audit --omit=dev --audit-level=high

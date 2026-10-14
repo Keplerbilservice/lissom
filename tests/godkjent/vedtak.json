@@ -2,6 +2,23 @@
     "om": "Eierens godkjente vedtak. Hver post sier hva som er bestemt, og hvordan det sjekkes: «kode» kjøres av tests/vedtak.mjs i sperren før hver publisering, «live» kjøres av bin/vakt.mjs mot lissom.no én gang i døgnet (kl. 06:17, eieren 28. september 2026). Regel (eieren, 27. september 2026): hver godkjent endring får en post her i samme commit. «finnes»/«ikkeFinnes» er nøyaktige tekstbiter.",
     "vedtak": [
         {
+            "id": "chatgpt-integrasjon-lesefase",
+            "dato": "2026-10-14",
+            "hva": "Eieren ba om å fortsette integrasjonen fra PR #245 og gjøre grunnlaget gjenbrukbart for Kepler EDB og andre systemer. Lokal lesefase med egen OAuth-ressurs per system; produksjonsaktivering og skrivetilgang er ikke godkjent.",
+            "hvor": "Separat MCP-tjeneste og deaktivert intern kursleser",
+            "kode": [
+                {
+                    "fil": "bin/chatgpt-mcp/src/resource-server.mjs",
+                    "finnes": ["audience: config.resource", "readOnlyHint: true", "claims.scope.split(' ').includes(scope)"]
+                },
+                {
+                    "fil": "api/integrasjon/chatgpt-kurser.php",
+                    "finnes": ["LISSOM_MCP_BRIDGE_SECRET", "http_response_code(503)"],
+                    "ikkeFinnes": ["krev_admin()"]
+                }
+            ]
+        },
+        {
             "id": "flytt-samme-kurs",
             "dato": "2026-09-27",
             "hva": "«enklere måte å flytte dato på deltaker på rett i kurset»: Flytt viser bare det samme kursets kommende datoer, uten forhåndsvalg",

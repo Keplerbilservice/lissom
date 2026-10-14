@@ -34,3 +34,6 @@ Finn «Lag din egen lyslykt», kontroller ID og gjeldende bilde, last opp valgt 
 
 ## Ikke gjør
 Ikke endre dagens admin-API, sesjonshåndtering, kursdata, booking, database, deploy eller eksisterende bilder i denne PR-en.
+# Videreføring 14.10.2026
+
+PR #245 er videreført lokalt på `codex/lissom-integrasjon-20261014` med en separat lesetjeneste i `bin/chatgpt-mcp/` og deaktivert intern PHP-leser. Se [oppsett og faktisk testomfang](../bin/chatgpt-mcp/README.md). Det felles OAuth/MCP-laget kan gjenbrukes med separate adaptere for Kepler EDB og andre systemer. Ingen produksjonsaktivering eller ChatGPT-tilkobling er utført. Bildeopplasting og bildebytte via MCP gjenstår.

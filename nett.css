@@ -2503,3 +2503,23 @@ nav[data-nett-mobilmeny]:not([hidden]) { display: flex !important; }
   .lx-mk-punkter2 { grid-template-columns: minmax(0, 1fr); }
   .lx-mk-grid { grid-template-columns: minmax(0, 1fr); gap: 20px; }
 }
+
+/* Runde nedre bildekantene i kurs- og medlemskort, uten aa endre hero,
+   logoer eller funksjonelle bilder. Kortets ovre hjørner klippes av kortet. */
+.lx-dk-bilde { border-radius: 0 0 22px 22px; }
+.lx-mk-kort > img { border-radius: 0 0 22px 22px; }
+@media (max-width: 760px) {
+  .lx-mk-prov > img { border-radius: 0 0 22px 22px; }
+}
+
+/* Godkjent kompakt datovelger for kurskort (mobil og desktop).
+   Beholder knappesemantikk, valgt tilstand og tastaturfokus. */
+.lx-dk-brikker { justify-content: flex-start; gap: 8px; flex-wrap: wrap; }
+.lx-dk-brikke { flex: 0 0 52px; min-height: 52px; padding: 4px 2px; border-radius: 10px; }
+.lx-dk-uke { font-size: 9px; }
+.lx-dk-dag { font-size: 18px; }
+.lx-dk-mnd { font-size: 10px; }
+@media (max-width: 640px) {
+  .lx-dk-brikke { flex-basis: 48px; min-height: 50px; }
+  .lx-dk-brikker { gap: 7px; }
+}

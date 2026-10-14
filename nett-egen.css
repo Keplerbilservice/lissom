@@ -315,3 +315,23 @@ nav[data-nett-mobilmeny]:not([hidden]) { display: flex !important; }
     margin: 10px 10px 0;
   }
 }
+
+/* Medlemskap: ogsaa det fremhevede planbildet skal ha kurskortets
+   bildehoeyde og avrunding. Kortinnhold, priser og innmelding er urort. */
+.lx-mk-prov > img {
+  box-sizing: border-box;
+  height: 250px;
+  min-height: 0;
+  width: calc(100% - 24px);
+  margin: 12px;
+  border-radius: 10px;
+  object-fit: cover;
+  align-self: start;
+}
+@media (max-width: 760px) {
+  .lx-mk-prov > img {
+    height: 225px;
+    width: calc(100% - 20px);
+    margin: 10px 10px 0;
+  }
+}

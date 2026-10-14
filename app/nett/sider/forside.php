@@ -32,6 +32,7 @@ $heroAlt = $heroBilde === 'assets_hero-fellesskap-uten-briller-20261014.webp'
     ? 'KI-generert motiv basert på verkstedbilder: Monica og en liten gruppe lager keramikk sammen'
     : 'Keramikk og fellesskap på Lissom';
 $h .= '<section class="lx-hero lx-hero-fellesskap" data-theme="sun" style="background: var(--lissom-yellow); position: relative; overflow: clip; display: grid; min-height: 82vh;">'
+    . '<div class="lx-hero-mobilhjerte" aria-hidden="true"><div></div></div>'
     . '<div class="lx-hero-pad" style="position: relative; width: 100%; max-width: none; margin: 0; padding: 150px var(--space-8) var(--space-24) max(var(--space-10), calc((100vw - var(--width-content)) / 2)); align-self: safe center;">'
     . '<div class="lx-hero-copy">'
     . '<div class="lx-hero-eb" style="font: var(--type-eyebrow); font-size: var(--text-lg); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--brown-500); margin-bottom: var(--space-6);">' . $e($innh('Forside/0/Kicker')) . '</div>'

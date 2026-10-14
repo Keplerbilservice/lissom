@@ -129,9 +129,9 @@ small{font-size:15px;color:var(--muted)}
 /* I dag */
 .ovnstatus{font-family:var(--f-head);font-size:26px;letter-spacing:-.03em}
 .ovn-knapper{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-.ovn-knapper button{min-height:56px;border-radius:13px;border:1px solid var(--line);background:var(--ground);font-weight:800}
+.ovn-knapper button,.ovn-knapper select{min-height:56px;border-radius:13px;border:1px solid var(--line);background:var(--ground);color:var(--ink);font:800 14px var(--f-body);padding:0 12px;text-align:center}
 .ovn-knapper button[aria-pressed=true]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
-.ovn-knapper button:disabled{opacity:.6;cursor:default}
+.ovn-knapper button:disabled,.ovn-knapper select:disabled{opacity:.6;cursor:default}
 .mott{display:flex;gap:10px;align-items:center;min-height:44px;cursor:pointer}
 .mott input{width:24px;height:24px;accent-color:var(--ink)}
 .velg-rad{display:flex;gap:10px;align-items:center;min-height:44px;cursor:pointer;flex:1 1 200px}
@@ -202,7 +202,7 @@ dialog#ark::backdrop{background:#27110870}
   #arbeid{padding:22px 16px 60px}
   .head h1{font-size:30px}
   .ovn-knapper{grid-template-columns:1fr}
-  .ovn-knapper button{min-height:52px;font-size:16px}
+  .ovn-knapper button,.ovn-knapper select{min-height:52px;font-size:16px}
   #toast{bottom:16px;right:16px}
   /* Hamburgermeny i stedet for bunnmeny (eieren 11.10.2026): venstremenyen glir inn over siden. */
   .hamburger{display:grid;place-items:center;order:0;position:relative;width:48px;height:48px;border:1px solid var(--line);border-radius:12px;background:var(--paper);color:var(--ink);font-size:24px;line-height:1;cursor:pointer}

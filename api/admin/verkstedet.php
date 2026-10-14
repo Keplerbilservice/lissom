@@ -127,7 +127,6 @@ if (Foresporsel::metode() === 'GET') {
         'brenninger' => array_map(static fn(array $b): array => [
             'id'        => (int) $b['id'],
             'slag'      => (string) $b['slag'],
-            'temperatur'=> isset($b['temperatur']) ? (int) $b['temperatur'] : null,
             'ovn'       => (string) ($b['ovn'] ?? ''),
             'dato'      => $iOslo((string) $b['start_tid'], 'Y-m-d'),
             'fra'       => $iOslo((string) $b['start_tid'], 'H:i'),
@@ -211,10 +210,6 @@ switch (Foresporsel::tekst('handling')) {
         if (!in_array($slag, BRENNSLAG, true)) {
             Svar::feil('Velg råbrann, glasurbrann eller annet.');
         }
-        $temperatur = Foresporsel::heltall('temperatur');
-        if ($slag === 'glasurbrann' && !in_array($temperatur, [1220, 1250], true)) {
-            Svar::feil('Velg 1220 °C eller 1250 °C for glasurbrannen.');
-        }
         $dato  = Foresporsel::tekst('dato');
         // En brenning gaar ofte over natta. Slutter den dagen etter, staar
         // datoen med — ellers regnes den som samme dag.
@@ -231,7 +226,6 @@ switch (Foresporsel::tekst('handling')) {
         $id = Foresporsel::heltall('id');
         $felter = [
             'slag' => $slag, 'start_tid' => $start, 'slutt_tid' => $slutt,
-            'temperatur' => $slag === 'glasurbrann' ? $temperatur : null,
             'ovn'   => mb_substr(trim(Foresporsel::tekst('ovn')), 0, 64) ?: null,
             'notat' => mb_substr(trim(Foresporsel::tekst('notat')), 0, 300) ?: null,
         ];

@@ -2533,3 +2533,32 @@ nav[data-nett-mobilmeny]:not([hidden]) { display: flex !important; }
 
 /* Godkjent Lissom-bildestil: diskret 10 px avrunding paa kursbilder. */
 .lx-dk-bilde { border-radius: 10px; }
+
+/* Komplett godkjent kurskort-layout: roligere typografi, luft og tydelig CTA.
+   Eksisterende dato-/bookingknapper, lenker og tilgjengelighetsattributter beholdes. */
+.lx-dk { border-radius: 20px; box-shadow: 0 8px 24px rgba(77,29,18,.06); }
+.lx-dk-bilde { border-radius: 10px; margin: 12px 12px 0; height: 250px; }
+.lx-dk-inni { padding: 26px 24px 24px; }
+.lx-dk-over { font-size: 11px; letter-spacing: 1.5px; }
+.lx-dk-tittel { font-size: clamp(24px, 2.1vw, 32px); line-height: 1.12; margin: 10px 0 26px; }
+.lx-dk-velg { margin-bottom: 10px; }
+.lx-dk-brikker { gap: 10px; flex-wrap: wrap; }
+.lx-dk-brikke { flex: 0 0 62px; min-height: 60px; border-radius: 9px; padding: 5px 3px; }
+.lx-dk-uke { font-size: 10px; }
+.lx-dk-dag { font-size: 20px; }
+.lx-dk-mnd { font-size: 10px; }
+.lx-dk-tider { margin-top: 18px; gap: 8px; }
+.lx-dk-tid { padding: 5px 12px; font-size: 13px; }
+.lx-dk-tekst { margin: 24px 0 28px; font-size: 16px; line-height: 1.55; }
+.lx-dk-bunn { gap: 14px; }
+.lx-dk-bunn a[data-dk-knapp] { min-height: 48px; padding: 12px 22px; border-radius: 12px; font-weight: 700; }
+@media (max-width: 640px) {
+  .lx-dk-bilde { height: 225px; margin: 10px 10px 0; }
+  .lx-dk-inni { padding: 22px 20px 22px; }
+  .lx-dk-tittel { font-size: 27px; margin: 8px 0 26px; }
+  .lx-dk-brikker { gap: 8px; }
+  .lx-dk-brikke { flex-basis: 58px; min-height: 56px; }
+  .lx-dk-dag { font-size: 19px; }
+  .lx-dk-tekst { margin: 22px 0 26px; font-size: 15px; }
+  .lx-dk-bunn a[data-dk-knapp] { flex: 1 1 100%; justify-content: center; text-align: center; }
+}

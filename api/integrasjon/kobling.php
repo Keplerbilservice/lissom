@@ -2,6 +2,7 @@
 declare(strict_types=1);
 // PHP/MySQL only. This flag suppresses the application's background notification/payment tick.
 define('LISSOM_MCP_REQUEST',true);
+header('X-Robots-Tag: noindex, nofollow, noarchive');
 try {
     require __DIR__.'/../_boot.php';
     ini_set('display_errors','0');
@@ -31,7 +32,8 @@ try {
         static fn(string $path): bool => Rate::tillat('mcp_request',120,60)
             && ($path !== '/integrasjon/oauth/register' || Rate::tillat('mcp_register',10,3600)),
         static fn(?int $actor) => Kepler\Integrasjon\LissomTools::server(DB::kobling(),$oauth,$actor,(string)$key),
-        'Lissom','ChatGPT får lese kurstitler, kurs-ID, status og bilder. Tilkoblingen kan ikke endre kurs eller lese deltakere og betalinger.');
+        Config::hent('mcp_test_mode',false) === true ? 'Lissom – TEST' : 'Lissom',
+        'ChatGPT får lese kurstitler, kurs-ID, status og bilder. Tilkoblingen kan ikke endre kurs eller lese deltakere og betalinger.');
     $response = $controller->handle($request);
     http_response_code($response->getStatusCode());
     foreach ($response->getHeaders() as $name=>$values) foreach($values as $value) header($name.': '.$value,false);

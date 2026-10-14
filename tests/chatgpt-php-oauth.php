@@ -33,7 +33,7 @@ $oauth = new OAuth($db,$issuer,$issuer.'/integrasjon/mcp','lissom:courses:read',
 $actor = 1;
 $controller = new HttpController($db,$oauth,$secret,static function() use(&$actor) {return $actor;},
     static fn($r)=>$r->getHeaderLine('Origin')===$issuer,static fn($p)=>true,
-    static fn($a)=>LissomTools::server($db,$oauth,$a,$secret),'Lissom','Kun lesing av kurs.');
+    static fn($a)=>LissomTools::server($db,$oauth,$a,$secret),'Lissom – TEST','Kun lesing av kurs.');
 $checks=0;
 function check(bool $ok,string $label): void { global $checks; if(!$ok)throw new RuntimeException('FAIL '.$label);$checks++; }
 function req(string $path,string $method='GET',array $query=[],?array $body=null,array $headers=[]): ServerRequest {
@@ -54,6 +54,10 @@ $actor=null;check($controller->handle(req('/integrasjon/oauth/authorize','GET',$
 check($controller->handle(req('/integrasjon/oauth/authorize','GET',array_replace($query,['code_challenge_method'=>'plain'])))->getStatusCode()===400,'PKCE plain rejected');
 check($controller->handle(req('/integrasjon/oauth/authorize','GET',array_replace($query,['resource'=>'https://other.example/mcp'])))->getStatusCode()===400,'other resource rejected');
 $response=$controller->handle(req('/integrasjon/oauth/authorize','GET',$query));check($response->getStatusCode()===200,'consent displayed');
+check($response->getHeaderLine('X-Robots-Tag')==='noindex, nofollow, noarchive'
+    && str_contains((string)$response->getBody(),'Lissom – TEST'),'consent noindex and explicit test identity');
+check($controller->handle(req('/.well-known/oauth-authorization-server'))->getHeaderLine('X-Robots-Tag')==='noindex, nofollow, noarchive'
+    && $controller->handle(req('/does-not-exist'))->getHeaderLine('X-Robots-Tag')==='noindex, nofollow, noarchive','discovery and errors noindex');
 $html=(string)$response->getBody();preg_match('/name="pending" value="([a-f0-9]+)"/',$html,$pending);preg_match('/name="csrf" value="([a-f0-9]+)"/',$html,$csrf);
 $consent=['pending'=>$pending[1],'csrf'=>$csrf[1],'approve'=>'yes'];
 check($controller->handle(req('/integrasjon/oauth/authorize','POST',[],array_replace($consent,['csrf'=>'wrong']),['Origin'=>$issuer]))->getStatusCode()===403,'consent CSRF rejected');

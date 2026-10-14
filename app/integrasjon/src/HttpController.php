@@ -16,6 +16,10 @@ final class HttpController
         private \Closure $serverFactory,private string $systemName,private string $consentDescription) {}
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
+        return $this->handleRequest($request)->withHeader('X-Robots-Tag','noindex, nofollow, noarchive');
+    }
+    private function handleRequest(ServerRequestInterface $request): ResponseInterface
+    {
         try {
             $host = parse_url($this->oauth->issuer,PHP_URL_HOST);
             if ($request->getUri()->getHost() !== $host || $request->getUri()->getScheme() !== 'https'

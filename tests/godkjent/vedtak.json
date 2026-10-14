@@ -2,6 +2,16 @@
     "om": "Eierens godkjente vedtak. Hver post sier hva som er bestemt, og hvordan det sjekkes: «kode» kjøres av tests/vedtak.mjs i sperren før hver publisering, «live» kjøres av bin/vakt.mjs mot lissom.no én gang i døgnet (kl. 06:17, eieren 28. september 2026). Regel (eieren, 27. september 2026): hver godkjent endring får en post her i samme commit. «finnes»/«ikkeFinnes» er nøyaktige tekstbiter.",
     "vedtak": [
         {
+            "id": "chatgpt-test-uten-indeksering",
+            "dato": "2026-10-14",
+            "hva": "Eieren krever at testen ikke blir synlig i Google eller forveksles med vanlig nettsted. Forbered noindex på integrasjonssvar og tydelig testidentitet; hele testnettstedet må i tillegg være adgangssperret med separat database og nøkler før aktivering.",
+            "hvor": "Integrasjon og klargjøring av testserver; ikke aktivert",
+            "kode": [
+                {"fil": "app/integrasjon/src/HttpController.php", "finnes": ["withHeader('X-Robots-Tag','noindex, nofollow, noarchive')"]},
+                {"fil": "api/integrasjon/kobling.php", "finnes": ["header('X-Robots-Tag: noindex, nofollow, noarchive')", "'Lissom – TEST'"]}
+            ]
+        },
+        {
             "id": "chatgpt-integrasjon-lesefase",
             "dato": "2026-10-14",
             "hva": "Eieren ba om å fortsette PR #245 med PHP og SQL via Domene.no, uten Railway, og egen tilkobling per system. Lokal lesefase for Lissom med gjenbrukbar kjerne; serveraktivering og skrivetilgang er ikke godkjent.",

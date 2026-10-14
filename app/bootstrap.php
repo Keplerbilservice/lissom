@@ -151,7 +151,10 @@ ini_set('log_errors', '1');
 
 // Bakgrunnsarbeid uten cron: forste forespoersel i hvert minuttvindu tommer
 // varselkoen og sjekker betalinger som henger. Kjorer etter at svaret er sendt.
-Tikk::planlegg();
+// Integration requests must never start background payments or notification delivery.
+if (!defined('LISSOM_MCP_REQUEST')) {
+    Tikk::planlegg();
+}
 
 set_exception_handler(static function (Throwable $e): void {
     logg_feil('Ubehandlet feil', $e);

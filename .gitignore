@@ -34,3 +34,4 @@ tests/.feillogg
 app/secrets.php.e2e-kopi
 tests/.krav-400
 tests/.avbryt-nei
+app/integrasjon/vendor/

@@ -2,6 +2,49 @@
     "om": "Eierens godkjente vedtak. Hver post sier hva som er bestemt, og hvordan det sjekkes: «kode» kjøres av tests/vedtak.mjs i sperren før hver publisering, «live» kjøres av bin/vakt.mjs mot lissom.no én gang i døgnet (kl. 06:17, eieren 28. september 2026). Regel (eieren, 27. september 2026): hver godkjent endring får en post her i samme commit. «finnes»/«ikkeFinnes» er nøyaktige tekstbiter.",
     "vedtak": [
         {
+            "id": "chatgpt-lukket-testplass-lissom",
+            "dato": "2026-10-14",
+            "hva": "Eieren valgte test.lissom.no på Lissoms eksisterende webhotell og godkjente deretter uttrykkelig oppsett av lukket test med egen database, egen testbruker, vern mot indeksering og bare testdata. Godkjenningen gjelder bare dette testmiljøet; ingen produksjonssetting eller sammenslåing.",
+            "hvor": "Testpakken for Lissom; ingen serverendringer",
+            "kode": [
+                {"fil": "app/integrasjon/testserver/README.md", "finnes": ["https://test.lissom.no", "rbvapxvz_lissom_mcp_test"]},
+                {"fil": "app/integrasjon/testserver/closed.htaccess", "finnes": ["RewriteEngine On", "RewriteRule ^ - [F,L]", "Require all denied"]},
+                {"fil": "app/integrasjon/testserver/api-boot.php", "finnes": ["/lissom-mcp-test-private/bootstrap.php"], "ikkeFinnes": ["for ($nivaa", "/lissom-app/app/bootstrap.php"]}
+            ]
+        },
+        {
+            "id": "chatgpt-test-uten-indeksering",
+            "dato": "2026-10-14",
+            "hva": "Eieren krever at testen ikke blir synlig i Google eller forveksles med vanlig nettsted. Forbered noindex på integrasjonssvar og tydelig testidentitet; hele testnettstedet må i tillegg være adgangssperret med separat database og nøkler før aktivering.",
+            "hvor": "Integrasjon og klargjøring av testserver; ikke aktivert",
+            "kode": [
+                {"fil": "app/integrasjon/src/HttpController.php", "finnes": ["withHeader('X-Robots-Tag','noindex, nofollow, noarchive')"]},
+                {"fil": "api/integrasjon/kobling.php", "finnes": ["header('X-Robots-Tag: noindex, nofollow, noarchive')", "'Lissom – TEST'"]},
+                {"fil": "app/integrasjon/testserver/closed.htaccess", "finnes": ["Require all denied", "noindex, nofollow, noarchive"]},
+                {"fil": "app/integrasjon/testserver/private-bootstrap.php", "finnes": ["$testManifest['database']", "'Testoppsettet er ikke isolert.'"], "ikkeFinnes": ["Tikk::planlegg", "/lissom-secrets/"]}
+            ]
+        },
+        {
+            "id": "chatgpt-integrasjon-lesefase",
+            "dato": "2026-10-14",
+            "hva": "Eieren ba om å fortsette PR #245 med PHP og SQL via Domene.no, uten Railway, og egen tilkobling per system. Lokal lesefase for Lissom med gjenbrukbar kjerne; serveraktivering og skrivetilgang er ikke godkjent.",
+            "hvor": "PHP OAuth/MCP og deaktivert kursleser",
+            "kode": [
+                {
+                    "fil": "app/integrasjon/src/OAuth.php",
+                    "finnes": ["$claims->get('aud') !== [$this->resource]", "'code_challenge_methods_supported' => ['S256']", "new \\DateInterval('PT10M')"]
+                },
+                {
+                    "fil": "api/integrasjon/kobling.php",
+                    "finnes": ["Config::hent('mcp_enabled',false) !== true", "define('LISSOM_MCP_REQUEST',true)", "'lissom:courses:read'"]
+                },
+                {
+                    "fil": "app/bootstrap.php",
+                    "finnes": ["if (!defined('LISSOM_MCP_REQUEST'))"]
+                }
+            ]
+        },
+        {
             "id": "flytt-samme-kurs",
             "dato": "2026-09-27",
             "hva": "«enklere måte å flytte dato på deltaker på rett i kurset»: Flytt viser bare det samme kursets kommende datoer, uten forhåndsvalg",

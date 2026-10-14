@@ -1,6 +1,6 @@
 # ChatGPT-integrasjon for Lissom – sikker implementeringsplan
 
-Status: designforslag, ikke aktivert. Ingen produksjonstilgang eller legitimasjon opprettet.
+Status: lokal PHP-lesefase implementert som videreføring av planen under, ikke aktivert. Ingen produksjonstilgang eller legitimasjon opprettet.
 
 ## Verifisert i eksisterende kode
 - `api/admin/kurs.php` bruker `krev_admin()` og kan lese kurs med bildefelt.
@@ -34,3 +34,8 @@ Finn «Lag din egen lyslykt», kontroller ID og gjeldende bilde, last opp valgt 
 
 ## Ikke gjør
 Ikke endre dagens admin-API, sesjonshåndtering, kursdata, booking, database, deploy eller eksisterende bilder i denne PR-en.
+# Videreføring 14.10.2026
+
+PR #245 er videreført på `codex/lissom-integrasjon-20261014` med PHP, egen OAuth-server og SQL-lagring. Railway, ekstern OAuth-leverandør og Node-server er ikke nødvendig. Node brukes bare som testklient. Se [oppsett og faktisk testomfang](../app/integrasjon/README.md).
+
+Lesefasen tilbyr to begrensede kursverktøy med eksisterende administratorinnlogging, samtykke, PKCE, ti minutters tilgangstoken og roterende fornyelse i maksimalt 24 timer fra opprinnelig samtykke. Hvert system får separat tilkobling og egne nøkler. Migrasjon 278 oppretter én tabell; den er ikke kjørt på serveren. Ingen serveraktivering eller ChatGPT-tilkobling er utført. Keplers adapter, bildeopplasting og bildebytte via MCP gjenstår. Begrensningene under «Ikke gjør» beskriver første PR #245; denne videreføringen forbereder database og deploy, men publiserer ikke.

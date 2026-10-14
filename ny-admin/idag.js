@@ -75,7 +75,11 @@
   function tegn(d) {
     if (!el || !el.isConnected) return;
     const t = ovn?.tomt;
-    const status = t ? OVN[t.slag] || 'Ovn er tømt' : 'Ingen status';
+    const status = !t ? 'Ingen status'
+      : t.slag === 'tomt' && t.tomtSlag === 'glasurbrann' ? `Glasurbrann${t.tomtTemperatur ? ' ' + t.tomtTemperatur + ' °C' : ''} er tømt`
+      : t.slag === 'tomt' && t.tomtSlag === 'raabrann' ? 'Råbrann er tømt'
+      : t.slag === 'glasurbrann' && t.temperatur ? `Glasurbrann ${t.temperatur} °C er satt`
+      : OVN[t.slag] || 'Ovn er tømt';
     const okter = dagensOkter(d);
     const sett = d.settPaaServer ? new Set() : settLes();
     const maa = NA.maGjores(d).filter(s => s.type !== 'taut' && !gjort.has(nokkel(s)));
@@ -86,7 +90,14 @@
     const dato = new Date().toLocaleDateString('nb-NO', {weekday: 'long', day: 'numeric', month: 'long'});
     const hurtig = NA.hurtig();
     const mobil = NA.erMobil(), inne = d.verkstedet || [];
-    const ovnKnapper = `<div class="ovn-knapper">${Object.entries(OVN).map(([id, txt]) => `<button type="button" data-ovn="${id}" aria-pressed="${t?.slag === id}" ${ovn && ovn.klar === false ? 'disabled' : ''}>${txt}</button>`).join('')}</div>`;
+    const ovnAv = ovn && ovn.klar === false ? 'disabled' : '';
+    const ovnKnapper = `<div class="ovn-knapper">
+      <button type="button" data-ovn="raabrann" aria-pressed="${t?.slag === 'raabrann'}" ${ovnAv}>${OVN.raabrann}</button>
+      <select data-ovn-glasur aria-label="Glasurbrann satt" ${ovnAv}>
+        <option value="">Glasurbrann satt</option><option value="1220">1220 °C</option><option value="1250">1250 °C</option>
+      </select>
+      <button type="button" data-ovn="tomt" aria-pressed="${t?.slag === 'tomt'}" ${ovnAv}>${OVN.tomt}</button>
+    </div>`;
     /* Mobil: ovnen er én lav linje med status og sluttid; de tre knappene kommer fram med «Endre». */
     const ovnKort = mobil
       ? `<section class="kort ovn-lav" aria-label="Ovnen"><div class="ovn-linje"><span class="ovn-tekst"><b>Ovn · ${esc(status)}</b>${brenning ? `<small>${esc(brenning.s.tekst)}</small>` : ''}</span><button type="button" class="na-pille" data-ovnendre aria-expanded="${ovnApen}">Endre</button></div>
@@ -229,15 +240,15 @@
   const finnSak = k => (NA.sist?.maGjores || []).find(s => nokkel(s) === k);
 
   /* ── ovnen ───────────────────────────────────────────────────────────── */
-  async function trykkOvn(b) {
-    const slag = b.dataset.ovn;
-    el.querySelectorAll('[data-ovn]').forEach(x => { x.disabled = true; });
+  async function trykkOvn(b, temperatur) {
+    const slag = b.dataset.ovn || 'glasurbrann';
+    el.querySelectorAll('[data-ovn], [data-ovn-glasur]').forEach(x => { x.disabled = true; });
     try {
-      ovn = await NA.api('/api/ovn.php', {data: {handling: slag}});
+      ovn = await NA.api('/api/ovn.php', {data: {handling: slag, ...(slag === 'glasurbrann' ? {temperatur} : {})}});
       tegn(NA.sist);
       ovnApen = false; tegn(NA.sist);
       if (slag === 'tomt') arkFerdigbrent();
-      else NA.toast(`<b>${OVN[slag]}.</b> Medlemmene ser det på Min side.`);
+      else NA.toast(`<b>${slag === 'glasurbrann' ? `Glasurbrann ${temperatur} °C er satt` : OVN[slag]}.</b> Medlemmene ser det på Min side.`);
     } catch (e) { NA.toast(esc(e.message)); tegn(NA.sist); }
   }
   /* «Merk hentet» (eieren 12.10.2026, valgt «Velg hvem»): deltakerne som alt har hentet krysses av før beskjeden sendes.
@@ -711,6 +722,11 @@
         else if (b.dataset.utfort) utfort(b);
         else if (b.dataset.oppf === 'snakket') arkSnakket(b);
         else if (b.dataset.oppf === 'sms') smsProve(b);
+      });
+      el.addEventListener('change', e => {
+        const s = e.target.closest('[data-ovn-glasur]'); if (!s || s.disabled) return;
+        const temperatur = Number(s.value);
+        if (temperatur === 1220 || temperatur === 1250) trykkOvn(s, temperatur);
       });
       el.innerHTML = '<p class="laster">Henter …</p>';
       await oppdater();

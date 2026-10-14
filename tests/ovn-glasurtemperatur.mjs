@@ -5,6 +5,8 @@ const les=fil=>readFileSync(new URL(`../${fil}`,import.meta.url),'utf8');
 const side=les('lissom-2108.html');
 const lett=les('lissom-2108-uten-admin.html');
 const api=les('api/ovn.php');
+const admin=les('ny-admin/idag.js');
+const adminCss=les('ny-admin/ny-admin.css');
 
 for(const html of [side,lett]){
   assert.doesNotMatch(html,/ovnGlasurNaa/);
@@ -15,6 +17,11 @@ assert.match(side,/ovnGlasurVelg: e =>/);
 assert.match(api,/in_array\(\$temperatur, \[1220, 1250\], true\)/);
 assert.match(api,/'temperatur' => \$slag === 'glasurbrann'/);
 assert.match(api,/\$rad\['tomt_slag'\] = \(string\) \$forrige\['slag'\]/);
+assert.match(admin,/data-ovn-glasur/);
+assert.match(admin,/<option value="1220">1220 .C<\/option><option value="1250">1250 .C<\/option>/);
+assert.match(admin,/handling: slag, \.\.\.\(slag === 'glasurbrann' \? \{temperatur\} : \{\}\)/);
+assert.match(admin,/t\.tomtTemperatur/);
+assert.match(adminCss,/\.ovn-knapper button,\.ovn-knapper select\{min-height:56px/);
 assert.match(side,/Råbrann er tømt/);
 
 console.log('OK: hurtigknappen for glasurbrann velger 1220 eller 1250 °C.');

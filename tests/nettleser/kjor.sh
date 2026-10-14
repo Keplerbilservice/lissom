@@ -68,7 +68,9 @@ for _ in $(seq 1 30); do
 done
 
 SEED=$(php tests/nettleser/seed.php) || { echo "Fikk ikke laget testdata."; exit 1; }
-if [ "${1:-}" = "admin-ny-venteliste-fjern" ]; then
+if [ "${1:-}" = "minside-ubetalt" ]; then
+  node tests/minside-ubetalt.mjs
+elif [ "${1:-}" = "admin-ny-venteliste-fjern" ]; then
   node tests/nyadmin-venteliste-fjern.mjs
 elif [ "${1:-}" = "admin-ny-avmeld" ]; then
   node tests/nyadmin-avmeld.mjs

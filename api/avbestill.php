@@ -74,6 +74,9 @@ $kontakt = $medlem !== null
 if ($b['status'] === 'avbestilt' || $b['status'] === 'refundert') {
     Svar::feil('Denne plassen er allerede avbestilt.', 409);
 }
+if ($b['status'] === 'reservert' && ($b['start_tid'] === null || strtotime((string) $b['start_tid'] . ' UTC') <= time())) {
+    Svar::feil('Kurset har startet eller mangler dato. Ta kontakt med oss for avmelding.', 409);
+}
 // Gjort opp i kassa (Paint on Pots): da er det ikke en avbestilling lenger,
 // verken fra lenka eller fra Min side.
 if (($b['depositum_ore'] ?? null) !== null && ($b['gjenstander_ore'] ?? null) !== null) {

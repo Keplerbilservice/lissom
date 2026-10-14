@@ -146,8 +146,12 @@ foreach ($bookinger as $b) {
         'sum'           => Booking::kroner((int) $b['belop_ore'])
                             . ((int) $b['antall'] > 1 ? ' · ' . $b['antall'] . ' plasser' : ''),
         'status'        => $betalt ? 'Bekreftet' : 'Reservert — ikke betalt',
+        'ubetalt'       => !$betalt,
+        'kanAvmelde'    => !$betalt && $b['start_tid'] !== null && strtotime((string) $b['start_tid'] . ' UTC') > time(),
         'tone'          => $betalt ? 'success' : 'warning',
-        'frist'         => $betalt ? $fristTekst : 'Reservasjonen frigis om betalingen ikke fullføres.',
+        'frist'         => $betalt ? $fristTekst : 'Betalingen er ikke ferdig registrert. Betalingshistorikk vises når betalinger er registrert.'
+                            . (Booking::utenKursbevis((int) $b['course_id']) ? '' : ' Kursbevis blir tilgjengelig etter at kurset er gjennomført og betalt.')
+                            . ($b['start_tid'] !== null && strtotime((string) $b['start_tid'] . ' UTC') > time() ? ' Du kan avmelde deg før kursstart.' : ' Ta kontakt med oss for avmelding.'),
         'kanAvbestille' => $betalt && $kanAvbestille,
         'referanse'     => $b['vipps_reference'],
         // Kursbeviset dukker opp av seg selv naar kurset er gjennomfort og

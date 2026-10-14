@@ -25,10 +25,10 @@ $h .= Deler::topp('Forside', true);
 $heroBilde = $innh('Forside/0/Hero-bilde');
 // Det tidligere standardmotivet erstattes uten aa skrive i innholdet eller
 // overskrive et annet bilde valgt i admin. Tomt felt beholdes ogsaa tomt.
-if (ltrim($heroBilde, '/') === 'assets_photos_dreiekurs-smil.jpg') {
-    $heroBilde = 'assets_hero-fellesskap-20261013.webp';
+if (in_array(ltrim($heroBilde, '/'), ['assets_photos_dreiekurs-smil.jpg', 'assets_hero-fellesskap-20261013.webp'], true)) {
+    $heroBilde = 'assets_hero-fellesskap-uten-briller-20261014.webp';
 }
-$heroAlt = $heroBilde === 'assets_hero-fellesskap-20261013.webp'
+$heroAlt = $heroBilde === 'assets_hero-fellesskap-uten-briller-20261014.webp'
     ? 'KI-generert motiv basert på verkstedbilder: Monica og en liten gruppe lager keramikk sammen'
     : 'Keramikk og fellesskap på Lissom';
 $h .= '<section class="lx-hero lx-hero-fellesskap" data-theme="sun" style="background: var(--lissom-yellow); position: relative; overflow: clip; display: grid; min-height: 82vh;">'

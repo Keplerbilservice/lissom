@@ -39,7 +39,7 @@ function sjekk(bool $ok, string $navn): void {
     if (!$ok) { $feil++; echo "FEIL: {$navn}\n"; }
 }
 $h = tegnHero('assets_photos_dreiekurs-smil.jpg');
-sjekk(str_contains($h, 'src="assets_hero-fellesskap-20261013.webp"'), 'Det tidligere standardbildet bruker valgt motiv');
+sjekk(str_contains($h, 'src="assets_hero-fellesskap-uten-briller-20261014.webp"'), 'Det tidligere standardbildet bruker valgt motiv med ny cacheadresse');
 sjekk(str_contains($h, 'KI-generert motiv'), 'Nytt motiv har korrekt alternativtekst');
 sjekk(!str_contains($h, 'heart-logo-mask'), 'Ingen gammel hjertemaske kutter gruppen');
 sjekk(str_contains($h, 'href="/kurs"'), 'Kursknappen beholdes');

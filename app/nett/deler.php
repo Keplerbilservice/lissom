@@ -322,7 +322,7 @@ final class Deler
             . '<span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--text-heading); white-space: nowrap;">'
             . (!empty($k['fra']) && (string) ($k['price'] ?? '') !== '' ? '<span style="font-family: var(--font-sans); font-weight: 700; font-size: 16px; color: var(--brown-500);">fra</span> ' : '')
             . $e((string) ($k['price'] ?? '')) . '</span>'
-            . self::knapp((string) ($k['cta'] ?? 'Book plass'), ['size' => 'sm', 'attr' => 'tabindex="-1"'])
+            . self::knapp((string) ($k['cta'] ?? 'Book plass'), ['size' => 'sm', 'lenke' => true, 'href' => $href])
             . '</div></div></div>';
         return $h;
     }

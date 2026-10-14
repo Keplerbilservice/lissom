@@ -76,6 +76,7 @@ spl_autoload_register(static function (string $klasse): void {
         'Booking' => 'booking.php',
         'DB' => 'db.php',
         'Dokumenter' => 'dokumenter.php',
+        'Driftvakt' => 'driftvakt.php',
         'Dugnad' => 'dugnad.php',
         'Ferie' => 'ferie.php',
         'Foresporsel' => 'http.php',

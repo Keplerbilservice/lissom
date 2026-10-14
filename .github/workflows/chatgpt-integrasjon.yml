@@ -1,41 +1,74 @@
 name: ChatGPT-integrasjon – PHP-kontroll
 on:
+  workflow_call:
   pull_request:
     paths:
       - 'api/admin/kursbilde-kontrollert.php'
       - '.github/workflows/chatgpt-integrasjon.yml'
       - 'tests/chatgpt-kursbilde.php'
-      - 'api/integrasjon/chatgpt-kurser.php'
+      - 'api/integrasjon/**'
+      - 'app/integrasjon/**'
+      - 'app/bootstrap.php'
+      - '.htaccess'
+      - 'db/migrations/278_chatgpt_integrasjon.sql'
       - 'app/lib/chatgptkurser.php'
       - 'bin/chatgpt-mcp/**'
       - 'tests/chatgpt-kurser.php'
-      - 'tests/fixtures/chatgpt-kurser-router.php'
+      - 'tests/chatgpt-php-oauth.php'
+      - 'tests/fixtures/chatgpt-php-router.php'
 permissions:
   contents: read
 jobs:
   php-syntaks:
     runs-on: ubuntu-latest
+    services:
+      db:
+        image: mariadb:10.11
+        env:
+          MARIADB_DATABASE: lissom_mcp_fixture
+          MARIADB_USER: fixture
+          MARIADB_PASSWORD: fixture
+          MARIADB_ROOT_PASSWORD: fixture-root
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s --health-timeout=5s --health-retries=20
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
+          extensions: pdo_mysql, pdo_sqlite, openssl
+          tools: composer:v2
           coverage: none
       - name: Sjekk PHP-syntaks
         run: |
           php -l api/admin/kursbilde-kontrollert.php
           php -l tests/chatgpt-kursbilde.php
           php tests/chatgpt-kursbilde.php
-          php -l api/integrasjon/chatgpt-kurser.php
+          php -l api/integrasjon/kobling.php
           php -l app/lib/chatgptkurser.php
-          php -l tests/fixtures/chatgpt-kurser-router.php
+          php -l tests/fixtures/chatgpt-php-router.php
+          php -l app/bootstrap.php
+          php -l tests/chatgpt-php-oauth.php
+          find app/integrasjon/src -name '*.php' -print0 | xargs -0 -n1 php -l
           php tests/chatgpt-kurser.php
+      - name: Installer PHP-integrasjonen fra låsefil
+        working-directory: app/integrasjon
+        run: |
+          composer install --no-dev --no-interaction --no-plugins --no-scripts --prefer-dist
+          composer validate --no-check-publish
+          composer audit --no-dev
+      - name: Test PHP OAuth og SQL-lagring uten produksjonsdata
+        run: |
+          php tests/chatgpt-php-oauth.php
+          MCP_FIXTURE_MYSQL_DSN='mysql:host=127.0.0.1;port=3306;dbname=lissom_mcp_fixture' php tests/chatgpt-php-oauth.php
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: npm
           cache-dependency-path: bin/chatgpt-mcp/package-lock.json
-      - name: Installer separat MCP-tjeneste og test med syntetiske data
+      - name: Test PHP-serveren med ekte MCP-klient (Node brukes bare i testen)
         working-directory: bin/chatgpt-mcp
         run: |
           npm ci --ignore-scripts

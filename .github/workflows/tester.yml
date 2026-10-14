@@ -10,6 +10,8 @@ on:
     branches-ignore: [main]
 
 jobs:
+  integrasjon:
+    uses: ./.github/workflows/chatgpt-integrasjon.yml
   # Eieren, 2. oktober 2026: testene tok ~30 min i én jobb. Naa deles de i
   # grupper (tests/alle.sh, «gruppe»-linjene) som kjorer parallelt, hver med
   # egen base. «plan» leser gruppelisten fra alle.sh og feiler hvis et

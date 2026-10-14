@@ -35,6 +35,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+          coverage: none
+      - name: Bygg låste PHP-avhengigheter utenfor offentlig webrot
+        working-directory: app/integrasjon
+        run: composer install --no-dev --no-interaction --no-plugins --no-scripts --prefer-dist --optimize-autoloader
+
       - name: Sjekk PHP-syntaks før noe legges ut
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq php-cli

@@ -4,17 +4,20 @@
         {
             "id": "chatgpt-integrasjon-lesefase",
             "dato": "2026-10-14",
-            "hva": "Eieren ba om å fortsette integrasjonen fra PR #245 og gjøre grunnlaget gjenbrukbart for Kepler EDB og andre systemer. Lokal lesefase med egen OAuth-ressurs per system; produksjonsaktivering og skrivetilgang er ikke godkjent.",
-            "hvor": "Separat MCP-tjeneste og deaktivert intern kursleser",
+            "hva": "Eieren ba om å fortsette PR #245 med PHP og SQL via Domene.no, uten Railway, og egen tilkobling per system. Lokal lesefase for Lissom med gjenbrukbar kjerne; serveraktivering og skrivetilgang er ikke godkjent.",
+            "hvor": "PHP OAuth/MCP og deaktivert kursleser",
             "kode": [
                 {
-                    "fil": "bin/chatgpt-mcp/src/resource-server.mjs",
-                    "finnes": ["audience: config.resource", "readOnlyHint: true", "claims.scope.split(' ').includes(scope)"]
+                    "fil": "app/integrasjon/src/OAuth.php",
+                    "finnes": ["$claims->get('aud') !== [$this->resource]", "'code_challenge_methods_supported' => ['S256']", "new \\DateInterval('PT10M')"]
                 },
                 {
-                    "fil": "api/integrasjon/chatgpt-kurser.php",
-                    "finnes": ["LISSOM_MCP_BRIDGE_SECRET", "http_response_code(503)"],
-                    "ikkeFinnes": ["krev_admin()"]
+                    "fil": "api/integrasjon/kobling.php",
+                    "finnes": ["Config::hent('mcp_enabled',false) !== true", "define('LISSOM_MCP_REQUEST',true)", "'lissom:courses:read'"]
+                },
+                {
+                    "fil": "app/bootstrap.php",
+                    "finnes": ["if (!defined('LISSOM_MCP_REQUEST'))"]
                 }
             ]
         },

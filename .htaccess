@@ -62,6 +62,10 @@ RewriteRule ^bedrift/tilbud/?$ /bedrift-tilbud.php [L]
 # hos alle verter — og der det ikke er tillatt, stopper HELE sida med 500.
 # Omskrivingsregler er alt i bruk her, saa de brukes til dette ogsaa.
 #
+# Explicit PHP MCP/OAuth routes. Disabled in the application unless configured.
+RewriteRule ^integrasjon/(mcp|oauth/(authorize|token|register))$ /api/integrasjon/kobling.php [L]
+RewriteRule ^\.well-known/oauth-(authorization-server|protected-resource)$ /api/integrasjon/kobling.php [L]
+
 # Mapper: en adresse som treffer en mappe har ingenting aa vise. Forsida er
 # ogsaa en mappe (webroten), men den gaar til side.php lenger nede — regelen
 # krever minst ett tegn foran skraastreken, saa «/» rores ikke. .well-known

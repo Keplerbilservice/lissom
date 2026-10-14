@@ -191,3 +191,11 @@ nav[data-nett-mobilmeny]:not([hidden]) { display: flex !important; }
   .lx-mk-punkter2 { grid-template-columns: minmax(0, 1fr); }
   .lx-mk-grid { grid-template-columns: minmax(0, 1fr); gap: 20px; }
 }
+
+/* Runde nedre bildekantene i kurs- og medlemskort, uten aa endre hero,
+   logoer eller funksjonelle bilder. Kortets ovre hjørner klippes av kortet. */
+.lx-dk-bilde { border-radius: 0 0 22px 22px; }
+.lx-mk-kort > img { border-radius: 0 0 22px 22px; }
+@media (max-width: 760px) {
+  .lx-mk-prov > img { border-radius: 0 0 22px 22px; }
+}

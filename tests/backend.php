@@ -19263,7 +19263,7 @@ sjekk('Ovnkortet: tre piller i kortet paa Min side og kalenderen, statusen oever
     // ikke bare paa kalenderen. Like mange av hver.
     ($ovnAnt = substr_count($mkSida, '<sc-if value="{{ ovnVis }}" hint-placeholder-val="{{ true }}">')) >= 2
     && substr_count($mkSida, '<button type="button" onClick="{{ ovnRaabrannNaa }}" style="{{ ovnPilleStil }}">Råbrann satt</button>') === $ovnAnt
-    && substr_count($mkSida, '<button type="button" onClick="{{ ovnGlasurNaa }}" style="{{ ovnPilleStil }}">Glasurbrann satt</button>') === $ovnAnt
+    && substr_count($mkSida, 'aria-label="Glasurbrann satt" value="{{ ovnGlasurValg }}" onChange="{{ ovnGlasurVelg }}"') === $ovnAnt
     && substr_count($mkSida, '<button type="button" onClick="{{ ovnTomtNaa }}" style="{{ ovnPilleStil }}">Ovn er tømt</button>') === $ovnAnt
     && !str_contains($mkSida, 'class="ms-ovn"')
     && substr_count($mkSida, '<h3 style="margin: 0 0 4px; font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">{{ ovnTittel }}</h3>') === 2

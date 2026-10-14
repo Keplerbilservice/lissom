@@ -1,0 +1,36 @@
+name: Verify published website CSS
+
+on:
+  pull_request:
+    paths:
+      - 'nett-egen.css'
+      - 'nett.css'
+      - 'lissom-2108.html'
+      - 'bin/nettcss.mjs'
+      - '.github/workflows/verify-nett-css.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'nett-egen.css'
+      - 'nett.css'
+      - 'lissom-2108.html'
+      - 'bin/nettcss.mjs'
+      - '.github/workflows/verify-nett-css.yml'
+  workflow_dispatch:
+
+jobs:
+  verify-generated-css:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Regenerate website CSS
+        run: node bin/nettcss.mjs
+      - name: Fail if published CSS is out of sync
+        run: |
+          if ! git diff --exit-code -- nett.css; then
+            echo "::error::nett.css is out of sync. Run node bin/nettcss.mjs and commit nett.css before merging."
+            exit 1
+          fi

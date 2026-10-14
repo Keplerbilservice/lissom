@@ -528,7 +528,7 @@ final class Kort
             $tid = $begge ? $tider[0] : (string) ($o['klokke'] ?? '');
             $nokkel = implode(',', array_slice($dager, 0, 2));
             if (!isset($grupper[$nokkel])) {
-                if (count($grupper) >= 4) {
+                if (count($grupper) >= 3) {
                     break;
                 }
                 $grupper[$nokkel] = ['dager' => array_slice($dager, 0, 2), 'tider' => [], 'begge' => $begge,

@@ -2530,3 +2530,6 @@ nav[data-nett-mobilmeny]:not([hidden]) { display: flex !important; }
 @media (max-width: 640px) {
   .lx-dk-bilde { height: 225px; }
 }
+
+/* Godkjent Lissom-bildestil: diskret 10 px avrunding paa kursbilder. */
+.lx-dk-bilde { border-radius: 10px; }

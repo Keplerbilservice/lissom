@@ -287,6 +287,8 @@ if (DB::harTabell('brenninger')) {
                 ? $iOslo((string) $br['slutt_tid'], 'H:i')
                 : $iOslo((string) $br['slutt_tid'], 'H:i') . ' ' . $iOslo((string) $br['slutt_tid'], 'j.n.'),
             'tittel'    => ($slagNavn[(string) $br['slag']] ?? 'Brenning')
+                           . ((string) $br['slag'] === 'glasurbrann' && isset($br['temperatur'])
+                               ? ' · ' . (int) $br['temperatur'] . ' °C' : '')
                            . ((string) ($br['ovn'] ?? '') !== '' ? ' · ' . $br['ovn'] : ''),
             'type'      => 'brenning',
             'holder'    => '',

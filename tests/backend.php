@@ -2601,6 +2601,9 @@ sjekk('en brenning kan gaa over natta',
     str_contains($vstFil, "\$sDato = Foresporsel::tekst('sluttDato') ?: \$dato;"));
 sjekk('brenningens slag er et valg, ikke fritekst',
     str_contains($vstFil, "const BRENNSLAG = ['raabrann', 'glasurbrann', 'annet'];"));
+sjekk('glasurbrann krever 1220 eller 1250 grader',
+    str_contains($vstFil, "in_array(\$temperatur, [1220, 1250], true)")
+    && str_contains($vstFil, "'temperatur' => \$slag === 'glasurbrann' ? \$temperatur : null"));
 // Brenningene staar i kalenderen. Vaktene gjor det ikke: hver vakt er en
 // kursdato som alt ligger der, saa en egen vaktbrikke ville dublert raden.
 sjekk('brenningene staar i kalenderen, vaktene ikke',

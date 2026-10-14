@@ -60,7 +60,7 @@ $siste = static function () use ($klar, $harSlag, $harTemperatur, $medlemId): ?a
         return null;
     }
     $r = DB::en(
-        'SELECT id, navn, created_at' . ($harSlag ? ', slag' : '') . ($harTemperatur ? ', temperatur' : '') . ' FROM ovn_tomt
+        'SELECT id, navn, created_at' . ($harSlag ? ', slag' : '') . ($harTemperatur ? ', temperatur, tomt_slag' : '') . ' FROM ovn_tomt
           WHERE created_at >= UTC_TIMESTAMP() - INTERVAL 24 HOUR
           ORDER BY id DESC LIMIT 1'
     );
@@ -82,6 +82,8 @@ $siste = static function () use ($klar, $harSlag, $harTemperatur, $medlemId): ?a
         'id'   => (int) $r['id'],
         'slag' => $slag,
         'temperatur' => $slag === 'glasurbrann' && isset($r['temperatur']) ? (int) $r['temperatur'] : null,
+        'tomtSlag' => $slag === 'tomt' ? (string) ($r['tomt_slag'] ?? '') : '',
+        'tomtTemperatur' => $slag === 'tomt' && isset($r['temperatur']) ? (int) $r['temperatur'] : null,
         'av'   => (string) $r['navn'],
         // Sekunder siden epoken. Nettleseren skriver «i dag 14:20» selv, i
         // sin egen tidssone — basen lagrer UTC.
@@ -113,6 +115,13 @@ if (in_array($handling, SLAG, true)) {
     ];
     if ($harSlag) {
         $rad['slag'] = $handling;
+        if ($handling === 'tomt' && $harTemperatur) {
+            $forrige = DB::en('SELECT slag, temperatur FROM ovn_tomt ORDER BY id DESC LIMIT 1');
+            if ($forrige !== null && in_array((string) $forrige['slag'], ['raabrann', 'glasurbrann'], true)) {
+                $rad['tomt_slag'] = (string) $forrige['slag'];
+                $rad['temperatur'] = isset($forrige['temperatur']) ? (int) $forrige['temperatur'] : null;
+            }
+        }
         if ($handling === 'glasurbrann') {
             if (!$harTemperatur) {
                 Svar::feil('Temperaturvalg er ikke satt opp ennå. Kjør oppdateringen av databasen først.');

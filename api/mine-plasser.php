@@ -146,8 +146,10 @@ foreach ($bookinger as $b) {
         'sum'           => Booking::kroner((int) $b['belop_ore'])
                             . ((int) $b['antall'] > 1 ? ' · ' . $b['antall'] . ' plasser' : ''),
         'status'        => $betalt ? 'Bekreftet' : 'Reservert — ikke betalt',
-        'ubetalt'       => !$betalt,
-        'kanAvmelde'    => !$betalt && $b['start_tid'] !== null && strtotime((string) $b['start_tid'] . ' UTC') > time(),
+        ...(!$betalt ? [
+            'ubetalt'    => true,
+            'kanAvmelde' => $b['start_tid'] !== null && strtotime((string) $b['start_tid'] . ' UTC') > time(),
+        ] : []),
         'tone'          => $betalt ? 'success' : 'warning',
         'frist'         => $betalt ? $fristTekst : 'Betalingen er ikke ferdig registrert. Betalingshistorikk vises når betalinger er registrert.'
                             . (Booking::utenKursbevis((int) $b['course_id']) ? '' : ' Kursbevis blir tilgjengelig etter at kurset er gjennomført og betalt.')

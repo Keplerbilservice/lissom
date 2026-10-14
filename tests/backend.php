@@ -19283,6 +19283,11 @@ sjekk('… api/ovn.php tar imot raabrann og glasurbrann som slag, og migrasjon 1
     && str_contains((string) les_testfil(dirname(__DIR__) . '/api/ovn.php'), "    \$slag = in_array((string) (\$r['slag'] ?? ''), SLAG, true) ? (string) \$r['slag'] : 'tomt';")
     && str_contains((string) les_testfil(dirname(__DIR__) . '/db/migrations/179_ovnkortet_raabrann_glasurbrann.sql'),
         "    ADD COLUMN IF NOT EXISTS slag VARCHAR(24) NOT NULL DEFAULT 'tomt'"));
+sjekk('glasurbrann satt velger og lagrer 1220 eller 1250 grader',
+    str_contains((string) les_testfil(dirname(__DIR__) . '/api/ovn.php'), "in_array(\$temperatur, [1220, 1250], true)")
+    && str_contains($mkSida, 'ovnGlasurVelg: e =>')
+    && str_contains((string) les_testfil(dirname(__DIR__) . '/api/ovn.php'), "\$rad['tomt_slag'] = (string) \$forrige['slag']")
+    && str_contains((string) les_testfil(dirname(__DIR__) . '/db/migrations/278_ovn_glasurtemperatur.sql'), 'ADD COLUMN IF NOT EXISTS temperatur'));
 sjekk('… api/ovn.php: siste doegn, sett per medlem, den som toemte har sett det; migrasjon 171 lager tabellene',
     (static function (): bool {
         $a = (string) les_testfil(dirname(__DIR__) . '/api/ovn.php');

@@ -15,7 +15,7 @@ else $db->exec('CREATE TABLE mcp_oauth_state (kind TEXT,key_hash TEXT,value_json
 $db->exec("
 CREATE TABLE members (id INTEGER PRIMARY KEY,rolle TEXT,anonymisert_at TEXT);
 CREATE TABLE courses (id INTEGER PRIMARY KEY,tittel TEXT,slug TEXT,status TEXT,bilde TEXT);
-CREATE TABLE rate_limits (nokkel TEXT,vindu_start TEXT,antall INTEGER,PRIMARY KEY(nokkel,vindu_start));
+CREATE TABLE rate_limits (nokkel VARCHAR(191),vindu_start VARCHAR(32),antall INTEGER,PRIMARY KEY(nokkel,vindu_start));
 CREATE TABLE audit_log (member_id INTEGER,handling TEXT,objekt_type TEXT,objekt_id INTEGER,detaljer TEXT);
 INSERT INTO members VALUES (1,'admin',NULL),(2,'medlem',NULL);
 INSERT INTO courses VALUES (7,'Syntetisk kurs','syntetisk','publisert',NULL);");

@@ -1,0 +1,11 @@
+<!doctype html><html lang="nb"><meta charset="utf-8"><meta name="robots" content="noindex,nofollow,noarchive"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lissom – TEST</title><h1>Lissom – TEST</h1><p>Lukket test av ChatGPT-tilkoblingen. Her brukes bare testdata.</p>
+<form id="login"><label>Testbruker <input name="brukernavn" autocomplete="username" required></label><label>Testpassord <input name="passord" type="password" autocomplete="current-password" required></label><button>Logg inn i testen</button></form><p id="status" role="status"></p>
+<script>
+document.getElementById('login').addEventListener('submit',async e=>{
+ e.preventDefault(); const status=document.getElementById('status');status.textContent='Logger inn…';
+ try {const response=await fetch('/api/logg-inn.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(e.target)))});
+ status.textContent=response.ok?'Du er innlogget i Lissom – TEST. Gå tilbake til ChatGPT for å koble til testen.':'Innloggingen lyktes ikke. Kontroller testbrukeren og testpassordet.';
+ } catch {status.textContent='Testserveren kunne ikke nås.';}
+});
+</script></html>

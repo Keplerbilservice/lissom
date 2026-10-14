@@ -1,0 +1,25 @@
+# TEST ONLY. Replace the closed startup file only after protection and TLS are verified.
+# The private password file must be created separately by the owner.
+AuthType Basic
+AuthName "Lissom - TEST"
+AuthBasicProvider file
+AuthUserFile "/home/rbvapxvz/lissom-mcp-test-private/.htpasswd"
+<RequireAll>
+    Require expr "%{HTTP_HOST} == 'test.lissom.no' && %{HTTPS} == 'on'"
+    <RequireAny>
+        # Match the original request line: rewrites must not widen this exception.
+        # These routes expose OAuth metadata, not course data without a Bearer token.
+        Require expr "%{THE_REQUEST} =~ m#^(GET|POST|OPTIONS|DELETE) /(?:integrasjon/(?:mcp|oauth/(?:token|register))|\.well-known/oauth-(?:authorization-server|protected-resource))(?:\?[^ ]*)? HTTP/[0-9.]+$#"
+        Require valid-user
+    </RequireAny>
+</RequireAll>
+Header always set X-Robots-Tag "noindex, nofollow, noarchive"
+Header always set Cache-Control "no-store"
+Header always set X-Content-Type-Options "nosniff"
+RewriteEngine On
+RewriteRule ^integrasjon/(mcp|oauth/(authorize|token|register))$ /api/integrasjon/kobling.php [L]
+RewriteRule ^\.well-known/oauth-(authorization-server|protected-resource)$ /api/integrasjon/kobling.php [L]
+RewriteRule ^$ /index.html [L]
+# No customer pages, other APIs or private directories in the test surface.
+RewriteRule ^(?:index\.html|api/logg-(?:inn|ut)\.php|api/integrasjon/kobling\.php)$ - [L]
+RewriteRule ^ - [F]

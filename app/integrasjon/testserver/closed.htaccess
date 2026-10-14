@@ -1,0 +1,6 @@
+# LISSOM TEST - CLOSED UNTIL THE OWNER APPROVES AND ACCESS CONTROL IS VERIFIED.
+# Install only in the separate test document root; never in production.
+Require all denied
+Header always set X-Robots-Tag "noindex, nofollow, noarchive"
+Header always set Cache-Control "no-store"
+Header always set X-Content-Type-Options "nosniff"

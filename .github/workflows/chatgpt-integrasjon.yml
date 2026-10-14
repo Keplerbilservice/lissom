@@ -15,6 +15,8 @@ on:
       - 'bin/chatgpt-mcp/**'
       - 'tests/chatgpt-kurser.php'
       - 'tests/chatgpt-php-oauth.php'
+      - 'tests/chatgpt-testpakke.py'
+      - 'bin/pakk-mcp-test.py'
       - 'tests/fixtures/chatgpt-php-router.php'
 permissions:
   contents: read
@@ -52,6 +54,7 @@ jobs:
           php -l app/bootstrap.php
           php -l tests/chatgpt-php-oauth.php
           find app/integrasjon/src -name '*.php' -print0 | xargs -0 -n1 php -l
+          find app/integrasjon/testserver -name '*.php' -print0 | xargs -0 -n1 php -l
           php tests/chatgpt-kurser.php
       - name: Installer PHP-integrasjonen fra låsefil
         working-directory: app/integrasjon
@@ -59,6 +62,8 @@ jobs:
           composer install --no-dev --no-interaction --no-plugins --no-scripts --prefer-dist
           composer validate --no-check-publish
           composer audit --no-dev
+      - name: Kontroller lukket testpakke og sperre mot produksjonsoppsett
+        run: python tests/chatgpt-testpakke.py
       - name: Test PHP OAuth og SQL-lagring uten produksjonsdata
         run: |
           php tests/chatgpt-php-oauth.php

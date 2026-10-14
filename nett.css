@@ -2589,3 +2589,18 @@ nav[data-nett-mobilmeny]:not([hidden]) { display: flex !important; }
   .lx-dk .lx-dk-brikke { height: 60px; min-height: 60px; }
   .lx-dk .lx-dk-brikke .lx-dk-dag { font-size: 19px; }
 }
+
+/* Medlemskap: samme redaksjonelle kortstil som kursene, uten funksjonsendringer. */
+.lx-mk-kort { border-radius: 20px; box-shadow: 0 8px 24px rgba(77,29,18,.06); }
+.lx-mk-kort > img { height: 250px; width: calc(100% - 24px); margin: 12px 12px 0; border-radius: 10px; object-fit: cover; }
+.lx-mk-kort .lx-mk-inni { padding: 26px 24px 24px; }
+.lx-mk-kort .lx-mk-tittel { font-size: clamp(24px, 2.1vw, 32px); line-height: 1.12; margin: 10px 0 20px; }
+.lx-mk-kort .lx-mk-tekst { line-height: 1.55; }
+.lx-mk-prov { border-radius: 20px; box-shadow: 0 8px 24px rgba(77,29,18,.06); }
+.lx-mk-prov > img { border-radius: 10px; }
+@media (max-width: 760px) {
+  .lx-mk-prov > img { width: calc(100% - 20px); height: 225px; margin: 10px 10px 0; }
+  .lx-mk-kort > img { width: calc(100% - 20px); height: 225px; margin: 10px 10px 0; }
+  .lx-mk-kort .lx-mk-inni { padding: 22px 20px; }
+  .lx-mk-kort .lx-mk-tittel { font-size: 27px; }
+}

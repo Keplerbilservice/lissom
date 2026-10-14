@@ -383,7 +383,23 @@ H.venteliste = () => {
   const h = aktiv(), ko = h.venteliste || [];
   if (!ko.length) return toast('Ingen på ventelista.');
   ark(`<div class="ark-head"><h2>Venteliste · ${ko.length}</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
-    ${ko.map((w, i) => `<div class="rad"><div class="tekst"><b>${esc(w.navn)}</b><small>Nr. ${w.posisjon}${w.varslet ? ' · varslet' : ''}${w.paaKurset ? ' · venter på kurset' : ''}</small></div><button class="knapp liten" data-k="giPlass" data-id="${w.id}">Gi plass</button></div>`).join('')}`);
+    ${ko.map((w, i) => `<div class="rad" style="flex-wrap:wrap"><div class="tekst"><b>${esc(w.navn)}</b><small>Nr. ${w.posisjon}${w.varslet ? ' · varslet' : ''}${w.paaKurset ? ' · venter på kurset' : ''}</small></div><button class="knapp liten" data-k="giPlass" data-id="${w.id}">Gi plass</button><button class="knapp liten rod" data-k="fjernVente" data-id="${w.id}" aria-label="Fjern ${esc(w.navn)} fra ventelisten">Fjern</button></div>`).join('')}`);
+};
+H.fjernVente = b => {
+  const w = (aktiv()?.venteliste || []).find(w => +w.id === +b.dataset.id);
+  if (!w) return;
+  ark(`<div class="ark-head"><h2>Fjern fra ventelisten?</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
+    <p>Fjern ${esc(w.navn)} fra denne ventelisten. Ingen beskjed sendes.</p>
+    <div class="ark-fot"><button class="knapp" data-k="venteliste">Avbryt</button><button class="knapp rod" data-k="fjernVenteOk" data-id="${w.id}">Ja, fjern fra ventelisten</button></div>`);
+};
+H.fjernVenteOk = async b => {
+  const id = +b.dataset.id;
+  if (!(aktiv()?.venteliste || []).some(w => +w.id === id)) return;
+  b.disabled = true;
+  try {
+    const r = await api('venteliste.php', {handling: 'fjern', id});
+    lukk(true); toast(esc(r.beskjed || 'Fjernet fra ventelisten.')); await oppfrisk();
+  } catch (e) { b.disabled = false; throw e; }
 };
 H.giPlass = async b => {
   const r = await api('venteliste.php', {handling: 'gi-plass', id: +b.dataset.id, oktId: KS.okt});

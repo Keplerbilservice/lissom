@@ -6,12 +6,12 @@ import {api, ark, lukk, toast, registrer, poll, gaaTil, esc, idag, pluss, langDa
   OKTER, KURSHOLDERE, hentPeriode, erOkt, samleDag, ubetalte, H, oppfrisk, vedOppfrisk,
   arkFlytt, arkBeskjed, arkPaaminnelse, arkSerie, stengOkt, kopierOkt, hentKurs, hentPop, erPop, popPrisliste, popUkjent, POP_FEIL} from './kalender.js';
 
-const KS = {okt: 0, fra: '', kurs: 0, booking: 0, el: null, liste: null, feil: '', bareUbetalt: false, delt: null};
+const KS = {okt: 0, fra: '', kurs: 0, booking: 0, venteliste: false, el: null, liste: null, feil: '', bareUbetalt: false, delt: null};
 
 // #kurs?okt= (kalenderen, I dag, «Ikke betalt» med &booking=) eller #kurs?kurs= (søket: neste dato på kurset).
 function lesHash() {
   const q = new URLSearchParams((location.hash.split('?')[1]) || '');
-  if (location.hash.startsWith('#kurs')) { KS.okt = +q.get('okt') || 0; KS.fra = q.get('fra') || ''; KS.kurs = +q.get('kurs') || 0; KS.booking = +q.get('booking') || 0; }
+  if (location.hash.startsWith('#kurs')) { KS.okt = +q.get('okt') || 0; KS.fra = q.get('fra') || ''; KS.kurs = +q.get('kurs') || 0; KS.booking = +q.get('booking') || 0; KS.venteliste = q.get('venteliste') === '1'; }
 }
 const iOslo = utc => new Intl.DateTimeFormat('sv-SE', {timeZone: 'Europe/Oslo'}).format(new Date(String(utc).replace(' ', 'T') + 'Z'));
 // Neste dato (i dag eller senere) på et kurs, fra kurs.php. 0 når kurset ikke har flere datoer.
@@ -111,7 +111,7 @@ async function tegn(el) {
   if (KS.okt) {
     const h = OKTER.get(KS.okt);
     if (h) tegnKursside(h); else el.innerHTML = '<div class="nk-kurs"><p class="muted">Henter kurset …</p></div>';
-    try { const ny = await hentOkt(!!h); if (KS.el === el) { tegnKursside(ny); visBooking(); } }
+    try { const ny = await hentOkt(!!h); if (KS.el === el) { tegnKursside(ny); visBooking(); if (ny && KS.venteliste && location.hash.startsWith('#kurs')) { KS.venteliste = false; H.venteliste(); } } }
     catch (e) { KS.feil = e.message; if (KS.el === el) tegnKursside(null); }
   } else {
     tegnListe(); await hentListe(); if (KS.el === el && !KS.okt) tegnListe();

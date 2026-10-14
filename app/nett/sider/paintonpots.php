@@ -31,11 +31,11 @@ for ($i = 1; $i <= 4; $i++) {
 }
 $popHref = $kort !== null ? $kort['href'] : '/events';
 return [
-    'kropp' => '<div class="lx-pop-bildestil">' . Mal::tegn('Paint on Pots', [
+    'kropp' => Mal::tegn('Paint on Pots', [
         'popDatoer' => $pop, 'popHarDatoer' => $antall > 0, 'popManglerDatoer' => $antall === 0, 'popHarFlere' => $antall > 1,
         'popFlereDatoer' => $antall > 1 ? 'Book tid på forhånd. Du velger dag og tid i bestillingen.' : '',
         'popSteg' => $steg, 'popFaq' => $faq, 'sant' => true,
-    ], ['goEvents' => '/events', 'goForesporsel' => '/kontakt', 'popTilDatoer' => $popHref, 'book' => $popHref]) . '</div>' . "\n" . Deler::bunn(true),
+    ], ['goEvents' => '/events', 'goForesporsel' => '/kontakt', 'popTilDatoer' => $popHref, 'book' => $popHref]) . "\n" . Deler::bunn(true),
     'aktiv' => 'Events',
     // Bildet oeverst er LCP paa sida — samme srcset som i malen.
     'hode'  => '<link rel="preload" as="image" fetchpriority="high" href="uploads_foto-paintonpots.jpg" imagesrcset="uploads_foto-paintonpots-400.jpg 400w, uploads_foto-paintonpots-800.jpg 800w, uploads_foto-paintonpots.jpg 1024w" imagesizes="(max-width: 760px) 100vw, 700px">' . "\n",

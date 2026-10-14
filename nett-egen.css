@@ -293,16 +293,3 @@ nav[data-nett-mobilmeny]:not([hidden]) { display: flex !important; }
   .lx-mk-kort .lx-mk-tittel { font-size: 27px; }
 }
 
-/* Kun Paint on Pots-sidens originale hovedbilde. Ikke tekst eller booking. */
-.lx-pop-bildestil img[src*="uploads_foto-paintonpots"] {
-  box-sizing: border-box;
-  height: 250px !important;
-  width: 100%;
-  object-fit: cover;
-  border-radius: 10px !important;
-}
-@media (max-width: 760px) {
-  .lx-pop-bildestil img[src*="uploads_foto-paintonpots"] {
-    height: 225px !important;
-  }
-}

@@ -2605,3 +2605,25 @@ nav[data-nett-mobilmeny]:not([hidden]) { display: flex !important; }
   .lx-mk-kort .lx-mk-tittel { font-size: 27px; }
 }
 
+
+/* Kun de fire inngangskortene paa forsiden: samme bildehoeyde og 10px
+   bildekant som godkjente kurskort. Ingen endring i kortinnhold eller lenker. */
+.lx-forside-innganger > [data-nett-kort] > div:first-child {
+  box-sizing: border-box;
+  height: 250px;
+  margin: 12px 12px 0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.lx-forside-innganger > [data-nett-kort] > div:first-child > img {
+  width: 100% !important;
+  height: 100% !important;
+  aspect-ratio: auto !important;
+  object-fit: cover;
+}
+@media (max-width: 640px) {
+  .lx-forside-innganger > [data-nett-kort] > div:first-child {
+    height: 225px;
+    margin: 10px 10px 0;
+  }
+}

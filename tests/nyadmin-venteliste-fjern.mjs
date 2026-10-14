@@ -8,7 +8,7 @@ const s=fixture('seed');
 const ids=JSON.parse(php(`
  DB::oppdater('course_sessions',['start_tid'=>gmdate('Y-m-d H:i:s',time()+20*86400)],['id'=>${s.session}]);
  $a=DB::settInn('waitlist',['course_id'=>${s.course},'course_session_id'=>${s.session},'navn'=>'${s.tag}-A','posisjon'=>1,'status'=>'venter']);
- $b=DB::settInn('waitlist',['course_id'=>${s.course},'course_session_id'=>${s.session},'navn'=>'${s.tag}-B','posisjon'=>2,'status'=>'varslet','frist_at'=>gmdate('Y-m-d H:i:s',time()+86400)]);
+ $b=DB::settInn('waitlist',['course_id'=>${s.course},'course_session_id'=>null,'navn'=>'${s.tag}-B','posisjon'=>2,'status'=>'varslet','frist_at'=>gmdate('Y-m-d H:i:s',time()+86400)]);
  echo json_encode([$a,$b]);`));
 const inspect=()=>php(`echo json_encode(DB::alle('SELECT id,status FROM waitlist WHERE course_id=:i ORDER BY id',['i'=>${s.course}]));`);
 const booking=()=>php(`echo json_encode(DB::en('SELECT status,payment_id,antall,belop_ore FROM bookings WHERE id=:i',['i'=>${s.booking}]));`);
@@ -23,6 +23,19 @@ try {
   p.on('request',r=>{if(r.method()==='POST'&&r.url().includes('/api/admin/'))posts.push(r.postDataJSON());});
   await p.goto(`http://lokal.lissom.no:${process.env.E2E_PORT||8140}/admin#kurs?okt=${s.session}&fra=kalender`,{waitUntil:'networkidle'});
   await p.getByRole('button',{name:/^Venteliste 2/}).click();
+  await p.getByRole('dialog').getByRole('button',{name:'Lukk',exact:true}).click();
+  await p.goto(`http://lokal.lissom.no:${process.env.E2E_PORT||8140}/admin#idag`,{waitUntil:'networkidle'});
+  await p.locator(`[data-rad="venteliste:${ids[0]}"] .tekst`).click();
+  await p.getByRole('button',{name:`Fjern ${s.tag}-A fra ventelisten`,exact:true}).waitFor();
+  assert.match(p.url(),new RegExp(`okt=${s.session}`));
+  assert.match(p.url(),/venteliste=1/);
+  await p.getByRole('dialog').getByRole('button',{name:'Lukk',exact:true}).click();
+  await p.goto(`http://lokal.lissom.no:${process.env.E2E_PORT||8140}/admin#idag`,{waitUntil:'networkidle'});
+  await p.locator(`[data-gjor="se-venteliste"][data-k="venteliste:${ids[1]}"]`).click();
+  await p.getByRole('button',{name:`Fjern ${s.tag}-B fra ventelisten`,exact:true}).waitFor();
+  assert.match(p.url(),new RegExp(`kurs=${s.course}`));
+  assert.match(p.url(),/venteliste=1/);
+  assert.equal(posts.length,0,'aapning fra I dag sender ingen endring eller tilbud');
   await p.getByRole('button',{name:`Fjern ${s.tag}-A fra ventelisten`,exact:true}).click();
   await p.getByRole('button',{name:'Avbryt',exact:true}).click();
   assert.equal(posts.length,0);
@@ -44,6 +57,6 @@ try {
   assert.equal(php(`echo DB::verdi("SELECT COUNT(*) FROM notifications WHERE ref_type='waitlist' AND ref_id IN (${ids.join(',')})");`),'0');
   assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true);
   assert.deepEqual(errors,[]);
-  await c.close();console.log(`OK ${width}: avbryt, fjern ventende og varslet, oppdatert liste, ingen endring av paamelding eller varsler`);
+  await c.close();console.log(`OK ${width}: I dag-rad og Se venteliste aapner Fjern direkte, avbryt, fjern ventende og varslet, oppdatert liste, ingen endring av paamelding eller varsler`);
  }
 } finally {await browser.close();fixture('cleanup',s);}

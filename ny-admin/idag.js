@@ -184,7 +184,7 @@
       leire: () => knapp('Åpne bestillingen', 'leire', true, `data-k="${k}"`),
       chat: () => knapp('Marker som lest', 'chat-lest', false, `data-k="${k}"`) + knapp('Svar', 'chat', true, `data-k="${k}"`),
       innboks: () => knapp('Svar', 'innboks', true, `data-k="${k}"`),
-      venteliste: () => knapp('Tilby plassen til ' + esc(s.fornavn || 'første på lista'), 'venteliste', true, `data-k="${k}"`),
+      venteliste: () => knapp('Se venteliste', 'se-venteliste', false, `data-k="${k}"`) + knapp('Tilby plassen til ' + esc(s.fornavn || 'første på lista'), 'venteliste', true, `data-k="${k}"`),
       henting: () => knapp('Merk hentet', 'hentet', false, `data-k="${k}"`) + knapp('Send «Klar til henting»', 'henting', true, `data-k="${k}"`),
       lager: () => knapp('Bestill mer', 'bestill', true, `data-k="${k}"`),
       feil: () => knapp('Løst', 'feil-lost', false, `data-k="${k}"`) + knapp('Les detaljer', 'feil', true, `data-k="${k}"`),
@@ -210,7 +210,7 @@
       case 'innboks': return () => arkInnboks(s);
       case 'feil': return () => arkFeil(s);
       case 'henting': return () => tilKurs(id);
-      case 'venteliste': return s.oktId ? () => tilKurs(Number(s.oktId)) : s.kursId ? () => NA.gaTil('kurs', {kurs: Number(s.kursId), fra: 'idag'}) : null;
+      case 'venteliste': return s.oktId ? () => tilKurs(Number(s.oktId), {venteliste: 1}) : s.kursId ? () => NA.gaTil('kurs', {kurs: Number(s.kursId), fra: 'idag', venteliste: 1}) : null;
       case 'pamelding': case 'tilbakebetal': return s.oktId ? () => tilKurs(Number(s.oktId), {booking: id}) : null;
       case 'lager': return NA.erMobil() ? null : () => NA.gaTil('varer', {vare: id});
       case 'soknad': return () => { location.href = '/admin-ny#' + String(s.rute || 'soknader'); };
@@ -667,6 +667,7 @@
         if (!await NA.bekreft('Avvis', 'Avvis bidraget. Opplastingen slettes.', 'Avvis')) return;
         return kall('medlemsforslag.php', {handling: 'avvis', id}, 'Bidraget er avvist.');
       case 'venteliste': return kall('venteliste.php', {handling: 'varsle', id}, 'Plassen er tilbudt.');
+      case 'se-venteliste': return radMaal(s)?.();
       case 'hentet': return arkHentet(s);
       case 'henting':
         if (!await NA.bekreft('Send «Klar til henting»?', 'Publiser ' + String(s.tittel).replace(/^Klar til henting: /, '') + ' på lissom.no/ferdigbrent og legg beskjed i kø til de som ikke har fått den.', 'Send')) return;

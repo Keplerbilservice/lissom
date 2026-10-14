@@ -40,6 +40,7 @@ $medlemId = (int) $medlem['id'];
 $klar = DB::harTabell('ovn_tomt') && DB::harTabell('ovn_tomt_sett');
 // Slaget kom med migrasjon 179. Foer den er kjoert er alt «tomt».
 $harSlag = $klar && DB::harKolonne('ovn_tomt', 'slag');
+$harTemperatur = $harSlag && DB::harKolonne('ovn_tomt', 'temperatur');
 const SLAG = ['tomt', 'raabrann', 'glasurbrann'];
 
 /**
@@ -54,12 +55,12 @@ const SLAG = ['tomt', 'raabrann', 'glasurbrann'];
  * toemming som har gaatt ut paa tid, er kortet tomt; da skal ikke en eldre
  * brenning dukke opp igjen under den, for den ovnen er jo toemt.
  */
-$siste = static function () use ($klar, $harSlag, $medlemId): ?array {
+$siste = static function () use ($klar, $harSlag, $harTemperatur, $medlemId): ?array {
     if (!$klar) {
         return null;
     }
     $r = DB::en(
-        'SELECT id, navn, created_at' . ($harSlag ? ', slag' : '') . ' FROM ovn_tomt
+        'SELECT id, navn, created_at' . ($harSlag ? ', slag' : '') . ($harTemperatur ? ', temperatur' : '') . ' FROM ovn_tomt
           WHERE created_at >= UTC_TIMESTAMP() - INTERVAL 24 HOUR
           ORDER BY id DESC LIMIT 1'
     );
@@ -80,6 +81,7 @@ $siste = static function () use ($klar, $harSlag, $medlemId): ?array {
     return [
         'id'   => (int) $r['id'],
         'slag' => $slag,
+        'temperatur' => $slag === 'glasurbrann' && isset($r['temperatur']) ? (int) $r['temperatur'] : null,
         'av'   => (string) $r['navn'],
         // Sekunder siden epoken. Nettleseren skriver «i dag 14:20» selv, i
         // sin egen tidssone — basen lagrer UTC.
@@ -111,6 +113,16 @@ if (in_array($handling, SLAG, true)) {
     ];
     if ($harSlag) {
         $rad['slag'] = $handling;
+        if ($handling === 'glasurbrann') {
+            if (!$harTemperatur) {
+                Svar::feil('Temperaturvalg er ikke satt opp ennå. Kjør oppdateringen av databasen først.');
+            }
+            $temperatur = Foresporsel::heltall('temperatur');
+            if (!in_array($temperatur, [1220, 1250], true)) {
+                Svar::feil('Velg 1220 °C eller 1250 °C.');
+            }
+            $rad['temperatur'] = $temperatur;
+        }
     }
     $id = DB::settInn('ovn_tomt', $rad);
     // Den som trykket har sett det.

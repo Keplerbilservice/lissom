@@ -14,6 +14,9 @@ $sjekker = [
     'like avvik dempes i ett doegn' => str_contains($klasse, 'time() - 86400'),
     'cron har driftvakt-jobben' => str_contains($cron, "case 'driftvakt':") && str_contains($cron, 'Driftvakt::kjor()'),
     'klassen autolastes' => str_contains($boot, "'Driftvakt' => 'driftvakt.php'"),
+    'varsler bare gjennom registrerte maler' => !str_contains($klasse, 'Varsel::epost(')
+        && str_contains($klasse, "Varsel::mal('intern_driftavvik'")
+        && str_contains($klasse, "Varsel::mal('intern_drift_normal'"),
 ];
 
 $feil = 0;

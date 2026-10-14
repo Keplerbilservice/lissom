@@ -571,6 +571,19 @@ final class Maler
                 'medlemmer' => 'Navn, dager og telefon, én linje hver',
             ],
         ],
+        'intern_driftavvik' => [
+            'tittel' => 'Til deg: driftsavvik',
+            'hvor'   => 'Sendes til driftse-posten når den lesende driftvakten finner nye eller fortsatt gamle avvik.',
+            'felter' => [
+                'antall' => 'Hvor mange avvik som ble funnet',
+                'avvik'  => 'Avvikene, ett per linje',
+            ],
+        ],
+        'intern_drift_normal' => [
+            'tittel' => 'Til deg: driften er normal igjen',
+            'hvor'   => 'Sendes til driftse-posten når tidligere varslede avvik ikke lenger finnes.',
+            'felter' => [],
+        ],
         'intern_gave_lost_inn' => [
             'tittel' => 'Til deg: gave løst inn',
             'hvor'   => 'Sendes til verkstedet når et medlem løser inn en gave.',

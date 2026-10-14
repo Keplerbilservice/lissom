@@ -65,23 +65,17 @@ final class Driftvakt
 
         if ($avvik !== [] && ($fingeravtrykk !== $forrige || $gammelt)) {
             $til = trim((string) Config::hent('vakt_epost', self::STANDARD_EPOST));
-            $tekst = "Driftsvakta fant " . count($avvik) . " avvik:\n\n- " . implode("\n- ", $avvik)
-                . "\n\nKontrollen er lesende og har ikke endret noe.";
-            $varslet = Varsel::epost($til, 'Lissom: driftsavvik', $tekst, null, null, 'intern') > 0;
+            $varslet = Varsel::mal('intern_driftavvik', ['epost' => $til], [
+                'antall' => (string) count($avvik),
+                'avvik' => '- ' . implode("\n- ", $avvik),
+            ]) > 0;
             if ($varslet) {
                 self::lagre('driftvakt_fingeravtrykk', $fingeravtrykk);
                 self::lagre('driftvakt_varslet_at', gmdate('Y-m-d H:i:s'));
             }
         } elseif ($avvik === [] && $forrige !== '') {
             $til = trim((string) Config::hent('vakt_epost', self::STANDARD_EPOST));
-            $varslet = Varsel::epost(
-                $til,
-                'Lissom: driften er normal igjen',
-                "Driftsvakta finner ikke lenger avvik. Ingen data er endret av kontrollen.",
-                null,
-                null,
-                'intern'
-            ) > 0;
+            $varslet = Varsel::mal('intern_drift_normal', ['epost' => $til]) > 0;
             if ($varslet) {
                 self::lagre('driftvakt_fingeravtrykk', '');
                 self::lagre('driftvakt_varslet_at', gmdate('Y-m-d H:i:s'));

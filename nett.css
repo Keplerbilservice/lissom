@@ -2523,3 +2523,9 @@ nav[data-nett-mobilmeny]:not([hidden]) { display: flex !important; }
   .lx-dk-brikke { flex-basis: 48px; min-height: 50px; }
   .lx-dk-brikker { gap: 7px; }
 }
+/* Godkjent: hoeyere kursbilder med avrunding paa alle fire hjoerner.
+   Gjelder kurskort, ikke hero, logoer eller administrasjon. */
+.lx-dk-bilde { height: 250px; border-radius: 22px; }
+@media (max-width: 640px) {
+  .lx-dk-bilde { height: 225px; }
+}

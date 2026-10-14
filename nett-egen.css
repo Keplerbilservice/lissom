@@ -335,3 +335,18 @@ nav[data-nett-mobilmeny]:not([hidden]) { display: flex !important; }
     margin: 10px 10px 0;
   }
 }
+
+/* Paint on Pots: kun eksisterende hovedbilde, samme hoeyde og 10px
+   avrunding som kurs- og medlemskapsbilder. */
+.lx-pop-bildestil img[src*="uploads_foto-paintonpots"] {
+  box-sizing: border-box;
+  width: 100%;
+  height: 250px !important;
+  object-fit: cover;
+  border-radius: 10px !important;
+}
+@media (max-width: 760px) {
+  .lx-pop-bildestil img[src*="uploads_foto-paintonpots"] {
+    height: 225px !important;
+  }
+}

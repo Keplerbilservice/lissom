@@ -194,6 +194,7 @@ jobbene har ikke en ferdig oppføring, og der skriver du inn to tall selv.
 |---|---|---|---|
 | Varselkøen | Every Five Minutes | `*/5 * * * *` | `php ~/lissom-app/bin/cron.php varsler >/dev/null` |
 | Betalinger som henger | Every Five Minutes | `*/5 * * * *` | `php ~/lissom-app/bin/cron.php betalinger >/dev/null` |
+| Driftsvakt og e-post ved avvik | Every Fifteen Minutes | `*/15 * * * *` | `php ~/lissom-app/bin/cron.php driftvakt >/dev/null` |
 | «Takk for sist» | Once Per Hour | `0 * * * *` | `php ~/lissom-app/bin/cron.php anmeldelser >/dev/null` |
 | **Medlemstrekket** | Once Per Hour | `0 * * * *` | `php ~/lissom-app/bin/cron.php medlemstrekk >/dev/null` |
 | Kurspåminnelser | *(ingen — sett Minute `0`, Hour `12`)* | `0 12 * * *` | `php ~/lissom-app/bin/cron.php paaminnelser >/dev/null` |

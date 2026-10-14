@@ -9,6 +9,7 @@
 //   0 * * * *     php ~/lissom-app/bin/cron.php medlemstrekk >/dev/null
 //   0 12 * * *    php ~/lissom-app/bin/cron.php paaminnelser >/dev/null
 //   0 8 * * *     php ~/lissom-app/bin/cron.php fortsett >/dev/null
+//   */15 * * * *  php ~/lissom-app/bin/cron.php driftvakt >/dev/null
 //
 // «>/dev/null» bakerst, og bare stdout: CGI-utgaven av PHP skriver alltid den
 // tomme linja som avslutter hodeblokka, og cron sender e-post for hvert tegn
@@ -270,6 +271,11 @@ function medlemsinvitasjon(callable $si): void
 }
 
 switch ($jobb) {
+    case 'driftvakt':
+        $r = Driftvakt::kjor();
+        $si('Driftvakt: ' . count($r['avvik']) . ' avvik' . ($r['varslet'] ? ', e-post lagt i ko' : '') . '.');
+        break;
+
 
     // -----------------------------------------------------------------------
     case 'varsler':
@@ -719,6 +725,7 @@ switch ($jobb) {
             "Bruk: php bin/cron.php <jobb>\n\n"
             . "  varsler        Sender det som ligger i varselkøen\n"
             . "  betalinger     Henter status fra Vipps for betalinger som henger\n"
+            . "  driftvakt      Kontrollerer drift og legger avvik i e-postkoen\n"
             . "  paaminnelser   Kurspåminnelser og ventelistevarsler\n"
             . "  anmeldelser    «Takk for sist» etter kurs, med lenke til anmeldelse\n"
             . "  medlemstrekk   Månedstrekk for medlemskapene\n"

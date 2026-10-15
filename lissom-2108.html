@@ -60934,7 +60934,7 @@ class Component extends DCLogic {
         return {
           bAntTekst: n + (pop ? (n === 1 ? ' person' : ' personer') : (n === 1 ? ' plass' : ' plasser')),
           bAntMaksTekst: pop ? (this.katalogKurs().utenPlassgrense ? '' : 'Maks ' + maks + ' personer samtidig')
-            : 'Maks ' + maks + ' plasser på dette kurset',
+            : 'Maks ' + maks + ' plasser per bestilling',
           bAntMinus: () => this.byttAntall(Math.max(1, n - 1)),
           bAntPlus: () => this.byttAntall(Math.min(maks, n + 1)),
         };

@@ -37849,6 +37849,28 @@ class Component extends DCLogic {
     return Math.round((Number(ore) || 0) / 100).toLocaleString('nb-NO') + ' kr';
   }
 
+  /** Samme kurspris i prisfeltet og ved betalingsknappen. Serveren regner den på nytt. */
+  bookPrisDetaljer() {
+    const k = this.state.valgtKurs || {};
+    const kat = (this.state.katalog || []).find(x => x.tittel === (k.title || k.tittel || '')) || {};
+    const datoer = kat.datoer || [];
+    const valgt = this.state.bOktId ? datoer.find(d => d.oktId === this.state.bOktId) : datoer[0];
+    const grunn = valgt && valgt.prisOre !== null && valgt.prisOre !== undefined
+      ? valgt.prisOre / 100 : (this.prisAv(k.title || k.tittel || '') || 0);
+    const antall = this.valgtAntall();
+    const rabatt = this.rabattFor(k, antall);
+    const brutto = grunn * antall;
+    // Rabatten kommer fra /api/meg.php og gjelder bare en innlogget, aktiv
+    // medlems egen plass. Serveren kontrollerer medlemskapet ved bestilling.
+    const mPst = (this.state.innlogget && k.tema !== 'Medlemskap' && k.price !== 'Gratis' && grunn > 0
+        && !kat.gjenstandIKassa && !kat.fraPris && !kat.depositum)
+      ? (Number(this.state.medlemsrabatt) || 0) : 0;
+    const netto = mPst > 0
+      ? grunn * (1 - Math.max(rabatt, mPst) / 100) + grunn * (antall - 1) * (1 - rabatt / 100)
+      : brutto * (1 - rabatt / 100);
+    return { grunn, antall, rabatt, brutto, mPst, netto };
+  }
+
   bookSum() {
     const k = this.state.valgtKurs || {};
     if (k.price === 'Gratis') return 'Gratis';
@@ -37856,18 +37878,13 @@ class Component extends DCLogic {
     if (this.popVelgerBetaling()) {
       return 'kr.' + ' ' + Math.round(this.popValgSum() / 100).toLocaleString('nb-NO') + ',-';
     }
-    const antall = this.valgtAntall();
-    // Prisen fra katalogen forst. Finner vi den ikke, bruker vi den
-    // som staar paa kortet — «kr. 0,-» paa et kurs til 2 800 er verre
-    // enn ingen sum i det hele tatt.
-    const grunn = this.prisAv(k.title || k.tittel || '') || 0;
+    const { grunn, antall, netto } = this.bookPrisDetaljer();
     // Fra-pris (migrasjon 209): «fra kr. 1 350,-», uten grupperabatt.
     const katF = (this.state.katalog || []).find(x => x.tittel === (k.title || k.tittel || ''));
     if (katF && katF.fraPris && katF.prisFraOre) {
       return 'fra kr.' + ' ' + Math.round(katF.prisFraOre / 100 * antall).toLocaleString('nb-NO') + ',-';
     }
     if (!grunn) return (k.price || '').replace('Fra ', '') || 'se pris';
-    const netto = grunn * antall * (1 - this.rabattFor(k, antall) / 100);
     return 'kr.' + ' ' + Math.round(netto).toLocaleString('nb-NO') + ',-';
   }
 
@@ -61194,35 +61211,7 @@ class Component extends DCLogic {
       ...(() => {
         const k = this.state.valgtKurs || {};
         const fmt = n => Math.round(n).toLocaleString('nb-NO').replace(/^/, 'kr.' + ' ') + ',-';
-        // Ingen reservepris. Sto det 2800 her, og oppslaget ikke traff, viste
-        // skjermen prisen paa dreiekurset for noe helt annet — det var
-        // nettopp det som skjedde med proveperioden. Finner vi ingen pris,
-        // sier vi ingenting.
-        // Prisen paa datoen gaar foran kursets, naar den er satt. Serveren
-        // regner det samme — den som ser en pris paa skjermen skal bli
-        // trukket den, ikke en annen.
-        const grunn = (() => {
-          const kat = (this.state.katalog || []).find(x => x.tittel === (k.title || k.tittel || ''));
-          const datoer = (kat && kat.datoer) || [];
-          const valgt = this.state.bOktId ? datoer.find(d => d.oktId === this.state.bOktId) : datoer[0];
-          if (valgt && valgt.prisOre !== null && valgt.prisOre !== undefined) return valgt.prisOre / 100;
-          return this.prisAv(k.title || '') || 0;
-        })();
-        const erDreiing = (k.tema === 'Dreiing') || ((k.title || '').toLowerCase().indexOf('dreie') >= 0);
-        const antall = this.valgtAntall();
-        const rabatt = this.rabattFor(k, antall);
-        const brutto = grunn * antall;
-        // Medlemsrabatten gjelder medlemmets egen plass, og den stoerste av
-        // den og grupperabatten — samme regnestykke som Booking::belopFor().
-        // Ikke paa fra-pris eller gjenstand i kassa — som paa serveren, ogsaa
-        // om prisFraOre skulle mangle og visningen under ikke slaar til.
-        const katM = (this.state.katalog || []).find(x => x.tittel === (k.title || k.tittel || '')) || {};
-        const mPst = (this.state.innlogget && k.tema !== 'Medlemskap' && k.price !== 'Gratis' && grunn > 0
-            && !katM.gjenstandIKassa && !katM.fraPris && !katM.depositum)
-          ? (Number(this.state.medlemsrabatt) || 0) : 0;
-        const netto = mPst > 0
-          ? grunn * (1 - Math.max(rabatt, mPst) / 100) + grunn * (antall - 1) * (1 - rabatt / 100)
-          : brutto * (1 - rabatt / 100);
+        const { grunn, antall, rabatt, brutto, mPst, netto } = this.bookPrisDetaljer();
         const maks = this.maksRabatt(k);
         // Paint on Pots og andre der gjenstanden velges i verkstedet.
         //

@@ -883,11 +883,27 @@ $maGjores = (static function () use ($medlemsstatus, $nyeste): array {
             ['siste' => (int) DB::verdi('SELECT COALESCE(MAX(id), 0) FROM chat_meldinger'), 'antall' => $n]);
     });
     $trygt('henvendelser', static function () use ($sak, $kort): void {
-        foreach (DB::alle("SELECT id, navn, melding FROM enquiries WHERE status = 'ubesvart' ORDER BY id DESC LIMIT 20") as $r) {
+        foreach (DB::alle("SELECT e.id, e.navn, e.melding, e.type,
+                                  (SELECT m.id FROM members m WHERE m.epost = e.epost AND e.epost IS NOT NULL LIMIT 1) AS member_id
+                             FROM enquiries e WHERE e.status = 'ubesvart' ORDER BY e.id DESC LIMIT 20") as $r) {
             $sak('Meldinger', 'henvendelse', (int) $r['id'], 'Henvendelse fra ' . ((string) $r['navn'] ?: 'nettsiden'),
-                $kort($r['melding']), 'foresporsler');
+                $kort($r['melding']), 'foresporsler', [
+                    'feilStempling' => (string) $r['type'] === 'Feil stemplingstid',
+                    'medlemId' => $r['member_id'] === null ? null : (int) $r['member_id'],
+                ]);
         }
     });
+    if (DB::harTabell('stempling_rettinger')) {
+        $trygt('stempling_rettinger', static function () use ($sak, $kort): void {
+            foreach (DB::alle("SELECT r.id, r.member_id, r.check_in_id, r.forklaring, m.navn
+                                  FROM stempling_rettinger r JOIN members m ON m.id = r.member_id
+                                 WHERE r.status = 'apen' ORDER BY r.id DESC LIMIT 20") as $r) {
+                $sak('Medlemmer', 'stempling', (int) $r['id'],
+                    'Feil verkstedtid: ' . $r['navn'], $kort($r['forklaring']), 'medlemmer',
+                    ['medlemId' => (int) $r['member_id'], 'oktId' => (int) ($r['check_in_id'] ?? 0)]);
+            }
+        });
+    }
     $trygt('innboks', static function () use ($sak, $kort): void {
         $v = Kommentarsvar::ventende();
         if ($v !== []) {

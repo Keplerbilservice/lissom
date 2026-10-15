@@ -137,7 +137,7 @@
   }
   const TYPE = {henvendelse: 'Forespørsel', soknad: 'Medlemssøknad', frys: 'Frys', bidrag: 'Medlemsbidrag', betaling: 'Betaling', venteliste: 'Venteliste',
     henting: 'Klar til henting', leire: 'Leirebestilling', dugnad: 'Dugnad', lager: 'Lager', chat: 'Chat', innboks: 'Innboks', feil: 'Feilmelding',
-    tilbakebetal: 'Avlyst dato'};
+    tilbakebetal: 'Avlyst dato', stempling: 'Verkstedtid'};
   const knapp = (tekst, gjor, hoved, ekstra = '') => `<button class="knapp liten ${hoved ? 'hoved' : ''}" type="button" data-gjor="${gjor}" ${ekstra}>${tekst}</button>`;
   /* Databaseoppdateringer som venter (eieren 09.10.2026). Samme knapp som Innstillinger › Oppdateringer. */
   const radMigr = n => `<div class="rad"><div class="tekst"><span class="type">Vedlikehold</span><b>${n} ${n === 1 ? 'databaseoppdatering venter' : 'databaseoppdateringer venter'}</b><small>${esc(migr.mangler.join(' · '))}</small></div><div class="knapper">${knapp('Kjør oppdateringer', 'migrer', true)}</div></div>`;
@@ -184,7 +184,10 @@
     const k = esc(nokkel(s));
     const gammel = `<a class="knapp liten" href="/admin-ny#${esc(String(s.rute || 'idag'))}">I gammel admin</a>`;
     const h = {
-      henvendelse: () => knapp('Ferdig', 'besvart', false, `data-k="${k}"`) + knapp('Svar', 'svar', true, `data-k="${k}"`),
+      henvendelse: () => s.feilStempling && s.medlemId
+        ? knapp('Rett verkstedtid', 'stempling-gammel', true, `data-k="${k}"`) + knapp('Svar', 'svar', false, `data-k="${k}"`)
+        : knapp('Ferdig', 'besvart', false, `data-k="${k}"`) + knapp('Svar', 'svar', true, `data-k="${k}"`),
+      stempling: () => knapp('Åpne saken', 'stempling', true, `data-k="${k}"`),
       soknad: () => knapp('Godkjenn', 'soknad', true, `data-k="${k}"`),
       frys: () => knapp('Avslå', 'frys-avslag', false, `data-k="${k}"`) + knapp('Godkjenn frys', 'frys-godkjenn', true, `data-k="${k}"`),
       /* Eieren 09.10.2026: alt i ny admin. Bidraget, dugnaden, leira, chatten, innboksen og feilmeldingen åpnes i et ark her. */
@@ -212,6 +215,7 @@
     const id = Number(s.id);
     switch (s.type) {
       case 'henvendelse': return () => svarForesporsel(s);
+      case 'stempling': return () => NA.arkStempling?.(Number(s.medlemId), Number(s.id));
       case 'bidrag': return () => arkBidrag(s);
       case 'betaling': return () => tilMedlem(id);
       case 'frys': return s.medlemId ? () => tilMedlem(Number(s.medlemId)) : null;
@@ -381,8 +385,10 @@
     if (!f) f = {navn: '', epost: '', tlf: '', hva: '', tekst: s.under};
     const inn = NA.apneArk(`${NA.arkHode('Svar på forespørsel')}
       <div class="sms"><b>${esc(f.hva || 'Forespørsel')}:</b> ${esc(f.tekst)}<br><small>Fra: ${esc([f.navn, f.epost, f.tlf].filter(Boolean).join(' · '))}${f.tid ? ' · ' + esc(f.tid) : ''}</small></div>
+      ${f.hva?.includes('Feil stemplingstid') && f.medlemId ? `<p><button class="knapp hoved" type="button" data-tilverkstedtid>Åpne verkstedtid for ${esc(f.navn)}</button></p><p class="muted">Avklar riktig tid og rett økten før du svarer medlemmet.</p>` : ''}
       <label class="felt"><small>Svaret ditt</small><textarea id="svartekst" placeholder="Skriv svaret ditt …"></textarea></label>
       <div class="ark-fot"><button class="knapp" type="button" data-lukk>Avbryt</button><button class="knapp hoved" type="button" data-sendsvar>Send svar</button></div>`);
+    inn.querySelector('[data-tilverkstedtid]')?.addEventListener('click', () => NA.arkStempling?.(Number(f.medlemId)));
     inn.querySelector('[data-sendsvar]').onclick = async e => {
       const tekst = inn.querySelector('#svartekst').value.trim();
       if (!tekst) { NA.toast('Skriv svaret først.'); return; }
@@ -659,6 +665,8 @@
     if (!s) return;
     const id = Number(s.id);
     switch (g) {
+      case 'stempling-gammel': return NA.arkStempling?.(Number(s.medlemId));
+      case 'stempling': return NA.arkStempling?.(Number(s.medlemId), Number(s.id));
       case 'svar': return svarForesporsel(s);
       case 'besvart': return kall('foresporsler.php', {id, status: 'besvart'}, 'Merket som besvart.');
       case 'soknad':

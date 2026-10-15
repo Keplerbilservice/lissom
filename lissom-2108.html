@@ -5745,6 +5745,7 @@ window.__resources = {
                   </sc-if>
                 </div>
               </sc-if>
+              <sc-if value="{{ msRettKlar }}" hint-placeholder-val="{{ false }}"><div class="msny-rad"><a href="/verkstedtid.html">Se økter og meld feil tid</a></div></sc-if>
               <sc-if value="{{ msNyOvnVis }}" hint-placeholder-val="{{ false }}">
                 <div class="msny-ovn">
                   <sc-if value="{{ ovnVis }}" hint-placeholder-val="{{ false }}">
@@ -6114,6 +6115,7 @@ window.__resources = {
               </div>
             </sc-if>
 
+            <sc-if value="{{ msRettKlar }}" hint-placeholder-val="{{ false }}"><p style="margin: var(--space-3) 0;"><a href="/verkstedtid.html">Se økter og meld feil tid</a></p></sc-if>
             <!-- Timene. Samme tall og samme stolpe som sto i
                  medlemskapskortet — flyttet hit, ikke tegnet paa nytt.
                  Uten et medlemskap er det ingenting aa telle: da sto det
@@ -33791,6 +33793,7 @@ class Component extends DCLogic {
       msTlFaner: faner,
       // Verkstedet naa
       msNyVerkstedVis: verksted && (stempelVis || (vis('stempel') && !!v.erTom) || dorVis || vis('ovn') || vis('inne') || !!v.msGlemtVis),
+      msRettKlar: !!(this.state.stempling || {}).rettingKlar,
       msNyStempelVis: stempelVis,
       msNyStempelTom: vis('stempel') && !!v.erTom,
       msNyStempelKlasse: 'msny-pille' + (this.erInne() ? '' : ' fylt'),
@@ -46476,13 +46479,17 @@ class Component extends DCLogic {
   /**
    * «Feil tid — si fra».
    *
-   * Medlemmet gaar uansett, saa oekta lukkes. Det er tida som er feil, og den
-   * retter verkstedet. Serveren legger beskjeden blant henvendelsene, der den
-   * staar til noen har tatt den — se api/stempling.php, handling «feiltid».
+   * Medlemmet går uansett, så økta lukkes. Når korrigeringssaker er klare,
+   * åpnes skjemaet for riktig inn- og ut-tid. Fram til migrasjonen er kjørt,
+   * beholdes den gamle henvendelsen slik at ingen feilmelding forsvinner.
    */
   utstemplFeil() {
     this.setState({ utstApen: false });
-    this.stemplingKall({ handling: 'feiltid' }, true);
+    if (this.state.stempling?.rettingKlar) {
+      this.stemplingKall({ handling: 'ut' }, true, '/verkstedtid.html');
+    } else {
+      this.stemplingKall({ handling: 'feiltid' }, true);
+    }
   }
 
   erInne() {
@@ -46641,7 +46648,7 @@ class Component extends DCLogic {
     return t.length > 2 ? t.slice(0, 2) + ':' + t.slice(2, 4) : t;
   }
 
-  stemplingKall(kropp, kvittering) {
+  stemplingKall(kropp, kvittering, etterSuksess) {
     if (!this.erPublisert()) {
       this.setState(s => ({ innstemplet: !s.innstemplet }));
       return;
@@ -46678,6 +46685,7 @@ class Component extends DCLogic {
               ? 'Timen teller fra ' + d.siden + '.'
               : 'Du har brukt ' + d.timer.brukt + ' timer denne måneden.',
           }) : {}));
+        if (etterSuksess) window.location.href = etterSuksess;
       })
       .catch(() => {
         this._stempler = false;

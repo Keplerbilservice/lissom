@@ -178,9 +178,35 @@
       <div class="valgknapper"><button class="knapp" data-mlm="endre" data-id="${m.id}">Endre</button>
         <button class="knapp" data-mlm="gave" data-id="${m.id}">🎁 Gi gave</button>
         <button class="knapp" data-mlm="beskjeden" data-id="${m.id}" ${m.epost || m.telefon ? '' : 'disabled'}>✉ Send beskjed</button>
+        <button class="knapp" data-mlm="stempling" data-id="${m.id}">Verkstedtid</button>
         <a class="knapp" href="/admin-ny#folk?person=${m.id}">Betaling og detaljer (gammel admin)</a></div>`);
     hentOppf(m);
   }
+  async function arkStempling(id, sakId = 0, oktId = 0) {
+    NA().apneArk('<div class="ark-head"><h2>Verkstedtid</h2><button class="lukk" data-mlm="lukk" aria-label="Lukk">×</button></div><p>Henter økter …</p>', { bred: true });
+    let d;
+    try { d = await kall('stempling-rett.php?medlemId=' + Number(id) + '&sakId=' + Number(sakId) + '&oktId=' + Math.max(0, Number(oktId))); }
+    catch (err) { NA().apneArk('<div class="ark-head"><h2>Verkstedtid</h2><button class="lukk" data-mlm="lukk" aria-label="Lukk">×</button></div><p class="feil">' + esc(err.message) + '</p>'); return; }
+    const sak = d.saker.find(x => x.id === Number(sakId)) || (oktId > 0
+      ? d.saker.find(x => x.oktId === Number(oktId) && (x.status === 'apen' || x.status === 'trenger_info')) : null);
+    const okt = d.okter.find(x => x.id === (sak ? sak.oktId : Number(oktId))) || (!sakId && !oktId ? d.okter.find(x => x.ut) : null);
+    const inn = sak?.inn || okt?.inn || '', ut = sak?.ut || okt?.ut || '';
+    const dato = inn.slice(0, 10), fra = inn.slice(11, 16), til = ut.slice(11, 16);
+    const innhold = NA().apneArk(`<div class="ark-head"><h2>${esc(d.medlem.navn)} · Verkstedtid</h2><button class="lukk" data-mlm="lukk" aria-label="Lukk">×</button></div>
+      <p class="muted">Velg en økt eller en sak. Medlemmet kan foreslå tid; bare admin kan endre timeforbruket.</p>
+      <h3>Åpne forslag</h3>${d.saker.filter(x => x.status === 'apen' || x.status === 'trenger_info').map(x => `<div class="rad"><div class="tekst"><b>${esc(x.inn)}–${esc(x.ut.slice(11,16))}</b><small>${esc(x.forklaring)} · ${esc(x.status)}</small></div><div class="knapper"><button class="knapp liten" data-mlm="stemplingsak" data-id="${id}" data-sak="${x.id}">Åpne</button></div></div>`).join('') || '<p class="muted">Ingen åpne forslag.</p>'}
+      <h3 style="margin-top:18px">Økter</h3>${d.okter.map(x => `<div class="rad"><div class="tekst"><b>${esc(x.inn)}–${esc(x.ut?.slice(11,16) || 'pågår')}</b><small>${x.minutter ?? 'Pågår'} minutter telt${x.auto ? ' · automatisk lukket' : ''}</small></div><div class="knapper"><button class="knapp liten" data-mlm="stemplingokt" data-id="${id}" data-okt="${x.id}" ${x.ut ? '' : 'disabled'}>Rett</button></div></div>`).join('') || '<p class="muted">Ingen økter registrert.</p>'}
+      <div class="ark-fot"><button class="knapp" data-mlm="stemplingokt" data-id="${id}" data-okt="-1">Legg inn manglende økt</button></div>
+      <h3 style="margin-top:18px">${sak ? 'Behandle forslag' : okt ? 'Rett valgt økt' : 'Legg inn økt'}</h3>
+      ${okt ? `<p>Registrert: ${esc(okt.inn)}–${esc(okt.ut?.slice(11,16) || '')} · ${okt.minutter} minutter telt.</p>` : ''}
+      ${sak ? `<p class="sms">Medlemmet foreslår ${esc(sak.inn)}–${esc(sak.ut.slice(11,16))}. ${esc(sak.forklaring)}</p>` : ''}
+      <div class="valgknapper"><label class="felt"><small>Dato</small><input id="mlm-st-dato" type="date" value="${esc(dato)}"></label><label class="felt"><small>Riktig inn</small><input id="mlm-st-inn" type="text" inputmode="numeric" maxlength="5" placeholder="11:00" value="${esc(fra)}"></label><label class="felt"><small>Riktig ut</small><input id="mlm-st-ut" type="text" inputmode="numeric" maxlength="5" placeholder="16:00" value="${esc(til)}"></label></div>
+      <label class="felt"><small>Begrunnelse</small><textarea id="mlm-st-grunn" placeholder="Hva ble avklart med medlemmet?"></textarea></label>
+      <p id="mlm-st-feil" class="feil" role="alert" hidden></p>
+      <div class="ark-fot"><button class="knapp hoved" data-mlm="stemplinglagre" data-id="${id}" data-okt="${okt?.id || 0}" data-sak="${sak?.id || 0}" data-gammelmin="${okt?.minutter ?? 0}">Lagre riktig tid</button>${sak ? `<button class="knapp" data-mlm="stemplinginfo" data-id="${id}" data-sak="${sak.id}">Be om info</button><button class="knapp" data-mlm="stemplingavslaa" data-id="${id}" data-sak="${sak.id}">Avslå</button>` : ''}</div>`, { bred: true });
+    innhold.querySelector('#mlm-st-dato')?.focus();
+  }
+  NA().arkStempling = arkStempling;
   /* Medlemskortet: påminnelse-SMS per medlem og notatene fra «Snakket med» (eieren 12.10.2026). */
   async function hentOppf(m) {
     let d; try { d = await kall('oppfolging.php?medlem=' + m.id); } catch { return; }
@@ -362,6 +388,29 @@
     }
     if (h === 'betaling') { location.href = '/admin-ny#folk?person=' + id; return; }
     if (h === 'medlem') return arkMedlem(id);
+    if (h === 'stempling') return arkStempling(id);
+    if (h === 'stemplingsak') return arkStempling(id, Number(b.dataset.sak));
+    if (h === 'stemplingokt') return arkStempling(id, 0, Number(b.dataset.okt));
+    if (h === 'stemplinglagre' || h === 'stemplinginfo' || h === 'stemplingavslaa') {
+      if (S.opptatt) return;
+      const felt = x => document.getElementById('mlm-st-' + x)?.value?.trim() || '';
+      const data = h === 'stemplinglagre' ? { handling: 'rett', medlemId: id, oktId: Math.max(0, Number(b.dataset.okt)), sakId: Number(b.dataset.sak), dato: felt('dato'), inn: felt('inn'), ut: felt('ut'), grunn: felt('grunn') }
+        : { handling: h === 'stemplinginfo' ? 'trenger_info' : 'avslaatt', sakId: Number(b.dataset.sak), notat: felt('grunn') };
+      S.opptatt = true; b.disabled = true;
+      try {
+        if (h === 'stemplinglagre') {
+          if (data.grunn.length < 5) throw new Error('Skriv hvorfor tiden rettes (minst fem tegn).');
+          const forh = await kall('stempling-rett.php', { handling: 'beregn', dato: data.dato, inn: data.inn, ut: data.ut });
+          const gammel = Number(b.dataset.gammelmin) || 0;
+          const tekst = `${data.dato} kl. ${data.inn}–${data.ut}. Telt tid: ${gammel} → ${forh.minutter} minutter. ${data.oktId ? 'Den valgte økten endres.' : 'En ny økt legges inn.'}${data.sakId ? ' Medlemmet får beskjed.' : ''}`;
+          if (!await NA().bekreft('Rett verkstedtid?', tekst, 'Lagre rettingen')) return;
+        }
+        const svar = await kall('stempling-rett.php', data); toast(esc(svar.beskjed || 'Lagret.')); await arkStempling(id);
+      }
+      catch (err) { const el = document.getElementById('mlm-st-feil'); if (el) { el.textContent = err.message; el.hidden = false; } }
+      finally { S.opptatt = false; b.disabled = false; }
+      return;
+    }
     if (h === 'endre') return arkEndre(id);
     if (h === 'lagreendre') return lagreEndre(b, id);
     if (h === 'gave') { Object.assign(GV, { type: '', timer: 0, belop: '', hilsen: '', til: id ? 'en' : '', medlemId: id }); return arkGave(); }

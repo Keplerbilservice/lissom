@@ -124,6 +124,7 @@ spl_autoload_register(static function (string $klasse): void {
         'Skisser' => 'skisser.php',
         'SkisserApi' => 'skisser_api.php',
         'Stempling' => 'stempling.php',
+        'StemplingRett' => 'stemplingrett.php',
         'Svar' => 'http.php',
         'Tikk' => 'tikk.php',
         'Tillegg' => 'tillegg.php',

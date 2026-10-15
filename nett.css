@@ -2552,6 +2552,10 @@ nav[data-nett-mobilmeny]:not([hidden]) { display: flex !important; }
 .lx-dk-tekst { margin: 24px 0 28px; font-size: 16px; line-height: 1.55; }
 .lx-dk-bunn { gap: 14px; }
 .lx-dk-bunn a[data-dk-knapp] { min-height: 48px; padding: 12px 22px; border-radius: 12px; font-weight: 700; }
+/* Lik start paa datovelgeren naar kursnavn bruker en eller to linjer. */
+@media (min-width: 641px) {
+  .lx-dk-tittel { min-height: 2.24em; }
+}
 @media (max-width: 640px) {
   .lx-dk-bilde { height: 225px; margin: 10px 10px 0; }
   .lx-dk-inni { padding: 22px 20px 22px; }
@@ -2588,6 +2592,11 @@ nav[data-nett-mobilmeny]:not([hidden]) { display: flex !important; }
   .lx-dk .lx-dk-brikker { gap: 8px; }
   .lx-dk .lx-dk-brikke { height: 60px; min-height: 60px; }
   .lx-dk .lx-dk-brikke .lx-dk-dag { font-size: 19px; }
+}
+/* Litt roligere datofliser paa PC. Mobil og nettbrett beholder stoerrelsen. */
+@media (min-width: 1024px) {
+  .lx-dk .lx-dk-brikke { height: 60px; min-height: 60px; padding: 0 2px; }
+  .lx-dk .lx-dk-brikke .lx-dk-dag { font-size: 18px; }
 }
 
 /* Medlemskap: samme redaksjonelle kortstil som kursene, uten funksjonsendringer. */

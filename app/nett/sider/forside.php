@@ -170,7 +170,7 @@ if ($rot !== []) {
     // Designet 13. oktober 2026: navnet over sitatet («KEPLER») staar ikke naar
     // logoen gjoer det, og navnet under sitatet faar ca. 18 px luft.
     $h .= '<section class="lx-tettbunn" style="background: var(--clay-50); padding: var(--section-y) var(--space-8);">'
-        . '<div class="lx-split" data-tone="rot" data-nett-rot="rot" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 0.75fr 1.25fr; gap: var(--space-16); align-items: center; opacity: 1; transition: opacity 0.8s var(--ease-clay, ease); background: var(--clay-50);">'
+        . '<div class="lx-split" data-tone="rot" data-nett-rot="rot" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 0.75fr 1.25fr; gap: var(--space-16); align-items: start; opacity: 1; transition: opacity 0.8s var(--ease-clay, ease); background: var(--clay-50);">'
         . '<img data-rot="bilde" src="' . $e($r0['bilde']) . '" alt="' . $e($r0['alt']) . '" style="width: 100%; height: 440px; object-fit: cover; border-radius: var(--radius-xl, 22px); display: block;" fetchpriority="high" decoding="async">'
         . '<div>'
         // Logoen til den foerste kunden staar fra foerste tegning. Den sto som

@@ -248,7 +248,7 @@ final class Deler
         $bilde = (string) ($k['image'] ?? '');
         if ($bilde !== '') {
             $ss = Nett::srcset($bilde);
-            $h .= '<img src="' . $e($bilde) . '"' . ($ss !== '' ? ' srcset="' . $e($ss) . '" sizes="' . Nett::SIZES_KORT . '"' : '')
+            $h .= '<img src="' . $e(Nett::fotoUrl($bilde)) . '"' . ($ss !== '' ? ' srcset="' . $e($ss) . '" sizes="' . Nett::SIZES_KORT . '"' : '')
                 . ' alt="' . $e((string) ($k['imageAlt'] ?? '') !== '' ? (string) $k['imageAlt'] : (string) $k['title']) . '"'
                 // Det foerste kortet paa sida er gjerne det stoerste som tegnes
                 // (LCP): det hentes med en gang; resten venter til de trengs.
@@ -257,7 +257,7 @@ final class Deler
             if ($karusell) {
                 foreach (array_slice($bilder, 1) as $b) {
                     $ss2 = Nett::srcset($b);
-                    $h .= '<img src="' . $e($b) . '"' . ($ss2 !== '' ? ' srcset="' . $e($ss2) . '" sizes="' . Nett::SIZES_KORT . '"' : '')
+                    $h .= '<img src="' . $e(Nett::fotoUrl($b)) . '"' . ($ss2 !== '' ? ' srcset="' . $e($ss2) . '" sizes="' . Nett::SIZES_KORT . '"' : '')
                         . ' alt="" aria-hidden="true" loading="lazy" decoding="async" data-nett-bilde'
                         . ' style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;' . self::fokusStil($b) . ' display: block; opacity: 0; transition: opacity 1.2s ease;">';
                 }
@@ -351,13 +351,13 @@ final class Deler
         $bilde = (string) ($k['image'] ?? '');
         if ($bilde !== '') {
             $ss = Nett::srcset($bilde);
-            $h .= '<img src="' . $e($bilde) . '"' . ($ss !== '' ? ' srcset="' . $e($ss) . '" sizes="' . Nett::SIZES_KORT . '"' : '')
+            $h .= '<img src="' . $e(Nett::fotoUrl($bilde)) . '"' . ($ss !== '' ? ' srcset="' . $e($ss) . '" sizes="' . Nett::SIZES_KORT . '"' : '')
                 . ' alt="' . $e((string) ($k['imageAlt'] ?? '') !== '' ? (string) $k['imageAlt'] : (string) $k['title']) . '"'
                 . (!empty($k['eager']) ? ' fetchpriority="high"' : ' loading="lazy"') . ' decoding="async"'
                 . ' style="' . trim(self::fokusStil($bilde)) . ($karusell ? ' transition: opacity 1.2s ease;' : '') . '"' . ($karusell ? ' data-nett-bilde' : '') . '>';
             foreach ($karusell ? array_slice($bilder, 1) : [] as $b) {
                 $ss2 = Nett::srcset($b);
-                $h .= '<img src="' . $e($b) . '"' . ($ss2 !== '' ? ' srcset="' . $e($ss2) . '" sizes="' . Nett::SIZES_KORT . '"' : '')
+                $h .= '<img src="' . $e(Nett::fotoUrl($b)) . '"' . ($ss2 !== '' ? ' srcset="' . $e($ss2) . '" sizes="' . Nett::SIZES_KORT . '"' : '')
                     . ' alt="" aria-hidden="true" loading="lazy" decoding="async" data-nett-bilde class="lx-dk-lag"'
                     . ' style="' . trim(self::fokusStil($b)) . ' opacity: 0; transition: opacity 1.2s ease;">';
             }

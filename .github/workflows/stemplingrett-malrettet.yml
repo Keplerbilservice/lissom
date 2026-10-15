@@ -1,0 +1,48 @@
+name: Målrettet stemplingskontroll
+on:
+  push:
+    branches: [codex/stempling-retting]
+jobs:
+  stempling:
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: mariadb:10.11
+        env:
+          MARIADB_DATABASE: lissom_test
+          MARIADB_USER: lissom
+          MARIADB_PASSWORD: lissom
+          MARIADB_ROOT_PASSWORD: rot
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql, mbstring
+      - name: Sett opp testdatabase
+        run: |
+          php -r '
+            $s = require "app/secrets.example.php";
+            $s["miljo"] = "test";
+            $s["db_vert"] = "127.0.0.1";
+            $s["db_navn"] = "lissom_test";
+            $s["db_bruker"] = "lissom";
+            $s["db_passord"] = "lissom";
+            file_put_contents("app/secrets.php", "<?php return " . var_export($s, true) . ";");
+          '
+          mkdir -p /tmp/senere
+          for f in db/migrations/*.sql; do
+            [[ "$(basename "$f")" > "128" ]] && mv "$f" /tmp/senere/
+          done
+          php bin/migrate.php
+          mysql -h 127.0.0.1 -u lissom -plissom lissom_test -e "UPDATE membership_plans SET navn = 'Basis 30' WHERE navn = '30 timer'"
+          mv /tmp/senere/*.sql db/migrations/
+          php bin/migrate.php
+      - name: Kontroller retting av verkstedtid
+        run: |
+          php tests/stemplingrett-beregning.php
+          php tests/stemplingrett-database.php

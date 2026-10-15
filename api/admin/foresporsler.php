@@ -23,9 +23,10 @@ $admin = krev_admin();
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $rader = DB::alle(
-        "SELECT id, navn, epost, telefon, type, antall, melding, status, created_at
-           FROM enquiries
-       ORDER BY status = 'ubesvart' DESC, id DESC
+        "SELECT e.id, e.navn, e.epost, e.telefon, e.type, e.antall, e.melding, e.status, e.created_at,
+                (SELECT m.id FROM members m WHERE m.epost = e.epost AND e.epost IS NOT NULL LIMIT 1) AS member_id
+           FROM enquiries e
+        ORDER BY e.status = 'ubesvart' DESC, e.id DESC
           LIMIT 200"
     );
 
@@ -114,6 +115,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             'tekst'   => (string) ($r['melding'] ?? 'Ingen detaljer oppgitt'),
             'tid'     => Booking::norskDato((string) $r['created_at']),
             'status'  => $r['status'] === 'ubesvart' ? 'Ubesvart' : 'Besvart',
+            'medlemId' => $r['member_id'] === null ? null : (int) $r['member_id'],
             'svar'    => $svar[(int) $r['id']] ?? [],
             'tone'    => $r['status'] === 'ubesvart' ? 'warning' : 'neutral',
         ], $rader),

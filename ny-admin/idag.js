@@ -123,7 +123,7 @@
           <section class="kort" aria-label="Dagens kurs">
             <div class="kort-head"><h2>Dagens kurs</h2></div>
             ${okter.length ? okter.map(o => { const h = kal.get(o.oktId); const ub = ikkeBetalt(h).length; const n = h ? h.pameldt : o.pameldte, kap = h ? h.kap : o.kapasitet;
-              return `<div class="rad"><div class="tekst"><b>${esc(o.tittel)}</b><span class="muted">${esc(o.klokke)} · ${n} av ${kap} plasser</span></div>${ub ? `<span class="merke rod">${ub} ikke betalt</span>` : (h && n ? '<span class="merke gronn">Alle har betalt</span>' : '')}
+              return `<div class="rad klikkrad" data-dagens-kurs="${Number(o.oktId)}" role="button" tabindex="0" aria-label="Åpne ${esc(o.tittel)}"><div class="tekst"><b>${esc(o.tittel)}</b><span class="muted">${esc(o.klokke)} · ${n} av ${kap} plasser</span></div>${ub ? `<span class="merke rod">${ub} ikke betalt</span>` : (h && n ? '<span class="merke gronn">Alle har betalt</span>' : '')}
                 <button class="knapp hoved liten" type="button" data-startkurs="${o.oktId}">Start dagens kurs</button></div>`; }).join('') : '<p class="tom">Ingen kurs i dag.</p>'}
           </section>
         </div>
@@ -713,6 +713,7 @@
       el = side;
       const aapneRad = e => {
         const r = e.target.closest('.klikkrad'); if (!r || e.target.closest('button, a, .knapper, input, label')) return false;
+        if (r.dataset.dagensKurs) { tilKurs(Number(r.dataset.dagensKurs)); return true; }
         if (r.dataset.salgrad) { NA.gaTil('varer', {fane: 'medlem'}); return true; }
         const s = finnSak(r.dataset.rad), gaa = s && radMaal(s);
         if (gaa) gaa();

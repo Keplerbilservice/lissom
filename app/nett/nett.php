@@ -443,7 +443,20 @@ final class Nett
     /** Verdien i en CSS-url(): apostrof og bakstrek maa ikke slippe ut. */
     public static function cssUrl(string $sti): string
     {
-        return "url('" . str_replace(["\\", "'", '"', "\n", "\r"], ['\\\\', "\\'", '\\"', '', ''], $sti) . "')";
+        return "url('" . str_replace(["\\", "'", '"', "\n", "\r"], ['\\\\', "\\'", '\\"', '', ''], self::fotoUrl($sti)) . "')";
+    }
+
+    /** Ny adresse for rettede kursfoto, slik at gamle bilder ikke blir hentet fra nettleserbufferen. */
+    public static function fotoUrl(string $sti): string
+    {
+        if (str_contains($sti, 'v=20261015')) {
+            return $sti;
+        }
+        $fil = basename(explode('?', $sti, 2)[0]);
+        if (preg_match('~^(?:uploads_untitled-174-ryddet|uploads_foto-(?:bedrift|bolle|boller|storefat2|teambuilding|utdrikningslag))(?:-(?:400|800))?\.jpg$~', $fil) !== 1) {
+            return $sti;
+        }
+        return $sti . (str_contains($sti, '?') ? '&' : '?') . 'v=20261015';
     }
 
     /**
@@ -486,7 +499,7 @@ final class Nett
         $deler = [];
         $siste = $br[count($br) - 1];
         foreach ($br as $b) {
-            $deler[] = ($b === $siste ? $rein : substr($rein, 0, -4) . '-' . $b . '.jpg') . ' ' . $b . 'w';
+            $deler[] = self::fotoUrl($b === $siste ? $rein : substr($rein, 0, -4) . '-' . $b . '.jpg') . ' ' . $b . 'w';
         }
         return implode(', ', $deler);
     }
@@ -551,6 +564,7 @@ final class Nett
         if (!$egetBilde) {
             $ogBilde = $rot . '/delingsbilde.jpg';
         }
+        $ogBilde = self::fotoUrl($ogBilde);
         $ogAlt = (string) ($seo['altTekst'] ?? 'Deltaker former en bolle på dreieskiva hos Lissom Keramikk i Tønsberg');
         $ikkeISoket = strtolower((string) ($seo['index'] ?? 'Index')) === 'noindex';
 

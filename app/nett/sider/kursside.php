@@ -143,7 +143,7 @@ foreach ($bilder as $i => $b) {
 }
 $h .= '</div>';
 // Hero-bildet er LCP paa denne sida; si fra i hodet.
-$hode = '<link rel="preload" as="image" fetchpriority="high" href="' . $e($bilder[0]) . '">' . "\n";
+$hode = '<link rel="preload" as="image" fetchpriority="high" href="' . $e(Nett::fotoUrl($bilder[0])) . '">' . "\n";
 
 // ── Merkelappene, i stedet for én linje med nivaa ─────────────────────
 //

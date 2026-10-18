@@ -87,6 +87,8 @@ body{margin:0;background:#FBF6EE;font:400 15px/1.6 "Alegreya Sans",sans-serif;co
 footer{margin-top:56px;padding-top:20px;border-top:1px solid #E8DBC8;font-size:13px;color:#6F5D4C;letter-spacing:.04em}
 footer a{color:#4D1D12}
 table{display:block;overflow-x:auto}
+[data-tabellhint]{font-weight:700;color:#4D1D12;margin:12px 0 -8px}
+table[data-overskudd]{border-right:3px solid #A2502B}
 @media (max-width:560px){.ramme{padding:20px 14px 60px}.cover{padding:30px 22px}h1{font-size:32px}.tipgrid,.figgrid{grid-template-columns:1fr}.toc ol{column-count:1}}
 </style>
 </head>
@@ -101,6 +103,7 @@ table{display:block;overflow-x:auto}
 </section>
 <span class="kapnr">Kapittel 1</span>
 <h2 class="kap">Leirens stadier</h2>
+<p data-tabellhint hidden>Sveip tabellen sidelengs &rarr;</p>
 <table>
 <thead><tr><th>Stadium</th><th>Kjennetegn</th><th>Hva gjøres nå</th></tr></thead>
 <tbody>
@@ -114,6 +117,7 @@ table{display:block;overflow-x:auto}
 <div class="rule"><h4>Når skal vi beskjære?</h4><p>Ved lærhard: dreiejernet skal skjære rene, sammenhengende spon. Drar jernet leiren, er det for tidlig; støver det, er det for sent (pakk stykket i fuktig plast noen timer, så blir det skjærbart igjen).</p></div>
 <span class="kapnr">Kapittel 2</span>
 <h2 class="kap">Leirtyper og chamotte</h2>
+<p data-tabellhint hidden>Sveip tabellen sidelengs &rarr;</p>
 <table>
 <thead><tr><th>Type</th><th>Brennes typisk til</th><th>Egenskaper</th></tr></thead>
 <tbody>
@@ -127,6 +131,7 @@ table{display:block;overflow-x:auto}
 <span class="kapnr">Kapittel 3</span>
 <h2 class="kap">Cones og grader</h2>
 <p>En «cone» (Orton-kjegle) er en liten pyramide av glasurmateriale som bøyer seg når den har fått en bestemt mengde <em>varmearbeid</em> – kombinasjonen av temperatur og tid. To brenninger til samme makstemperatur kan gi ulikt resultat hvis den ene går raskere; derfor snakker keramikere i cones, ikke bare grader. Omtrentlige verdier ved vanlig brennhastighet:</p>
+<p data-tabellhint hidden>Sveip tabellen sidelengs &rarr;</p>
 <table>
 <thead><tr><th>Cone</th><th>ca. °C</th><th>Typisk bruk</th></tr></thead>
 <tbody>
@@ -177,5 +182,9 @@ table{display:block;overflow-x:auto}
 <div class="kurs"><p>Vil du lære dette i praksis?</p><a class="pille gul" href="/kurs/dreiekurs">Se dreiekurs</a></div>
 <footer>Lissom Keramikk &amp; Håndverk AS · Nordre Løkkevei 15, 3120 Nøtterøy · <a href="mailto:post@lissom.no">post@lissom.no</a> · <a href="/">lissom.no</a></footer>
 </main>
+<script>
+function oppdaterTabellhint(){document.querySelectorAll('[data-tabellhint]').forEach(h=>{const t=h.nextElementSibling;const bred=!!t&&t.scrollWidth>t.clientWidth+2;h.hidden=!bred;if(t){t.toggleAttribute('data-overskudd',bred);if(bred)t.tabIndex=0;else t.removeAttribute('tabindex')}})}
+addEventListener('resize',oppdaterTabellhint);oppdaterTabellhint();document.fonts?.ready.then(oppdaterTabellhint);
+</script>
 </body>
 </html>

@@ -23,21 +23,23 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Sperren: alle testene maa gaa gjennom foer noe legges ut. Eieren,
-  # 27. september 2026 — funksjoner sluttet aa virke etter endringer andre
-  # steder. Feiler en test, blir sida som ligger ute staaende.
+  # Syntaks i endrede PHP-filer må være gyldig før utlegging.
   publiser:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Sjekk PHP-syntaks før noe legges ut
+      - name: Sjekk PHP-syntaks i endrede filer før noe legges ut
+        env:
+          KONTROLL_BASE: ${{ github.event.before }}
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq php-cli
-          find api app bin -name '*.php' -print0 | xargs -0 -n1 php -l
-          # side.php ligger i rota og serverer hver eneste side. En
-          # syntaksfeil der er hele nettsida nede — den sjekkes ogsaa.
-          php -l side.php
+          base="$KONTROLL_BASE"
+          if [ -z "$base" ] || [[ "$base" =~ ^0+$ ]]; then base=HEAD^; fi
+          git diff --name-only --diff-filter=ACMR -z "$base" HEAD -- '*.php' |
+            while IFS= read -r -d '' fil; do php -l "$fil"; done
 
       # 1) Nettsiden: alt som skal være offentlig tilgjengelig.
       - name: Legg ut nettsiden

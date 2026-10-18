@@ -200,10 +200,11 @@ final class Deler
         if ($tight) {
             $h .= '<nav data-nett-mobilmeny hidden style="display: none; flex-direction: column; align-items: stretch; background: #fff; border-top: 1px solid rgba(77,29,18,.12); box-shadow: 0 12px 24px rgba(77,29,18,.14); padding: var(--space-4) var(--space-8) var(--space-6); animation: dsNavFade .22s ease;">';
             $mobil = self::LENKER;
+            $mobil[] = ['Kontakt oss', '/kontakt'];
             $mobil[] = ['Min side', '/min-side'];
             foreach ($mobil as [$navn, $href]) {
                 $paa = $navn === $aktiv;
-                $h .= '<a href="' . $href . '" style="font-family: var(--font-sans); font-weight: 700; font-size: 16px; letter-spacing: var(--tracking-caps); text-transform: uppercase; text-decoration: none; color: '
+                $h .= '<a' . ($navn === 'Kontakt oss' ? ' class="lx-kontakt-smal"' : '') . ' href="' . $href . '" style="font-family: var(--font-sans); font-weight: 700; font-size: 16px; letter-spacing: var(--tracking-caps); text-transform: uppercase; text-decoration: none; color: '
                     . ($paa ? 'var(--lissom-brown)' : 'var(--brown-500)') . '; padding: 16px 4px; min-height: 44px; display: flex; align-items: center; border-bottom: 1px solid rgba(77,29,18,.08);">'
                     . self::e($navn) . '</a>';
             }

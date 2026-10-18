@@ -4963,7 +4963,7 @@ window.__resources = {
         <div style="max-width: var(--width-content); margin: 0 auto; position: relative;">
           <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--brown-500); margin-bottom: var(--space-3);">{{ gk0Kicker }}</div>
           <h1 style="margin: 0 0 var(--space-4); font-size: var(--text-5xl); color: var(--lissom-brown);">{{ gk0Overskrift }}</h1>
-          <p style="margin: 0; color: var(--brown-500); font-size: var(--text-lg); max-width: 52ch; text-wrap: pretty;">{{ gk0Brodtekst }}</p>
+          <p class="lx-landings-ingress" style="margin: 0; color: var(--brown-500); font-size: var(--text-lg); max-width: 52ch; text-wrap: pretty;">{{ gk0Brodtekst }}</p>
         </div>
       </section>
       <section style="background: var(--clay-50); padding: var(--section-y) var(--space-8);">
@@ -31832,6 +31832,7 @@ const SIDEINNHOLD = {
     { navn: 'Topptekst', type: 'Tittel og ingress', synlig: 'Publisert', felter: [
       { l: 'Kicker', v: 'Kurs og events i Tønsberg' },
       { l: 'Ingress', v: 'Lag din egen kopp på dreieskiva, boller og store fat med plateteknikk, eller en fransk smørklokke for hånd. Leire, verktøy, glasur og brenning er inkludert i alle kurs. Du trenger ingen forkunnskaper — finn en dato som passer.', lang: true },
+      { l: 'Ingress for Events', v: 'Ta med noen du liker til Date Night, mal keramikk på Paint on Pots, eller samle gjengen til Sip & Clay. Du trenger ingen forkunnskaper — vi hjelper dere i gang.', lang: true },
       // Sto med ett tall for alle kategoriene. Dreiing tar 8, resten 12 —
       // ett tall her ville vaert feil for den ene eller den andre. Teksten er
       // tatt bort etter bestilling; feltene staar igjen slik at det kan
@@ -73774,7 +73775,9 @@ class Component extends DCLogic {
       mkSitatAvsender: this.innh('Medlemskap/4/Avsender'),
       mkHarSitat: !!this.innh('Medlemskap/4/Sitat'),
       keKicker: this.innh('Kurs og events/0/Kicker'),
-      keIngress: this.innh('Kurs og events/0/Ingress'),
+      keIngress: this.state.kursFilter === 'Events'
+        ? this.innh('Kurs og events/0/Ingress for Events')
+        : this.innh('Kurs og events/0/Ingress'),
       keDetaljVenstre: this.innh('Kurs og events/0/Detalj venstre'),
       keDetaljHoyre: this.innh('Kurs og events/0/Detalj høyre'),
       keHarDetalj: !!(this.innh('Kurs og events/0/Detalj venstre') || this.innh('Kurs og events/0/Detalj høyre')),

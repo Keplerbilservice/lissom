@@ -45,6 +45,9 @@ $alle = Kort::kurs();
 $vist = Kort::filtrert($valgt, $naar);
 
 $tittel = ['Kurs' => 'Våre kurs', 'Events' => 'Date Night, Paint on Pots og Sip & Clay', 'Dreiing' => 'Dreiekurs', 'Håndbygging' => 'Plateteknikk og håndbygging'][$valgt] ?? 'Dreiekurs, plateteknikk og håndbygging';
+$ingress = $valgt === 'Events'
+    ? $innh('Kurs og events/0/Ingress for Events')
+    : $innh('Kurs og events/0/Ingress');
 
 $h = '<div role="main" data-screen-label="Kurs og events">' . "\n";
 $h .= Deler::topp($valgt === 'Events' ? 'Events' : 'Kurs');
@@ -60,7 +63,7 @@ $h .= '<section style="background: var(--clay-50); padding: var(--section-y) var
     . '<div style="max-width: var(--width-content); margin: 0 auto;">'
     . '<div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">' . $e($innh('Kurs og events/0/Kicker')) . '</div>'
     . '<h1' . ($valgt === 'Kursene' ? ' class="lx-kurs-h1"' : '') . ' style="margin: 0 0 var(--space-4); font-size: var(--text-5xl);">' . $e($tittel) . '</h1>'
-    . '<p style="margin: 0 0 var(--space-8); color: var(--text-body); font-size: var(--text-lg); max-width: 52ch; text-wrap: pretty;">' . $e($innh('Kurs og events/0/Ingress')) . '</p>';
+    . '<p class="lx-landings-ingress" style="margin: 0 0 var(--space-8); color: var(--text-body); font-size: var(--text-lg); max-width: 52ch; text-wrap: pretty;">' . $e($ingress) . '</p>';
 // Naar paa dagen.
 $h .= '<div style="margin-bottom: var(--space-5);">'
     . '<div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 8px;">Når på dagen passer det best for deg?</div>'

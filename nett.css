@@ -2460,6 +2460,23 @@ nav[data-nett-mobilmeny]:not([hidden]) { display: flex !important; }
 .lx-hero-fellesskap .lx-hero-h1 { font-size: clamp(28px, 3.7vw, 58px) !important; white-space: nowrap; }
 .lx-hero-fellesskap .lx-hero-h1 em { display: inline; }
 .lx-hero-fellesskap .lx-hero-p { max-width: 465px; font-size: 21px !important; }
+@media (min-width: 1151px) {
+  .lx-hero-fellesskap .lx-hero-copy > div > .lx-hero-p:first-child { max-width: 575px; }
+  .lx-landings-ingress { max-width: 62ch !important; }
+}
+@media (min-width: 1600px) {
+  [data-screen-label="Kurs og events"] #kursliste .lx-dkgrid { max-width: 1240px !important; }
+}
+@media (max-width: 389px) {
+  #lissom-topp > [data-topp="tight"] header button[data-href="/kontakt"] { display: none !important; }
+  #lissom-topp > [data-topp="tight"] nav[data-nett-mobilmeny] .lx-kontakt-smal { display: flex !important; }
+}
+@media (max-width: 339px) {
+  .lx-hero-fellesskap .lx-hero-cta > button:first-child { font-size: 12px !important; padding-inline: 18px !important; }
+}
+@media (min-width: 390px) {
+  #lissom-topp nav[data-nett-mobilmeny] .lx-kontakt-smal { display: none !important; }
+}
 .lx-hero-fellesskap .lx-hero-cta { zoom: 1 !important; gap: 12px !important; }
 .lx-hero-foto { position: absolute; inset: 100px 0 0 35%; overflow: hidden; }
 .lx-hero-foto img { width: 100%; height: 100%; object-fit: cover; object-position: 73% 45%; display: block; }

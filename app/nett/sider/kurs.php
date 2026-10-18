@@ -59,7 +59,7 @@ $tag = static function (string $navn, bool $valgt, string $href) use ($e): strin
 $h .= '<section style="background: var(--clay-50); padding: var(--section-y) var(--space-8) var(--space-10);">'
     . '<div style="max-width: var(--width-content); margin: 0 auto;">'
     . '<div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">' . $e($innh('Kurs og events/0/Kicker')) . '</div>'
-    . '<h1 style="margin: 0 0 var(--space-4); font-size: var(--text-5xl);">' . $e($tittel) . '</h1>'
+    . '<h1' . ($valgt === 'Kursene' ? ' class="lx-kurs-h1"' : '') . ' style="margin: 0 0 var(--space-4); font-size: var(--text-5xl);">' . $e($tittel) . '</h1>'
     . '<p style="margin: 0 0 var(--space-8); color: var(--text-body); font-size: var(--text-lg); max-width: 52ch; text-wrap: pretty;">' . $e($innh('Kurs og events/0/Ingress')) . '</p>';
 // Naar paa dagen.
 $h .= '<div style="margin-bottom: var(--space-5);">'
@@ -135,7 +135,7 @@ if (!$erEvents) {
 // Paa mobil: bare foerste avsnitt, og «Les mer ⌄» aapner resten (designet
 // 13. oktober 2026). PC som foer, i to spalter.
 $h .= '<section data-nett-mer style="background: var(--clay-50); padding: 0 var(--space-8) var(--space-12);">'
-    . '<div class="lx-cols2" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-10); align-items: start; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-10);">'
+    . '<div class="lx-cols2 lx-kurs-velkommen" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-10); align-items: start; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-10);">'
     . '<div>'
     . '<div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">' . $e($innh('Kurs og events/2/Kicker')) . '</div>'
     . '<h2 style="margin: 0 0 var(--space-4); font-size: var(--text-3xl);">' . $e($innh('Kurs og events/2/Overskrift')) . '</h2>'

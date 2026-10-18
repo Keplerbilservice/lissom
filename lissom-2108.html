@@ -2871,6 +2871,12 @@ window.__resources = {
     .lx-hero-hj2 { margin-top: var(--space-3) !important; }
     .lx-hero-h1 { font-size: clamp(38px, 11vw, 56px) !important; }
     .lx-kunnskap-h1 { font-size: clamp(23px, 7.5vw, 40px) !important; word-break: break-word; hyphens: auto; }
+    @media (max-width: 359px) {
+      .lx-kurs-h1 { font-size: 37px !important; }
+      .lx-kurs-velkommen { padding-left: 20px !important; padding-right: 20px !important; }
+      .lx-kurs-velkommen h2, .lx-forside-innganger-h2 { text-wrap: balance; }
+      .lx-bedrift-h1 { font-size: 32px !important; text-wrap: balance; }
+    }
     .lx-hero-p { font-size: 18px !important; }
     .lx-hero-cta { zoom: 1 !important; }
     .lx-hero-hjerte { display: none !important; }
@@ -4665,7 +4671,7 @@ window.__resources = {
         <div class="lx-hide-m" style="position: absolute; inset: 0; background: linear-gradient(100deg, var(--lissom-yellow) 46%, rgba(255,207,56,0.85) 56%, rgba(255,207,56,0.25) 76%, transparent 94%); pointer-events: none;"></div>
         <div style="max-width: var(--width-content); margin: 0 auto; position: relative;">
           <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--brown-500); margin-bottom: var(--space-3);">{{ beKicker }}</div>
-          <h1 style="margin: 0 0 var(--space-5); color: var(--lissom-brown); font-size: clamp(36px, 3.6vw, 60px); line-height: 1.05; max-width: 18ch;">{{ beTittel }} <em style="font-style: italic;">{{ beTittelKursiv }}</em></h1>
+          <h1 class="lx-bedrift-h1" style="margin: 0 0 var(--space-5); color: var(--lissom-brown); font-size: clamp(36px, 3.6vw, 60px); line-height: 1.05; max-width: 18ch;">{{ beTittel }} <em style="font-style: italic;">{{ beTittelKursiv }}</em></h1>
           <p style="margin: 0 0 var(--space-8); color: var(--brown-500); font-size: var(--text-lg); max-width: 52ch; text-wrap: pretty;">{{ beIngress }}</p>
           <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="lg" icon-after="arrow-right" on-click="{{ bedriftTilSkjema }}" hint-size="auto,56px">Send en forespørsel</x-import>
         </div>

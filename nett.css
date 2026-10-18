@@ -1995,6 +1995,12 @@ img{max-width:100%;display:block}
     .lx-hero-hj2 { margin-top: var(--space-3) !important; }
     .lx-hero-h1 { font-size: clamp(38px, 11vw, 56px) !important; }
     .lx-kunnskap-h1 { font-size: clamp(23px, 7.5vw, 40px) !important; word-break: break-word; hyphens: auto; }
+    @media (max-width: 359px) {
+      .lx-kurs-h1 { font-size: 37px !important; }
+      .lx-kurs-velkommen { padding-left: 20px !important; padding-right: 20px !important; }
+      .lx-kurs-velkommen h2, .lx-forside-innganger-h2 { text-wrap: balance; }
+      .lx-bedrift-h1 { font-size: 32px !important; text-wrap: balance; }
+    }
     .lx-hero-p { font-size: 18px !important; }
     .lx-hero-cta { zoom: 1 !important; }
     .lx-hero-hjerte { display: none !important; }

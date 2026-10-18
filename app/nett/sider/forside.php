@@ -102,7 +102,7 @@ if (($lagret['Banner/pa'] ?? '') !== 'nei' && !Nett::mobilSkjult('apenthus')) {
 $h .= '<section style="background: var(--clay-50); padding: var(--section-y) var(--space-8);">'
     . '<div style="max-width: var(--width-content); margin: 0 auto;">'
     . '<div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">' . $e($innh('Forside/1/Kicker')) . '</div>'
-    . '<h2 style="margin: 0 0 var(--space-8);">' . $e($innh('Forside/1/Overskrift')) . '</h2>'
+    . '<h2 class="lx-forside-innganger-h2" style="margin: 0 0 var(--space-8);">' . $e($innh('Forside/1/Overskrift')) . '</h2>'
     . '<div class="lx-kortgrid lx-kortgrid3 lx-forside-innganger" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-8);">';
 $innganger = [
     ['level' => '01 · Dreiekurs', 'title' => 'Dreiekurs', 'text' => 'To ganger ved dreieskiva: sentrere, dreie, trimme foten og dekorere. Vi glaserer og brenner. Fra leireklump til ferdig kopp.', 'image' => 'uploads_foto-dreiekurs2.jpg', 'imageAlt' => 'Deltaker dreier ved dreieskiva hos Lissom Keramikk', 'cta' => 'Se dreiekurs', 'href' => '/kurs'],

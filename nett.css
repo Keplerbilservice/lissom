@@ -559,6 +559,34 @@ img{max-width:100%;display:block}
 .msny .ms-o-ovn > :not(.ms-o-barn) { display: none !important; }
 .msny .ms-o-ovn:not(:has(.ms-o-barn)) { display: none !important; }
 .msny .ms-o-barn { margin: 0 !important; max-width: none !important; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); }
+.ms-barn-hjemlinje { display: none; }
+/* Forsiden: vervekortet og «Ta med barn» rett under flisene, i den rekkefoelgen
+   (eieren 19.10.2026, visningen FS4hHqMvvb1cw9MvNgYVoP). Samme kort som paa
+   Medlemskapet, saa bryterne styrer begge steder. Barnekortet er kompakt paa
+   én rad; er barnet aktivt, staar «Aktivt · <maaned>» i stedet for pris og knapp.
+   Har medlemmet trykket «Skjul», er kortet borte fra forsiden. */
+.msny-hjem #minside-verving { order: 7; }
+.msny-hjem .ms-o-ovn { order: 8; }
+.msny-hjem .msny-khm { order: 9; }
+.msny-hjem #minside-verving:has(> .ms-modulvalg [aria-checked="false"]),
+.msny-hjem .ms-o-ovn:not(:has(.ms-o-barn > .ms-modulvalg [aria-checked="true"])) { display: none !important; }
+.msny-hjem #minside-verving > .ms-modulvalg, .msny-hjem .ms-o-barn > .ms-modulvalg { display: none !important; }
+.msny-hjem .ms-o-barn { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; column-gap: 20px; row-gap: 4px; padding: 18px 20px; }
+.msny-hjem .ms-o-barn > * { grid-column: 1; margin: 0 !important; }
+.msny-hjem .ms-o-barn > div:first-of-type > span:first-child { font-size: 19px !important; }
+.msny-hjem .ms-o-barn > p:not(.ms-barn-hjemlinje), .msny-hjem .ms-o-barn > ul, .msny-hjem .ms-barn-kal { display: none !important; }
+.msny-hjem .ms-barn-hjemlinje { display: block; font-size: 14px; color: var(--text-muted); text-wrap: pretty; }
+.msny-hjem .ms-o-barn .ms-barn-pris { grid-column: 2; grid-row: 1 / span 2; font-size: 22px !important; white-space: nowrap; }
+.msny-hjem .ms-o-barn .ms-barn-pris em { display: inline; font-family: var(--font-sans); font-weight: 500; font-size: 13px; color: var(--text-muted); }
+.msny-hjem .ms-o-barn .ms-barn-knapper { grid-column: 3; grid-row: 1 / span 2; flex-wrap: nowrap; }
+.msny-hjem .ms-o-barn .ms-barn-knapper button { padding: 10px 18px !important; font-weight: 800 !important; white-space: nowrap; }
+.msny-hjem .ms-o-barn:has(.ms-barn-aktiv) .ms-barn-knapper { display: none !important; }
+@media (max-width: 760px) {
+  .msny-hjem .ms-o-barn { grid-template-columns: auto minmax(0, 1fr); padding: 16px; row-gap: 8px; }
+  .msny-hjem .ms-o-barn > * { grid-column: 1 / -1; }
+  .msny-hjem .ms-o-barn .ms-barn-pris { grid-column: 1; grid-row: auto; }
+  .msny-hjem .ms-o-barn .ms-barn-knapper { grid-column: 2; grid-row: auto; justify-self: end; flex-wrap: wrap; }
+}
 .msny-tittel { margin: 0; font-family: var(--font-display); font-size: var(--text-2xl); color: var(--text-heading); }
 .msny-kort { background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5); display: grid; gap: 10px; min-width: 0; box-sizing: border-box; }
 .msny-kort h3 { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: 20px; color: var(--text-heading); }

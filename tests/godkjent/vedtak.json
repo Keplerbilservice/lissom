@@ -9779,6 +9779,24 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "minside-forside-verving-barn",
+            "dato": "2026-10-19",
+            "hva": "Ny Min side: vervekortet og Ta med barn vises også på forsiden rett under de seks flisene, først vervekortet, så Ta med barn (kompakt på én rad: tittel, linje, pris, Kjøp for <måned>; aktivt barn viser Aktivt · <måned>). De står fortsatt under Medlemskapet. Samme brytere (Vis/verving, Vis/tilleggbarn, modulbryterne og medlemmets Skjul) styrer begge steder.",
+            "hvor": "Min side (ny) › forsiden",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "<div id=\"minside-verving\" data-msny=\"medlemskap hjem\"",
+                        "<div data-msny=\"medlemskap hjem\" class=\"{{ ovnKortKlasse }} ms-o-ovn\"",
+                        "Barnet ditt (opptil {{ barnMaksAlder }} år) kan være med deg i verkstedet hele måneden.",
+                        ".msny-hjem #minside-verving { order: 7; }",
+                        ".msny-hjem .ms-o-ovn { order: 8; }"
+                    ]
+                }
+            ]
         }
     ]
 }

@@ -5788,6 +5788,10 @@ window.__resources = {
                     </sc-if>
                   </div>
                   <sc-if value="{{ msNyTimeflisVis }}" hint-placeholder-val="{{ false }}"><div class="msny-status msny-timelinje">{{ msNyTimelinje }}</div></sc-if>
+                  <!-- Timepakken som pille under timeflisen (eieren 19.10.2026, visningen
+                       DTmtwYnXHWiybMRcQeS7HM): bare naar maanedens timer er brukt opp og
+                       pakken kan kjoepes, samme regel som vindu 2. Trykk aapner vindu 2. -->
+                  <sc-if value="{{ msNyTpPilleVis }}" hint-placeholder-val="{{ false }}"><div style="margin-top: 10px;"><button type="button" class="msny-pille msny-tp-pille" onClick="{{ msNyTpApne }}">{{ msNyTpPilleTekst }}</button></div></sc-if>
                 </div>
               </sc-if>
               <sc-if value="{{ msNyGlemtVis }}" hint-placeholder-val="{{ false }}">
@@ -33878,6 +33882,14 @@ class Component extends DCLogic {
       msNyTimeflisIgjen: tall(igjen) + ' t igjen',
       msNyTimelinje: !timeflisVis ? '' : tall(t.brukt) + ' av ' + tall(t.perMnd) + ' timer brukt i ' + maaned
         + (betaltTil && vis('abonnement') ? ' · betalt til ' + betaltTil : ''),
+      // Timepakken som pille under timeflisen (eieren 19.10.2026, visningen
+      // DTmtwYnXHWiybMRcQeS7HM). Samme regel som vindu 2 (timeneBruktOpp), og
+      // den staar ogsaa etter «Ikke nå». Ikke mens man er innstemplet: da
+      // aapnes ikke vinduet. Timer og pris fra timepakken i admin.
+      msNyTpPilleVis: timeflisVis && this.timeneBruktOpp() && !this.erInne(),
+      msNyTpPilleTekst: 'Kjøp timepakke · ' + tall(Number(((this.state.stempling || {}).timepakke || {}).timer) || 0)
+        + ' t for kr ' + Math.round((((this.state.stempling || {}).timepakke || {}).prisOre || 0) / 100).toLocaleString('nb-NO'),
+      msNyTpApne: () => this.setState({ tpVindu: '2', tpLukket: false }),
       msNyGlemtVis: !!v.msGlemtVis,
       msNyOvnVis: vis('ovn'),
       msNyInneVis: vis('inne'),

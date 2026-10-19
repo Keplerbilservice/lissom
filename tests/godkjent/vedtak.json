@@ -9818,6 +9818,23 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "minside-timepakke-pille",
+            "dato": "2026-10-19",
+            "hva": "Ny Min side, Verkstedet nå: under linja med timene står pillen «Kjøp timepakke · {timer} t for kr {pris}» når månedens timer er brukt opp og timepakken kan kjøpes (samme regel som vindu 2), også etter «Ikke nå», ikke mens medlemmet er innstemplet. Timer og pris fra timepakken i admin. Trykk åpner vindu 2 (visningen DTmtwYnXHWiybMRcQeS7HM).",
+            "hvor": "Min side (ny) › forsiden › Verkstedet nå",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "<button type=\"button\" class=\"msny-pille msny-tp-pille\" onClick=\"{{ msNyTpApne }}\">{{ msNyTpPilleTekst }}</button>",
+                        "msNyTpPilleVis: timeflisVis && this.timeneBruktOpp() && !this.erInne(),",
+                        "msNyTpPilleTekst: 'Kjøp timepakke · ' + tall(",
+                        "msNyTpApne: () => this.setState({ tpVindu: '2', tpLukket: false }),"
+                    ]
+                }
+            ]
         }
     ]
 }

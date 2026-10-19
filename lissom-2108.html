@@ -749,6 +749,34 @@ img{max-width:100%;display:block}
 .msny .ms-o-ovn > :not(.ms-o-barn) { display: none !important; }
 .msny .ms-o-ovn:not(:has(.ms-o-barn)) { display: none !important; }
 .msny .ms-o-barn { margin: 0 !important; max-width: none !important; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); }
+.ms-barn-hjemlinje { display: none; }
+/* Forsiden: vervekortet og «Ta med barn» rett under flisene, i den rekkefoelgen
+   (eieren 19.10.2026, visningen FS4hHqMvvb1cw9MvNgYVoP). Samme kort som paa
+   Medlemskapet, saa bryterne styrer begge steder. Barnekortet er kompakt paa
+   én rad; er barnet aktivt, staar «Aktivt · <maaned>» i stedet for pris og knapp.
+   Har medlemmet trykket «Skjul», er kortet borte fra forsiden. */
+.msny-hjem #minside-verving { order: 7; }
+.msny-hjem .ms-o-ovn { order: 8; }
+.msny-hjem .msny-khm { order: 9; }
+.msny-hjem #minside-verving:has(> .ms-modulvalg [aria-checked="false"]),
+.msny-hjem .ms-o-ovn:not(:has(.ms-o-barn > .ms-modulvalg [aria-checked="true"])) { display: none !important; }
+.msny-hjem #minside-verving > .ms-modulvalg, .msny-hjem .ms-o-barn > .ms-modulvalg { display: none !important; }
+.msny-hjem .ms-o-barn { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; column-gap: 20px; row-gap: 4px; padding: 18px 20px; }
+.msny-hjem .ms-o-barn > * { grid-column: 1; margin: 0 !important; }
+.msny-hjem .ms-o-barn > div:first-of-type > span:first-child { font-size: 19px !important; }
+.msny-hjem .ms-o-barn > p:not(.ms-barn-hjemlinje), .msny-hjem .ms-o-barn > ul, .msny-hjem .ms-barn-kal { display: none !important; }
+.msny-hjem .ms-barn-hjemlinje { display: block; font-size: 14px; color: var(--text-muted); text-wrap: pretty; }
+.msny-hjem .ms-o-barn .ms-barn-pris { grid-column: 2; grid-row: 1 / span 2; font-size: 22px !important; white-space: nowrap; }
+.msny-hjem .ms-o-barn .ms-barn-pris em { display: inline; font-family: var(--font-sans); font-weight: 500; font-size: 13px; color: var(--text-muted); }
+.msny-hjem .ms-o-barn .ms-barn-knapper { grid-column: 3; grid-row: 1 / span 2; flex-wrap: nowrap; }
+.msny-hjem .ms-o-barn .ms-barn-knapper button { padding: 10px 18px !important; font-weight: 800 !important; white-space: nowrap; }
+.msny-hjem .ms-o-barn:has(.ms-barn-aktiv) .ms-barn-knapper { display: none !important; }
+@media (max-width: 760px) {
+  .msny-hjem .ms-o-barn { grid-template-columns: auto minmax(0, 1fr); padding: 16px; row-gap: 8px; }
+  .msny-hjem .ms-o-barn > * { grid-column: 1 / -1; }
+  .msny-hjem .ms-o-barn .ms-barn-pris { grid-column: 1; grid-row: auto; }
+  .msny-hjem .ms-o-barn .ms-barn-knapper { grid-column: 2; grid-row: auto; justify-self: end; flex-wrap: wrap; }
+}
 .msny-tittel { margin: 0; font-family: var(--font-display); font-size: var(--text-2xl); color: var(--text-heading); }
 .msny-kort { background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5); display: grid; gap: 10px; min-width: 0; box-sizing: border-box; }
 .msny-kort h3 { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: 20px; color: var(--text-heading); }
@@ -5991,7 +6019,7 @@ window.__resources = {
                statusen — det siste trykket — oeverst i det samme kortet.
                Pulserer til man selv har trykket «Sett»; borte etter 24
                timer. Se ovnVals(). -->
-          <div data-msny="medlemskap" class="{{ ovnKortKlasse }} ms-o-ovn" style="{{ ovnKortStil }}" data-ms-modul="ovn">
+          <div data-msny="medlemskap hjem" class="{{ ovnKortKlasse }} ms-o-ovn" style="{{ ovnKortStil }}" data-ms-modul="ovn">
 <div class="ms-modulvalg"><strong>{{ msModuler.ovn.navn }}</strong><button type="button" role="switch" aria-label="Ovnen: vis/skjul" aria-checked="{{ msModuler.ovn.aria }}" onClick="{{ msModuler.ovn.veksle }}" class="ms-modulbryter">{{ msModuler.ovn.tekst }}</button></div>
 <sc-if value="{{ msModuler.ovn.vis }}" hint-placeholder-val="{{ true }}">
 
@@ -6023,8 +6051,9 @@ window.__resources = {
 
               <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-bottom: 6px;">
                 <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-lg); color: var(--text-heading);">Ta med barn</span>
-                <sc-if value="{{ barnAktivt }}" hint-placeholder-val="{{ false }}"><span style="{{ barnMerkeStil }}">Aktivt · {{ barnAktivMaaned }}</span></sc-if>
+                <sc-if value="{{ barnAktivt }}" hint-placeholder-val="{{ false }}"><span class="ms-barn-aktiv" style="{{ barnMerkeStil }}">Aktivt · {{ barnAktivMaaned }}</span></sc-if>
               </div>
+              <p class="ms-barn-hjemlinje">Barnet ditt (opptil {{ barnMaksAlder }} år) kan være med deg i verkstedet hele måneden.</p>
               <sc-if value="{{ barnAktivt }}" hint-placeholder-val="{{ false }}">
                 <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ barnAktivTekst }}</p>
               </sc-if>
@@ -6037,7 +6066,7 @@ window.__resources = {
                   <li>Barnet er alltid sammen med deg — aldri alene i verkstedet</li>
                 </ul>
               </sc-if>
-              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <div class="ms-barn-knapper" style="display: flex; gap: 8px; flex-wrap: wrap;">
                 <sc-for list="{{ barnKjopValg }}" as="k" hint-placeholder-count="1">
                   <button type="button" onClick="{{ k.velg }}" style="{{ barnKnappStil }}">Kjøp for {{ k.navn }}</button>
                 </sc-for>
@@ -7597,7 +7626,7 @@ window.__resources = {
                    venn til aarsmedlemskap og faa timer i verkstedet. Slaas av og
                    paa, og timene settes, i Markedsfoering › Vervepremie. -->
               <sc-if value="{{ msVervVis }}" hint-placeholder-val="{{ false }}">
-              <div id="minside-verving" data-msny="medlemskap" class="ms-o-banner" style="{{ msBannerStil }}" data-ms-modul="verving">
+              <div id="minside-verving" data-msny="medlemskap hjem" class="ms-o-banner" style="{{ msBannerStil }}" data-ms-modul="verving">
 <div class="ms-modulvalg"><strong>{{ msModuler.verving.navn }}</strong><button type="button" role="switch" aria-label="Verv en venn: vis/skjul" aria-checked="{{ msModuler.verving.aria }}" onClick="{{ msModuler.verving.veksle }}" class="ms-modulbryter">{{ msModuler.verving.tekst }}</button></div>
 <sc-if value="{{ msModuler.verving.vis }}" hint-placeholder-val="{{ true }}">
 

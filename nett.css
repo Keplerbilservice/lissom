@@ -612,6 +612,20 @@ img{max-width:100%;display:block}
 .msny-medl b { font-size: 20px; font-family: var(--font-display); }
 .msny-bar { display: block; height: 8px; border-radius: 999px; background: var(--clay-200); overflow: hidden; }
 .msny-bar i { display: block; height: 100%; background: var(--lissom-yellow); }
+/* Timeflisen: samme drakt som Bordplass/Dreieskive (r.boksStil), tre like brede
+   (eieren 19.10.2026, visningen KW6ceUUfcvZhWAF1dtCyHT). */
+.msny-rad.msny-tre { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; }
+.msny-tre > button { min-width: 0; padding-left: 4px !important; padding-right: 4px !important; }
+/* PC: venstre kolonne er 300 px; litt mindre navn, saa «Bordplass» og «Dreieskive» staar paa én linje. */
+@media (min-width: 900px) { .msny-rad.msny-tre { gap: 6px; } .msny-tre > button { padding-left: 3px !important; padding-right: 3px !important; } .msny-tre > button b { font-size: 14px !important; } }
+.msny-timeflis { appearance: none; cursor: pointer; border: 1.5px solid var(--lissom-brown); border-radius: 12px; padding: 12px 10px; text-align: center; background: var(--surface-card); color: var(--lissom-brown); }
+.msny-timeflis b { display: block; font-size: 15px; }
+.msny-timeflis small { display: block; font-size: 12px; opacity: .8; }
+.msny-timeflis.tomt small { color: var(--danger); opacity: 1; font-weight: 700; }
+.msny-maaler { display: block; height: 4px; margin: 6px 4px 0; border-radius: 999px; background: var(--clay-200); overflow: hidden; }
+.msny-maaler i { display: block; height: 100%; background: var(--lissom-yellow); }
+.msny-timeflis:focus-visible { outline: 3px solid var(--lissom-yellow); outline-offset: 2px; }
+.msny-timelinje { font-size: var(--text-xs); }
 .msny-varsellinje { border-left: 4px solid var(--sage-600, #4f7a46); background: var(--surface-card); border-radius: 10px; padding: 10px 12px; font-size: 15px; }
 .msny-flis:focus-visible, .msny-pille:focus-visible { outline: 3px solid var(--lissom-yellow); outline-offset: 2px; }
 .msny-flis:hover { border-color: var(--lissom-brown); }

@@ -802,6 +802,20 @@ img{max-width:100%;display:block}
 .msny-medl b { font-size: 20px; font-family: var(--font-display); }
 .msny-bar { display: block; height: 8px; border-radius: 999px; background: var(--clay-200); overflow: hidden; }
 .msny-bar i { display: block; height: 100%; background: var(--lissom-yellow); }
+/* Timeflisen: samme drakt som Bordplass/Dreieskive (r.boksStil), tre like brede
+   (eieren 19.10.2026, visningen KW6ceUUfcvZhWAF1dtCyHT). */
+.msny-rad.msny-tre { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; }
+.msny-tre > button { min-width: 0; padding-left: 4px !important; padding-right: 4px !important; }
+/* PC: venstre kolonne er 300 px; litt mindre navn, saa «Bordplass» og «Dreieskive» staar paa én linje. */
+@media (min-width: 900px) { .msny-rad.msny-tre { gap: 6px; } .msny-tre > button { padding-left: 3px !important; padding-right: 3px !important; } .msny-tre > button b { font-size: 14px !important; } }
+.msny-timeflis { appearance: none; cursor: pointer; border: 1.5px solid var(--lissom-brown); border-radius: 12px; padding: 12px 10px; text-align: center; background: var(--surface-card); color: var(--lissom-brown); }
+.msny-timeflis b { display: block; font-size: 15px; }
+.msny-timeflis small { display: block; font-size: 12px; opacity: .8; }
+.msny-timeflis.tomt small { color: var(--danger); opacity: 1; font-weight: 700; }
+.msny-maaler { display: block; height: 4px; margin: 6px 4px 0; border-radius: 999px; background: var(--clay-200); overflow: hidden; }
+.msny-maaler i { display: block; height: 100%; background: var(--lissom-yellow); }
+.msny-timeflis:focus-visible { outline: 3px solid var(--lissom-yellow); outline-offset: 2px; }
+.msny-timelinje { font-size: var(--text-xs); }
 .msny-varsellinje { border-left: 4px solid var(--sage-600, #4f7a46); background: var(--surface-card); border-radius: 10px; padding: 10px 12px; font-size: 15px; }
 .msny-flis:focus-visible, .msny-pille:focus-visible { outline: 3px solid var(--lissom-yellow); outline-offset: 2px; }
 .msny-flis:hover { border-color: var(--lissom-brown); }
@@ -5754,14 +5768,26 @@ window.__resources = {
               <sc-if value="{{ msNyStempelTekstVis }}" hint-placeholder-val="{{ false }}">
                 <div class="msny-status">{{ stemplingTekst }}</div>
               </sc-if>
-              <sc-if value="{{ msNyRessursVis }}" hint-placeholder-val="{{ false }}">
+              <!-- Timeflisen (eieren 19.10.2026, visningen KW6ceUUfcvZhWAF1dtCyHT):
+                   medlemskapet og timene som tredje flis paa raden med Bordplass
+                   og Dreieskive, tre like brede. Bare til aa se paa: den er ikke
+                   et ressursvalg, et trykk aapner Medlemskapet. Under raden:
+                   brukt av totalt og betalt til. Uten timetak eller uten
+                   Verkstedet naa staar det gamle medlemskapskortet som foer. -->
+              <sc-if value="{{ msNyValgradVis }}" hint-placeholder-val="{{ false }}">
                 <div class="msny-ressurs">
-                  <div class="msny-status">{{ msRessursHjelp }}</div>
-                  <div class="msny-rad">
-                    <sc-for list="{{ msRessursValg }}" as="r" hint-placeholder-count="2">
-                      <button type="button" onClick="{{ r.velg }}" style="{{ r.boksStil }}"><b style="display: block; font-size: 15px;">{{ r.navn }}</b><small style="display: block; font-size: 12px; opacity: .8;">{{ r.ledig }}</small></button>
-                    </sc-for>
+                  <sc-if value="{{ msNyRessursVis }}" hint-placeholder-val="{{ false }}"><div class="msny-status">{{ msRessursHjelp }}</div></sc-if>
+                  <div class="{{ msNyValgradKlasse }}">
+                    <sc-if value="{{ msNyRessursVis }}" hint-placeholder-val="{{ false }}">
+                      <sc-for list="{{ msRessursValg }}" as="r" hint-placeholder-count="2">
+                        <button type="button" onClick="{{ r.velg }}" style="{{ r.boksStil }}"><b style="display: block; font-size: 15px;">{{ r.navn }}</b><small style="display: block; font-size: 12px; opacity: .8;">{{ r.ledig }}</small></button>
+                      </sc-for>
+                    </sc-if>
+                    <sc-if value="{{ msNyTimeflisVis }}" hint-placeholder-val="{{ false }}">
+                      <button type="button" class="{{ msNyTimeflisKlasse }}" onClick="{{ msNyTilMedlemskap }}"><b>{{ msNyTimeflisNavn }}</b><small>{{ msNyTimeflisIgjen }}</small><span class="msny-maaler"><i style="{{ msNyBarStil }}"></i></span></button>
+                    </sc-if>
                   </div>
+                  <sc-if value="{{ msNyTimeflisVis }}" hint-placeholder-val="{{ false }}"><div class="msny-status msny-timelinje">{{ msNyTimelinje }}</div></sc-if>
                 </div>
               </sc-if>
               <sc-if value="{{ msNyGlemtVis }}" hint-placeholder-val="{{ false }}">
@@ -5812,7 +5838,7 @@ window.__resources = {
           </sc-if>
           <!-- Medlemskapet i én flis: navnet, timene denne maaneden og hvor
                lenge det er betalt. Hele flisen aapner Medlemskapet. -->
-          <sc-if value="{{ msNyMedlVis }}" hint-placeholder-val="{{ false }}">
+          <sc-if value="{{ msNyMedlKortVis }}" hint-placeholder-val="{{ false }}">
             <button type="button" class="msny-flis msny-medl" onClick="{{ msNyTilMedlemskap }}">
               <b>{{ mittAbo }}</b>
               <sc-if value="{{ msNyTimerVis }}" hint-placeholder-val="{{ false }}"><small>{{ msNyTimerTekst }}</small></sc-if>
@@ -33805,6 +33831,14 @@ class Component extends DCLogic {
     const verksted = medlem;
     const stempelVis = vis('stempel') && !!v.harTimer;
     const dorVis = !!this.medlemsvisning() && !this.state.fryst && (!this.erPublisert() || !!this.dorkodeNaa());
+    const verkstedVis = verksted && (stempelVis || (vis('stempel') && !!v.erTom) || dorVis || vis('ovn') || vis('inne') || !!v.msGlemtVis);
+    const ressursVis = stempelVis && !!v.msHarRessurser;
+    const medlVis = verksted && !!v.msHarEgenPlan && (vis('abonnement') || vis('stempel'));
+    // Timeflisen i Verkstedet naa (eieren 19.10.2026, visningen
+    // KW6ceUUfcvZhWAF1dtCyHT): bare med et timetak denne maaneden. Uten tak
+    // (fri tilgang eller 0) eller uten Verkstedet naa: det gamle kortet.
+    const timeflisVis = verkstedVis && medlVis && vis('stempel') && !!t && t.perMnd !== null && Number(t.perMnd) > 0;
+    const igjen = timeflisVis ? Math.max(0, Number(t.igjen) || 0) : 0;
 
     return {
       msNyPaa: true,
@@ -33828,21 +33862,30 @@ class Component extends DCLogic {
       msVisDorkode: false,
       msTlFaner: faner,
       // Verkstedet naa
-      msNyVerkstedVis: verksted && (stempelVis || (vis('stempel') && !!v.erTom) || dorVis || vis('ovn') || vis('inne') || !!v.msGlemtVis),
+      msNyVerkstedVis: verkstedVis,
       msRettKlar: !!(this.state.stempling || {}).rettingKlar,
       msNyStempelVis: stempelVis,
       msNyStempelTom: vis('stempel') && !!v.erTom,
       msNyStempelKlasse: 'msny-pille' + (this.erInne() ? '' : ' fylt'),
       msNyStempelTekstVis: vis('stempel') && (!!v.harTimer || !!v.erTom) && !!v.stemplingTekst,
       msNyDorVis: dorVis,
-      msNyRessursVis: stempelVis && !!v.msHarRessurser,
+      msNyRessursVis: ressursVis,
+      msNyValgradVis: ressursVis || timeflisVis,
+      msNyValgradKlasse: 'msny-rad' + (timeflisVis ? ' msny-tre' : ''),
+      msNyTimeflisVis: timeflisVis,
+      msNyTimeflisKlasse: 'msny-timeflis' + (timeflisVis && igjen <= 0 ? ' tomt' : ''),
+      msNyTimeflisNavn: String(v.mittAbo || '').replace(/^Årsmedlemskap$/i, 'Årsmedlem'),
+      msNyTimeflisIgjen: tall(igjen) + ' t igjen',
+      msNyTimelinje: !timeflisVis ? '' : tall(t.brukt) + ' av ' + tall(t.perMnd) + ' timer brukt i ' + maaned
+        + (betaltTil && vis('abonnement') ? ' · betalt til ' + betaltTil : ''),
       msNyGlemtVis: !!v.msGlemtVis,
       msNyOvnVis: vis('ovn'),
       msNyInneVis: vis('inne'),
       msNyHarInne: (v.inne || []).length > 0,
       msNyFrysStarterVis: medlem && hjem && !!v.frysStarterVis,
       // Medlemskapet
-      msNyMedlVis: verksted && !!v.msHarEgenPlan && (vis('abonnement') || vis('stempel')),
+      msNyMedlVis: medlVis,
+      msNyMedlKortVis: medlVis && !timeflisVis,
       msNyTilMedlemskap: gaa('medlemskap'),
       msNyTimerVis: !!timerTekst && vis('stempel'),
       msNyTimerTekst: timerTekst,

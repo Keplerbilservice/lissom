@@ -51,8 +51,9 @@ try{for(const width of [390,1280]){
  try{
   await p.goto(ADR+'/min-side');await p.locator('.msny-hjem').waitFor();await p.getByText('Verkstedet nå',{exact:true}).waitFor();await p.waitForTimeout(1200);
   assert.equal(await p.getByRole('button',{name:'Stemple ut',exact:true}).first().isVisible(),true,'Stemple ut i Verkstedet nå');
-  assert.match(await p.locator('.msny-medl').innerText(),/Brukt [\d,]+ av [\d,]+ timer i \p{L}+/u,'medlemskapsflisen viser timene');
-  assert.match(await p.locator('.msny-medl').innerText(),/Betalt til \d+\. \p{L}+/u,'medlemskapsflisen viser betalt til');
+  // Timene står i timeflisen i Verkstedet nå (eieren 19.10.2026); se tests/minside-timeflis.mjs.
+  assert.match(await p.locator('.msny-timelinje').innerText(),/[\d,]+ av [\d,]+ timer brukt i \p{L}+/u,'timeflisen viser timene');
+  assert.match(await p.locator('.msny-timelinje').innerText(),/betalt til \d+\. \p{L}+/u,'timeflisen viser betalt til');
   for(const n of ['Kurs','Butikk','Medlemskapet','Chat','Fellesskap','Hjelp'])assert.equal(await flis(p,n).isVisible(),true,'flis '+n);
   if(width>=900){assert.equal(await p.locator('.msny-fliser').evaluate(e=>getComputedStyle(e).gridTemplateColumns.split(' ').length),3,'PC: flisene i 3 kolonner');const v=await p.locator('.msny-verksted').boundingBox(),fl=await p.locator('.msny-fliser').boundingBox();assert.ok(v.x<fl.x&&Math.abs(v.y-fl.y)<400,'PC: Verkstedet nå til venstre for flisene');}else assert.equal(await p.locator('.msny-fliser').evaluate(e=>getComputedStyle(e).gridTemplateColumns.split(' ').length),2,'mobil: flisene i 2 kolonner');
   for(const m of ['stempel','inne','chat','abonnement','butikk','hms'])assert.equal(await p.locator('[data-ms-modul="'+m+'"]').isVisible(),false,m+' står ikke på forsiden');

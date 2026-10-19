@@ -9797,6 +9797,27 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "minside-timeflis-verksted",
+            "dato": "2026-10-19",
+            "hva": "Ny Min side, forsiden: medlemskapet og timene er en tredje flis i «Verkstedet nå» på raden med Bordplass og Dreieskive, samme flisstil, tre like brede også på mobil (visningen KW6ceUUfcvZhWAF1dtCyHT). Flisen: medlemskapets navn (Årsmedlemskap kortes til Årsmedlem), «{n} t igjen» (rød ved 0) og en tynn gul måler. Under raden: «{brukt} av {totalt} timer brukt i <måned>» + « · betalt til <dato>». Flisen er ikke et ressursvalg; trykk åpner Medlemskapet. Det gamle medlemskapskortet er borte fra forsiden når flisen vises, og står som før uten timetak eller når Verkstedet nå er skjult.",
+            "hvor": "Min side (ny) › forsiden › Verkstedet nå",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "<div class=\"{{ msNyValgradKlasse }}\">",
+                        "<button type=\"button\" class=\"{{ msNyTimeflisKlasse }}\" onClick=\"{{ msNyTilMedlemskap }}\">",
+                        "msNyTimeflisIgjen: tall(igjen) + ' t igjen',",
+                        "' timer brukt i ' + maaned",
+                        "' · betalt til ' + betaltTil",
+                        "msNyMedlKortVis: medlVis && !timeflisVis,",
+                        ".msny-rad.msny-tre { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; }",
+                        ".msny-timeflis.tomt small { color: var(--danger); opacity: 1; font-weight: 700; }"
+                    ]
+                }
+            ]
         }
     ]
 }

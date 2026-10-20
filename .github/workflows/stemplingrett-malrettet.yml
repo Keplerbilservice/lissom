@@ -1,7 +1,7 @@
 name: Målrettet stemplingskontroll
+# Tunge tester startes bare manuelt etter eierens bestilling.
 on:
-  push:
-    branches: [codex/stempling-retting]
+  workflow_dispatch:
 jobs:
   stempling:
     runs-on: ubuntu-latest

@@ -224,6 +224,25 @@
       <div class="ark-fot"><button class="knapp" data-mlm="medlem" data-id="${id}">Avbryt</button><button class="knapp hoved" data-mlm="justerlagre" data-id="${id}">Lagre</button></div>`);
     document.getElementById('mlm-ju-timer')?.focus();
   }
+  /* Norske datoer i Verkstedtid (eieren 20.10.2026, visningen KParQyDBGMo9sZZznKd6fg): «Torsdag 1. · 17:48–20:16»,
+     uten år. Måneden står bare med når økta ikke er i inneværende måned. Datoen velges som dag i inneværende måned. */
+  const UKEDAG = ['Søndag', 'Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag'];
+  const MND = ['jan.', 'feb.', 'mars', 'apr.', 'mai', 'juni', 'juli', 'aug.', 'sep.', 'okt.', 'nov.', 'des.'];
+  const isoDag = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  function dagTekst(iso) {
+    const d = somDato(iso); if (!d) return '';
+    const n = idag();
+    return UKEDAG[d.getDay()] + ' ' + d.getDate() + '.' + (d.getMonth() === n.getMonth() && d.getFullYear() === n.getFullYear() ? '' : ' ' + MND[d.getMonth()]);
+  }
+  const oktTekst = (inn, ut) => dagTekst(inn) + ' · ' + String(inn || '').slice(11, 16) + '–' + (ut ? String(ut).slice(11, 16) : 'pågår');
+  const minTekst = min => { const t = Math.floor(min / 60), m = min % 60; return (t ? t + ' t' : '') + (t && m ? ' ' : '') + (m || !t ? m + ' min' : ''); };
+  function dagValg(valgt) {
+    const n = idag(), dager = [];
+    for (let d = n.getDate(); d >= 1; d--) dager.push(new Date(n.getFullYear(), n.getMonth(), d));
+    const v = valgt || isoDag(n);
+    const ekstra = dager.some(d => isoDag(d) === v) ? '' : `<option value="${esc(v)}" selected>${esc(dagTekst(v))}</option>`;
+    return ekstra + dager.map((d, i) => `<option value="${isoDag(d)}"${isoDag(d) === v ? ' selected' : ''}>${esc(dagTekst(isoDag(d)))}${i === 0 ? ' (i dag)' : ''}</option>`).join('');
+  }
   async function arkStempling(id, sakId = 0, oktId = 0) {
     NA().apneArk('<div class="ark-head"><h2>Verkstedtid</h2><button class="lukk" data-mlm="lukk" aria-label="Lukk">×</button></div><p>Henter økter …</p>', { bred: true });
     let d;
@@ -236,13 +255,13 @@
     const dato = inn.slice(0, 10), fra = inn.slice(11, 16), til = ut.slice(11, 16);
     const innhold = NA().apneArk(`<div class="ark-head"><h2>${esc(d.medlem.navn)} · Verkstedtid</h2><button class="lukk" data-mlm="lukk" aria-label="Lukk">×</button></div>
       <p class="muted">Velg en økt eller en sak. Medlemmet kan foreslå tid; bare admin kan endre timeforbruket.</p>
-      <h3>Åpne forslag</h3>${d.saker.filter(x => x.status === 'apen' || x.status === 'trenger_info').map(x => `<div class="rad"><div class="tekst"><b>${esc(x.inn)}–${esc(x.ut.slice(11,16))}</b><small>${esc(x.forklaring)} · ${esc(x.status)}</small></div><div class="knapper"><button class="knapp liten" data-mlm="stemplingsak" data-id="${id}" data-sak="${x.id}">Åpne</button></div></div>`).join('') || '<p class="muted">Ingen åpne forslag.</p>'}
-      <h3 style="margin-top:18px">Økter</h3>${d.okter.map(x => `<div class="rad"><div class="tekst"><b>${esc(x.inn)}–${esc(x.ut?.slice(11,16) || 'pågår')}</b><small>${x.minutter ?? 'Pågår'} minutter telt${x.auto ? ' · automatisk lukket' : ''}</small></div><div class="knapper"><button class="knapp liten" data-mlm="stemplingokt" data-id="${id}" data-okt="${x.id}" ${x.ut ? '' : 'disabled'}>Rett</button></div></div>`).join('') || '<p class="muted">Ingen økter registrert.</p>'}
+      <h3>Åpne forslag</h3>${d.saker.filter(x => x.status === 'apen' || x.status === 'trenger_info').map(x => `<div class="rad"><div class="tekst"><b>${esc(oktTekst(x.inn, x.ut))}</b><small>${esc(x.forklaring)} · ${esc(x.status)}</small></div><div class="knapper"><button class="knapp liten" data-mlm="stemplingsak" data-id="${id}" data-sak="${x.id}">Åpne</button></div></div>`).join('') || '<p class="muted">Ingen åpne forslag.</p>'}
+      <h3 style="margin-top:18px">Økter</h3>${d.okter.map(x => `<div class="rad"><div class="tekst"><b>${esc(oktTekst(x.inn, x.ut))}</b><small>${x.minutter == null ? 'Pågår' : minTekst(x.minutter) + ' telt'}${x.auto ? ' · automatisk lukket' : ''}</small></div><div class="knapper"><button class="knapp liten" data-mlm="stemplingokt" data-id="${id}" data-okt="${x.id}" ${x.ut ? '' : 'disabled'}>Rett</button></div></div>`).join('') || '<p class="muted">Ingen økter registrert.</p>'}
       <div class="ark-fot"><button class="knapp" data-mlm="stemplingokt" data-id="${id}" data-okt="-1">Legg inn manglende økt</button></div>
       <h3 style="margin-top:18px">${sak ? 'Behandle forslag' : okt ? 'Rett valgt økt' : 'Legg inn økt'}</h3>
-      ${okt ? `<p>Registrert: ${esc(okt.inn)}–${esc(okt.ut?.slice(11,16) || '')} · ${okt.minutter} minutter telt.</p>` : ''}
-      ${sak ? `<p class="sms">Medlemmet foreslår ${esc(sak.inn)}–${esc(sak.ut.slice(11,16))}. ${esc(sak.forklaring)}</p>` : ''}
-      <div class="valgknapper"><label class="felt"><small>Dato</small><input id="mlm-st-dato" type="date" value="${esc(dato)}"></label><label class="felt"><small>Riktig inn</small><input id="mlm-st-inn" type="text" inputmode="numeric" maxlength="5" placeholder="11:00" value="${esc(fra)}"></label><label class="felt"><small>Riktig ut</small><input id="mlm-st-ut" type="text" inputmode="numeric" maxlength="5" placeholder="16:00" value="${esc(til)}"></label></div>
+      ${okt ? `<p>Registrert: ${esc(oktTekst(okt.inn, okt.ut))} · ${minTekst(okt.minutter || 0)} telt.</p>` : ''}
+      ${sak ? `<p class="sms">Medlemmet foreslår ${esc(oktTekst(sak.inn, sak.ut))}. ${esc(sak.forklaring)}</p>` : ''}
+      <div class="valgknapper"><label class="felt"><small>Dag i ${esc(new Date().toLocaleDateString('nb-NO', { month: 'long' }))}</small><select id="mlm-st-dato">${dagValg(dato)}</select></label><label class="felt"><small>Riktig inn</small><input id="mlm-st-inn" type="text" inputmode="numeric" maxlength="5" placeholder="11:00" value="${esc(fra)}"></label><label class="felt"><small>Riktig ut</small><input id="mlm-st-ut" type="text" inputmode="numeric" maxlength="5" placeholder="16:00" value="${esc(til)}"></label></div>
       <label class="felt"><small>Begrunnelse</small><textarea id="mlm-st-grunn" placeholder="Hva ble avklart med medlemmet?"></textarea></label>
       <p id="mlm-st-feil" class="feil" role="alert" hidden></p>
       <div class="ark-fot"><button class="knapp hoved" data-mlm="stemplinglagre" data-id="${id}" data-okt="${okt?.id || 0}" data-sak="${sak?.id || 0}" data-gammelmin="${okt?.minutter ?? 0}">Lagre riktig tid</button>${sak ? `<button class="knapp" data-mlm="stemplinginfo" data-id="${id}" data-sak="${sak.id}">Be om info</button><button class="knapp" data-mlm="stemplingavslaa" data-id="${id}" data-sak="${sak.id}">Avslå</button>` : ''}</div>`, { bred: true });

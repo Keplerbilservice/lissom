@@ -9912,6 +9912,22 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "nyadmin-verkstedtid-norsk-dato",
+            "dato": "2026-10-20",
+            "hva": "Ny admin › Verkstedtid: øktene vises som «Torsdag 1. · 17:48–20:16» uten år (måneden bare når økta ikke er i inneværende måned), telt tid som «2 t 28 min», og datoen velges som dag i inneværende måned («Dag i oktober», i dag øverst) i stedet for et datofelt i amerikansk format (visningen KParQyDBGMo9sZZznKd6fg).",
+            "hvor": "Ny admin › Medlemmer › medlemskortet › Verkstedtid",
+            "kode": [
+                {
+                    "fil": "ny-admin/medlemmer.js",
+                    "finnes": [
+                        "function dagTekst(iso) {",
+                        "function dagValg(valgt) {",
+                        "<select id=\"mlm-st-dato\">${dagValg(dato)}</select>"
+                    ]
+                }
+            ]
         }
     ]
 }

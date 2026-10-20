@@ -9856,6 +9856,39 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "juster-timer",
+            "dato": "2026-10-20",
+            "hva": "Admin › personkortet › Handlinger › Verksted: «Juster timer» trekker (minus) eller legger til (pluss) timer på medlemmet denne måneden, med grunn som bare ses i admin. Taket på Min side og i admin regner med justeringen. Min side viser «− Trukket av verkstedet» i rødt eller «+ Lagt til av verkstedet» i grønt (visningen 9AkLi1C6b5AtFhUx19QDj3).",
+            "hvor": "Admin › Medlemmer › personkortet; Min side › timene",
+            "kode": [
+                {
+                    "fil": "admin-ny/app.js",
+                    "finnes": [
+                        "button('Juster timer',()=>edit('Juster timer'"
+                    ]
+                },
+                {
+                    "fil": "api/admin/medlemmer.php",
+                    "finnes": [
+                        "if ($handling === 'juster') {"
+                    ]
+                },
+                {
+                    "fil": "app/lib/medlemskap.php",
+                    "finnes": [
+                        "$dugnad += self::justeringMin((int) ($medlem['id'] ?? 0));"
+                    ]
+                },
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "navn: '− Trukket av verkstedet'",
+                        "navn: '+ Lagt til av verkstedet'"
+                    ]
+                }
+            ]
         }
     ]
 }

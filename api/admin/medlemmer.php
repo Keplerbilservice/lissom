@@ -1845,6 +1845,49 @@ if (Foresporsel::metode() === 'POST') {
                              . ' på ' . Foresporsel::tekst('dato') . '.']);
     }
 
+    // ── Juster timer ──────────────────────────────────────────────────
+    //
+    // Eieren, 20. oktober 2026: «nå har jeg noen som har vært der uten å
+    // stemple, og jeg skal føre minus timer» — «trekk eller legg til antall
+    // timer». Minus trekker, pluss legger til, denne maaneden. Grunnen ses
+    // bare i admin. Visningen 9AkLi1C6b5AtFhUx19QDj3.
+    if ($handling === 'juster') {
+        $id = Foresporsel::heltall('medlemId');
+        $medlem = DB::en('SELECT id, navn FROM members WHERE id = :i', ['i' => $id]);
+        if ($medlem === null) {
+            Svar::feil('Fant ikke medlemmet.', 404);
+        }
+        if (!DB::harTabell('timejusteringer')) {
+            Svar::feil('Dette krever en oppdatering av databasen. Kjør vedlikeholdet fra menyen nederst til venstre.');
+        }
+        $raa = str_replace([',', ' ', '−'], ['.', '', '-'], (string) (Foresporsel::kropp()['timer'] ?? ''));
+        $timer = is_numeric($raa) ? (float) $raa : 0.0;
+        $minutter = (int) round($timer * 60);
+        if ($minutter === 0 || abs($minutter) > 200 * 60) {
+            Svar::feil('Skriv antall timer, f.eks. -2 for å trekke eller 1,5 for å legge til.');
+        }
+        $grunn = mb_substr(trim(Foresporsel::tekst('grunn')), 0, 255);
+        $maaned = (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))->format('Y-m');
+
+        $jid = DB::settInn('timejusteringer', [
+            'member_id' => $id,
+            'maaned'    => $maaned,
+            'minutter'  => $minutter,
+            'grunn'     => $grunn !== '' ? $grunn : null,
+            'av'        => (int) $jeg['id'],
+        ]);
+        revider('timer_justert', 'member', $id, [
+            'justering' => $jid,
+            'minutter'  => $minutter,
+            'maaned'    => $maaned,
+            'grunn'     => $grunn,
+            'av'        => (int) $jeg['id'],
+        ]);
+
+        $t = Stempling::varighet(abs($minutter));
+        Svar::ok(['beskjed' => ($medlem['navn'] ?: 'Medlemmet') . ($minutter < 0 ? ' er trukket ' : ' har fått ') . $t . ' denne måneden.']);
+    }
+
     // ── Knytt en gjestepaamelding til kontoen ─────────────────────────
     //
     // Bestilte noen plassen for de opprettet konto — eller la verkstedet dem

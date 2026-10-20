@@ -1656,6 +1656,23 @@ final class Medlemskap
     }
 
     /**
+     * Minuttene verkstedet har trukket (minus) eller lagt til (pluss) paa
+     * medlemmet denne maaneden — admin › personkortet › Juster timer
+     * (eieren, 20. oktober 2026). 0 til migrasjon 280 er kjoert.
+     */
+    public static function justeringMin(int $medlemId): int
+    {
+        if ($medlemId <= 0 || !DB::harTabell('timejusteringer')) {
+            return 0;
+        }
+        return (int) DB::verdi(
+            'SELECT COALESCE(SUM(minutter), 0) FROM timejusteringer WHERE member_id = :m AND maaned = :mnd',
+            ['m' => $medlemId,
+             'mnd' => (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))->format('Y-m')]
+        );
+    }
+
+    /**
      * Timetaket denne maaneden, med innloeste gavetimer lagt til.
      *
      * Ett sted, ikke to: Min side og medlemslista i admin leser den samme
@@ -1681,7 +1698,10 @@ final class Medlemskap
         if ($medPakke && class_exists('Timepakke')) {
             $dugnad += Timepakke::tilgodeMin((int) ($medlem['id'] ?? 0));
         }
-        $sum = $tak + self::gavetimer((int) ($medlem['id'] ?? 0)) + $dugnad / 60;
+        // Juster timer (eieren, 20. oktober 2026): pluss eller minus fra
+        // verkstedet denne maaneden. Se justeringMin().
+        $dugnad += self::justeringMin((int) ($medlem['id'] ?? 0));
+        $sum = max(0, $tak + self::gavetimer((int) ($medlem['id'] ?? 0)) + $dugnad / 60);
         return $dugnad % 60 === 0 ? (int) $sum : round($sum, 2);
     }
 

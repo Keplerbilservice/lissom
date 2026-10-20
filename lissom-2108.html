@@ -69377,11 +69377,17 @@ class Component extends DCLogic {
         const plan = t.plan == null ? null : Number(t.plan);
         const gaver = Number(t.gaver || 0);
         const dugMin = Number(t.dugnadMin || 0);
+        // Juster timer fra verkstedet (eieren, 20. oktober 2026, visningen
+        // 9AkLi1C6b5AtFhUx19QDj3): minus i rødt, pluss i grønt.
+        const justMin = Number(t.justeringMin || 0);
+        const justTimer = String(Math.round(Math.abs(justMin) / 60 * 100) / 100).replace('.', ',') + ' t';
         const linjer = [];
-        if (plan !== null && (gaver > 0 || dugMin > 0)) {
+        if (plan !== null && (gaver > 0 || dugMin > 0 || justMin !== 0)) {
           linjer.push({ navn: 'Medlemskapet ditt', timer: plan + ' t', stil: { color: 'var(--text-heading)' } });
           if (dugMin > 0) linjer.push({ navn: '+ Dugnad (godkjent)', timer: '+' + String(Math.round(dugMin / 60 * 100) / 100).replace('.', ',') + ' t', stil: { color: 'var(--sage-600, #5f6a4e)' } });
           if (gaver > 0) linjer.push({ navn: '+ Timegave fra verkstedet', timer: '+' + gaver + ' t', stil: { color: 'var(--sage-600, #5f6a4e)' } });
+          if (justMin < 0) linjer.push({ navn: '− Trukket av verkstedet', timer: '−' + justTimer, stil: { color: 'var(--danger)' } });
+          if (justMin > 0) linjer.push({ navn: '+ Lagt til av verkstedet', timer: '+' + justTimer, stil: { color: 'var(--sage-600, #5f6a4e)' } });
           if ((this.state.dugnad || {}).overforing && dugMin > 0) linjer.push({ navn: 'Dugnadstimer du ikke bruker, tas med til neste måned.', timer: '', stil: {} });
         }
         return { timerHarEkstra: linjer.length > 0, timerLinjer: linjer };

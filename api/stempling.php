@@ -357,6 +357,9 @@ Svar::json([
         'plan'      => Medlemskap::timerFor($medlem),
         'gaver'     => Medlemskap::gavetimer($id),
         'dugnadMin' => Dugnad::minutterTilgode($medlem),
+        // Pluss eller minus fra verkstedet denne maaneden (Juster timer,
+        // eieren 20. oktober 2026).
+        'justeringMin' => Medlemskap::justeringMin($id),
         // NULL betyr fri tilgang — hverken planen eller medlemsraden setter
         // en grense. Da er det ingenting aa telle ned mot.
         'perMnd'   => $perMnd,

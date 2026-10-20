@@ -465,11 +465,19 @@ try {
     sjekk('lageret er urørt mens QR-en venter', (int) DB::verdi('SELECT lager FROM products WHERE id = :i', ['i' => $produkt]) === 3);
     $sett('.betaling-status', 'AUTHORIZED');
     DB::kjor('UPDATE payments SET updated_at = DATE_SUB(UTC_TIMESTAMP(), INTERVAL 1 MINUTE) WHERE vipps_reference = :r', ['r' => $ref]);
+    $haand0 = (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE emne LIKE 'Varsel må sendes for hånd%'");
     $s = kall($K, ['handling' => 'status', 'poll' => ['referanse' => $ref]], $kasseToken);
-    $o = DB::en('SELECT status FROM orders WHERE payment_id = :p', ['p' => (int) $p['id']]);
+    $o = DB::en('SELECT id, ordrenr, status FROM orders WHERE payment_id = :p', ['p' => (int) $p['id']]);
     sjekk('status hentes fra Vipps: betalt, ordren betalt, betalingsraden i svaret', $s[0] === 200 && ($s[1]['betalt'] ?? false) === true
         && ($o['status'] ?? '') === 'betalt' && ($s[1]['betalingId'] ?? 0) === (int) $p['id'], $tekst($s));
     sjekk('… og lageret trekkes når pengene er inne (3 → 2)', (int) DB::verdi('SELECT lager FROM products WHERE id = :i', ['i' => $produkt]) === 2);
+    // Monica, 20. oktober 2026: et QR-kjøp i kassa ga «Varsel må sendes for
+    // hånd: Bestillingen din er klar til henting». Varene er tatt med.
+    sjekk('… ingen «klar til henting» for Q-ordren, og ingen «Varsel må sendes for hånd»',
+        str_starts_with((string) ($o['ordrenr'] ?? ''), 'Q-')
+        && (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE ref_type = 'order' AND ref_id = :o", ['o' => (int) ($o['id'] ?? 0)]) === 0
+        && (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE emne LIKE 'Varsel må sendes for hånd%'") === $haand0,
+        json_encode($o));
 
     // Samme kurv: QR vises, «Tilbake», Kontant (nøklene beholdes).
     $sett('.betaling-status', 'CREATED');

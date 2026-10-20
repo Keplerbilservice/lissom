@@ -179,8 +179,50 @@
         <button class="knapp" data-mlm="gave" data-id="${m.id}">🎁 Gi gave</button>
         <button class="knapp" data-mlm="beskjeden" data-id="${m.id}" ${m.epost || m.telefon ? '' : 'disabled'}>✉ Send beskjed</button>
         <button class="knapp" data-mlm="stempling" data-id="${m.id}">Verkstedtid</button>
-        <a class="knapp" href="/admin-ny#folk?person=${m.id}">Betaling og detaljer (gammel admin)</a></div>`);
+        <button class="knapp" data-mlm="juster" data-id="${m.id}">Juster timer</button>
+        <a class="knapp" href="/admin-ny#folk?person=${m.id}">Betaling og detaljer (gammel admin)</a></div>
+      <div id="mlm-hist" data-id="${m.id}"><p class="muted">Henter historikk …</p></div>`);
     hentOppf(m);
+    hentHist(m);
+  }
+  /* Historikken fra gammel admin rett i medlemskortet (eieren 20.10.2026, visningen XFi6a5DL34Ya7jr4YVjzHs):
+     timene denne måneden med «Juster timer», betalinger, kurs, ventelister og endringsloggen. Samme kall som
+     gammel admin (medlemmer.php?person=). */
+  const tt = min => String(Math.round(Math.abs(min) / 60 * 10) / 10).replace('.', ',') + ' t';
+  async function hentHist(m) {
+    let d; try { d = await kall('medlemmer.php?person=' + m.id); } catch (e) {
+      const b = document.getElementById('mlm-hist'); if (b && Number(b.dataset.id) === m.id) b.innerHTML = '<p class="feil">' + esc(e.message) + '</p>'; return;
+    }
+    const boks = document.getElementById('mlm-hist'); if (!boks || Number(boks.dataset.id) !== m.id) return;
+    const del = (tittel, innhold) => `<h3 style="margin-top:18px">${tittel}</h3>${innhold}`;
+    const rad = (b, small, hoyre = '', klasse = '') => `<div class="rad"${klasse ? ` style="color:var(--${klasse})"` : ''}><div class="tekst"><b>${esc(b)}</b>${small ? `<small>${esc(small)}</small>` : ''}</div>${hoyre ? `<div class="knapper"><b>${esc(hoyre)}</b></div>` : ''}</div>`;
+    const ingen = '<p class="muted">Ingen.</p>';
+    const t = d.timerMnd || {};
+    const mnd = new Date().toLocaleDateString('nb-NO', { month: 'long', timeZone: 'Europe/Oslo' });
+    let timer = '';
+    if (t.plan == null) timer = '<p class="muted">Fri tilgang – ingen timegrense.</p>';
+    else {
+      timer = rad('Medlemskapet', '', t.plan + ' t')
+        + (t.justeringer || []).map(j => rad(j.minutter < 0 ? 'Trukket av verkstedet' : 'Lagt til av verkstedet',
+          [j.naar, j.grunn, j.av].filter(Boolean).join(' · '), (j.minutter < 0 ? '−' : '+') + tt(j.minutter), j.minutter < 0 ? 'danger' : 'sage-600')).join('')
+        + rad('Brukt (stemplet)', '', tt(t.bruktMin || 0))
+        + (t.tak == null ? '' : rad('Igjen', '', tt(Math.max(0, t.tak * 60 - (t.bruktMin || 0)))));
+    }
+    boks.innerHTML = del('Timer i ' + esc(mnd), timer)
+      + del('Betalingshistorikk', (d.betalinger || []).map(p => rad((p.kurs || 'Betaling') + (p.annullert ? ' (annullert)' : ''), [p.maate, p.naar, p.kommentar].filter(Boolean).join(' · '), p.belop)).join('') || ingen)
+      + del('Kurshistorikk', (d.historikk || []).map(k => rad(k.tittel, [k.naar, k.status].filter(Boolean).join(' · '), k.sum)).join('') || ingen)
+      + del('Ventelister', (d.ventelister || []).map(v => rad(v.kurs || v.tittel || 'Venteliste', v.siden ? 'Siden ' + v.siden : '')).join('') || ingen)
+      + del('Endringslogg', (d.logg || []).map(l => rad(l.hva, [l.av, l.naar].filter(Boolean).join(' · '))).join('') || ingen);
+  }
+  function arkJuster(id) {
+    const m = S.medlemmer.find(x => x.id === id) || { navn: 'Medlemmet' };
+    NA().apneArk(`<div class="ark-head"><h2>${esc(m.navn)} · Juster timer</h2><button class="lukk" data-mlm="lukk" aria-label="Lukk">×</button></div>
+      <label class="felt"><small>Timer – skriv minus for å trekke, f.eks. -2. Skriv 1,5 for å legge til.</small><input id="mlm-ju-timer" type="text" inputmode="decimal" placeholder="-2"></label>
+      <label class="felt"><small>Grunn (bare synlig i admin)</small><input id="mlm-ju-grunn" type="text" maxlength="255"></label>
+      <p class="muted">Gjelder denne måneden.</p>
+      <p id="mlm-ju-feil" class="feil" role="alert" hidden></p>
+      <div class="ark-fot"><button class="knapp" data-mlm="medlem" data-id="${id}">Avbryt</button><button class="knapp hoved" data-mlm="justerlagre" data-id="${id}">Lagre</button></div>`);
+    document.getElementById('mlm-ju-timer')?.focus();
   }
   async function arkStempling(id, sakId = 0, oktId = 0) {
     NA().apneArk('<div class="ark-head"><h2>Verkstedtid</h2><button class="lukk" data-mlm="lukk" aria-label="Lukk">×</button></div><p>Henter økter …</p>', { bred: true });
@@ -389,6 +431,20 @@
     if (h === 'betaling') { location.href = '/admin-ny#folk?person=' + id; return; }
     if (h === 'medlem') return arkMedlem(id);
     if (h === 'stempling') return arkStempling(id);
+    if (h === 'juster') return arkJuster(id);
+    if (h === 'justerlagre') {
+      if (S.opptatt) return;
+      const feil = document.getElementById('mlm-ju-feil');
+      S.opptatt = true; b.disabled = true;
+      try {
+        const r = await kall('medlemmer.php', { handling: 'juster', medlemId: id, timer: document.getElementById('mlm-ju-timer')?.value || '', grunn: document.getElementById('mlm-ju-grunn')?.value || '' });
+        toast(esc(r.beskjed || 'Lagret.'));
+        await hentMedlemmer();
+        arkMedlem(id);
+      } catch (err) { if (feil) { feil.textContent = err.message; feil.hidden = false; } }
+      finally { S.opptatt = false; b.disabled = false; }
+      return;
+    }
     if (h === 'stemplingsak') return arkStempling(id, Number(b.dataset.sak));
     if (h === 'stemplingokt') return arkStempling(id, 0, Number(b.dataset.okt));
     if (h === 'stemplinglagre' || h === 'stemplinginfo' || h === 'stemplingavslaa') {

@@ -2295,6 +2295,12 @@ if (Foresporsel::heltall('person') > 0 || Foresporsel::heltall('booking') > 0) {
             return 'Byttet medlemskap' . ($fra !== '' ? ' fra ' . $fra : '') . ($til !== '' ? ' til ' . $til : '')
                 . ($over !== '' && ($d['timerOverMin'] ?? 0) > 0 ? ' · ' . $over . ' t over ' . $fra : '');
         }
+        if ($h === 'timer_justert') {
+            $min = (int) ($d['minutter'] ?? 0);
+            $grunn = trim((string) ($d['grunn'] ?? ''));
+            return ($min < 0 ? 'Timer trukket: ' : 'Timer lagt til: ') . Stempling::varighet(abs($min))
+                . ($grunn !== '' ? ' · ' . $grunn : '');
+        }
         if ($h === 'medlem_plan_byttet') {
             $fra = trim((string) ($d['fra'] ?? ''));
             $til = trim((string) ($d['til'] ?? ''));
@@ -2664,6 +2670,34 @@ if (Foresporsel::heltall('person') > 0 || Foresporsel::heltall('booking') > 0) {
             'status'   => (string) $w['status'] === 'varslet' ? 'Varslet' : 'Venter',
             'siden'    => Booking::norskDato((string) $w['created_at']),
         ], $ventelister),
+
+        // Timene denne maaneden til medlemskortet i ny admin, med trekk og
+        // tillegg fra «Juster timer» (eieren, 20. oktober 2026, visningen
+        // XFi6a5DL34Ya7jr4YVjzHs).
+        'timerMnd' => (static function () use ($m): array {
+            $id = (int) $m['id'];
+            $just = [];
+            if (DB::harTabell('timejusteringer')) {
+                $just = DB::alle(
+                    'SELECT j.minutter, j.grunn, j.created_at, a.navn AS av
+                       FROM timejusteringer j LEFT JOIN members a ON a.id = j.av
+                      WHERE j.member_id = :m AND j.maaned = :mnd
+                      ORDER BY j.created_at DESC',
+                    ['m' => $id, 'mnd' => (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))->format('Y-m')]
+                );
+            }
+            return [
+                'plan'        => Medlemskap::timerFor($m),
+                'tak'         => Medlemskap::timerMedGaver($m),
+                'bruktMin'    => Stempling::minutterDenneManeden($id),
+                'justeringer' => array_map(static fn(array $j): array => [
+                    'minutter' => (int) $j['minutter'],
+                    'grunn'    => (string) ($j['grunn'] ?? ''),
+                    'av'       => (string) ($j['av'] ?? ''),
+                    'naar'     => Booking::norskDato((string) $j['created_at']),
+                ], $just),
+            ];
+        })(),
 
         // Timepakker og svarene etter «Ikke nå» (eieren, 28. september 2026).
         'timepakke' => Timepakke::forAdmin((int) $m['id']),

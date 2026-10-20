@@ -9889,6 +9889,29 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "nyadmin-medlemskort-historikk",
+            "dato": "2026-10-20",
+            "hva": "Ny admin › Medlemmer: medlemskortet (trykk på et medlem) viser historikken fra gammel admin rett i kortet: timer denne måneden med trekk/tillegg fra «Juster timer», betalingshistorikk, kurshistorikk, ventelister og endringslogg. Knappen «Juster timer» åpner et ark med timer (minus trekker) og grunn (visningen XFi6a5DL34Ya7jr4YVjzHs).",
+            "hvor": "Ny admin › Medlemmer › medlemskortet",
+            "kode": [
+                {
+                    "fil": "ny-admin/medlemmer.js",
+                    "finnes": [
+                        "<button class=\"knapp\" data-mlm=\"juster\" data-id=\"${m.id}\">Juster timer</button>",
+                        "async function hentHist(m) {",
+                        "handling: 'juster'"
+                    ]
+                },
+                {
+                    "fil": "api/admin/medlemmer.php",
+                    "finnes": [
+                        "'timerMnd' => (static function () use ($m): array {",
+                        "if ($h === 'timer_justert') {"
+                    ]
+                }
+            ]
         }
     ]
 }

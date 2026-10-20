@@ -2142,7 +2142,13 @@ final class Booking
                 // «Ta med barn» (migrasjon 192): tillegget paa ordren blir
                 // aktivt naar pengene er i havn — ikke foer.
                 Tillegg::aktiverForOrdre((int) $ordre['id']);
-                self::sendOrdrebekreftelse((int) $ordre['id']);
+                // Q- er solgt over disk: kunden har tatt varene med seg, og
+                // kassa spor selv om kvittering (Kasse::kvitteringValg()).
+                // «Klar til henting» er feil beskjed, og uten e-post ble den
+                // til «Varsel maa sendes for haand» (Monica, 20. oktober 2026).
+                if (!str_starts_with((string) $ordre['ordrenr'], 'Q-')) {
+                    self::sendOrdrebekreftelse((int) $ordre['id']);
+                }
                 return true;
             }
 

@@ -9928,6 +9928,20 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "kasse-qr-uten-hentevarsel",
+            "dato": "2026-10-20",
+            "hva": "Monica 20.10.2026 fikk «Varsel må sendes for hånd: Bestillingen din er klar til henting» etter et Vipps-QR-kjøp i kassa. GO: salg med Vipps-QR fra kassa (Q-) sender ikke lenger e-posten «Bestillingen din er klar til henting» når betalingen kommer inn. Kvitteringsvalget i kassa (e-post/SMS) virker som før. Nettbutikken (B-) sender som før.",
+            "hvor": "Kassa › Vipps-QR",
+            "kode": [
+                {
+                    "fil": "app/lib/booking.php",
+                    "finnes": [
+                        "if (!str_starts_with((string) $ordre['ordrenr'], 'Q-')) {"
+                    ]
+                }
+            ]
         }
     ]
 }

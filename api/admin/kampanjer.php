@@ -196,8 +196,12 @@ if ($handling === 'lagre') {
 
     // Hvor knappen gaar. Bare steder som finnes; et fritt felt her ville
     // vaert en aapen omdirigering paa forsiden.
-    $maal = Foresporsel::tekst('maal', 'butikk');
-    if (!in_array($maal, ['butikk', 'medlemsbutikk', 'kurs', 'events', 'medlemskap', 'gavekort'], true)) {
+    $maal = trim(Foresporsel::tekst('maal', 'butikk'));
+    // En Facebook-lenke, f.eks. et arrangement (eieren, 20. oktober 2026:
+    // julemarkedet paa Mellom Roed gaard). Bare facebook.com — knappen
+    // aapner den i en ny fane.
+    $erFacebook = preg_match('#^https://(www\.|m\.)?facebook\.com/[A-Za-z0-9/._~%?=&+-]{1,160}$#', $maal) === 1;
+    if (!$erFacebook && !in_array($maal, ['butikk', 'medlemsbutikk', 'kurs', 'events', 'medlemskap', 'gavekort'], true)) {
         // «kurs/<slug>»: rett til ett kurs sin side (eieren, 21. september
         // 2026: Juleverksted-banneret). Bare kurs som finnes — slug-en slaas
         // opp, saa knappen aldri peker paa noe som ikke er der.

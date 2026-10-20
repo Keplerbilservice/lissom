@@ -9835,6 +9835,27 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "medlemskampanje-facebook-knapp",
+            "dato": "2026-10-20",
+            "hva": "Kampanjen til medlemmer (Min side) kan ha en Facebook-lenke som mål for knappen; knappen åpner den i en ny fane. Serveren slipper bare https://facebook.com-lenker gjennom. Første bruk: julemarkedet på Mellom Rød gård 28.–29. november (visningen E9FkrNZmMYcWBVRooFwdQ7).",
+            "hvor": "Min side › forsiden › kampanjebanneret til medlemmer; admin › Kampanjer",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "if (/^https://(www.|m.)?facebook.com//.test(maal)) {",
+                        "window.open(maal, '_blank', 'noopener');"
+                    ]
+                },
+                {
+                    "fil": "api/admin/kampanjer.php",
+                    "finnes": [
+                        "$erFacebook = preg_match("
+                    ]
+                }
+            ]
         }
     ]
 }

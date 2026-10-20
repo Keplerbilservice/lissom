@@ -34067,6 +34067,12 @@ class Component extends DCLogic {
           msMkHarKnapp: !!f('knapp'),
           msMkKnapp: f('knapp'),
           msMkGaa: () => {
+            // En Facebook-lenke (eieren, 20. oktober 2026: julemarkedet)
+            // aapnes i en ny fane. Serveren slipper bare facebook.com gjennom.
+            if (/^https:\/\/(www\.|m\.)?facebook\.com\//.test(maal)) {
+              window.open(maal, '_blank', 'noopener');
+              return;
+            }
             const steder = {
               butikk:        { side: 'butikk', butikkKolleksjon: 'Lissom', butikkFilter: 'Alt' },
               medlemsbutikk: { side: 'butikk', butikkKolleksjon: 'Medlem', butikkFilter: 'Alt' },

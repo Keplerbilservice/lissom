@@ -2124,7 +2124,7 @@ final class Booking
                 return true;
             }
 
-            $ordre = DB::en('SELECT id, ordrenr FROM orders WHERE payment_id = :p', ['p' => $betaling['id']]);
+            $ordre = DB::en('SELECT id, ordrenr, kunde_epost FROM orders WHERE payment_id = :p', ['p' => $betaling['id']]);
             if ($ordre !== null) {
                 DB::oppdater('orders', ['status' => 'betalt'], ['id' => $ordre['id']]);
                 KasseJustering::vedBetaling((int) $betaling['id'], null);
@@ -2142,11 +2142,12 @@ final class Booking
                 // «Ta med barn» (migrasjon 192): tillegget paa ordren blir
                 // aktivt naar pengene er i havn — ikke foer.
                 Tillegg::aktiverForOrdre((int) $ordre['id']);
-                // Q- er solgt over disk: kunden har tatt varene med seg, og
-                // kassa spor selv om kvittering (Kasse::kvitteringValg()).
-                // «Klar til henting» er feil beskjed, og uten e-post ble den
-                // til «Varsel maa sendes for haand» (Monica, 20. oktober 2026).
-                if (!str_starts_with((string) $ordre['ordrenr'], 'Q-')) {
+                // Q- er salg i kassa. Der gaar e-post bare ut naar kunden har
+                // e-post registrert — ellers ingenting, heller ikke «Varsel maa
+                // sendes for haand» (eieren, 20. oktober 2026: «bare der det
+                // ligger inne epost og sms paa kunden, men ikke ellers»).
+                if (!str_starts_with((string) $ordre['ordrenr'], 'Q-')
+                    || trim((string) ($ordre['kunde_epost'] ?? '')) !== '') {
                     self::sendOrdrebekreftelse((int) $ordre['id']);
                 }
                 return true;

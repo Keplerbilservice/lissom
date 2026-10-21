@@ -9969,6 +9969,24 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "paaminnelse-uten-kontakt-ingen-varsel",
+            "dato": "2026-10-21",
+            "hva": "Monica 21.10.2026 fikk «Varsel må sendes for hånd: Påminnelse om kurs: Store fat kurs» for en påmeldt uten e-post og telefon («Fått igjen»). Cron slettet utsendingsnøkkelen da påminnelsen ikke nådde fram, så den samme e-posten kom igjen ved neste kjøring. Eieren: ingen varsel i det hele tatt. Påminnelsen før kurset hoppes over for påmeldte ingen vei når — både fra cron og for hånd — uten «Varsel må sendes for hånd». Samme regel som kassa 20.10.",
+            "hvor": "Påminnelse før kurset (cron paaminnelser)",
+            "kode": [
+                {
+                    "fil": "app/lib/paaminnelse.php",
+                    "finnes": [
+                        "$mal = DB::en(\"SELECT * FROM notification_templates WHERE navn = 'kurspaaminnelse'\");",
+                        "                $v = self::veier($mal, $mottaker);"
+                    ],
+                    "ikkeFinnes": [
+                        "$mal = $forHaand ? DB::en("
+                    ]
+                }
+            ]
         }
     ]
 }

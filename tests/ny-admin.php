@@ -461,6 +461,17 @@ try {
     sjekk('M cron: den tidlige får ikke en til', $mottakereAv($oktM) === [strtolower($tag) . '-tidlig@example.com', strtolower($tag) . '-senere@example.com'], json_encode($mottakereAv($oktM)));
     $rc2 = Paaminnelse::send($cronRad($oktM), false);
     sjekk('M cron en gang til: ingen nye', $rc2['sendt'] === 0 && count($mottakereAv($oktM)) === 2, json_encode($rc2));
+    // Monica 21.10.2026: en påmeldt uten kontaktopplysninger ga «Varsel må
+    // sendes for hånd» fra cron, og den samme igjen neste dag. Eieren: ingen varsel.
+    $forHaandAntall = static fn(): int => (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE emne LIKE 'Varsel må sendes for hånd%'");
+    $h0 = $forHaandAntall();
+    $oktU = DB::settInn('course_sessions', ['course_id' => $k, 'start_tid' => $tid('+11 days 18:00'), 'status' => 'planlagt']);
+    $nyBooking($k, $oktU, 'Utenkontakt', 'betalt', ['gjest_epost' => null, 'created_at' => $gammel]);
+    $rc3 = Paaminnelse::send($cronRad($oktU), false);
+    $rc4 = Paaminnelse::send($cronRad($oktU), false);
+    sjekk('M cron, påmeldt uten kontakt: ingenting sendt, ingen «Varsel må sendes for hånd» (to kjøringer)',
+        $rc3['sendt'] === 0 && $rc4['sendt'] === 0 && $forHaandAntall() === $h0 && $mottakereAv($oktU) === [],
+        json_encode([$rc3, $rc4, $forHaandAntall() - $h0]));
     $pm2 = kall('/api/admin/okt-varsel.php', ['handling' => 'paaminnelse', 'oktId' => $oktM, 'forventet' => $forv($oktM)], $tA);
     sjekk('M for hånd når alle har fått den: 409 «alt sendt»', $pm2[0] === 409 && str_contains((string) ($pm2[1]['feil'] ?? ''), 'alt sendt'), $vis($pm2));
     $fm2 = kall('/api/admin/okt-varsel.php', ['handling' => 'forhandsvis', 'oktId' => $oktM, 'mal' => 'kurspaaminnelse'], $tA);

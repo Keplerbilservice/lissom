@@ -11,7 +11,7 @@
   const KORT = [
     ['Rapporter', 'Omsetning, kurs og medlemmer', '/admin-ny#penger'],
     ['Markedsføring', 'Nyhetsbrev, SMS, kampanjer', '/admin-ny#marked'],
-    ['Keramikkmaler', 'Dokumenter med former og oppskrifter', '/admin-ny#dokumenter'],
+    ['Keramikkmaler', 'Dokumenter med former og oppskrifter', '#maler'],
     ['Vedtak', 'Regler og priser', null],
     ['Eksport', 'Regnskap og lister', '/admin-ny#regnskap'],
     // «Gammel admin» står i menyen (eieren 11.10.2026), ikke to steder på samme skjerm.

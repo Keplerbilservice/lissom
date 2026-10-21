@@ -346,3 +346,25 @@ dialog#ark::backdrop{background:#27110870}
 .merke.trykk:hover{border-color:currentColor}
 .merke.trykk:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 @media (prefers-reduced-motion:reduce){.mlm-rad .boble{transition:none}}
+
+/* Keramikkmaler (maler.js, eieren 21.10.2026): malene som kort med bilde, gruppert, og arket med Mal/Monteringsguide/stegbilder. */
+.mal-verktoy{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.mal-verktoy .sok{flex:1 1 260px;max-width:420px;width:auto;background:var(--paper)}
+.mal-liste{display:flex;flex-direction:column;gap:28px}
+.mal-gruppe h2{margin-bottom:12px}
+.mal-gruppe h2 small{font-family:var(--f-body);letter-spacing:0;font-weight:400}
+.mal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px}
+.mal-kort{border:1px solid var(--line);background:var(--paper);border-radius:16px;padding:0;overflow:hidden;text-align:left;display:flex;flex-direction:column;transition:transform .12s,box-shadow .12s}
+.mal-kort:hover{transform:translateY(-2px);box-shadow:0 10px 26px #4d1d1225}
+.mal-kort img,.mal-utenbilde{aspect-ratio:1;width:100%;object-fit:cover;display:block;background:var(--ground)}
+.mal-utenbilde{display:grid;place-items:center;color:var(--muted);font-size:15px}
+.mal-t{padding:10px 12px 12px;display:flex;flex-direction:column;gap:2px}
+.mal-t b{font-family:var(--f-head);font-size:17px;line-height:1.25}
+.mal-t small{font-size:14px}
+.mal-arkbilde{width:100%;aspect-ratio:1;object-fit:cover;border-radius:14px;background:var(--ground);margin-bottom:14px}
+.mal-knapper{display:flex;flex-direction:column;gap:10px}
+.mal-knapper .knapp{justify-content:space-between;min-height:52px}
+.mal-steg{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px}
+.mal-steg a{display:flex;flex-direction:column;gap:4px}
+.mal-steg img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;background:var(--ground)}
+@media (prefers-reduced-motion:reduce){.mal-kort{transition:none}.mal-kort:hover{transform:none}}

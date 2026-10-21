@@ -39,7 +39,7 @@
 
   /* Sidefilene (del A, B og C). Lastes etter tur; mangler en fil, står siden som «ikke bygd ennå».
      MODULER lastes som <script type="module" src> (kurs.js importerer fra kalender.js, så begge må ha samme adresse). */
-  const SIDEFILER = ['idag', 'medlemmer', 'medlemssiden', 'varer', 'innstillinger', 'mer'];
+  const SIDEFILER = ['idag', 'medlemmer', 'medlemssiden', 'varer', 'innstillinger', 'mer', 'maler'];
   const MODULER = ['kalender', 'kurs'];
   const MYNT = '<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-5px"><ellipse cx="12" cy="16" rx="8" ry="3.5" fill="#e0a800" stroke="currentColor" stroke-width="1.4"/><rect x="4" y="11" width="16" height="5" fill="#e0a800"/><path d="M4 11v5M20 11v5" stroke="currentColor" stroke-width="1.4"/><ellipse cx="12" cy="11" rx="8" ry="3.5" fill="#ffcf38" stroke="currentColor" stroke-width="1.4"/><ellipse cx="12" cy="11" rx="4.5" ry="1.8" fill="none" stroke="currentColor" stroke-width="1" opacity=".5"/></svg>';
   const MENY = [['idag', 'I dag', '☀'], ['kalender', 'Kalender', '▦'], ['kurs', 'Kurs', '◍'], ['medlemmer', 'Medlemmer', '☺'], ['varer', 'Varer', '◇'], ['kasse', 'Kasse', MYNT], ['mer', 'Mer', '…']];
@@ -302,7 +302,7 @@
   let sendApen = false;
   function tegnMeny() {
     if (!NA.meg) return;
-    const aktiv = rute.id;
+    const aktiv = rute.id === 'maler' ? 'mer' : rute.id;
     const n = NA.sist ? NA.antallMaa(NA.sist) : 0;
     const navKnapp = ([id, navn, ic]) => id === 'kasse'
       ? `<a class="nav" href="${esc(NA.kasseAdresse())}"><span class="ic">${ic}</span>${navn}</a>`

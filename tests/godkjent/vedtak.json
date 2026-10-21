@@ -9942,6 +9942,33 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "ny-admin-keramikkmaler",
+            "dato": "2026-10-21",
+            "hva": "Eieren 21.10.2026 («ja takk» til visningen Wn3nbyiB9z3u4PDCoXr8Ea): Mer › Keramikkmaler åpner en egen side i ny admin (#maler), ikke Dokumenter i gammel admin. Malene står som kort med bilde, gruppert (Maler 1 til 20 … Lyslykter), med søk og gruppeknapper. Trykk på en mal åpner arket med «Åpne malen», Monteringsguide og stegbilder.",
+            "hvor": "Ny admin › Mer › Keramikkmaler",
+            "kode": [
+                {
+                    "fil": "ny-admin/mer.js",
+                    "finnes": [
+                        "['Keramikkmaler', 'Dokumenter med former og oppskrifter', '#maler']"
+                    ]
+                },
+                {
+                    "fil": "ny-admin/felles.js",
+                    "finnes": [
+                        "'innstillinger', 'mer', 'maler']"
+                    ]
+                },
+                {
+                    "fil": "ny-admin/maler.js",
+                    "finnes": [
+                        "registrer('maler', { tittel: 'Keramikkmaler'",
+                        "/api/dokument.php?kort="
+                    ]
+                }
+            ]
         }
     ]
 }

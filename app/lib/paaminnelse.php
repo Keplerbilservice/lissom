@@ -213,9 +213,15 @@ final class Paaminnelse
      * oekta tas med paaminnelse_sendt_at, som foer (grunn «sendt» naar den
      * alt er tatt).
      *
-     * $forHaand (ny admin, «Send påminnelse»): mottakere ingen vei naar,
-     * hoppes over og listes i ikkeNaadd, og naar ingen ble naadd rulles det
-     * tilbake. Uten (cron): Varsel::mal() for alle.
+     * Mottakere ingen vei naar, hoppes over og listes i ikkeNaadd — baade
+     * for haand og fra cron. $forHaand (ny admin, «Send påminnelse»): naar
+     * ingen ble naadd, rulles det tilbake.
+     *
+     * Cron gikk foer gjennom Varsel::mal() for alle, og den som manglet
+     * kontaktopplysninger ble til «Varsel må sendes for hånd» til verkstedet.
+     * Noekkelen ble slettet igjen, saa neste dags kjoering sendte den samme
+     * e-posten paa nytt. Monica 21. oktober 2026 («Fått igjen»); eieren:
+     * ingen varsel i det hele tatt — samme regel som kassa 20. oktober.
      *
      * @param array<string,mixed> $okt id, start_tid (og ev. forventet_start)
      * @return array{tatt: bool, grunn: string, sendt: int, alt: int, ikkeNaadd: list<string>, sendtAt: string}
@@ -224,7 +230,7 @@ final class Paaminnelse
     {
         $oktId = (int) $okt['id'];
         $forventet = substr((string) ($okt['forventet_start'] ?? $okt['start_tid'] ?? ''), 0, 16);
-        $mal = $forHaand ? DB::en("SELECT * FROM notification_templates WHERE navn = 'kurspaaminnelse'") : null;
+        $mal = DB::en("SELECT * FROM notification_templates WHERE navn = 'kurspaaminnelse'");
         $nokler = self::harNokler();
         $tom = static fn(string $grunn): array
             => ['tatt' => false, 'grunn' => $grunn, 'sendt' => 0, 'alt' => 0, 'ikkeNaadd' => [], 'sendtAt' => ''];
@@ -262,12 +268,10 @@ final class Paaminnelse
             $alt = count(self::mottakere($oktId)) - count($nye);
             foreach ($nye as $d) {
                 $mottaker = self::mottaker($okt, $d);
-                if ($forHaand) {
-                    $v = self::veier($mal, $mottaker);
-                    if (!$v['epost'] && !$v['sms']) {
-                        $ikkeNaadd[] = self::navn($d);
-                        continue;
-                    }
+                $v = self::veier($mal, $mottaker);
+                if (!$v['epost'] && !$v['sms']) {
+                    $ikkeNaadd[] = self::navn($d);
+                    continue;
                 }
                 $n = self::nokkel((int) $d['id'], $oktId);
                 if ($nokler && DB::kjor('INSERT IGNORE INTO varsel_utsendinger (nokkel) VALUES (:n)', ['n' => $n])->rowCount() !== 1) {

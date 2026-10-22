@@ -74424,7 +74424,7 @@ class Component extends DCLogic {
         // trykker «Send til godkjenning».
         if (this._skUrl) URL.revokeObjectURL(this._skUrl);
         this._skUrl = URL.createObjectURL(f);
-        this.setState({ skBildeNavn: f.name, skBildeUrl: this._skUrl, skFeil: null });
+        this.setState({ skBildeNavn: f.name, skBildeUrl: this._skUrl, skFeil: null, gDelSendt: false });
       },
       skSender: !!this.state.skSender,
       skSendKnapp: this.state.skSender ? 'Sender …'
@@ -74681,7 +74681,10 @@ class Component extends DCLogic {
         );
       },
       gDelSendt: !!this.state.gDelSendt,
-      gDelIkkeSendt: !this.state.gDelSendt,
+      // Skjemaet staar alltid. Eirin, 22. oktober 2026: fikk bare lagt ut ett
+      // produkt, og maatte logge ut og inn for aa legge ut et til — takken
+      // byttet ut hele skjemaet. Naa staar takken over et tomt skjema.
+      gDelIkkeSendt: true,
       // Her laa en eldre utgave av «Selg keramikk»: gTittel, gTekst, gSkaper og
       // en gSend som la varen i en lokal liste. Skjemaet bruker skSend mot
       // /api/medlemssalg.php naa, og ingenting i malen pekte hit lenger.

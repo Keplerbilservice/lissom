@@ -9987,6 +9987,24 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "selg-keramikk-skjema-etter-takk",
+            "dato": "2026-10-22",
+            "hva": "Eirin 22.10.2026 fikk bare lagt ut ett produkt i medlemsbutikken og måtte logge ut og inn for å legge ut et til: takken etter innsending byttet ut hele skjemaet. Eieren valgte takk + tomt skjema rett under. Takken forsvinner når hun velger et nytt bilde.",
+            "hvor": "Min side › Selg keramikk",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "      gDelIkkeSendt: true,",
+                        "skFeil: null, gDelSendt: false });"
+                    ],
+                    "ikkeFinnes": [
+                        "      gDelIkkeSendt: !this.state.gDelSendt,"
+                    ]
+                }
+            ]
         }
     ]
 }

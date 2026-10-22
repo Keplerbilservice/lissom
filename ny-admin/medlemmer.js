@@ -323,6 +323,62 @@
     } catch (e) { if (feil) { feil.textContent = e.message; feil.hidden = false; } b.disabled = false; }
   }
 
+  /* Brukere (eieren 22.10.2026): innlogging, roller, passord og kasse-PIN, samme api/admin/brukere.php som gammel admin. */
+  const RB = { liste: [], minst: 12, kanKasse: false };
+  const ROLLER = () => [['medlem', 'Medlem'], ['kursholder', 'Kursholder'], ['regnskap', 'Regnskap'], ...(RB.kanKasse ? [['kasse', 'Kasse (iPad)']] : []), ['admin', 'Administrator']];
+  const ROLLENAVN = { admin: 'Administrator', regnskap: 'Regnskap', kasse: 'Kasse', medlem: 'Medlem' };
+  async function arkBrukere() {
+    NA().apneArk(`<div class="ark-head"><h2>Brukere</h2><button class="lukk" data-mlm="lukk" aria-label="Lukk">×</button></div><p class="muted" data-mlm-brukere>Henter …</p>`);
+    let d;
+    try { d = await kall('brukere.php'); } catch (e) { const p = document.querySelector('[data-mlm-brukere]'); if (p) { p.className = 'feil'; p.textContent = e.message; } return; }
+    if (!document.querySelector('[data-mlm-brukere]')) return;
+    Object.assign(RB, { liste: d.brukere || [], minst: d.minstLengde || 12, kanKasse: !!d.kanKasse });
+    NA().apneArk(`<div class="ark-head"><h2>Brukere</h2><button class="lukk" data-mlm="lukk" aria-label="Lukk">×</button></div>
+      <p class="muted">Innlogging, roller og passord.</p>
+      ${RB.liste.map(r => `<div class="rad"><div class="tekst"><b>${esc(r.navn || r.brukernavn)}</b><small>${esc([r.brukernavn, r.epost, r.sist].filter(Boolean).join(' · '))}</small>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">${r.kursholder && r.rolle === 'medlem' ? '' : `<span class="merke">${esc(ROLLENAVN[r.rolle] || r.rolle)}</span>`}${r.kursholder ? '<span class="merke">Kursholder</span>' : ''}${r.erDeg ? '<span class="merke">Deg</span>' : ''}${r.fraNodluke ? '<span class="merke">Tilgang via oppsett</span>' : ''}${r.harKassePin ? '<span class="merke gronn">Kasse-PIN</span>' : ''}</div></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end"><button class="knapp" data-mlm="bruker" data-id="${r.id}">Endre</button>
+        ${RB.kanKasse && r.rolle !== 'kasse' ? `<button class="knapp" data-mlm="kassepin" data-id="${r.id}">${r.harKassePin ? 'Ny kasse-PIN' : 'Kasse-PIN'}</button>` : ''}
+        ${RB.kanKasse && r.harKassePin ? `<button class="knapp" data-mlm="fjernpin" data-id="${r.id}">Fjern kasse-PIN</button>` : ''}
+        ${!r.erDeg && !r.fraNodluke ? `<button class="knapp" data-mlm="brukerslett" data-id="${r.id}">Fjern tilgang</button>` : ''}</div></div>`).join('') || '<p class="muted">Ingen brukere.</p>'}
+      <div class="ark-fot"><button class="knapp" data-mlm="lukk">Lukk</button><button class="knapp hoved" data-mlm="bruker" data-id="0">Ny bruker</button></div>`);
+  }
+  function arkBruker(id, verdier = null, feiltekst = '') {
+    const r = verdier || RB.liste.find(x => x.id === id) || {};
+    const rolle = verdier ? verdier.rolle : r.kursholder && r.rolle === 'medlem' ? 'kursholder' : (r.rolle || 'medlem');
+    const felt = (navn, id2, verdi, type = 'text', ekstra = '') => `<label class="felt"><small>${navn}</small><input id="${id2}" type="${type}" value="${esc(verdi || '')}" autocomplete="off" ${ekstra}></label>`;
+    NA().apneArk(`<div class="ark-head"><h2>${id ? 'Endre ' + esc(r.navn || r.brukernavn) : 'Ny bruker'}</h2><button class="lukk" data-mlm="lukk" aria-label="Lukk">×</button></div>
+      <div style="display:grid;gap:12px">
+        ${felt('Navn', 'mlm-b-navn', r.navn)}
+        ${felt('Brukernavn', 'mlm-b-brukernavn', r.brukernavn)}
+        ${felt('E-post', 'mlm-b-epost', r.epost, 'email')}
+        ${id ? '' : felt('Telefon', 'mlm-b-telefon', r.telefon, 'tel')}
+        <label class="felt"><small>Tilgang</small><select id="mlm-b-rolle">${ROLLER().map(([v, t]) => `<option value="${v}" ${v === rolle ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
+        ${felt(id ? 'Nytt passord (tomt = beholdes)' : 'Passord', 'mlm-b-passord', '', 'password', 'autocomplete="new-password"')}
+        <small class="muted">Passordet må være minst ${RB.minst} tegn.</small>
+        <p class="feil" id="mlm-b-feil" ${feiltekst ? '' : 'hidden'}>${esc(feiltekst)}</p>
+      </div>
+      <div class="ark-fot"><button class="knapp" data-mlm="brukere">Tilbake</button><button class="knapp hoved" data-mlm="lagrebruker" data-id="${id}">Lagre bruker</button></div>`);
+  }
+  async function lagreBruker(b, id) {
+    const v = x => (document.getElementById(x)?.value || '').trim();
+    const data = { handling: id ? 'endre' : 'opprett', id, navn: v('mlm-b-navn'), brukernavn: v('mlm-b-brukernavn'), epost: v('mlm-b-epost'), rolle: v('mlm-b-rolle'), passord: document.getElementById('mlm-b-passord')?.value || '' };
+    if (!id) data.telefon = v('mlm-b-telefon');
+    const vis = t => arkBruker(id, data, t);
+    if (data.passord && data.passord.length < RB.minst) return vis('Passordet må være minst ' + RB.minst + ' tegn.');
+    if (data.rolle === 'kursholder' && !data.epost) return vis('Skriv e-posten til kursholderen.');
+    const tekst = { admin: 'Denne personen får tilgang til hele administrasjonen.', regnskap: 'Denne personen får tilgang til økonomi og betalinger.', kasse: 'Denne kontoen kommer bare til kassa på iPaden.', kursholder: 'Denne personen får medlemstilgang og blir lagt til under Kursholdere.' }[data.rolle] || 'Denne personen får vanlig medlemstilgang.';
+    if (!await NA().bekreft('Lagre tilgang?', tekst, 'Lagre bruker')) return vis('');
+    try { await kall('brukere.php', data); toast('Brukeren er lagret.'); arkBrukere(); }
+    catch (e) { vis(e.message); }
+  }
+  function arkKassePin(id) {
+    const r = RB.liste.find(x => x.id === id); if (!r) return;
+    NA().apneArk(`<div class="ark-head"><h2>Kasse-PIN · ${esc(r.navn || r.brukernavn)}</h2><button class="lukk" data-mlm="lukk" aria-label="Lukk">×</button></div>
+      <div style="display:grid;gap:12px"><label class="felt"><small>PIN (fire sifre)</small><input id="mlm-b-pin" type="text" inputmode="numeric" maxlength="4" autocomplete="off"></label><p class="feil" id="mlm-b-feil" hidden></p></div>
+      <div class="ark-fot"><button class="knapp" data-mlm="brukere">Tilbake</button><button class="knapp hoved" data-mlm="lagrepin" data-id="${id}">Lagre PIN</button></div>`);
+  }
+
   async function hentGaver() {
     try { S.gaver = (await kall('gaver.php')).gaver || []; } catch (e) { S.gaver = []; toast(esc(e.message)); }
     tegnGaver();
@@ -340,8 +396,8 @@
     S.person = Number(params?.get?.('person')) || 0;
     S.sok = '';
     S.sortering = lesSortering();
-    el.innerHTML = `<div class="head"><div><div class="eyebrow" id="mlm-antall">Henter …</div><h1>Medlemmer</h1></div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="knapp" data-mlm="gave">🎁 Gi gave</button>
+    el.innerHTML = `<div class="head"><div><div class="eyebrow" id="mlm-antall">Henter …</div><h1>Folk</h1></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="knapp" data-mlm="brukere">🔑 Brukere</button><button class="knapp" data-mlm="gave">🎁 Gi gave</button>
       <button class="knapp hoved" data-mlm="beskjed" id="mlm-beskjedknapp">✉ Send beskjed</button></div></div>
       <section class="kort" style="margin-bottom:20px"><div class="kort-head"><h2>Gaver som gjelder nå</h2><small>Medlemmene ser dem på Min side</small></div>
       <div id="mlm-gaver"><p class="muted">Henter …</p></div></section>
@@ -519,6 +575,27 @@
       catch (err) { toast(esc(err.message)); } finally { S.opptatt = false; b.disabled = false; }
       return;
     }
+    if (h === 'brukere') return arkBrukere();
+    if (h === 'bruker') return arkBruker(id);
+    if (h === 'lagrebruker') return lagreBruker(b, id);
+    if (h === 'kassepin') return arkKassePin(id);
+    if (h === 'lagrepin') {
+      const pin = (document.getElementById('mlm-b-pin')?.value || '').trim();
+      const f = document.getElementById('mlm-b-feil');
+      if (!/^\d{4}$/.test(pin)) { if (f) { f.textContent = 'PIN-en må være fire sifre.'; f.hidden = false; } return; }
+      b.disabled = true;
+      try { await kall('brukere.php', { handling: 'kassepin', id, pin }); toast('PIN-en er lagret.'); return arkBrukere(); } catch (e) { if (f) { f.textContent = e.message; f.hidden = false; } b.disabled = false; return; }
+    }
+    if (h === 'fjernpin' || h === 'brukerslett') {
+      const r = RB.liste.find(x => x.id === id); if (!r) return;
+      const n = r.navn || r.brukernavn;
+      const ok = h === 'fjernpin'
+        ? await NA().bekreft('Fjern kasse-PIN?', 'Fjern kasse-PIN-en til ' + n + '. Står personen i kassa nå, låses den.', 'Fjern kasse-PIN')
+        : await NA().bekreft('Fjern tilgang?', 'Fjern innloggingen til ' + n + '. Kjøpshistorikk beholdes når den finnes.', 'Fjern tilgang');
+      if (!ok) return arkBrukere();
+      try { const s = await kall('brukere.php', h === 'fjernpin' ? { handling: 'kassepin', id, pin: '' } : { handling: 'slett', id }); toast(esc(s.beskjed || 'Fjernet.')); } catch (e) { toast(esc(e.message)); }
+      return arkBrukere();
+    }
     if (h === 'beskjed') return beskjed({ til: 'medlemmer' });
     if (h === 'beskjeden') { const m = S.medlemmer.find(x => x.id === id); if (m) beskjed({ til: 'en', navn: m.navn, epost: m.epost || '', telefon: m.telefon || '' }); }
   });
@@ -532,5 +609,5 @@
     if (e.target.id === 'mlm-sorter') { S.sortering = e.target.value; husk(S.sortering); tegnListe(); }
   });
 
-  registrer('medlemmer', { tittel: 'Medlemmer', ikon: '☺', tegn, mobil: false, sok: q => { S.sok = q; tegnListe(); } });
+  registrer('medlemmer', { tittel: 'Folk', ikon: '☺', tegn, mobil: false, sok: q => { S.sok = q; tegnListe(); } });
 })();

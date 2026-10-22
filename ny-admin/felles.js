@@ -42,7 +42,7 @@
   const SIDEFILER = ['idag', 'medlemmer', 'medlemssiden', 'varer', 'innstillinger', 'mer', 'maler'];
   const MODULER = ['kalender', 'kurs'];
   const MYNT = '<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-5px"><ellipse cx="12" cy="16" rx="8" ry="3.5" fill="#e0a800" stroke="currentColor" stroke-width="1.4"/><rect x="4" y="11" width="16" height="5" fill="#e0a800"/><path d="M4 11v5M20 11v5" stroke="currentColor" stroke-width="1.4"/><ellipse cx="12" cy="11" rx="8" ry="3.5" fill="#ffcf38" stroke="currentColor" stroke-width="1.4"/><ellipse cx="12" cy="11" rx="4.5" ry="1.8" fill="none" stroke="currentColor" stroke-width="1" opacity=".5"/></svg>';
-  const MENY = [['idag', 'I dag', '☀'], ['kalender', 'Kalender', '▦'], ['kurs', 'Kurs', '◍'], ['medlemmer', 'Medlemmer', '☺'], ['varer', 'Varer', '◇'], ['kasse', 'Kasse', MYNT], ['mer', 'Mer', '…']];
+  const MENY = [['idag', 'I dag', '☀'], ['kalender', 'Kalender', '▦'], ['kurs', 'Kurs', '◍'], ['medlemmer', 'Folk', '☺'], ['varer', 'Varer', '◇'], ['kasse', 'Kasse', MYNT], ['mer', 'Mer', '…']];
   const BUNN = [['semedlem', 'Medlemssiden', '👁'], ['innstillinger', 'Innstillinger', '⚙']];
   const MOBIL = ['idag', 'kalender', 'kurs'];
   /* Kalender er en flis på I dag på mobil (eieren 11.10.2026); i menyen står den alt blant sidene. */

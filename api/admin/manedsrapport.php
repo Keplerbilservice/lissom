@@ -17,7 +17,8 @@ declare(strict_types=1);
 require __DIR__ . '/../_boot.php';
 
 Foresporsel::krevMetode('GET');
-krev_admin();
+// Regnskapsfoereren henter den ogsaa (eieren 23. oktober 2026).
+krev_regnskap();
 
 $oslo = new DateTimeZone('Europe/Oslo');
 $utc  = new DateTimeZone('UTC');

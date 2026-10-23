@@ -10005,6 +10005,22 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "medlemsvare-godkjenn-i-arket",
+            "dato": "2026-10-23",
+            "hva": "Eieren 23.10.2026: godkjenningsknappen for medlemmenes varer fantes bare i lista. Nå står «Godkjenn» ved siden av Lagre inne i varen når den venter på godkjenning; endringer i feltene lagres først.",
+            "hvor": "Ny admin › Varer › medlemsvare",
+            "kode": [
+                {
+                    "fil": "ny-admin/varer.js",
+                    "finnes": [
+                        "data-var-gjor=\"godkjenn\">Godkjenn</button>",
+                        "if (g === 'godkjenn' && A.type === 'salg') return lagreSalg(b, true);"
+                    ],
+                    "ikkeFinnes": []
+                }
+            ]
         }
     ]
 }

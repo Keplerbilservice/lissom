@@ -256,9 +256,12 @@
         <label style="display:grid;gap:5px"><small>Antall</small><input id="salg-antall" value="${g.antall || 1}" inputmode="numeric" style="${felt}"></label>
       </div>
       <p class="feil" id="var-feil" role="alert" hidden style="color:var(--red)"></p>
-      <div class="ark-fot"><button class="knapp rod" data-var-gjor="fjern" style="margin-right:auto">Fjern vare</button><button class="knapp" data-var-gjor="lukk">Avbryt</button><button class="knapp hoved" data-var-gjor="lagre">Lagre</button></div>`);
+      <div class="ark-fot"><button class="knapp rod" data-var-gjor="fjern" style="margin-right:auto">Fjern vare</button><button class="knapp" data-var-gjor="lukk">Avbryt</button>${g.status === 'til_godkjenning'
+        ? '<button class="knapp" data-var-gjor="lagre">Lagre</button><button class="knapp hoved" data-var-gjor="godkjenn">Godkjenn</button>'
+        : '<button class="knapp hoved" data-var-gjor="lagre">Lagre</button>'}</div>`);
   }
-  async function lagreSalg(knapp) {
+  // Godkjenn fra arket: endringene i feltene lagres først, så publiseres varen.
+  async function lagreSalg(knapp, godkjenn) {
     if (S.opptatt) return;
     const g = A.vare, feil = document.getElementById('var-feil');
     const vis = t => { feil.textContent = t; feil.hidden = false; };
@@ -269,8 +272,9 @@
     if (!/^\d+$/.test(pris)) return vis('Skriv prisen i hele kroner.');
     S.opptatt = true; knapp.disabled = true;
     try {
-      const d = await kall('medlemssalg.php', { handling: 'endre', id: g.id, tittel, pris: Number(pris), antall: Number(antall) || 1,
+      let d = await kall('medlemssalg.php', { handling: 'endre', id: g.id, tittel, pris: Number(pris), antall: Number(antall) || 1,
         beskrivelse: document.getElementById('salg-beskr')?.value || '', kategori: document.getElementById('salg-kat')?.value || '' });
+      if (godkjenn) d = await kall('medlemssalg.php', { handling: 'godkjenn', id: g.id });
       A = null; NA().lukkArk(true); toast(esc(d.beskjed || 'Lagret.')); hent();
     } catch (e) { vis(e.message); } finally { S.opptatt = false; knapp.disabled = false; }
   }
@@ -363,6 +367,7 @@
     if (g === 'hl-lagre') return hlLagre(b);
     if (g === 'fjern') return A.type === 'salg' ? fjernSalg() : fjernVare();
     if (g === 'lagre') return A.type === 'salg' ? lagreSalg(b) : lagre(b);
+    if (g === 'godkjenn' && A.type === 'salg') return lagreSalg(b, true);
   });
   document.addEventListener('change', async e => {
     if (e.target.id !== 'var-opplast' || !A || A.type !== 'vare') return;

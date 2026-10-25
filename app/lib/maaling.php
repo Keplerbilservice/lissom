@@ -27,11 +27,11 @@
  *
  * ── Dobbelttelling ─────────────────────────────────────────────────────
  *
- * Én kilde per kjøp og kanal (25. oktober 2026). Har serveren fått kjøpet
- * fram til GA4 eller Meta (svar 2xx, lagret under «sendt» — serverSendte()),
- * sier returen fra Vipps det til nettleseren med «server=ga.meta», og
- * nettleseren sender da ikke det samme kjøpet dit. Feilet sendingen, sender
- * nettleseren som reserve med samme id. Før sendte begge: nettleseren kunden kom tilbake i — ofte en annen
+ * Én kilde per kjøp og kanal (25. oktober 2026). Har serveren sendt, holder
+ * på, eller skal til å sende kjøpet til GA4 eller Meta (kanalStatus()), sier
+ * returen fra Vipps det til nettleseren med «server=ga.meta», og nettleseren
+ * sender da ikke det samme kjøpet dit. Feilet sendingen, sender nettleseren
+ * purchase som reserve med samme id — men aldri Ads-hendelsene. Før sendte begge: nettleseren kunden kom tilbake i — ofte en annen
  * enn Facebook- eller Instagram-appens, med en annen client_id og uten
  * kilde — og kjøpet havnet som «Direct» i GA4. Kan serveren ikke (ikke
  * samtykket ved start, eller ingen nøkkel), sender nettleseren som før.
@@ -157,35 +157,96 @@ final class Maaling
     }
 
     /**
-     * Kanalene serveren faktisk fikk kjøpet fram til (svar 2xx), slik det
-     * er lagret på betalingen under «sendt» (se sendKjop()). Returen fra
-     * Vipps sier det til nettleseren («server=»), og da sender nettleseren
-     * ikke det samme kjøpet dit en gang til. Feilet sendingen, eller er den
-     * ikke ferdig ennå, står kanalen ikke her — da sender nettleseren som
-     * reserve, med samme id (L<id>), som GA4 og Meta slår sammen.
-     * @return array{ga:bool,meta:bool}
+     * Hva returen fra Vipps skal si til nettleseren, per kanal (ga, meta).
+     *
+     *   server  — serveren har sendt (2xx, «sendt»), holder på («sender»),
+     *             eller skal til (klar, men ingen utfall lagret ennå: webhooken
+     *             har satt «betalt», og kallet er ikke kommet i gang). Dit
+     *             sender ikke nettleseren.
+     *   forsokt — server + det som feilet («feilet»). Har serveren forsøkt
+     *             GA4, sender nettleseren aldri Ads-hendelsene (booking_fullfort
+     *             osv.) — de dedupliseres ikke, og et feilet kall kan likevel
+     *             ha kommet fram. purchase dedupliseres på transaction_id.
+     *
+     * Kontrolløren 25. oktober 2026: race mellom webhook og retur.
+     * @return array{server:list<string>,forsokt:list<string>}
      */
-    public static function serverSendte(array $sporing): array
+    public static function kanalStatus(array $sporing, bool $gaKlar, bool $metaKlar): array
     {
-        $sendt = is_array($sporing['sendt'] ?? null) ? $sporing['sendt'] : [];
-        return ['ga' => !empty($sendt['ga']), 'meta' => !empty($sendt['meta'])];
+        $ut = ['server' => [], 'forsokt' => []];
+        if ($sporing === []) {
+            return $ut;
+        }
+        $klar = self::serverSenderMed($sporing, $gaKlar, $metaKlar);
+        foreach (['ga', 'meta'] as $k) {
+            $sendt = !empty($sporing['sendt'][$k]) || !empty($sporing['sender'][$k]);
+            $feilet = !empty($sporing['feilet'][$k]);
+            if ($sendt || (!$feilet && $klar[$k])) {
+                $ut['server'][] = $k;
+                $ut['forsokt'][] = $k;
+            } elseif ($feilet) {
+                $ut['forsokt'][] = $k;
+            }
+        }
+        return $ut;
     }
 
-    /** Legger utfallet (tidspunkt per kanal som svarte 2xx) til sporingen på betalingen. */
-    private static function lagreSendt(int $betalingId, array $kanaler): void
+    /** kanalStatus() for en betaling, med oppsettet (nøkler, ID-er) fra drift. */
+    public static function kanalStatusFor(int $betalingId): array
     {
-        if ($kanaler === []) {
+        return self::kanalStatus(self::sporingFor($betalingId), ...self::klar());
+    }
+
+    /** @return array{0:bool,1:bool} GA4 og Meta har ID og nøkkel. */
+    private static function klar(): array
+    {
+        return [
+            self::gaId() !== '' && trim((string) Config::hent('maal_ga_api_secret', '')) !== '',
+            self::metaId() !== '' && trim((string) Config::hent('maal_meta_token', '')) !== '',
+        ];
+    }
+
+    /**
+     * Samme regel som tilGa4()/tilMeta() bruker for å sende eller la være,
+     * med oppsettet gitt inn (testbar uten base).
+     * @return array{ga:bool,meta:bool}
+     */
+    public static function serverSenderMed(array $sporing, bool $gaKlar, bool $metaKlar): array
+    {
+        return [
+            'ga'   => $gaKlar && !empty($sporing['cid']),
+            'meta' => $metaKlar && (!empty($sporing['fbp']) || !empty($sporing['fbc'])),
+        ];
+    }
+
+    /**
+     * Setter utfallet for kanalene på betalingen: «sender» (før kallet),
+     * «sendt» (2xx) eller «feilet». Sendt og feilet fjerner «sender».
+     * @param array<string,string> $utfall kanal => sender|sendt|feilet
+     */
+    private static function lagreUtfall(int $betalingId, array $utfall): void
+    {
+        if ($utfall === []) {
             return;
         }
         $s = self::sporingFor($betalingId);
         if ($s === []) {
             return;
         }
-        $sendt = is_array($s['sendt'] ?? null) ? $s['sendt'] : [];
-        foreach ($kanaler as $k) {
-            $sendt[$k] = time();
+        foreach ($utfall as $k => $hva) {
+            foreach (['sender', 'sendt', 'feilet'] as $felt) {
+                if (!is_array($s[$felt] ?? null)) {
+                    $s[$felt] = [];
+                }
+                unset($s[$felt][$k]);
+            }
+            $s[$hva][$k] = time();
         }
-        $s['sendt'] = $sendt;
+        foreach (['sender', 'sendt', 'feilet'] as $felt) {
+            if (($s[$felt] ?? null) === []) {
+                unset($s[$felt]);
+            }
+        }
         DB::oppdater('payments', [
             'sporing' => json_encode($s, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
         ], ['id' => $betalingId]);
@@ -320,6 +381,23 @@ final class Maaling
             self::sendKjop($betalingId);
         } catch (Throwable $e) {
             logg_feil('Måling av kjøp ' . $betalingId . ' feilet', $e);
+            // Stoppet før en kanal fikk utfall: merk den «feilet», så
+            // nettleseren sender purchase som reserve i stedet for at kjøpet
+            // forsvinner (kanalStatus() ville ellers regnet den som serverens).
+            try {
+                $s = self::sporingFor($betalingId);
+                $mangler = [];
+                foreach (['ga', 'meta'] as $k) {
+                    if (empty($s['sendt'][$k]) && empty($s['feilet'][$k])) {
+                        $mangler[$k] = 'feilet';
+                    }
+                }
+                if ($s !== []) {
+                    self::lagreUtfall($betalingId, $mangler);
+                }
+            } catch (Throwable) {
+                // da står den som den står
+            }
         }
     }
 
@@ -375,25 +453,32 @@ final class Maaling
             self::tilMeta($sporing, 'TEST-' . $id, $belop, $formal, $vare, $hvem);
             return;
         }
-        // Hver kanal for seg: feiler GA4 (tidsavbrudd, 4xx/5xx), skal Meta
-        // likevel sendes. Bare det som svarte 2xx lagres som sendt; resten
-        // sender nettleseren som reserve (serverSendte()).
-        $gikk = [];
-        try {
-            if (self::tilGa4($sporing, $id, $belop, $formal, $vare, $hvem)) {
-                $gikk[] = 'ga';
+        // «sender» lagres FØR kallene, så en retur som kommer mens de pågår
+        // ser at serveren har kanalen (kanalStatus()). Hver kanal for seg:
+        // feiler GA4 (tidsavbrudd, 4xx/5xx), sendes Meta likevel. 2xx gir
+        // «sendt», alt annet «feilet» — da sender nettleseren purchase som
+        // reserve (samme id), men aldri Ads-hendelsene.
+        $klar = self::serverSenderMed($sporing, ...self::klar());
+        $planlagt = array_fill_keys(array_keys(array_filter($klar)), 'sender');
+        self::lagreUtfall($betalingId, $planlagt);
+        $utfall = [];
+        if ($klar['ga']) {
+            try {
+                $utfall['ga'] = self::tilGa4($sporing, $id, $belop, $formal, $vare, $hvem) ? 'sendt' : 'feilet';
+            } catch (Throwable $e) {
+                $utfall['ga'] = 'feilet';
+                logg_feil('GA4-kjøp ' . $id . ' feilet', $e);
             }
-        } catch (Throwable $e) {
-            logg_feil('GA4-kjøp ' . $id . ' feilet', $e);
         }
-        try {
-            if (self::tilMeta($sporing, $id, $belop, $formal, $vare, $hvem)) {
-                $gikk[] = 'meta';
+        if ($klar['meta']) {
+            try {
+                $utfall['meta'] = self::tilMeta($sporing, $id, $belop, $formal, $vare, $hvem) ? 'sendt' : 'feilet';
+            } catch (Throwable $e) {
+                $utfall['meta'] = 'feilet';
+                logg_feil('Meta-kjøp ' . $id . ' feilet', $e);
             }
-        } catch (Throwable $e) {
-            logg_feil('Meta-kjøp ' . $id . ' feilet', $e);
         }
-        self::lagreSendt($betalingId, $gikk);
+        self::lagreUtfall($betalingId, $utfall);
     }
 
     /**

@@ -10054,7 +10054,8 @@
                 {
                     "fil": "api/betaling-retur.php",
                     "finnes": [
-                        "'&server=' . implode('.', $sender)",
+                        "'&server=' . implode('.', $st['server'])",
+                        "'&forsokt=' . implode('.', $st['forsokt'])",
                         "$til . '?betaling=' . $utfall"
                     ],
                     "ikkeFinnes": []
@@ -10093,6 +10094,7 @@
                     "finnes": [
                         "typeof window.gtag === 'function' && !uten.ga",
                         "}, hvem, utenom);",
+                        "if (gikk && ADS[slag] && forsokt.indexOf('ga') === -1) {",
                         "this.huskKilde();"
                     ],
                     "ikkeFinnes": []

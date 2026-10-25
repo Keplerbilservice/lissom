@@ -97,9 +97,22 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 1280, height: 900 
     sjekk(`${b}: gavekortsida — adressen er /gavekort`, () => assert.equal(r.adresse, '/gavekort'));
     await c.close();
   }
+
+  // 4. Serverens GA4 feilet (Meta gikk): nettleseren sender purchase som
+  //    reserve, men aldri booking_fullfort (dedupliseres ikke i Ads).
+  {
+    const { c, p } = await side('ja', viewport);
+    await p.goto(`${ROT}/kurs/dreiekurs?betaling=ok#kjop=904&belop=2800.00&slag=booking&server=meta&forsokt=ga.meta`);
+    await p.waitForFunction(g => eval(g)().some(a => a[1] === 'purchase'), GA_KJOP.toString(), { timeout: 15000 });
+    await p.waitForTimeout(1000);
+    const r = await kjop(p);
+    sjekk(`${b}: reserve — bare purchase L904, ingen booking_fullfort`, () => assert.deepEqual(r.ga, [['purchase', 'L904']]));
+    sjekk(`${b}: reserve — ingen Meta fra nettleseren`, () => assert.deepEqual(r.meta, []));
+    await c.close();
+  }
 }
 
-// 4. Kilden fra landingsadressen: cookie bare etter «ja».
+// 5. Kilden fra landingsadressen: cookie bare etter «ja».
 {
   const { c, p } = await side('ja', { width: 390, height: 844 });
   await p.goto(`${ROT}/kurs/dreiekurs?utm_source=facebook&utm_medium=paid_social&utm_campaign=host&fbclid=IwAR2F4-dbP0l7Mn1Iaw`);

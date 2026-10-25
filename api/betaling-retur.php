@@ -57,14 +57,18 @@ $kvittering = static function (array $b): string {
     $ut = '&kjop=' . (int) $b['id']
         . '&belop=' . number_format((int) $b['belop_ore'] / 100, 2, '.', '')
         . '&slag=' . rawurlencode((string) $b['formal']);
-    // Kanalene serveren faktisk fikk kjoepet fram til (svar 2xx, lagret paa
-    // betalingen av app/lib/maaling.php). Dit sender nettleseren ikke det
-    // samme kjoepet en gang til — se maalKjop(). Feilet sendingen, eller er
-    // den ikke ferdig, sender nettleseren som reserve (samme id L<id>).
+    // Kanalene serveren har sendt, holder paa med eller skal til aa sende
+    // kjoepet til (Maaling::kanalStatus() — webhooken kan ha satt «betalt»
+    // mens kallet til GA4 fortsatt gaar). Dit sender nettleseren ikke det
+    // samme kjoepet — se maalKjop(). «forsokt» tar med det som feilet: da
+    // sender nettleseren purchase som reserve, men aldri Ads-hendelsene.
     try {
-        $sender = array_keys(array_filter(Maaling::serverSendte(Maaling::sporingFor((int) $b['id']))));
-        if ($sender !== []) {
-            $ut .= '&server=' . implode('.', $sender);
+        $st = Maaling::kanalStatusFor((int) $b['id']);
+        if ($st['server'] !== []) {
+            $ut .= '&server=' . implode('.', $st['server']);
+        }
+        if ($st['forsokt'] !== []) {
+            $ut .= '&forsokt=' . implode('.', $st['forsokt']);
         }
     } catch (Throwable $e) {
         logg_feil('Fant ikke maalingen for betaling ' . (int) $b['id'], $e);

@@ -134,22 +134,27 @@ sjekk('ordre: ingen Ads-hendelse', array_map(static fn(array $e): string => $e['
 sjekk('uten client_id: ingen kropp', Maaling::ga4KjopKropp(['sam' => 'ja', 'fbp' => 'fb.1.1.1'], 'L80', 10.0, 'booking', 'X', $hvem) === []);
 
 // ── 7. Én kilde: hva serveren sender, sier returen til nettleseren ──────
-// Kontrolløren 25.10: server= bare for kanaler som faktisk svarte 2xx.
-sjekk('server= bare for kanaler som er lagret som sendt', Maaling::serverSendte(['cid' => '1.2', 'fbp' => 'fb.1.1.1', 'sendt' => ['ga' => 1761370000, 'meta' => 1761370000]]) === ['ga' => true, 'meta' => true]);
-sjekk('GA4 feilet: bare Meta', Maaling::serverSendte(['cid' => '1.2', 'fbp' => 'fb.1.1.1', 'sendt' => ['meta' => 1761370000]]) === ['ga' => false, 'meta' => true]);
-sjekk('oppsett alene (nøkkel, client_id, fbp) gir ikke server=', Maaling::serverSendte(['cid' => '1.2', 'fbp' => 'fb.1.1.1']) === ['ga' => false, 'meta' => false]);
-sjekk('uten sporing: ingenting', Maaling::serverSendte([]) === ['ga' => false, 'meta' => false]);
-$mk = (string) file_get_contents(__DIR__ . '/../app/lib/maaling.php');
-$mk = str_replace("\r\n", "\n", $mk);
-sjekk('utfallet lagres per kanal etter 2xx', str_contains($mk, 'if (self::tilGa4($sporing, $id, $belop, $formal, $vare, $hvem)) {')
-    && str_contains($mk, 'if (self::tilMeta($sporing, $id, $belop, $formal, $vare, $hvem)) {')
-    && str_contains($mk, 'self::lagreSendt($betalingId, $gikk);')
-    && substr_count($mk, "            return false;\n        }\n        return true;") === 2);
+// Kontrolløren 25.10: «sender» før kallene, 2xx → «sendt», ellers «feilet».
+// Returen regner sender/sendt og «klar uten utfall» (race med webhooken)
+// som serverens; feilet → nettleseren sender purchase, aldri Ads-hendelsene.
+$sp = ['cid' => '1.2', 'fbp' => 'fb.1.1.1', 'sam' => 'ja'];
+$t0 = 1761370000;
+sjekk('sendt begge: server=ga.meta', Maaling::kanalStatus($sp + ['sendt' => ['ga' => $t0, 'meta' => $t0]], true, true) === ['server' => ['ga', 'meta'], 'forsokt' => ['ga', 'meta']]);
+sjekk('holder på («sender»): serverens', Maaling::kanalStatus($sp + ['sender' => ['ga' => $t0, 'meta' => $t0]], true, true)['server'] === ['ga', 'meta']);
+sjekk('race: betalt, klar, ingen utfall ennå → serverens', Maaling::kanalStatus($sp, true, true) === ['server' => ['ga', 'meta'], 'forsokt' => ['ga', 'meta']]);
+sjekk('GA4 feilet: server=meta, forsokt=ga.meta', Maaling::kanalStatus($sp + ['sendt' => ['meta' => $t0], 'feilet' => ['ga' => $t0]], true, true) === ['server' => ['meta'], 'forsokt' => ['ga', 'meta']]);
+sjekk('uten nøkkel og uten utfall: nettleseren alene', Maaling::kanalStatus($sp, false, false) === ['server' => [], 'forsokt' => []]);
+sjekk('uten sporing: ingenting', Maaling::kanalStatus([], true, true) === ['server' => [], 'forsokt' => []]);
+$mk = str_replace("\r\n", "\n", (string) file_get_contents(__DIR__ . '/../app/lib/maaling.php'));
+$iSend = strpos($mk, 'self::lagreUtfall($betalingId, $planlagt);');
+sjekk('«sender» lagres før kallene', $iSend !== false && $iSend < strpos($mk, "\$utfall['ga'] = self::tilGa4(")
+    && str_contains($mk, "? 'sendt' : 'feilet';") && substr_count($mk, "            return false;\n        }\n        return true;") === 2);
 
 $rot = __DIR__ . '/..';
 $retur = (string) file_get_contents($rot . '/api/betaling-retur.php');
-sjekk('returen sier «server=» til nettleseren, fra lagret utfall', str_contains($retur, "'&server=' . implode('.', \$sender)")
-    && str_contains($retur, 'Maaling::serverSendte('));
+sjekk('returen sier «server=» og «forsokt=» fra kanalStatus', str_contains($retur, "'&server=' . implode('.', \$st['server'])")
+    && str_contains($retur, "'&forsokt=' . implode('.', \$st['forsokt'])") && str_contains($retur, 'Maaling::kanalStatusFor('));
+sjekk('nettleseren sender aldri Ads-hendelsene når serveren har forsøkt GA4', str_contains((string) file_get_contents($rot . '/lissom-2108.html'), "if (gikk && ADS[slag] && forsokt.indexOf('ga') === -1) {"));
 sjekk('returen: annen side enn forsida får ?betaling=', str_contains($retur, "\$til . '?betaling=' . \$utfall"));
 sjekk('returen: forsida som før (#betaling=)', str_contains($retur, "'/#betaling=' . \$utfall . \$ekstra"));
 sjekk('booking går tilbake til kurssida', str_contains((string) file_get_contents($rot . '/app/lib/booking.php'), "'&til=' . rawurlencode('/kurs/' . \$okt['slug'])"));

@@ -38792,6 +38792,10 @@ class Component extends DCLogic {
     // herfra havnet da som «Direct». Tag Manager faar det som foer.
     const server = ((String(hash).match(/server=([a-z.]+)/) || [])[1] || '').split('.');
     const utenom = { ga: server.indexOf('ga') !== -1, meta: server.indexOf('meta') !== -1 };
+    // «forsokt»: serveren har sendt, holder paa, eller proevde GA4 og det
+    // feilet. Da sender nettleseren aldri Ads-hendelsene (booking_fullfort
+    // osv.): de slaas ikke sammen paa transaction_id slik purchase gjoer.
+    const forsokt = ((String(hash).match(/forsokt=([a-z.]+)/) || [])[1] || '').split('.');
 
     // Tilbakeknappen, en fane som aapnes paa nytt, en lenke som deles — det
     // samme kjopet kan lande her flere ganger. Da skal det telles én.
@@ -38825,7 +38829,7 @@ class Component extends DCLogic {
     // det er ikke noe en annonse foerer til. (Eieren, 12. september 2026.)
     // Samme felter som eksempelet hans: value, currency, transaction_id.
     const ADS = { booking: 'booking_fullfort', gavekort: 'gavekort_kjopt', medlemskap: 'medlemskap_startet' };
-    if (gikk && ADS[slag]) {
+    if (gikk && ADS[slag] && forsokt.indexOf('ga') === -1) {
       this.maal(ADS[slag], { value: belop, currency: 'NOK', transaction_id: 'L' + id }, null, utenom);
     }
 

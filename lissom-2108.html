@@ -38470,6 +38470,7 @@ class Component extends DCLogic {
   angreSamtykke() {
     this.gaAv(true);
     try { localStorage.removeItem('lissom-analyse'); } catch (e) { /* da blir det staaende */ }
+    try { document.cookie = 'lissom_kilde=; path=/; max-age=0; SameSite=Lax'; } catch (e) { /* da gaar den ut av seg selv */ }
     this.setState({ samtykkeSvart: '' });
   }
 
@@ -38514,16 +38515,41 @@ class Component extends DCLogic {
    * soeket som brakte kunden, mistet kjoepet. Se «ignore_referrer» i
    * settOppAnalyse().
    */
+  /**
+   * Husk hvor besoeket kom fra — utm_*, gclid og fbclid fra adressen — i
+   * informasjonskapselen lissom_kilde, bare etter «ja». Serveren lagrer den
+   * paa betalingen naar kjoepet starter (Maaling::sporingFraNettleser()),
+   * saa kjoepet tilskrives annonsen ogsaa naar kunden kommer tilbake fra
+   * Vipps i en annen nettleser. Bare naar adressen har noe nytt; ellers
+   * staar den forrige. 30 dager. nett.js gjoer det samme.
+   */
+  huskKilde() {
+    try {
+      const q = new URLSearchParams(window.location.search);
+      const k = {};
+      ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'utm_id', 'gclid', 'fbclid'].forEach(n => {
+        const v = q.get(n);
+        if (v) k[n] = v.slice(0, 500);
+      });
+      if (!Object.keys(k).length) return;
+      k.t = Date.now();
+      document.cookie = 'lissom_kilde=' + encodeURIComponent(JSON.stringify(k))
+        + '; path=/; max-age=2592000; SameSite=Lax' + (location.protocol === 'https:' ? '; Secure' : '');
+    } catch (e) { /* en maaling som feiler skal aldri stoppe sida */ }
+  }
+
   fraVipps() {
     return /^https?:\/\/([^\/]*\.)?(vipps\.no|vippsmobilepay\.com|mobilepay\.(dk|fi))(\/|$)/i.test(document.referrer || '');
   }
 
-  maal(navn, felter, hvem) {
+  maal(navn, felter, hvem, utenom) {
     try {
       if (this.erIntern()) return false;
+      // «utenom»: kanalene serveren alt har sendt hendelsen til — se maalKjop().
+      const uten = utenom || {};
       let gikk = false;
       if (hvem) this.maalHvem(hvem);
-      if (typeof window.gtag === 'function') {
+      if (typeof window.gtag === 'function' && !uten.ga) {
         window.gtag('event', navn, felter || {});
         gikk = true;
       }
@@ -38536,7 +38562,7 @@ class Component extends DCLogic {
       }
       // Meta faar det samme, med sine egne navn — se metaNavn(). Ett navn
       // som Meta ikke kjenner, gaar bare til Google.
-      if (this._metaSatt && typeof window.fbq === 'function') {
+      if (this._metaSatt && typeof window.fbq === 'function' && !uten.meta) {
         const m = this.metaNavn(navn, felter);
         // Kjoepet sendes ogsaa fra serveren (app/lib/maaling.php) med
         // event_id = transaction_id; da slaar Meta de to sammen.
@@ -38758,6 +38784,14 @@ class Component extends DCLogic {
     if (!id) return;
     const belop = Number((String(hash).match(/belop=([\d.]+)/) || [])[1] || 0);
     const slag = (String(hash).match(/slag=([a-z_]+)/) || [])[1] || 'kjop';
+    // Kanalene serveren alt har sendt kjoepet til (app/lib/maaling.php,
+    // «server=ga.meta» fra api/betaling-retur.php). Dit sendes det ikke en
+    // gang til herfra: én kilde per kjop og kanal. Kunden kommer ofte
+    // tilbake i en annen nettleser enn den kjoepet startet i (Facebook- og
+    // Instagram-appen), med en annen client_id og uten kilde — kjoepet
+    // herfra havnet da som «Direct». Tag Manager faar det som foer.
+    const server = ((String(hash).match(/server=([a-z.]+)/) || [])[1] || '').split('.');
+    const utenom = { ga: server.indexOf('ga') !== -1, meta: server.indexOf('meta') !== -1 };
 
     // Tilbakeknappen, en fane som aapnes paa nytt, en lenke som deles — det
     // samme kjopet kan lande her flere ganger. Da skal det telles én.
@@ -38783,7 +38817,7 @@ class Component extends DCLogic {
       value: belop,
       currency: 'NOK',
       items: [{ item_id: slag, item_name: NAVN[slag] || slag, price: belop, quantity: 1 }],
-    }, hvem);
+    }, hvem, utenom);
 
     // Google Ads-konverteringene, ved siden av «purchase» — ikke i stedet
     // for. Ett navn per slag, saa kurs, gavekort og medlemskap kan telles
@@ -38792,7 +38826,7 @@ class Component extends DCLogic {
     // Samme felter som eksempelet hans: value, currency, transaction_id.
     const ADS = { booking: 'booking_fullfort', gavekort: 'gavekort_kjopt', medlemskap: 'medlemskap_startet' };
     if (gikk && ADS[slag]) {
-      this.maal(ADS[slag], { value: belop, currency: 'NOK', transaction_id: 'L' + id });
+      this.maal(ADS[slag], { value: belop, currency: 'NOK', transaction_id: 'L' + id }, null, utenom);
     }
 
     // Merkes bare naar det faktisk ble talt. Sto merket der uansett, ville
@@ -38803,7 +38837,11 @@ class Component extends DCLogic {
     // lander her rett fra Vipps, altsaa mens sida saavidt har startet —
     // maale-ID-en hentes fra serveren og Google-taggen lastes ned forst
     // etterpaa. Talte vi bare her, ville ingen kjop noensinne blitt talt.
-    if (!gikk) { this._ventendeKjop = hash; return; }
+    // Har serveren sendt til baade GA4 og Meta, og Tag Manager ikke er i
+    // bruk, er det ingenting igjen aa sende herfra — da er det talt.
+    const altFraServer = utenom.ga && utenom.meta && !this._gtmSatt
+      && !/^GTM-[A-Z0-9]{4,12}$/i.test(String((this.state.innholdLagret || {})['Marked/GTM-id'] || '').trim());
+    if (!gikk && !altFraServer) { this._ventendeKjop = hash; return; }
     this._ventendeKjop = null;
     try { localStorage.setItem('lissom-kjop', talt.concat(id).slice(-30).join(',')); } catch (e) { /* da telles det kanskje igjen */ }
     try { sessionStorage.removeItem('lissom_kjoper'); } catch (e) { /* da ligger den til fanen lukkes */ }
@@ -38859,6 +38897,7 @@ class Component extends DCLogic {
     // laste det og la vaere aa bruke det. Samme regel for Tag Manager og
     // for Meta-pikselen.
     if (this.samtykke() !== 'ja') return;
+    this.huskKilde();
 
     // Meta-pikselen (Facebook og Instagram) staar for seg selv: den
     // trenger ikke dataLayer eller gtag, og skal lastes ogsaa naar Google
@@ -43197,10 +43236,18 @@ class Component extends DCLogic {
 
     // Hele hashen tas vare paa forst. Linja under stryker den fra adressen,
     // og da er belopet borte for vi rekker aa telle kjopet.
+    //
+    // Utfallet staar i hashen naar kunden kommer til forsida
+    // («/#betaling=ok&kjop=…»), og i adressen naar hen kommer tilbake til
+    // kurssida eller gavekortsida («/kurs/<kurs>?betaling=ok#kjop=…») — de
+    // tegnes paa serveren, og bare ?betaling= sender dem hit til appen.
+    // Se api/betaling-retur.php.
     const hash = String(window.location.hash || '');
-    const m = hash.match(/betaling=([a-z]+)/);
+    const iSok = sok.match(/[?&]betaling=([a-z]+)/);
+    const m = iSok || hash.match(/betaling=([a-z]+)/);
     if (!m) return;
-    history.replaceState(null, '', window.location.pathname + window.location.search);
+    const restSok = iSok ? sok.replace(/([?&])betaling=[^&]*&?/, '$1').replace(/[?&]$/, '') : sok;
+    history.replaceState(null, '', window.location.pathname + restSok);
     if (m[1] === 'ok') this.maalKjop(hash);
     // Hva ble betalt?
     //

@@ -83,5 +83,76 @@ sjekk('refund: samme transaction_id og beløp', ($r['events'][0]['params']['tran
 $kilde = (string) file_get_contents(__DIR__ . '/../app/lib/booking.php') . (string) file_get_contents(__DIR__ . '/../app/lib/vipps.php');
 sjekk('refusjon måles både fra appen og fra webhooken', substr_count($kilde, 'Maaling::refusjon(') === 2);
 
+// ── 5. Kilden fra landingsadressen (lissom_kilde) ───────────────────────
+// 25. oktober 2026: kunder fra Facebook/Instagram starter kjøpet i appens
+// nettleser og kommer tilbake fra Vipps i en annen. Kilden lagres på
+// betalingen ved start, og brukes i serverens kjøp.
+$tMs = (time() - 60) * 1000;
+$k = Maaling::lesKilde((string) json_encode(['utm_source' => 'facebook', 'utm_medium' => 'paid_social',
+    'utm_campaign' => 'Høst<script>', 'fbclid' => 'IwAR2F4-dbP0l7Mn1IawQQGC', 'gclid' => 'kort', 't' => $tMs]));
+sjekk('kilde: utm lest og renset', ($k['utm'] ?? []) === ['source' => 'facebook', 'medium' => 'paid_social', 'campaign' => 'Høstscript'], json_encode($k));
+sjekk('kilde: fbclid urørt', $k['fbclid'] === 'IwAR2F4-dbP0l7Mn1IawQQGC');
+sjekk('kilde: ugyldig gclid kastet', $k['gclid'] === '');
+sjekk('kilde: tidspunkt i ms', $k['t'] === $tMs);
+sjekk('kilde: søppel gir tomt', Maaling::lesKilde('{x')['utm'] === [] && Maaling::lesKilde('')['fbclid'] === '');
+sjekk('kilde: tid fra framtida kastet', Maaling::lesKilde((string) json_encode(['fbclid' => 'IwAR2F4-dbP0l7Mn', 't' => (time() + 999999) * 1000]))['t'] === 0);
+
+$_COOKIE = [
+    '_ga'          => 'GA1.1.555.1759000000',
+    'lissom_kilde' => (string) json_encode(['utm_source' => 'facebook', 'utm_medium' => 'paid_social', 'utm_campaign' => 'host',
+        'fbclid' => 'IwAR2F4-dbP0l7Mn1IawQQGC', 'gclid' => 'Cj0KCQjw_fra-url', 't' => $tMs]),
+];
+$s3 = json_decode(Maaling::sporingFraNettleser(), true);
+sjekk('sporing: utm lagret på betalingen', ($s3['utm']['source'] ?? '') === 'facebook' && ($s3['utm']['campaign'] ?? '') === 'host', json_encode($s3));
+sjekk('sporing: fbc bygd fra fbclid (fb.1.<ms>.<fbclid>)', ($s3['fbc'] ?? '') === 'fb.1.' . $tMs . '.IwAR2F4-dbP0l7Mn1IawQQGC', (string) ($s3['fbc'] ?? ''));
+sjekk('sporing: gclid fra adressen når _gcl_aw mangler', ($s3['gclid'] ?? '') === 'Cj0KCQjw_fra-url');
+$_COOKIE['_fbc'] = 'fb.1.1700000000000.FRA-PIKSELEN';
+$_COOKIE['_gcl_aw'] = 'GCL.1759500000.Cj0KCQjw_fra-cookie';
+$s4 = json_decode(Maaling::sporingFraNettleser(), true);
+sjekk('sporing: pikselens _fbc går foran', ($s4['fbc'] ?? '') === 'fb.1.1700000000000.FRA-PIKSELEN');
+sjekk('sporing: _gcl_aw går foran', ($s4['gclid'] ?? '') === 'Cj0KCQjw_fra-cookie');
+$_COOKIE = ['annet' => '1'];
+sjekk('uten samtykke-cookies og uten kilde lagres ingenting', Maaling::sporingFraNettleser() === '');
+
+// ── 6. Kjøpet til GA4: Ads-hendelse og campaign_details ─────────────────
+$medOkt = $s + ['utm' => ['source' => 'facebook', 'medium' => 'paid_social', 'campaign' => 'host']];
+$kk = Maaling::ga4KjopKropp($medOkt, 'L77', 1590.0, 'booking', 'Dreiekurs', $hvem);
+$navn = array_map(static fn(array $e): string => $e['name'], $kk['events'] ?? []);
+sjekk('kjøp med økt: purchase + booking_fullfort, ingen campaign_details', $navn === ['purchase', 'booking_fullfort'], json_encode($navn));
+sjekk('Ads-hendelsen: samme transaction_id og beløp', ($kk['events'][1]['params']['transaction_id'] ?? '') === 'L77'
+    && ($kk['events'][1]['params']['value'] ?? 0) === 1590.0 && ($kk['events'][1]['params']['session_id'] ?? '') === '1759500000');
+$utenOkt = $medOkt; unset($utenOkt['sid'], $utenOkt['sn']);
+$ku = Maaling::ga4KjopKropp($utenOkt, 'L78', 500.0, 'gavekort', 'Gavekort', $hvem);
+$navnU = array_map(static fn(array $e): string => $e['name'], $ku['events'] ?? []);
+sjekk('kjøp uten økt: campaign_details først', $navnU === ['campaign_details', 'purchase', 'gavekort_kjopt'], json_encode($navnU));
+sjekk('campaign_details: kilde, medium, kampanje', ($ku['events'][0]['params'] ?? []) === ['campaign' => 'host', 'source' => 'facebook', 'medium' => 'paid_social'], json_encode($ku['events'][0]['params'] ?? null));
+sjekk('campaign_details: før kjøpet i tid', ($ku['events'][0]['timestamp_micros'] ?? PHP_INT_MAX) < time() * 1000000);
+sjekk('ordre: ingen Ads-hendelse', array_map(static fn(array $e): string => $e['name'], Maaling::ga4KjopKropp($s, 'L79', 10.0, 'ordre', 'Butikk', $hvem)['events']) === ['purchase']);
+sjekk('uten client_id: ingen kropp', Maaling::ga4KjopKropp(['sam' => 'ja', 'fbp' => 'fb.1.1.1'], 'L80', 10.0, 'booking', 'X', $hvem) === []);
+
+// ── 7. Én kilde: hva serveren sender, sier returen til nettleseren ──────
+sjekk('server sender GA4 og Meta', Maaling::serverSenderMed(['cid' => '1.2', 'fbp' => 'fb.1.1.1'], true, true) === ['ga' => true, 'meta' => true]);
+sjekk('fbc alene holder for Meta', Maaling::serverSenderMed(['fbc' => 'fb.1.1.x'], true, true) === ['ga' => false, 'meta' => true]);
+sjekk('uten nøkkel sender serveren ikke', Maaling::serverSenderMed(['cid' => '1.2', 'fbp' => 'fb.1.1.1'], false, false) === ['ga' => false, 'meta' => false]);
+sjekk('uten sporing (ikke samtykket) sender serveren ikke', Maaling::serverSender([]) === ['ga' => false, 'meta' => false]);
+
+$rot = __DIR__ . '/..';
+$retur = (string) file_get_contents($rot . '/api/betaling-retur.php');
+sjekk('returen sier «server=» til nettleseren', str_contains($retur, "'&server=' . implode('.', \$sender)"));
+sjekk('returen: annen side enn forsida får ?betaling=', str_contains($retur, "\$til . '?betaling=' . \$utfall"));
+sjekk('returen: forsida som før (#betaling=)', str_contains($retur, "'/#betaling=' . \$utfall . \$ekstra"));
+sjekk('booking går tilbake til kurssida', str_contains((string) file_get_contents($rot . '/app/lib/booking.php'), "'&til=' . rawurlencode('/kurs/' . \$okt['slug'])"));
+sjekk('gavekort går tilbake til gavekortsida', str_contains((string) file_get_contents($rot . '/api/gavekort.php'), "'&til=' . rawurlencode('/gavekort')"));
+sjekk('?betaling= sender serversida til appen', str_contains((string) file_get_contents($rot . '/app/nett/nett.php'), "'kolleksjon', 'betaling']"));
+$side = (string) file_get_contents($rot . '/lissom-2108.html');
+sjekk('nettleseren hopper over kanalene serveren tok', str_contains($side, "typeof window.gtag === 'function' && !uten.ga")
+    && str_contains($side, "typeof window.fbq === 'function' && !uten.meta")
+    && str_contains($side, '}, hvem, utenom);'));
+sjekk('appen leser ?betaling=', str_contains($side, 'sok.match(/[?&]betaling=([a-z]+)/)'));
+sjekk('kilden huskes bare etter «ja» (appen og nett.js)', preg_match("~samtykke\\(\\) !== 'ja'\\) return;\\R    this\\.huskKilde\\(\\);~", $side) === 1
+    && preg_match("~if \\(intern\\(\\)\\) return;\\R    huskKilde\\(\\);~", (string) file_get_contents($rot . '/nett.js')) === 1);
+$lett = (string) file_get_contents($rot . '/lissom-2108-uten-admin.html');
+sjekk('kundeutgaven er laget på nytt', str_contains($lett, 'huskKilde') && str_contains($lett, 'server=([a-z.]+)'));
+
 echo "\n  $ok OK, $feil FEIL\n";
 exit($feil === 0 ? 0 : 1);

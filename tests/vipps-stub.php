@@ -21,6 +21,11 @@ if ($sti === '/accesstoken/get') {
 }
 
 if ($sti === '/epayment/v1/payments') {
+    // Returadressen skrives ned, saa testen kan se hvor kunden sendes tilbake.
+    $styrInn = (string) getenv('VIPPS_STUB_STYR');
+    if ($styrInn !== '') {
+        file_put_contents($styrInn . '.retur', (string) ($kropp['returnUrl'] ?? '') . "\n", FILE_APPEND);
+    }
     http_response_code(201);
     echo json_encode([
         'reference'   => $kropp['reference'] ?? 'ukjent',

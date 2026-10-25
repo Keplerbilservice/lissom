@@ -10044,6 +10044,67 @@
                     "ikkeFinnes": []
                 }
             ]
+        },
+        {
+            "id": "vipps-retur-kilde",
+            "dato": "2026-10-25",
+            "hva": "Eieren 25.10.2026: kjøp fra Meta-annonser havnet som «Direct». Kilden (utm, gclid, fbclid → fbc, GA client_id/økt) lagres på betalingen ved start og brukes i serverens GA4- og Meta-kjøp; Vipps sender kunden tilbake til kurssida/gavekortsida med ?betaling=; nettleseren sender ikke kjøpet til en kanal serveren alt har sendt til («server=»).",
+            "hvor": "Betaling › retur fra Vipps og kjøpsmåling",
+            "kode": [
+                {
+                    "fil": "api/betaling-retur.php",
+                    "finnes": [
+                        "'&server=' . implode('.', $sender)",
+                        "$til . '?betaling=' . $utfall"
+                    ],
+                    "ikkeFinnes": []
+                },
+                {
+                    "fil": "app/lib/maaling.php",
+                    "finnes": [
+                        "$kilde = self::lesKilde((string) ($c['lissom_kilde'] ?? ''));",
+                        "'name' => 'campaign_details',"
+                    ],
+                    "ikkeFinnes": []
+                },
+                {
+                    "fil": "app/lib/booking.php",
+                    "finnes": [
+                        "'&til=' . rawurlencode('/kurs/' . $okt['slug'])"
+                    ],
+                    "ikkeFinnes": []
+                },
+                {
+                    "fil": "api/gavekort.php",
+                    "finnes": [
+                        "'&til=' . rawurlencode('/gavekort')"
+                    ],
+                    "ikkeFinnes": []
+                },
+                {
+                    "fil": "app/nett/nett.php",
+                    "finnes": [
+                        "'kolleksjon', 'betaling']"
+                    ],
+                    "ikkeFinnes": []
+                },
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "typeof window.gtag === 'function' && !uten.ga",
+                        "}, hvem, utenom);",
+                        "this.huskKilde();"
+                    ],
+                    "ikkeFinnes": []
+                },
+                {
+                    "fil": "nett.js",
+                    "finnes": [
+                        "    huskKilde();"
+                    ],
+                    "ikkeFinnes": []
+                }
+            ]
         }
     ]
 }

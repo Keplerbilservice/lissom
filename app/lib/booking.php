@@ -1397,7 +1397,12 @@ final class Booking
                     $antall > 1 ? $antall . ' plasser' : '1 plass',
                     $navn
                 ),
-                Config::nettsted() . '/api/betaling-retur.php?ref=' . rawurlencode($referanse),
+                // Tilbake til kurssida kjoepet startet paa, ikke forsida —
+                // se api/betaling-retur.php. Bare en adresse som er trygg i
+                // en sti; ellers forsida som foer.
+                Config::nettsted() . '/api/betaling-retur.php?ref=' . rawurlencode($referanse)
+                    . (preg_match('~^[a-z0-9-]+$~', (string) ($okt['slug'] ?? '')) === 1
+                        ? '&til=' . rawurlencode('/kurs/' . $okt['slug']) : ''),
                 $telefon
             );
         } catch (Throwable $e) {

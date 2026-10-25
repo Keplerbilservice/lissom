@@ -27,9 +27,14 @@
  *
  * ── Dobbelttelling ─────────────────────────────────────────────────────
  *
- * Nettleseren sender fortsatt sitt kjøp når returen laster. Begge bruker
- * samme id, «L<betalings-id>»: GA4 teller én transaksjon per transaction_id,
- * og Meta slår sammen hendelser med samme event_id fra piksel og server.
+ * Én kilde per kjøp og kanal (25. oktober 2026). Kan serveren sende kjøpet
+ * til GA4 eller Meta (serverSender()), sier returen fra Vipps det til
+ * nettleseren med «server=ga.meta», og nettleseren sender da ikke det samme
+ * kjøpet. Før sendte begge: nettleseren kunden kom tilbake i — ofte en annen
+ * enn Facebook- eller Instagram-appens, med en annen client_id og uten
+ * kilde — og kjøpet havnet som «Direct» i GA4. Kan serveren ikke (ikke
+ * samtykket ved start, eller ingen nøkkel), sender nettleseren som før.
+ * Samme id overalt, «L<betalings-id>».
  *
  * ── Nøklene ────────────────────────────────────────────────────────────
  *
@@ -77,6 +82,25 @@ final class Maaling
         if (isset($c['_fbc']) && preg_match('~^fb\.\d\.\d+\.[\w-]+$~', (string) $c['_fbc']) === 1) {
             $ut['fbc'] = (string) $c['_fbc'];
         }
+        // Kilden fra landingsadressen (lissom_kilde, satt av nett.js og appen
+        // — bare etter «ja», som cookiene over). Kunder fra Facebook og
+        // Instagram starter kjøpet i appens nettleser og kommer tilbake fra
+        // Vipps i Safari eller Chrome, uten noe av dette. Lagret her følger
+        // kilden betalingen, ikke nettleseren.
+        $kilde = self::lesKilde((string) ($c['lissom_kilde'] ?? ''));
+        if ($kilde['utm'] !== []) {
+            $ut['utm'] = $kilde['utm'];
+        }
+        if (!isset($ut['gclid']) && $kilde['gclid'] !== '') {
+            $ut['gclid'] = $kilde['gclid'];
+        }
+        // Metas eget format når pikselen ikke rakk å lage _fbc:
+        // fb.1.<ms da fbclid ble sett>.<fbclid>, fbclid urørt (skiller store
+        // og små bokstaver). developers.facebook.com → Conversions API →
+        // fbp and fbc.
+        if (!isset($ut['fbc']) && $kilde['fbclid'] !== '' && $kilde['t'] > 0) {
+            $ut['fbc'] = 'fb.1.' . $kilde['t'] . '.' . $kilde['fbclid'];
+        }
         if ($ut === []) {
             return '';
         }
@@ -88,6 +112,90 @@ final class Maaling
         $ut['ua'] = mb_substr((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 300);
         $ut['t']  = time();
         return (string) json_encode($ut, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    }
+
+    /**
+     * lissom_kilde: JSON med utm_*, gclid, fbclid og t (ms da de ble sett).
+     * Alt som ikke ser ut som det skal, kastes — cookien kommer fra
+     * nettleseren og kan inneholde hva som helst.
+     * @return array{utm:array<string,string>,gclid:string,fbclid:string,t:int}
+     */
+    public static function lesKilde(string $raa): array
+    {
+        $ut = ['utm' => [], 'gclid' => '', 'fbclid' => '', 't' => 0];
+        if ($raa === '' || strlen($raa) > 2000) {
+            return $ut;
+        }
+        $k = json_decode($raa, true);
+        if (!is_array($k)) {
+            return $ut;
+        }
+        // utm_* → navnene GA4 bruker i campaign_details.
+        $FELT = ['utm_source' => 'source', 'utm_medium' => 'medium', 'utm_campaign' => 'campaign',
+                 'utm_term' => 'term', 'utm_content' => 'content', 'utm_id' => 'campaign_id'];
+        foreach ($FELT as $inn => $navn) {
+            $v = is_string($k[$inn] ?? null) ? trim($k[$inn]) : '';
+            $v = (string) preg_replace('~[^\p{L}\p{N} _.:/|()+\-]~u', '', $v);
+            $v = mb_substr($v, 0, 100);
+            if ($v !== '') {
+                $ut['utm'][$navn] = $v;
+            }
+        }
+        if (is_string($k['gclid'] ?? null) && preg_match('~^[\w-]{10,200}$~', $k['gclid']) === 1) {
+            $ut['gclid'] = $k['gclid'];
+        }
+        if (is_string($k['fbclid'] ?? null) && preg_match('~^[\w-]{10,500}$~', $k['fbclid']) === 1) {
+            $ut['fbclid'] = $k['fbclid'];
+        }
+        // Millisekunder, og ikke fra framtida eller før 2020.
+        $t = is_int($k['t'] ?? null) || (is_string($k['t'] ?? null) && ctype_digit($k['t'])) ? (int) $k['t'] : 0;
+        if ($t > 1577836800000 && $t <= (time() + 86400) * 1000) {
+            $ut['t'] = $t;
+        }
+        return $ut;
+    }
+
+    /**
+     * Hvem serveren sender kjøpet til for denne sporingen: GA4 når det
+     * finnes client_id og nøkkel, Meta når det finnes _fbp/_fbc og token.
+     * Returen fra Vipps sier det samme til nettleseren («server=»), og da
+     * sender nettleseren ikke det samme kjøpet en gang til — én kilde per
+     * kjøp og kanal, uansett hvilken nettleser kunden kommer tilbake i.
+     * @return array{ga:bool,meta:bool}
+     */
+    public static function serverSender(array $sporing): array
+    {
+        if ($sporing === []) {
+            return ['ga' => false, 'meta' => false];
+        }
+        return self::serverSenderMed(
+            $sporing,
+            self::gaId() !== '' && trim((string) Config::hent('maal_ga_api_secret', '')) !== '',
+            self::metaId() !== '' && trim((string) Config::hent('maal_meta_token', '')) !== ''
+        );
+    }
+
+    /**
+     * Samme regel som tilGa4()/tilMeta() bruker for å sende eller la være,
+     * med oppsettet gitt inn (testbar uten base).
+     * @return array{ga:bool,meta:bool}
+     */
+    public static function serverSenderMed(array $sporing, bool $gaKlar, bool $metaKlar): array
+    {
+        return [
+            'ga'   => $gaKlar && !empty($sporing['cid']),
+            'meta' => $metaKlar && (!empty($sporing['fbp']) || !empty($sporing['fbc'])),
+        ];
+    }
+
+    /** Sporingen lagret på en betaling, eller [] (ingen kolonne, ikke samtykket). */
+    public static function sporingFor(int $betalingId): array
+    {
+        if (!DB::harKolonne('payments', 'sporing')) {
+            return [];
+        }
+        $s = json_decode((string) DB::verdi('SELECT sporing FROM payments WHERE id = :id', ['id' => $betalingId]), true);
+        return is_array($s) ? $s : [];
     }
 
     /**
@@ -348,20 +456,76 @@ final class Maaling
     /** @param array{epost:string,telefon:string,navn:string,medlem:int,tittel:string,slug:string} $hvem */
     private static function tilGa4(array $sporing, string $id, float $belop, string $formal, string $vare, array $hvem): void
     {
-        self::tilGa4Hendelse($sporing, 'purchase', [
+        self::sendGa4(self::ga4KjopKropp($sporing, $id, $belop, $formal, $vare, $hvem), 'purchase', $id);
+    }
+
+    /**
+     * Google Ads-konverteringene ved siden av «purchase» — de samme navnene
+     * som maalKjop() i nettsida sender. Serveren sender dem når den er
+     * kilden for kjøpet, ellers ville de forsvunnet med nettleserens kjøp.
+     */
+    public const ADS_HENDELSER = ['booking' => 'booking_fullfort', 'gavekort' => 'gavekort_kjopt', 'medlemskap' => 'medlemskap_startet'];
+
+    /**
+     * Hele kroppen for et kjøp til GA4: purchase, Ads-hendelsen for slaget,
+     * og campaign_details foran når kilden er kjent men økten ikke er det.
+     *
+     * campaign_details (GA4 Measurement Protocol, anbefalt hendelse) gjelder
+     * hendelser med samme eller senere tidspunkt. Den sendes bare uten
+     * session_id: med økten kjenner GA4 kilden fra besøket selv, og en
+     * gammel utm skal ikke overstyre et nyere besøk.
+     * @param array{epost:string,telefon:string,navn:string,medlem:int,tittel:string,slug:string} $hvem
+     */
+    public static function ga4KjopKropp(array $sporing, string $id, float $belop, string $formal, string $vare, array $hvem): array
+    {
+        $kropp = self::ga4Kropp($sporing, 'purchase', [
             'transaction_id' => $id,
             'value'          => $belop,
             'currency'       => 'NOK',
             'items'          => [['item_id' => $formal, 'item_name' => $vare, 'price' => $belop, 'quantity' => 1]],
-        ], $hvem, $id);
+        ], $hvem);
+        if ($kropp === []) {
+            return [];
+        }
+        $okt = ['engagement_time_msec' => 100];
+        if (!empty($sporing['sid'])) {
+            $okt['session_id'] = (string) $sporing['sid'];
+        }
+        if (isset(self::ADS_HENDELSER[$formal])) {
+            $kropp['events'][] = ['name' => self::ADS_HENDELSER[$formal], 'params' => [
+                'value' => $belop, 'currency' => 'NOK', 'transaction_id' => $id,
+            ] + $okt];
+        }
+        $utm = is_array($sporing['utm'] ?? null) ? $sporing['utm'] : [];
+        if ($utm !== [] && empty($sporing['sid'])) {
+            $param = [];
+            foreach (['campaign_id', 'campaign', 'source', 'medium', 'term', 'content'] as $n) {
+                if (isset($utm[$n]) && is_string($utm[$n]) && $utm[$n] !== '') {
+                    $param[$n] = $utm[$n];
+                }
+            }
+            if ($param !== []) {
+                // Ett sekund foran kjøpet, så «samme eller senere» holder.
+                array_unshift($kropp['events'], [
+                    'name' => 'campaign_details',
+                    'timestamp_micros' => (time() - 1) * 1000000,
+                    'params' => $param,
+                ]);
+            }
+        }
+        return $kropp;
     }
 
     /** @param array{epost:string,telefon:string,navn:string,medlem:int,tittel:string,slug:string} $hvem */
     private static function tilGa4Hendelse(array $sporing, string $hendelse, array $params, array $hvem, string $id): void
     {
+        self::sendGa4(self::ga4Kropp($sporing, $hendelse, $params, $hvem), $hendelse, $id);
+    }
+
+    private static function sendGa4(array $kropp, string $hendelse, string $id): void
+    {
         $gaId = self::gaId();
         $hemmelighet = trim((string) Config::hent('maal_ga_api_secret', ''));
-        $kropp = self::ga4Kropp($sporing, $hendelse, $params, $hvem);
         if ($gaId === '' || $hemmelighet === '' || $kropp === []) {
             return;
         }
@@ -380,14 +544,18 @@ final class Maaling
     {
         $pikselId = self::metaId();
         $token = trim((string) Config::hent('maal_meta_token', ''));
-        if ($pikselId === '' || $token === '' || empty($sporing['fbp'])) {
+        // _fbp eller _fbc: fbc alene (fra fbclid, se sporingFraNettleser())
+        // er nok til å knytte kjøpet til annonseklikket.
+        if ($pikselId === '' || $token === '' || (empty($sporing['fbp']) && empty($sporing['fbc']))) {
             return;
         }
         $bruker = [
-            'fbp'               => (string) $sporing['fbp'],
             'client_ip_address' => (string) ($sporing['ip'] ?? ''),
             'client_user_agent' => (string) ($sporing['ua'] ?? ''),
         ];
+        if (!empty($sporing['fbp'])) {
+            $bruker['fbp'] = (string) $sporing['fbp'];
+        }
         if (!empty($sporing['fbc'])) {
             $bruker['fbc'] = (string) $sporing['fbc'];
         }

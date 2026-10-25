@@ -145,7 +145,9 @@ final class Nett
         $bareHer = $adresse === '/' || $adresse === '/kurs' || $adresse === '/kalender'
             || $adresse === '/nyheter' || str_starts_with($adresse, '/nyheter/')
             || $adresse === '/nyttig-info' || str_starts_with($adresse, '/nyttig-info/');
-        foreach (['dag', 'alle', 'book', 'venteliste', 'plan', 'skjema', 'kjop', 'vare', 'kolleksjon'] as $n) {
+        // ?betaling= er returen fra Vipps til kurssida eller gavekortsida
+        // (api/betaling-retur.php): appen viser utfallet og teller kjoepet.
+        foreach (['dag', 'alle', 'book', 'venteliste', 'plan', 'skjema', 'kjop', 'vare', 'kolleksjon', 'betaling'] as $n) {
             if (isset($_GET[$n]) && !$bareHer) {
                 return false;
             }

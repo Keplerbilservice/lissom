@@ -97,7 +97,8 @@ try {
         $referanse,
         $belop * 100,
         Vipps::beskrivelse('Lissom gavekort', (string) ($medlem['navn'] ?? '')),
-        Config::nettsted() . '/api/betaling-retur.php?ref=' . rawurlencode($referanse),
+        // Tilbake til gavekortsida, der kjoepet startet (api/betaling-retur.php).
+        Config::nettsted() . '/api/betaling-retur.php?ref=' . rawurlencode($referanse) . '&til=' . rawurlencode('/gavekort'),
         (string) ($medlem['telefon'] ?? '')
     );
 } catch (Throwable $e) {

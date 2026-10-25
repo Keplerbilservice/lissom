@@ -453,6 +453,22 @@
   // 68 oekter med kilde «api.vipps.no / referral» — annonsen eller soeket
   // som brakte kunden, mistet kjoepet.
   function fraVipps() { return /^https?:\/\/([^\/]*\.)?(vipps\.no|vippsmobilepay\.com|mobilepay\.(dk|fi))(\/|$)/i.test(d.referrer || ''); }
+  // Hvor besoeket kom fra (utm_*, gclid, fbclid), som huskKilde() i appen:
+  // bare etter «ja», og serveren lagrer den paa betalingen naar kjoepet
+  // starter (Maaling::sporingFraNettleser()). Kunden kommer ofte tilbake fra
+  // Vipps i en annen nettleser enn Facebook- eller Instagram-appens.
+  function huskKilde() {
+    try {
+      var q = new URLSearchParams(location.search), k = {}, n = 0;
+      ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'utm_id', 'gclid', 'fbclid'].forEach(function (f) {
+        var v = q.get(f); if (v) { k[f] = v.slice(0, 500); n++; }
+      });
+      if (!n) return;
+      k.t = Date.now();
+      d.cookie = 'lissom_kilde=' + encodeURIComponent(JSON.stringify(k))
+        + '; path=/; max-age=2592000; SameSite=Lax' + (location.protocol === 'https:' ? '; Secure' : '');
+    } catch (e) {}
+  }
   function maal() {
     var m = window.lissomMaal || {};
     var ga = /^G-[A-Z0-9]{6,20}$/i.test(m.ga || '') ? m.ga : '';
@@ -461,6 +477,7 @@
     if (!ga && !gtm && !meta) return;
     if (samtykke() !== 'ja') return;
     if (intern()) return;
+    huskKilde();
     window.dataLayer = window.dataLayer || [];
     if (typeof window.gtag !== 'function') { window.gtag = function () { window.dataLayer.push(arguments); }; }
     if (samtykkeSendt) {
@@ -539,6 +556,7 @@
         : 'Du har sagt nei, og ingenting blir målt. Trykker du under, kan du svare på nytt.';
       endre.addEventListener('click', function () {
         try { localStorage.removeItem('lissom-analyse'); } catch (e) {}
+        try { d.cookie = 'lissom_kilde=; path=/; max-age=0; SameSite=Lax'; } catch (e) {}
         try { window['ga-disable-' + (m0.ga || '')] = true; } catch (e) {}
         // Og si fra til Google, som gaAv() i appen: «ga-disable» stopper
         // Analytics, men Tag Manager og Ads leser samtykket.

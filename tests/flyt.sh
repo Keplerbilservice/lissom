@@ -89,14 +89,20 @@ sjekk "fremmed opphav avvises" "403" "$(curl -s -m 10 -o /dev/null -w '%{http_co
 
 echo
 echo "== Booking =="
+# Kunden har sagt ja til maaling og kom fra en annonse (lissom_kilde fra
+# landingsadressen, _ga fra Google-taggen). Kilden skal lagres paa betalingen.
+KILDE=$(php -r 'echo rawurlencode(json_encode(["utm_source" => "facebook", "utm_medium" => "paid_social", "utm_campaign" => "host", "fbclid" => "IwAR2F4-flytTest123", "t" => 1761370000000]));')
 SVAR=$(curl -s -m 15 -X POST -H "Content-Type: application/json" -H "$ORIG" \
-  -H "Cookie: lissom_sesjon=$TOKEN" -d "{\"oktId\":$OKT,\"antall\":1}" "$B/book.php")
+  -H "Cookie: lissom_sesjon=$TOKEN; _ga=GA1.1.111.222; lissom_kilde=$KILDE" -d "{\"oktId\":$OKT,\"antall\":1}" "$B/book.php")
 REF=$(echo "$SVAR" | php -r '$j = json_decode(stream_get_contents(STDIN), true); echo is_array($j) ? ($j["referanse"] ?? "") : "";' 2>/dev/null)
 sjekk "booking gir en referanse" "ja" "$([ -n "$REF" ] && echo ja || echo nei)"
 [ -z "$REF" ] && echo "    oekt $OKT, svar: ${SVAR:0:300}"
 sjekk "reservasjon opprettet" "reservert" "$(php -r 'require "'"$ROT"'/app/bootstrap.php";
   $p = DB::en("SELECT id FROM payments WHERE vipps_reference = :r", ["r" => "'"$REF"'"]);
   echo $p ? DB::verdi("SELECT status FROM bookings WHERE payment_id = :p", ["p" => $p["id"]]) : "mangler";')"
+sjekk "kilden lagret paa betalingen (utm, fbc fra fbclid, client_id)" "facebook|host|fb.1.1761370000000.IwAR2F4-flytTest123|111.222" "$(php -r 'require "'"$ROT"'/app/bootstrap.php";
+  $s = json_decode((string) DB::verdi("SELECT sporing FROM payments WHERE vipps_reference = :r", ["r" => "'"$REF"'"]), true) ?: [];
+  echo ($s["utm"]["source"] ?? ""), "|", ($s["utm"]["campaign"] ?? ""), "|", ($s["fbc"] ?? ""), "|", ($s["cid"] ?? "");')"
 
 echo
 echo "== Webhook =="
@@ -180,6 +186,29 @@ sjekk "kunden sendes til «ok»" "ok" "$(utfall "$R2")"
 sjekk "betalingen er betalt" "betalt" "$(status_for "$R2")"
 sjekk "ett trekk" "1" "$(antall_trekk)"
 rm -f "$T/styr.json"
+
+# --- Tilbake dit kjoepet startet (25. oktober 2026) -------------------------
+# Kurssida og gavekortsida tegnes paa serveren; ?betaling= sender dem til
+# appen, som viser utfallet. Tallene staar etter #. Forsida er som foer.
+retur_url() { curl -s -m 15 -o /dev/null -w '%{redirect_url}' "$B/betaling-retur.php?ref=$1&til=$2"; }
+echo
+echo "== Retur: tilbake til kurssida =="
+R3="FLYT-KURS-$$"
+ny_betaling "$R3"
+echo '{}' > "$T/styr.json"; rm -f "$T/styr.json.trekk"
+ID3=$(php -r 'require "'"$ROT"'/app/bootstrap.php"; echo DB::verdi("SELECT id FROM payments WHERE vipps_reference = :r", ["r" => $argv[1]]);' "$R3")
+sjekk "kurssida med ?betaling=ok og tallene etter #" "https://lissom.no/kurs/flyt-kurs?betaling=ok#kjop=$ID3&belop=1.00&slag=ordre" "$(retur_url "$R3" "%2Fkurs%2Fflyt-kurs")"
+sjekk "betalt" "betalt" "$(status_for "$R3")"
+sjekk "allerede betalt: samme adresse igjen" "https://lissom.no/kurs/flyt-kurs?betaling=ok#kjop=$ID3&belop=1.00&slag=ordre" "$(retur_url "$R3" "%2Fkurs%2Fflyt-kurs")"
+sjekk "ett trekk, ikke to" "1" "$(antall_trekk)"
+sjekk "fremmed adresse gaar til forsida" "https://lissom.no/#betaling=ok&kjop=$ID3&belop=1.00&slag=ordre" "$(retur_url "$R3" "https%3A%2F%2Fondsinnet.example")"
+sjekk "ukjent betaling til gavekortsida" "https://lissom.no/gavekort?betaling=ukjent" "$(retur_url "FINNES-IKKE-$$" "%2Fgavekort")"
+rm -f "$T/styr.json"
+
+echo
+echo "== Bookingen sender kunden tilbake til kurssida =="
+SLUG=$(php -r 'require "'"$ROT"'/app/bootstrap.php"; echo DB::verdi("SELECT c.slug FROM course_sessions cs JOIN courses c ON c.id = cs.course_id WHERE cs.id = :i", ["i" => (int) $argv[1]]);' "$OKT")
+sjekk "returadressen til Vipps har til=/kurs/<kurs>" "ja" "$(grep -q "til=%2Fkurs%2F$SLUG\$" "$T/styr.json.retur" 2>/dev/null && echo ja || echo nei)"
 
 echo
 echo "── $ok gikk gjennom, $feil feilet"

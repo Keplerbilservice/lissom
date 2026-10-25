@@ -203,6 +203,17 @@ sjekk "allerede betalt: samme adresse igjen" "https://lissom.no/kurs/flyt-kurs?b
 sjekk "ett trekk, ikke to" "1" "$(antall_trekk)"
 sjekk "fremmed adresse gaar til forsida" "https://lissom.no/#betaling=ok&kjop=$ID3&belop=1.00&slag=ordre" "$(retur_url "$R3" "https%3A%2F%2Fondsinnet.example")"
 sjekk "ukjent betaling til gavekortsida" "https://lissom.no/gavekort?betaling=ukjent" "$(retur_url "FINNES-IKKE-$$" "%2Fgavekort")"
+# server= bare for kanalene serveren faktisk fikk fram (2xx lagret under
+# «sendt»), ikke ut fra oppsettet. Kontrolløren 25. oktober 2026.
+sjekk "sporing uten lagret utfall: ingen server= (nettleseren sender)" "ja" "$(php -r 'require "'"$ROT"'/app/bootstrap.php";
+  DB::oppdater("payments", ["sporing" => json_encode(["cid" => "1.2", "fbp" => "fb.1.1.1", "sam" => "ja"])], ["vipps_reference" => $argv[1]]);' "$R3";
+  u=$(retur_url "$R3" "%2Fkurs%2Fflyt-kurs"); case "$u" in *server=*) echo nei;; *) echo ja;; esac)"
+sjekk "Meta svarte 2xx, GA4 feilet: server=meta" "https://lissom.no/kurs/flyt-kurs?betaling=ok#kjop=$ID3&belop=1.00&slag=ordre&server=meta" "$(php -r 'require "'"$ROT"'/app/bootstrap.php";
+  $m = new ReflectionMethod("Maaling", "lagreSendt"); $m->invoke(null, (int) $argv[1], ["meta"]);' "$ID3";
+  retur_url "$R3" "%2Fkurs%2Fflyt-kurs")"
+sjekk "utfallet lagt til, sporingen ellers urørt" "1.2|fb.1.1.1|meta" "$(php -r 'require "'"$ROT"'/app/bootstrap.php";
+  $s = json_decode((string) DB::verdi("SELECT sporing FROM payments WHERE id = :i", ["i" => (int) $argv[1]]), true);
+  echo $s["cid"], "|", $s["fbp"], "|", implode(",", array_keys($s["sendt"] ?? []));' "$ID3")"
 rm -f "$T/styr.json"
 
 echo

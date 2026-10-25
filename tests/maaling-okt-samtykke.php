@@ -134,14 +134,22 @@ sjekk('ordre: ingen Ads-hendelse', array_map(static fn(array $e): string => $e['
 sjekk('uten client_id: ingen kropp', Maaling::ga4KjopKropp(['sam' => 'ja', 'fbp' => 'fb.1.1.1'], 'L80', 10.0, 'booking', 'X', $hvem) === []);
 
 // ── 7. Én kilde: hva serveren sender, sier returen til nettleseren ──────
-sjekk('server sender GA4 og Meta', Maaling::serverSenderMed(['cid' => '1.2', 'fbp' => 'fb.1.1.1'], true, true) === ['ga' => true, 'meta' => true]);
-sjekk('fbc alene holder for Meta', Maaling::serverSenderMed(['fbc' => 'fb.1.1.x'], true, true) === ['ga' => false, 'meta' => true]);
-sjekk('uten nøkkel sender serveren ikke', Maaling::serverSenderMed(['cid' => '1.2', 'fbp' => 'fb.1.1.1'], false, false) === ['ga' => false, 'meta' => false]);
-sjekk('uten sporing (ikke samtykket) sender serveren ikke', Maaling::serverSender([]) === ['ga' => false, 'meta' => false]);
+// Kontrolløren 25.10: server= bare for kanaler som faktisk svarte 2xx.
+sjekk('server= bare for kanaler som er lagret som sendt', Maaling::serverSendte(['cid' => '1.2', 'fbp' => 'fb.1.1.1', 'sendt' => ['ga' => 1761370000, 'meta' => 1761370000]]) === ['ga' => true, 'meta' => true]);
+sjekk('GA4 feilet: bare Meta', Maaling::serverSendte(['cid' => '1.2', 'fbp' => 'fb.1.1.1', 'sendt' => ['meta' => 1761370000]]) === ['ga' => false, 'meta' => true]);
+sjekk('oppsett alene (nøkkel, client_id, fbp) gir ikke server=', Maaling::serverSendte(['cid' => '1.2', 'fbp' => 'fb.1.1.1']) === ['ga' => false, 'meta' => false]);
+sjekk('uten sporing: ingenting', Maaling::serverSendte([]) === ['ga' => false, 'meta' => false]);
+$mk = (string) file_get_contents(__DIR__ . '/../app/lib/maaling.php');
+$mk = str_replace("\r\n", "\n", $mk);
+sjekk('utfallet lagres per kanal etter 2xx', str_contains($mk, 'if (self::tilGa4($sporing, $id, $belop, $formal, $vare, $hvem)) {')
+    && str_contains($mk, 'if (self::tilMeta($sporing, $id, $belop, $formal, $vare, $hvem)) {')
+    && str_contains($mk, 'self::lagreSendt($betalingId, $gikk);')
+    && substr_count($mk, "            return false;\n        }\n        return true;") === 2);
 
 $rot = __DIR__ . '/..';
 $retur = (string) file_get_contents($rot . '/api/betaling-retur.php');
-sjekk('returen sier «server=» til nettleseren', str_contains($retur, "'&server=' . implode('.', \$sender)"));
+sjekk('returen sier «server=» til nettleseren, fra lagret utfall', str_contains($retur, "'&server=' . implode('.', \$sender)")
+    && str_contains($retur, 'Maaling::serverSendte('));
 sjekk('returen: annen side enn forsida får ?betaling=', str_contains($retur, "\$til . '?betaling=' . \$utfall"));
 sjekk('returen: forsida som før (#betaling=)', str_contains($retur, "'/#betaling=' . \$utfall . \$ekstra"));
 sjekk('booking går tilbake til kurssida', str_contains((string) file_get_contents($rot . '/app/lib/booking.php'), "'&til=' . rawurlencode('/kurs/' . \$okt['slug'])"));

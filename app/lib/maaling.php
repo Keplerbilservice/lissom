@@ -27,10 +27,11 @@
  *
  * ── Dobbelttelling ─────────────────────────────────────────────────────
  *
- * Én kilde per kjøp og kanal (25. oktober 2026). Kan serveren sende kjøpet
- * til GA4 eller Meta (serverSender()), sier returen fra Vipps det til
- * nettleseren med «server=ga.meta», og nettleseren sender da ikke det samme
- * kjøpet. Før sendte begge: nettleseren kunden kom tilbake i — ofte en annen
+ * Én kilde per kjøp og kanal (25. oktober 2026). Har serveren fått kjøpet
+ * fram til GA4 eller Meta (svar 2xx, lagret under «sendt» — serverSendte()),
+ * sier returen fra Vipps det til nettleseren med «server=ga.meta», og
+ * nettleseren sender da ikke det samme kjøpet dit. Feilet sendingen, sender
+ * nettleseren som reserve med samme id. Før sendte begge: nettleseren kunden kom tilbake i — ofte en annen
  * enn Facebook- eller Instagram-appens, med en annen client_id og uten
  * kilde — og kjøpet havnet som «Direct» i GA4. Kan serveren ikke (ikke
  * samtykket ved start, eller ingen nøkkel), sender nettleseren som før.
@@ -156,36 +157,38 @@ final class Maaling
     }
 
     /**
-     * Hvem serveren sender kjøpet til for denne sporingen: GA4 når det
-     * finnes client_id og nøkkel, Meta når det finnes _fbp/_fbc og token.
-     * Returen fra Vipps sier det samme til nettleseren («server=»), og da
-     * sender nettleseren ikke det samme kjøpet en gang til — én kilde per
-     * kjøp og kanal, uansett hvilken nettleser kunden kommer tilbake i.
+     * Kanalene serveren faktisk fikk kjøpet fram til (svar 2xx), slik det
+     * er lagret på betalingen under «sendt» (se sendKjop()). Returen fra
+     * Vipps sier det til nettleseren («server=»), og da sender nettleseren
+     * ikke det samme kjøpet dit en gang til. Feilet sendingen, eller er den
+     * ikke ferdig ennå, står kanalen ikke her — da sender nettleseren som
+     * reserve, med samme id (L<id>), som GA4 og Meta slår sammen.
      * @return array{ga:bool,meta:bool}
      */
-    public static function serverSender(array $sporing): array
+    public static function serverSendte(array $sporing): array
     {
-        if ($sporing === []) {
-            return ['ga' => false, 'meta' => false];
-        }
-        return self::serverSenderMed(
-            $sporing,
-            self::gaId() !== '' && trim((string) Config::hent('maal_ga_api_secret', '')) !== '',
-            self::metaId() !== '' && trim((string) Config::hent('maal_meta_token', '')) !== ''
-        );
+        $sendt = is_array($sporing['sendt'] ?? null) ? $sporing['sendt'] : [];
+        return ['ga' => !empty($sendt['ga']), 'meta' => !empty($sendt['meta'])];
     }
 
-    /**
-     * Samme regel som tilGa4()/tilMeta() bruker for å sende eller la være,
-     * med oppsettet gitt inn (testbar uten base).
-     * @return array{ga:bool,meta:bool}
-     */
-    public static function serverSenderMed(array $sporing, bool $gaKlar, bool $metaKlar): array
+    /** Legger utfallet (tidspunkt per kanal som svarte 2xx) til sporingen på betalingen. */
+    private static function lagreSendt(int $betalingId, array $kanaler): void
     {
-        return [
-            'ga'   => $gaKlar && !empty($sporing['cid']),
-            'meta' => $metaKlar && (!empty($sporing['fbp']) || !empty($sporing['fbc'])),
-        ];
+        if ($kanaler === []) {
+            return;
+        }
+        $s = self::sporingFor($betalingId);
+        if ($s === []) {
+            return;
+        }
+        $sendt = is_array($s['sendt'] ?? null) ? $s['sendt'] : [];
+        foreach ($kanaler as $k) {
+            $sendt[$k] = time();
+        }
+        $s['sendt'] = $sendt;
+        DB::oppdater('payments', [
+            'sporing' => json_encode($s, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+        ], ['id' => $betalingId]);
     }
 
     /** Sporingen lagret på en betaling, eller [] (ingen kolonne, ikke samtykket). */
@@ -372,8 +375,25 @@ final class Maaling
             self::tilMeta($sporing, 'TEST-' . $id, $belop, $formal, $vare, $hvem);
             return;
         }
-        self::tilGa4($sporing, $id, $belop, $formal, $vare, $hvem);
-        self::tilMeta($sporing, $id, $belop, $formal, $vare, $hvem);
+        // Hver kanal for seg: feiler GA4 (tidsavbrudd, 4xx/5xx), skal Meta
+        // likevel sendes. Bare det som svarte 2xx lagres som sendt; resten
+        // sender nettleseren som reserve (serverSendte()).
+        $gikk = [];
+        try {
+            if (self::tilGa4($sporing, $id, $belop, $formal, $vare, $hvem)) {
+                $gikk[] = 'ga';
+            }
+        } catch (Throwable $e) {
+            logg_feil('GA4-kjøp ' . $id . ' feilet', $e);
+        }
+        try {
+            if (self::tilMeta($sporing, $id, $belop, $formal, $vare, $hvem)) {
+                $gikk[] = 'meta';
+            }
+        } catch (Throwable $e) {
+            logg_feil('Meta-kjøp ' . $id . ' feilet', $e);
+        }
+        self::lagreSendt($betalingId, $gikk);
     }
 
     /**
@@ -454,9 +474,9 @@ final class Maaling
 
     /** GA4 Measurement Protocol: purchase med samme transaction_id som nettleseren. */
     /** @param array{epost:string,telefon:string,navn:string,medlem:int,tittel:string,slug:string} $hvem */
-    private static function tilGa4(array $sporing, string $id, float $belop, string $formal, string $vare, array $hvem): void
+    private static function tilGa4(array $sporing, string $id, float $belop, string $formal, string $vare, array $hvem): bool
     {
-        self::sendGa4(self::ga4KjopKropp($sporing, $id, $belop, $formal, $vare, $hvem), 'purchase', $id);
+        return self::sendGa4(self::ga4KjopKropp($sporing, $id, $belop, $formal, $vare, $hvem), 'purchase', $id);
     }
 
     /**
@@ -524,12 +544,13 @@ final class Maaling
         self::sendGa4(self::ga4Kropp($sporing, $hendelse, $params, $hvem), $hendelse, $id);
     }
 
-    private static function sendGa4(array $kropp, string $hendelse, string $id): void
+    /** @return bool true bare når GA4 svarte 2xx */
+    private static function sendGa4(array $kropp, string $hendelse, string $id): bool
     {
         $gaId = self::gaId();
         $hemmelighet = trim((string) Config::hent('maal_ga_api_secret', ''));
         if ($gaId === '' || $hemmelighet === '' || $kropp === []) {
-            return;
+            return false;
         }
         $url = 'https://www.google-analytics.com/mp/collect?measurement_id=' . rawurlencode($gaId)
              . '&api_secret=' . rawurlencode($hemmelighet);
@@ -537,19 +558,22 @@ final class Maaling
             ['Content-Type: application/json'], 6);
         if ($svar['status'] < 200 || $svar['status'] >= 300) {
             logg_feil('GA4 svarte ' . $svar['status'] . ' på ' . $hendelse . ' ' . $id . ': ' . mb_substr($svar['kropp'], 0, 300));
+            return false;
         }
+        return true;
     }
 
     /** Meta Conversions API: Purchase med event_id lik pikselens eventID. */
     /** @param array{epost:string,telefon:string,navn:string,medlem:int,tittel:string,slug:string} $hvem */
-    private static function tilMeta(array $sporing, string $id, float $belop, string $formal, string $vare, array $hvem): void
+    /** @return bool true bare når Meta svarte 2xx */
+    private static function tilMeta(array $sporing, string $id, float $belop, string $formal, string $vare, array $hvem): bool
     {
         $pikselId = self::metaId();
         $token = trim((string) Config::hent('maal_meta_token', ''));
         // _fbp eller _fbc: fbc alene (fra fbclid, se sporingFraNettleser())
         // er nok til å knytte kjøpet til annonseklikket.
         if ($pikselId === '' || $token === '' || (empty($sporing['fbp']) && empty($sporing['fbc']))) {
-            return;
+            return false;
         }
         $bruker = [
             'client_ip_address' => (string) ($sporing['ip'] ?? ''),
@@ -618,7 +642,9 @@ final class Maaling
         }
         if ($svar['status'] < 200 || $svar['status'] >= 300) {
             logg_feil('Meta svarte ' . $svar['status'] . ' på kjøp ' . $id . ': ' . mb_substr($svar['kropp'], 0, 300));
+            return false;
         }
+        return true;
     }
 
     private static function normEpost(string $epost): string

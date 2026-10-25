@@ -57,11 +57,12 @@ $kvittering = static function (array $b): string {
     $ut = '&kjop=' . (int) $b['id']
         . '&belop=' . number_format((int) $b['belop_ore'] / 100, 2, '.', '')
         . '&slag=' . rawurlencode((string) $b['formal']);
-    // Hvilke kanaler serveren har sendt kjoepet til (app/lib/maaling.php,
-    // Booking::markerBetalt() har kjoert naar vi er her). Da sender
-    // nettleseren ikke det samme kjoepet en gang til — se maalKjop().
+    // Kanalene serveren faktisk fikk kjoepet fram til (svar 2xx, lagret paa
+    // betalingen av app/lib/maaling.php). Dit sender nettleseren ikke det
+    // samme kjoepet en gang til — se maalKjop(). Feilet sendingen, eller er
+    // den ikke ferdig, sender nettleseren som reserve (samme id L<id>).
     try {
-        $sender = array_keys(array_filter(Maaling::serverSender(Maaling::sporingFor((int) $b['id']))));
+        $sender = array_keys(array_filter(Maaling::serverSendte(Maaling::sporingFor((int) $b['id']))));
         if ($sender !== []) {
             $ut .= '&server=' . implode('.', $sender);
         }

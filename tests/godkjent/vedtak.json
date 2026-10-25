@@ -10021,6 +10021,29 @@
                     "ikkeFinnes": []
                 }
             ]
+        },
+        {
+            "id": "kasse-skriv-belop-slag",
+            "dato": "2026-10-24",
+            "hva": "Eieren 24.10.2026: i kassa velges hva et skrevet beløp gjelder: Kurs og Kunst uten mva (føres som kurs, konto 3200), Brukskunst og Leire med mva (butikksalg).",
+            "hvor": "Lissom Kasse › Skriv beløp",
+            "kode": [
+                {
+                    "fil": "admin-ny/kasse.js",
+                    "finnes": [
+                        "const FRITT_SLAG=[['kurs','Kurs','uten mva'],['kunst','Kunst','uten mva'],['brukskunst','Brukskunst','med mva'],['leire','Leire','med mva']];"
+                    ],
+                    "ikkeFinnes": []
+                },
+                {
+                    "fil": "app/lib/kassekurv.php",
+                    "finnes": [
+                        "'kunst'      => ['Kunst — solgt i verkstedet', false],",
+                        "$deler[] = ['id' => 'utenmva'] + self::ordreDel('booking', $utenMva, 'Salg', $priser);"
+                    ],
+                    "ikkeFinnes": []
+                }
+            ]
         }
     ]
 }

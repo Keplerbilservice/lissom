@@ -17,6 +17,14 @@ declare(strict_types=1);
 final class KasseKurv
 {
     public const MAKS_ORE = 10000000;
+
+    /** «Skriv beløp»: slag => [tittel, med mva]. Uten mva føres som kurs (konto og mva-kode for kurs). */
+    public const FRITT_SLAG = [
+        'kurs'       => ['Kurs — solgt i verkstedet', false],
+        'kunst'      => ['Kunst — solgt i verkstedet', false],
+        'brukskunst' => ['Brukskunst — solgt i verkstedet', true],
+        'leire'      => ['Leire — solgt i verkstedet', true],
+    ];
     /** Eierens regler for rabatt (8. oktober 2026). */
     public const PROSENT_BETALT = 'Prosent kan bare gis når hele beløpet betales nå.';
     public const PRIS_OG_RABATT = 'Prisen er endret – rabatt kan ikke gis i tillegg.';
@@ -720,19 +728,36 @@ final class KasseKurv
         if (count($fritt) > 10) {
             throw new RuntimeException('For mange beløp i ett salg.');
         }
-        foreach ($fritt as $raa) {
-            $o = self::ore($raa);
+        // «Skriv beløp» med hva det gjelder (eieren 24.10.2026): kurs og kunst
+        // uten mva, på kurskontoen; brukskunst og leire er butikksalg med mva.
+        // Et beløp uten slag er butikksalg, som før.
+        $utenMva = [];
+        foreach ($fritt as $fi => $raa) {
+            $slag = is_array($raa) ? (string) ($raa['slag'] ?? '') : '';
+            $o = self::ore(is_array($raa) ? ($raa['belop'] ?? null) : $raa);
             if ($o === null || $o <= 0) {
                 throw new RuntimeException('Skriv inn et beløp over null.');
             }
             if ($o > self::MAKS_ORE) {
                 throw new RuntimeException('Beløpet må være under 100 000 kroner.');
             }
-            // Samme tittel som «Fritt beløp» i kassa i admin (uttak.php, SLAG produkt).
-            $ordre[] = ['produktId' => null, 'tittel' => 'Produkt — solgt i verkstedet', 'antall' => 1, 'prisOre' => $o];
+            if ($slag !== '' && !isset(self::FRITT_SLAG[$slag])) {
+                throw new RuntimeException('Velg hva beløpet gjelder.');
+            }
+            // Uten slag: samme tittel som «Fritt beløp» i kassa i admin (uttak.php, SLAG produkt).
+            [$tittel, $mva] = $slag === '' ? ['Produkt — solgt i verkstedet', true] : self::FRITT_SLAG[$slag];
+            $linje = ['produktId' => null, 'tittel' => $tittel, 'antall' => 1, 'prisOre' => $o, 'fri' => (int) $fi];
+            if ($mva) {
+                $ordre[] = $linje;
+            } else {
+                $utenMva[] = $linje;
+            }
         }
         if ($ordre !== []) {
             $deler[] = ['id' => 'ordre'] + self::ordreDel('ordre', $ordre, 'Salg', $priser);
+        }
+        if ($utenMva !== []) {
+            $deler[] = ['id' => 'utenmva'] + self::ordreDel('booking', $utenMva, 'Salg', $priser);
         }
 
         // ── Paint on Pots uten booking ────────────────────────────────
@@ -850,11 +875,12 @@ final class KasseKurv
         sort($varer);
         sort($popUten);
         $belop = static fn(mixed $v): array => is_array($v) ? array_map(static fn($x): ?int => self::ore($x), array_values($v)) : [];
+        $fri = static fn(mixed $v): array => is_array($v) ? array_map(static fn($x): mixed => is_array($x) ? [self::ore($x['belop'] ?? null), (string) ($x['slag'] ?? '')] : self::ore($x), array_values($v)) : [];
         $priser = self::lesPriser($kurv['priser'] ?? null);
         ksort($priser);
         return hash('sha256', (string) json_encode([
             'b' => (int) ($kurv['bookingId'] ?? 0), 'pop' => $pop, 'v' => $varer, 'pu' => $popUten, 'pg' => (int) ($kurv['popGjester'] ?? 0),
-            'f' => $belop($kurv['fritt'] ?? null), 'g' => $belop($kurv['gavekort'] ?? null), 't' => !empty($kurv['timepakke']),
+            'f' => $fri($kurv['fritt'] ?? null), 'g' => $belop($kurv['gavekort'] ?? null), 't' => !empty($kurv['timepakke']),
             'p' => $priser, 'r' => self::lesRabatt($kurv['rabatt'] ?? null),
         ]));
     }
@@ -888,7 +914,10 @@ final class KasseKurv
                     }
                 }
             }
-            unset($l['nokkel']);
+            if (isset($l['fri'])) {
+                $linje['fri'] = $l['fri'];
+            }
+            unset($l['nokkel'], $l['fri']);
             $sum += $l['prisOre'] * $l['antall'];
             $vis[] = $linje;
         }

@@ -150,15 +150,17 @@ function tegnVenstre(){
 async function apneKurs(k){kursVist={...k,rader:[]};tegnVenstre();venstreEl.scrollTop=0;try{kursVist=await kall('kasse.php?okt='+k.oktId);}catch(e){feil(e);kursVist=null;}tegnVenstre();lytt();}
 
 function ark(tittel,innhold){const lukk=()=>a.remove();const a=el('div',{class:'k-ark',onclick:ev=>{if(ev.target===a)lukk();}},el('div',{},el('h2',{text:tittel}),...innhold(lukk)));document.body.append(a);return a;}
-function belopArk(tittel,ok,ekstra){
+function belopArk(tittel,ok,ekstra,sjekk){
  const inn=el('input',{type:'text',inputmode:'decimal',autocomplete:'off'});
  const f=el('p',{class:'k-feil',role:'alert',hidden:true});
- ark(tittel,lukk=>[ekstra?ekstra(lukk):null,el('form',{class:'k-skjema',onsubmit:ev=>{ev.preventDefault();const t=inn.value.replace(/\s|kr|,-/g,'').replace(',','.');if(!t||!isFinite(Number(t))||Number(t)<=0){f.textContent='Skriv inn et beløp over null.';f.hidden=false;return;}lukk();ok(t);}},
+ ark(tittel,lukk=>[ekstra?ekstra(lukk):null,el('form',{class:'k-skjema',onsubmit:ev=>{ev.preventDefault();const t=inn.value.replace(/\s|kr|,-/g,'').replace(',','.');if(!t||!isFinite(Number(t))||Number(t)<=0){f.textContent='Skriv inn et beløp over null.';f.hidden=false;return;}const m=sjekk&&sjekk();if(m){f.textContent=m;f.hidden=false;return;}lukk();ok(t);}},
   el('label',{class:'k-felt'},el('span',{text:'Beløp i kroner'}),inn),f,el('div',{class:'k-rad-knapper'},pille('Avbryt',lukk),el('button',{type:'submit',class:'k-pille fylt',text:'Legg til'})))]);
  inn.focus();
 }
 // Timepakke ligger under «Skriv beløp» som et fast valg (eieren 08.10.2026).
-function skrivBelopArk(){belopArk('Skriv beløp',b=>endreKurv(()=>salg.fritt.push(b)),lukk=>el('div',{class:'k-g2'},kort({onclick:()=>{lukk();endreKurv(()=>{salg.timepakke=true;});}},el('b',{text:'Timepakke'}),el('small',{text:data.timepakke.timer+' timer · '+data.timepakke.pris}))));}
+// Hva beløpet gjelder velges først (eieren 24.10.2026): kurs og kunst uten mva, brukskunst og leire med mva (KasseKurv::FRITT_SLAG).
+const FRITT_SLAG=[['kurs','Kurs','uten mva'],['kunst','Kunst','uten mva'],['brukskunst','Brukskunst','med mva'],['leire','Leire','med mva']];
+function skrivBelopArk(){let slag=null;belopArk('Skriv beløp',b=>endreKurv(()=>salg.fritt.push({belop:b,slag})),lukk=>{const g=el('div',{class:'k-g2'});const tegn=()=>g.replaceChildren(...FRITT_SLAG.map(([k,n,m])=>kort({valgt:slag===k,onclick:()=>{slag=k;tegn();}},el('b',{text:n}),el('small',{text:m}))));tegn();return el('div',{},g,el('div',{class:'k-g2'},kort({onclick:()=>{lukk();endreKurv(()=>{salg.timepakke=true;});}},el('b',{text:'Timepakke'}),el('small',{text:data.timepakke.timer+' timer · '+data.timepakke.pris}))));},()=>slag?'':'Velg hva beløpet gjelder.');}
 function vareArk(){
  ark('Varer',lukk=>[el('div',{class:'k-g3 k-ark-rull'},data.varer.map(p=>kort({disabled:p.utsolgt,onclick:()=>{endreKurv(()=>{const n=salg.varer.get(p.id)||0;if(p.lager!==null&&n>=p.lager){melding('Ikke flere på lager.');return;}salg.varer.set(p.id,n+1);});melding(p.tittel);}},el('b',{text:p.tittel}),el('small',{text:p.pris})))),el('div',{class:'k-rad-knapper'},pille('Lukk',lukk,'fylt'))]);
 }
@@ -243,7 +245,7 @@ async function visSalg(){
 const RABATT_GITT='Rabatt er gitt – fjern den for å endre pris.';
 const PRIS_ENDRET='Prisen er endret – rabatt kan ikke gis i tillegg.';
 const PROSENT_BETALT='Prosent kan bare gis når hele beløpet betales nå.';
-function kurvLinje(d,l,fri){
+function kurvLinje(d,l){
  const tekst=l.antall!==undefined&&!/^booking:\d+$/.test(l.nokkel||'')?utenAntall(l.tekst):l.tekst;
  const venstre=el('span',{class:'k-ltekst'},tekst,l.fraOre!==undefined?el('small',{class:'k-endret',text:'Pris endret fra '+kr(l.perStk?l.fraEnhetOre:l.fraOre)}):null);
  if(l.rabatt)return el('div',{class:'k-linje rabatt'},venstre,el('button',{type:'button',class:'k-prisknapp',onclick:rabattArk,text:l.kr}));
@@ -254,7 +256,7 @@ function kurvLinje(d,l,fri){
  let fjern=null;
  if(d.type==='gavekort')fjern=()=>salg.gavekort.splice(+d.id.split(':')[1],1);
  else if(d.type==='timepakke')fjern=()=>{salg.timepakke=false;};
- else if(d.id==='ordre')fjern=()=>salg.fritt.splice(fri,1);
+ else if(l.fri!==undefined)fjern=()=>salg.fritt.splice(l.fri,1);
  const endre=l.tekst==='Betalt ved booking'&&salg.person&&salg.person.kanEndre?pille('Endre',endreDepositum):null;
  return el('div',{class:'k-linje'},venstre,endre,fjern?el('button',{type:'button',class:'k-minus','aria-label':'Ta bort '+tekst,text:'−',onclick:()=>endreKurv(fjern)}):null,el('b',{text:l.kr}));
 }
@@ -262,7 +264,7 @@ function tegnKurv(){
  if(!kurvEl)return;
  if(!salg){kurvEl.replaceChildren(el('p',{class:'k-tom',text:'Velg fra listen.'}));return;}
  const r=salg.regnet;const linjer=[];
- if(r)for(const d of r.deler){let fri=0;for(const l of d.linjer)linjer.push(kurvLinje(d,l,l.nokkel?0:(d.id==='ordre'?fri++:0)));}
+ if(r)for(const d of r.deler)for(const l of d.linjer)linjer.push(kurvLinje(d,l));
  const kan=!!r&&r.deler.length>0&&!salg.feil&&!laast();
  const hvem=salg.navn?salg.navn+(salg.person?' · '+salg.person.tittel:''):'Kontantkunde';
  const prisEndret=!!r&&r.prisEndret&&!salg.rabatt;

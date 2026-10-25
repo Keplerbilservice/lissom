@@ -518,6 +518,18 @@ try {
     sjekk('… betalte kunden den gamle QR-en: 409, kontanten registreres ikke', $s[0] === 409 && $antallBetalinger() === $for
         && DB::verdi('SELECT status FROM payments WHERE vipps_reference = :r', ['r' => $ref7]) === 'betalt', $tekst($s));
 
+    // «Skriv beløp» med slag (eieren 24.10.2026): kurs og kunst uten mva (formål booking), brukskunst og leire med mva (ordre).
+    $ks = $kjop(['fritt' => [['belop' => '500', 'slag' => 'kurs'], ['belop' => '300', 'slag' => 'leire'], ['belop' => '200', 'slag' => 'kunst']]], []);
+    $s = kall($K, ['handling' => 'betal', 'maate' => 'Kontant'] + $send($ks), $kasseToken);
+    $fm = static fn(string $del): ?array => DB::en('SELECT p.formal, o.sum_ore FROM payments p JOIN orders o ON o.id = p.order_id WHERE p.idempotency_key = :k',
+        ['k' => Kasse::radNokkel($ks['nokler'][$del] ?? '', 1)]);
+    $uten = $fm('utenmva'); $med = $fm('ordre');
+    sjekk('Skriv beløp: kurs + kunst føres uten mva (booking, 700 kr), leire med mva (ordre, 300 kr)', $s[0] === 200
+        && ($uten['formal'] ?? '') === 'booking' && (int) ($uten['sum_ore'] ?? 0) === 70000
+        && ($med['formal'] ?? '') === 'ordre' && (int) ($med['sum_ore'] ?? 0) === 30000, $tekst($s) . ' ' . json_encode([$uten, $med]));
+    $s = kall($K, ['handling' => 'regn', 'kurv' => ['fritt' => [['belop' => '100', 'slag' => 'tull']]], 'betaler' => []], $kasseToken);
+    sjekk('Skriv beløp: ukjent slag avvises', $s[0] >= 400, $tekst($s));
+
     // Påmelding med QR, så varene med QR i samme kurv.
     $sett('.betaling-status', 'CREATED');
     DB::oppdater('products', ['lager' => 3], ['id' => $produkt]);

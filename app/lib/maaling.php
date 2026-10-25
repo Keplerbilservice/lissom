@@ -506,9 +506,11 @@ final class Maaling
             }
             if ($param !== []) {
                 // Ett sekund foran kjøpet, så «samme eller senere» holder.
+                // timestamp_micros er en felles hendelsesparameter (GA4 MP-
+                // referansen, «Common event parameters»), altså i params.
+                $param['timestamp_micros'] = (time() - 1) * 1000000;
                 array_unshift($kropp['events'], [
                     'name' => 'campaign_details',
-                    'timestamp_micros' => (time() - 1) * 1000000,
                     'params' => $param,
                 ]);
             }

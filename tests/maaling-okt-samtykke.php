@@ -125,8 +125,11 @@ $utenOkt = $medOkt; unset($utenOkt['sid'], $utenOkt['sn']);
 $ku = Maaling::ga4KjopKropp($utenOkt, 'L78', 500.0, 'gavekort', 'Gavekort', $hvem);
 $navnU = array_map(static fn(array $e): string => $e['name'], $ku['events'] ?? []);
 sjekk('kjøp uten økt: campaign_details først', $navnU === ['campaign_details', 'purchase', 'gavekort_kjopt'], json_encode($navnU));
-sjekk('campaign_details: kilde, medium, kampanje', ($ku['events'][0]['params'] ?? []) === ['campaign' => 'host', 'source' => 'facebook', 'medium' => 'paid_social'], json_encode($ku['events'][0]['params'] ?? null));
-sjekk('campaign_details: før kjøpet i tid', ($ku['events'][0]['timestamp_micros'] ?? PHP_INT_MAX) < time() * 1000000);
+$cd = $ku['events'][0]['params'] ?? [];
+$tid = $cd['timestamp_micros'] ?? PHP_INT_MAX;
+unset($cd['timestamp_micros']);
+sjekk('campaign_details: kilde, medium, kampanje', $cd === ['campaign' => 'host', 'source' => 'facebook', 'medium' => 'paid_social'], json_encode($cd));
+sjekk('campaign_details: timestamp_micros i params, før kjøpet', $tid < time() * 1000000 && !isset($ku['events'][0]['timestamp_micros']));
 sjekk('ordre: ingen Ads-hendelse', array_map(static fn(array $e): string => $e['name'], Maaling::ga4KjopKropp($s, 'L79', 10.0, 'ordre', 'Butikk', $hvem)['events']) === ['purchase']);
 sjekk('uten client_id: ingen kropp', Maaling::ga4KjopKropp(['sam' => 'ja', 'fbp' => 'fb.1.1.1'], 'L80', 10.0, 'booking', 'X', $hvem) === []);
 

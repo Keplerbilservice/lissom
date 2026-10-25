@@ -5049,7 +5049,7 @@ window.__resources = {
             <label style="display: block; margin-bottom: var(--space-2); font-size: var(--text-sm); color: var(--text-body);">{{ gk2Feltnavn }}</label>
             <div style="position: relative; margin-bottom: var(--space-2);">
               <span style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-size: var(--text-lg); font-weight: 700; color: var(--text-muted); pointer-events: none;">kr.</span>
-              <input type="number" inputmode="numeric" min="100" max="20000" step="10" placeholder="1490" value="{{ gvBelopFelt }}" onChange="{{ settGvBelop }}" aria-label="Beløp i kroner"
+              <input type="number" inputmode="numeric" min="100" max="20000" step="10" placeholder="1590" value="{{ gvBelopFelt }}" onChange="{{ settGvBelop }}" aria-label="Beløp i kroner"
                 style="width: 100%; box-sizing: border-box; padding: 14px 16px 14px 52px; font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading); background: var(--clay-50); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg);">
             </div>
             <p style="margin: 0 0 var(--space-6); font-size: var(--text-xs); color: var(--text-muted);">{{ gk2Belopshjelp }}</p>
@@ -38182,7 +38182,7 @@ class Component extends DCLogic {
   // kobling, saa det man skrev inn forsvant. Naa folger de med til serveren,
   // og gavekortet sendes til mottakeren naar betalingen er bekreftet.
   kjopGavekort() {
-    const belop = this.state.gvValgt || 1490;
+    const belop = this.state.gvValgt || 1590;
     const epost = (this.state.gvEpost || '').trim();
 
     // Serveren avviser belop utenfor 100–20 000 uansett. Vi sier fra her
@@ -74908,12 +74908,12 @@ class Component extends DCLogic {
       // Belopet er fritt. Feltet holdes som tekst mens man skriver, slik at
       // det gaar an aa slette alt og begynne paa nytt — et tall her ville
       // hoppet tilbake til 0 ved forste tastetrykk.
-      gvBelopFelt: this.state.gvBelopFelt === undefined ? '1490' : this.state.gvBelopFelt,
+      gvBelopFelt: this.state.gvBelopFelt === undefined ? '1590' : this.state.gvBelopFelt,
       settGvBelop: e => {
         const rent = (e.target.value || '').replace(/[^0-9]/g, '').slice(0, 5);
         this.setState({ gvBelopFelt: rent, gvValgt: rent === '' ? null : parseInt(rent, 10) });
       },
-      gvValgt: 'kr.' + ' ' + (this.state.gvValgt || 1490) + ',-',
+      gvValgt: 'kr.' + ' ' + (this.state.gvValgt || 1590) + ',-',
       gvNavn: this.state.gvNavn || '',
       settGvNavn: e => this.setState({ gvNavn: e.target.value }),
       gvEpost: this.state.gvEpost || '',
@@ -74922,7 +74922,7 @@ class Component extends DCLogic {
       settGvHilsen: e => this.setState({ gvHilsen: e.target.value }),
       gvKjop: () => {
         if (this.erPublisert()) { this.kjopGavekort(); return; }
-        this.leggTil('Gavekort kr. ' + (this.state.gvValgt || 1490) + ',-');
+        this.leggTil('Gavekort kr. ' + (this.state.gvValgt || 1590) + ',-');
         this.setState({ side: 'kasse' });
         window.scrollTo(0, 0);
       },

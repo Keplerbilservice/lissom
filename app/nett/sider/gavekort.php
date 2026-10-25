@@ -33,7 +33,7 @@ if (preg_match('~gvFaq:\s*\[(.*?)\],\s*//~s', $kilde, $m) === 1) {
 
 $kropp = Mal::tegn('Gavekort', [
     'gvPunkter' => $punkter, 'gvFaq' => $faq,
-    'gvBelopFelt' => '1490', 'gvValgt' => 'kr. 1490,-',
+    'gvBelopFelt' => '1590', 'gvValgt' => 'kr. 1590,-',
     'gvNavn' => '', 'gvEpost' => '', 'gvHilsen' => '',
     // Begge knappene tegnes, som i appen for Vipps-skriptet er lastet:
     // nett.js viser Vipps-knappen naar den er klar, ellers var egen.

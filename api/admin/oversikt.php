@@ -1082,17 +1082,28 @@ $maGjores = (static function () use ($medlemsstatus, $nyeste): array {
         // De som alt har hentet telles ikke, og har alle hentet, er saken borte
         // (eieren 12.10.2026: «Merk hentet» på samme sted som Send).
         $ikkeHentet = DB::harKolonne('bookings', 'hentet_at') ? ' AND b.hentet_at IS NULL' : '';
+        // Har alle som ikke har hentet fått beskjed (sendt eller i kø), er
+        // saken også borte — selv om den ble sendt én og én fra kursarket og
+        // datoen aldri ble publisert (eieren 26.10.2026: «Bort når alle har fått»).
+        // Samme regel som ferdigbrent.php: feilet teller ikke som fått.
+        $utenBeskjed = DB::harTabell('notifications')
+            ? " AND NOT EXISTS (SELECT 1 FROM notifications n
+                                 WHERE n.mal = 'ferdig_brent' AND n.ref_type = 'booking'
+                                   AND n.ref_id = b.id AND n.status IN ('sendt','ko'))"
+            : '';
         foreach (DB::alle(
             "SELECT cs.id, cs.start_tid, c.tittel,
                     (SELECT COUNT(*) FROM bookings b
-                      WHERE b.course_session_id = cs.id AND b.status IN ('betalt','reservert'){$ikkeHentet}) AS deltakere
+                      WHERE b.course_session_id = cs.id AND b.status IN ('betalt','reservert'){$ikkeHentet}) AS deltakere,
+                    (SELECT COUNT(*) FROM bookings b
+                      WHERE b.course_session_id = cs.id AND b.status IN ('betalt','reservert'){$ikkeHentet}{$utenBeskjed}) AS uten_beskjed
                FROM course_sessions cs JOIN courses c ON c.id = cs.course_id
               WHERE cs.status = 'planlagt' AND cs.hentemelding_at IS NULL
                 AND COALESCE(cs.slutt_tid, cs.start_tid) < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 4 WEEK)
                 AND cs.start_tid > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 16 WEEK)
            ORDER BY cs.start_tid DESC LIMIT 20"
         ) as $o) {
-            if ((int) $o['deltakere'] === 0) {
+            if ((int) $o['deltakere'] === 0 || (int) $o['uten_beskjed'] === 0) {
                 continue;
             }
             $sak('Verksted', 'henting', (int) $o['id'], 'Klar til henting: ' . (string) $o['tittel'],

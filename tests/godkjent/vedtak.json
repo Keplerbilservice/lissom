@@ -10125,6 +10125,22 @@
                     "ikkeFinnes": []
                 }
             ]
+        },
+        {
+            "id": "henting-borte-nar-alle-har-fatt",
+            "dato": "2026-10-26",
+            "hva": "Eieren 26.10.2026, valgt «Bort når alle har fått»: Monica sendte hentebeskjeden én og én, og «Klar til henting» ble stående i Må gjøres. Saken er nå borte når alle som ikke har hentet, har fått beskjeden (sendt eller i kø) — uansett hvor den ble sendt fra. Feilet teller ikke som fått. Datoen publiseres ikke på ferdigbrent av dette. Ingen ny tekst.",
+            "hvor": "Ny admin › I dag › Må gjøres › Klar til henting",
+            "kode": [
+                {
+                    "fil": "api/admin/oversikt.php",
+                    "finnes": [
+                        "WHERE n.mal = 'ferdig_brent' AND n.ref_type = 'booking'",
+                        "if ((int) $o['deltakere'] === 0 || (int) $o['uten_beskjed'] === 0) {"
+                    ],
+                    "ikkeFinnes": []
+                }
+            ]
         }
     ]
 }

@@ -71,6 +71,14 @@
     return d;
   }
 
+  /* Tellingen som finnes (kortbruk.php, migrasjon 195) brukes også i ny admin (eieren 26.10.2026): hver side som åpnes
+     og hver hurtigknapp telles per admin, så «Mest brukt» kan sorteres etter målt bruk. Feiler tellingen, merkes ingenting. */
+  let sistTalt = null;
+  function tell(kort) {
+    if (!/^[a-z0-9_]+$/.test(kort)) return;
+    api('kortbruk.php', {data: {handling: 'bruk', kort}}).catch(() => {});
+  }
+
   /* ── ark ─────────────────────────────────────────────────────────────── */
   let endret = false;
   /* Arket legger en rad i nettleserens historikk, så Tilbake lukker arket (og spør «Vil du forkaste?» når noe er
@@ -260,6 +268,7 @@
     const ny = lesRute();
     if (ny.id !== rute.id || ny.params.toString() !== rute.params.toString()) forrige = rute;
     rute = ny;
+    if (rute.id !== sistTalt) { sistTalt = rute.id; tell('ny_side_' + rute.id.replace(/-/g, '_')); }
     sidePollere.forEach(s => s()); sidePollere = [];
     if (forrige && forrige.id !== rute.id && $('#sok')) { $('#sok').value = ''; $('#sokres').hidden = true; }
     const nr = ++tegnTeller;
@@ -604,6 +613,8 @@
     if (d.topp === 'omsetning') return arkOmsetning();
     if (d.topp === 'ubetalt') return arkUbetalt();
     if (d.topp === 'inne') return arkInne();
+    if (b.id === 'stemple-topp') tell('ny_hurtig_stemple');
+    if (d.hurtig) tell('ny_hurtig_' + d.hurtig);
     if (b.id === 'stemple-topp') return trykkStemple(b);
     if (d.hurtig === 'skisse') return NA.skisse();
     if (d.hurtig === 'uttak') return NA.uttakLeire();

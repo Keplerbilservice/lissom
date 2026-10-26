@@ -10107,6 +10107,24 @@
                     "ikkeFinnes": []
                 }
             ]
+        },
+        {
+            "id": "ny-admin-teller-bruk",
+            "dato": "2026-10-26",
+            "hva": "Eieren 26.10.2026: «du må måle dette». Ny admin bruker tellingen som finnes (kortbruk.php, migrasjon 195): hver side som åpnes telles som «ny_side_<side>», og hurtigknappene og Stemple inn som «ny_hurtig_<knapp>», per admin. Ingen ny tabell, ingen ny tekst. Tallene skal brukes til å sortere «Mest brukt» etter 2–4 uker.",
+            "hvor": "Ny admin › alle sider og hurtigknapper",
+            "kode": [
+                {
+                    "fil": "ny-admin/felles.js",
+                    "finnes": [
+                        "api('kortbruk.php', {data: {handling: 'bruk', kort}}).catch(() => {});",
+                        "if (rute.id !== sistTalt) { sistTalt = rute.id; tell('ny_side_' + rute.id.replace(/-/g, '_')); }",
+                        "if (d.hurtig) tell('ny_hurtig_' + d.hurtig);",
+                        "if (b.id === 'stemple-topp') tell('ny_hurtig_stemple');"
+                    ],
+                    "ikkeFinnes": []
+                }
+            ]
         }
     ]
 }

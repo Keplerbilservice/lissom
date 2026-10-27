@@ -280,6 +280,8 @@ DB::settInn('timejusteringer', ['member_id' => $mJust['id'], 'maaned' => $denneM
     'minutter' => -120, 'created_at' => $forNytt]);
 sjekk('proeveperiodens trekk gjelder foer nytt kjoep', Medlemskap::justeringMin((int) $mJust['id']) === -120);
 $betaling((int) $mJust['id'], null, $kjopNytt, $nesteMnd, (int) $selv['pris_ore']);
+sjekk('admin viser bare justeringer fra det nye kjoepet',
+    Medlemskap::justeringTellesFra((int) $mJust['id']) === $kjopNytt);
 sjekk('trekk fra Prøv Lissom foelger ikke nytt medlemskap etter den 20.',
     Medlemskap::justeringMin((int) $mJust['id']) === 0);
 sjekk('nytt medlemskap viser fullt timetall paa Min side',
@@ -292,6 +294,8 @@ $betaling((int) $mFornyJust['id'], null, $denneMnd . '-05 10:00:00', null, (int)
 DB::settInn('timejusteringer', ['member_id' => $mFornyJust['id'], 'maaned' => $denneMnd,
     'minutter' => -120, 'created_at' => $forNytt]);
 $betaling((int) $mFornyJust['id'], null, $kjopNytt, $nesteMnd, (int) $selv['pris_ore']);
+sjekk('vanlig fornyelse filtrerer ikke adminhistorikken',
+    Medlemskap::justeringTellesFra((int) $mFornyJust['id']) === null);
 sjekk('vanlig fornyelse foer maanedsskiftet beholder maanedens trekk',
     Medlemskap::justeringMin((int) $mFornyJust['id']) === -120);
 $innFor = $forrigeMnd->setDate((int) $forrigeMnd->format('Y'), (int) $forrigeMnd->format('n'), 27)->setTime(10, 0)

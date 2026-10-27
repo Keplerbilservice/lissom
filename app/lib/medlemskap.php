@@ -1660,24 +1660,30 @@ final class Medlemskap
      * medlemmet denne maaneden — admin › personkortet › Juster timer
      * (eieren, 20. oktober 2026). 0 til migrasjon 280 er kjoert.
      */
-    public static function justeringMin(int $medlemId): int
+    public static function justeringTellesFra(int $medlemId): ?string
     {
-        if ($medlemId <= 0 || !DB::harTabell('timejusteringer')) {
-            return 0;
-        }
         $oslo = new DateTimeZone('Europe/Oslo');
         $naa = new DateTimeImmutable('now', $oslo);
-        $maaned = $naa->format('Y-m');
         $nesteStart = $naa->modify('first day of next month')->setTime(0, 0)
             ->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s');
         // Naar et nytt medlemskap kjoepes etter den 20., hoerer betalingen
         // til neste maaned. Justeringer fra en tidligere proeveperiode skal
         // ikke redusere timene i det nye medlemskapet.
-        $nyPeriodeFra = self::timerTellesFra($medlemId, $nesteStart);
-        $fraSql = $nyPeriodeFra < $nesteStart ? ' AND created_at >= :fra' : '';
-        $param = ['m' => $medlemId, 'mnd' => $maaned];
-        if ($fraSql !== '') {
-            $param['fra'] = $nyPeriodeFra;
+        $fra = self::timerTellesFra($medlemId, $nesteStart);
+        return $fra < $nesteStart ? $fra : null;
+    }
+
+    public static function justeringMin(int $medlemId): int
+    {
+        if ($medlemId <= 0 || !DB::harTabell('timejusteringer')) {
+            return 0;
+        }
+        $fra = self::justeringTellesFra($medlemId);
+        $fraSql = $fra !== null ? ' AND created_at >= :fra' : '';
+        $param = ['m' => $medlemId,
+                  'mnd' => (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))->format('Y-m')];
+        if ($fra !== null) {
+            $param['fra'] = $fra;
         }
         return (int) DB::verdi(
             'SELECT COALESCE(SUM(minutter), 0) FROM timejusteringer WHERE member_id = :m AND maaned = :mnd' . $fraSql,

@@ -39,7 +39,7 @@
 
   /* Sidefilene (del A, B og C). Lastes etter tur; mangler en fil, står siden som «ikke bygd ennå».
      MODULER lastes som <script type="module" src> (kurs.js importerer fra kalender.js, så begge må ha samme adresse). */
-  const SIDEFILER = ['idag', 'medlemmer', 'medlemssiden', 'varer', 'innstillinger', 'mer', 'maler'];
+  const SIDEFILER = ['idag', 'medlemmer', 'medlemssiden', 'varer', 'innstillinger', 'mer', 'maler', 'regnskap'];
   const MODULER = ['kalender', 'kurs'];
   const MYNT = '<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-5px"><ellipse cx="12" cy="16" rx="8" ry="3.5" fill="#e0a800" stroke="currentColor" stroke-width="1.4"/><rect x="4" y="11" width="16" height="5" fill="#e0a800"/><path d="M4 11v5M20 11v5" stroke="currentColor" stroke-width="1.4"/><ellipse cx="12" cy="11" rx="8" ry="3.5" fill="#ffcf38" stroke="currentColor" stroke-width="1.4"/><ellipse cx="12" cy="11" rx="4.5" ry="1.8" fill="none" stroke="currentColor" stroke-width="1" opacity=".5"/></svg>';
   const MENY = [['idag', 'I dag', '☀'], ['kalender', 'Kalender', '▦'], ['kurs', 'Kurs', '◍'], ['medlemmer', 'Folk', '☺'], ['varer', 'Varer', '◇'], ['kasse', 'Kasse', MYNT], ['mer', 'Mer', '…']];
@@ -266,9 +266,13 @@
 
   async function tegnSide() {
     const ny = lesRute();
+    if (NA.meg?.regnskap && !['regnskap', 'betalinger', 'timeliste'].includes(ny.id)) {
+      history.replaceState(history.state, '', '#regnskap');
+      ny.id = 'regnskap'; ny.params = new URLSearchParams();
+    }
     if (ny.id !== rute.id || ny.params.toString() !== rute.params.toString()) forrige = rute;
     rute = ny;
-    if (rute.id !== sistTalt) { sistTalt = rute.id; tell('ny_side_' + rute.id.replace(/-/g, '_')); }
+    if (rute.id !== sistTalt) { sistTalt = rute.id; if (!NA.meg?.regnskap) tell('ny_side_' + rute.id.replace(/-/g, '_')); }
     sidePollere.forEach(s => s()); sidePollere = [];
     if (forrige && forrige.id !== rute.id && $('#sok')) { $('#sok').value = ''; $('#sokres').hidden = true; }
     const nr = ++tegnTeller;
@@ -311,6 +315,13 @@
   let sendApen = false;
   function tegnMeny() {
     if (!NA.meg) return;
+    if (NA.meg.regnskap) {
+      const meny = `<button class="brand" type="button" data-side="regnskap" aria-label="Lissom · til Regnskap">Lissom</button><div class="brand-note">Regnskap</div>
+        ${[['regnskap', 'Regnskap'], ['betalinger', 'Betalinger'], ['timeliste', 'Timeliste']].map(([id, navn]) => `<button class="nav" type="button" data-side="${id}" ${rute.id === id ? 'aria-current="page"' : ''}>${navn}</button>`).join('')}
+        <div class="fot"><small>${esc(NA.meg.navn)} · innlogget</small><button class="knapp liten logg-ut" type="button" data-loggut>Logg ut</button></div>`;
+      if ($('#meny')._html !== meny) { $('#meny').innerHTML = meny; $('#meny')._html = meny; }
+      return;
+    }
     const aktiv = rute.id === 'maler' ? 'mer' : rute.id;
     const n = NA.sist ? NA.antallMaa(NA.sist) : 0;
     const navKnapp = ([id, navn, ic]) => id === 'kasse'
@@ -338,6 +349,10 @@
   /* ── topplinje ───────────────────────────────────────────────────────── */
   let stemplet = null;
   function tegnToppSkall() {
+    if (NA.meg?.regnskap) {
+      $('#topp').innerHTML = '<button class="hamburger" id="hamburger" type="button" aria-label="Meny" aria-expanded="false" aria-controls="meny">☰</button><span class="topp-fyll"></span><span>Regnskap</span>';
+      return;
+    }
     $('#topp').innerHTML = `<button class="hamburger" id="hamburger" type="button" aria-label="Meny" aria-expanded="false" aria-controls="meny">☰</button><button class="hjem" type="button" data-side="idag"><span aria-hidden="true">⌂</span> I dag</button><div class="sok-wrap"><input id="sok" type="search" class="sok" placeholder="⌕ Søk" autocomplete="off" aria-label="Søk etter kurs, deltaker, medlem eller vare"><div id="sokres" class="sokres" hidden></div></div>
       <span id="topptall"></span><span class="topp-fyll"></span>
       <button class="knapp stemple-topp" id="stemple-topp" type="button" hidden></button>
@@ -551,7 +566,7 @@
       b.disabled = true; feil.hidden = true;
       try {
         const r = await api('/api/logg-inn.php', {data: {brukernavn: f.brukernavn.value, passord: f.passord.value}});
-        if (!r.erAdmin) throw Error('Denne kontoen har ikke tilgang til admin.');
+        if (!r.erAdmin && !r.erRegnskap) throw Error('Denne kontoen har ikke tilgang til admin.');
         await start();
       } catch (err) { feil.textContent = err.message; feil.hidden = false; b.disabled = false; }
     };
@@ -560,17 +575,18 @@
   /* ── sidefilene ──────────────────────────────────────────────────────── */
   /* Hentes med fetch (alltid ferskt, uten ?v=), og kjøres bare når svaret er JavaScript: en fil som ikke finnes
      ennå gir nettsidens HTML (side.php), og da hoppes den over. */
-  let lastet = false;
+  let lastet = '';
   async function lastSidefiler() {
-    if (lastet) return;
-    lastet = true;
-    const moduler = Promise.all(MODULER.map(f => new Promise(ferdig => {
+    const rolle = NA.meg?.regnskap ? 'regnskap' : 'admin';
+    if (lastet === 'admin' || lastet === rolle) return;
+    lastet = rolle;
+    const moduler = Promise.all((rolle === 'regnskap' ? [] : MODULER).map(f => new Promise(ferdig => {
       const s = document.createElement('script');
       s.type = 'module'; s.src = '/ny-admin/' + f + '.js';
       s.onload = ferdig; s.onerror = () => { console.error('ny-admin: ' + f + '.js lastet ikke'); ferdig(); };
       document.body.append(s);
     })));
-    const tekster = await Promise.all(SIDEFILER.map(async f => {
+    const tekster = await Promise.all((rolle === 'regnskap' ? ['regnskap'] : SIDEFILER).map(async f => {
       try {
         const r = await fetch('/ny-admin/' + f + '.js', {credentials: 'same-origin', cache: 'no-cache'});
         if (!r.ok || !/javascript/i.test(r.headers.get('content-type') || '')) return null;
@@ -646,18 +662,20 @@
     let meg;
     try { meg = await api('arbeidsrom.php'); }
     catch (e) { if (e.status !== 401) visInnlogging(e.status === 403 || e.status === 404 ? 'Denne kontoen har ikke tilgang til admin.' : e.message); return; }
-    if (!meg.erAdmin) { visInnlogging('Denne kontoen har ikke tilgang til admin.'); return; }
-    NA.meg = {navn: meg.navn};
+    if (!meg.erAdmin && !meg.erRegnskap) { visInnlogging('Denne kontoen har ikke tilgang til admin.'); return; }
+    NA.meg = {navn: meg.navn, regnskap: !meg.erAdmin};
     tegnToppSkall();
     tegnMeny();
     $('#arbeid').innerHTML = '<p class="laster">Henter …</p>';
-    hentStemple();
+    if (!NA.meg.regnskap) hentStemple();
     await lastSidefiler();
     klar = true;
     tegnSide();
     if (toppPoll) toppPoll();
-    toppPoll = hentHvert(15000, () => NA.oversikt(), {global: true});
-    if (!liveTimer) liveTimer = setInterval(tegnLive, 10000);
+    if (!NA.meg.regnskap) {
+      toppPoll = hentHvert(15000, () => NA.oversikt(), {global: true});
+      if (!liveTimer) liveTimer = setInterval(tegnLive, 10000);
+    }
   }
 
   Object.assign(window, {registrerSide, api, apneArk, lukkArk, toast, hentHvert});

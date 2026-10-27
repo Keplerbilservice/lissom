@@ -1665,10 +1665,23 @@ final class Medlemskap
         if ($medlemId <= 0 || !DB::harTabell('timejusteringer')) {
             return 0;
         }
+        $oslo = new DateTimeZone('Europe/Oslo');
+        $naa = new DateTimeImmutable('now', $oslo);
+        $maaned = $naa->format('Y-m');
+        $nesteStart = $naa->modify('first day of next month')->setTime(0, 0)
+            ->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+        // Naar et nytt medlemskap kjoepes etter den 20., hoerer betalingen
+        // til neste maaned. Justeringer fra en tidligere proeveperiode skal
+        // ikke redusere timene i det nye medlemskapet.
+        $nyPeriodeFra = self::timerTellesFra($medlemId, $nesteStart);
+        $fraSql = $nyPeriodeFra < $nesteStart ? ' AND created_at >= :fra' : '';
+        $param = ['m' => $medlemId, 'mnd' => $maaned];
+        if ($fraSql !== '') {
+            $param['fra'] = $nyPeriodeFra;
+        }
         return (int) DB::verdi(
-            'SELECT COALESCE(SUM(minutter), 0) FROM timejusteringer WHERE member_id = :m AND maaned = :mnd',
-            ['m' => $medlemId,
-             'mnd' => (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))->format('Y-m')]
+            'SELECT COALESCE(SUM(minutter), 0) FROM timejusteringer WHERE member_id = :m AND maaned = :mnd' . $fraSql,
+            $param
         );
     }
 

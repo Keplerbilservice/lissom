@@ -2678,12 +2678,18 @@ if (Foresporsel::heltall('person') > 0 || Foresporsel::heltall('booking') > 0) {
             $id = (int) $m['id'];
             $just = [];
             if (DB::harTabell('timejusteringer')) {
+                $fra = Medlemskap::justeringTellesFra($id);
+                $fraSql = $fra !== null ? ' AND j.created_at >= :fra' : '';
+                $param = ['m' => $id, 'mnd' => (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))->format('Y-m')];
+                if ($fra !== null) {
+                    $param['fra'] = $fra;
+                }
                 $just = DB::alle(
                     'SELECT j.minutter, j.grunn, j.created_at, a.navn AS av
                        FROM timejusteringer j LEFT JOIN members a ON a.id = j.av
                       WHERE j.member_id = :m AND j.maaned = :mnd
-                      ORDER BY j.created_at DESC',
-                    ['m' => $id, 'mnd' => (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))->format('Y-m')]
+                      ' . $fraSql . ' ORDER BY j.created_at DESC',
+                    $param
                 );
             }
             return [

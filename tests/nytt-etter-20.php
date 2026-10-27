@@ -267,6 +267,33 @@ sjekk('… men neste betaling paa samme avtale er ikke foerste, og faar ingen', 
 // ── 5. Timene dobles ikke ─────────────────────────────────────────────────
 echo "\n== Maanedstimer ==\n";
 $manedStart = Stempling::manedStart();
+$denneMnd = (new DateTimeImmutable('now', $oslo))->format('Y-m');
+$forNytt = (new DateTimeImmutable($denneMnd . '-24 10:00:00', $oslo))->setTimezone($utc)->format('Y-m-d H:i:s');
+$kjopNytt = (new DateTimeImmutable($denneMnd . '-25 10:00:00', $oslo))->setTimezone($utc)->format('Y-m-d H:i:s');
+$etterNytt = (new DateTimeImmutable($denneMnd . '-26 10:00:00', $oslo))->setTimezone($utc)->format('Y-m-d H:i:s');
+$nesteMnd = (new DateTimeImmutable($denneMnd . '-01', $oslo))->modify('first day of next month')->format('Y-m-d');
+$mJust = $nyttMedlem((string) $selv['navn']);
+$sJustProve = (int) DB::settInn('subscriptions', ['member_id' => $mJust['id'], 'plan' => $prove['navn'],
+    'pris_ore' => $prove['pris_ore'], 'status' => 'aktiv', 'vipps_agreement_id' => null]);
+$betaling((int) $mJust['id'], $sJustProve, $denneMnd . '-05 10:00:00', null, (int) $prove['pris_ore']);
+DB::settInn('timejusteringer', ['member_id' => $mJust['id'], 'maaned' => $denneMnd,
+    'minutter' => -120, 'created_at' => $forNytt]);
+sjekk('proeveperiodens trekk gjelder foer nytt kjoep', Medlemskap::justeringMin((int) $mJust['id']) === -120);
+$betaling((int) $mJust['id'], null, $kjopNytt, $nesteMnd, (int) $selv['pris_ore']);
+sjekk('trekk fra Prøv Lissom foelger ikke nytt medlemskap etter den 20.',
+    Medlemskap::justeringMin((int) $mJust['id']) === 0);
+sjekk('nytt medlemskap viser fullt timetall paa Min side',
+    Medlemskap::timerMedGaver($mJust) === Medlemskap::timerFor($mJust));
+DB::settInn('timejusteringer', ['member_id' => $mJust['id'], 'maaned' => $denneMnd,
+    'minutter' => -60, 'created_at' => $etterNytt]);
+sjekk('justering etter kjoepet virker fortsatt', Medlemskap::justeringMin((int) $mJust['id']) === -60);
+$mFornyJust = $nyttMedlem((string) $selv['navn']);
+$betaling((int) $mFornyJust['id'], null, $denneMnd . '-05 10:00:00', null, (int) $selv['pris_ore']);
+DB::settInn('timejusteringer', ['member_id' => $mFornyJust['id'], 'maaned' => $denneMnd,
+    'minutter' => -120, 'created_at' => $forNytt]);
+$betaling((int) $mFornyJust['id'], null, $kjopNytt, $nesteMnd, (int) $selv['pris_ore']);
+sjekk('vanlig fornyelse foer maanedsskiftet beholder maanedens trekk',
+    Medlemskap::justeringMin((int) $mFornyJust['id']) === -120);
 $innFor = $forrigeMnd->setDate((int) $forrigeMnd->format('Y'), (int) $forrigeMnd->format('n'), 27)->setTime(10, 0)
     ->setTimezone($utc)->format('Y-m-d H:i:s');
 $innNaa = (new DateTimeImmutable($manedStart, $utc))->modify('+5 minutes')->format('Y-m-d H:i:s');

@@ -345,7 +345,7 @@
   }
   function arkBruker(id, verdier = null, feiltekst = '') {
     const r = verdier || RB.liste.find(x => x.id === id) || {};
-    const rolle = verdier ? verdier.rolle : r.kursholder && r.rolle === 'medlem' ? 'kursholder' : (r.rolle || 'medlem');
+    const rolle = verdier ? verdier.rolle : (r.rolle || 'medlem');
     const felt = (navn, id2, verdi, type = 'text', ekstra = '') => `<label class="felt"><small>${navn}</small><input id="${id2}" type="${type}" value="${esc(verdi || '')}" autocomplete="off" ${ekstra}></label>`;
     NA().apneArk(`<div class="ark-head"><h2>${id ? 'Endre ' + esc(r.navn || r.brukernavn) : 'Ny bruker'}</h2><button class="lukk" data-mlm="lukk" aria-label="Lukk">×</button></div>
       <div style="display:grid;gap:12px">
@@ -354,6 +354,7 @@
         ${felt('E-post', 'mlm-b-epost', r.epost, 'email')}
         ${id ? '' : felt('Telefon', 'mlm-b-telefon', r.telefon, 'tel')}
         <label class="felt"><small>Tilgang</small><select id="mlm-b-rolle">${ROLLER().map(([v, t]) => `<option value="${v}" ${v === rolle ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
+        <label id="mlm-b-holder-rad" style="display:${rolle === 'admin' || rolle === 'medlem' ? 'flex' : 'none'};align-items:center;gap:8px"><input id="mlm-b-holder" type="checkbox" ${(verdier ? verdier.kursholder === 'ja' : !!r.kursholder) ? 'checked' : ''}>Kursholder</label>
         ${felt(id ? 'Nytt passord (tomt = beholdes)' : 'Passord', 'mlm-b-passord', '', 'password', 'autocomplete="new-password"')}
         <small class="muted">Passordet må være minst ${RB.minst} tegn.</small>
         <p class="feil" id="mlm-b-feil" ${feiltekst ? '' : 'hidden'}>${esc(feiltekst)}</p>
@@ -363,10 +364,12 @@
   async function lagreBruker(b, id) {
     const v = x => (document.getElementById(x)?.value || '').trim();
     const data = { handling: id ? 'endre' : 'opprett', id, navn: v('mlm-b-navn'), brukernavn: v('mlm-b-brukernavn'), epost: v('mlm-b-epost'), rolle: v('mlm-b-rolle'), passord: document.getElementById('mlm-b-passord')?.value || '' };
+    if (data.rolle === 'admin' || data.rolle === 'medlem') data.kursholder = document.getElementById('mlm-b-holder')?.checked ? 'ja' : 'nei';
+    if (['regnskap', 'kasse'].includes(data.rolle) && RB.liste.some(r => r.id === id && r.kursholder)) data.kursholder = 'behold';
     if (!id) data.telefon = v('mlm-b-telefon');
     const vis = t => arkBruker(id, data, t);
     if (data.passord && data.passord.length < RB.minst) return vis('Passordet må være minst ' + RB.minst + ' tegn.');
-    if (data.rolle === 'kursholder' && !data.epost) return vis('Skriv e-posten til kursholderen.');
+    if ((data.rolle === 'kursholder' || data.kursholder === 'ja') && !data.epost) return vis('Skriv e-posten til kursholderen.');
     const tekst = { admin: 'Denne personen får tilgang til hele administrasjonen.', regnskap: 'Denne personen får tilgang til økonomi og betalinger.', kasse: 'Denne kontoen kommer bare til kassa på iPaden.', kursholder: 'Denne personen får medlemstilgang og blir lagt til under Kursholdere.' }[data.rolle] || 'Denne personen får vanlig medlemstilgang.';
     if (!await NA().bekreft('Lagre tilgang?', tekst, 'Lagre bruker')) return vis('');
     try { await kall('brukere.php', data); toast('Brukeren er lagret.'); arkBrukere(); }
@@ -606,6 +609,7 @@
   document.addEventListener('input', e => { if (e.target.id === 'mlm-gv-belop' || e.target.id === 'mlm-gv-hilsen') { oppdaterForh(); sjekkGave(); } });
   document.addEventListener('change', e => {
     if (e.target.id === 'mlm-gv-medlem') sjekkGave();
+    if (e.target.id === 'mlm-b-rolle') document.getElementById('mlm-b-holder-rad').style.display = ['admin', 'medlem'].includes(e.target.value) ? 'flex' : 'none';
     if (e.target.id === 'mlm-sorter') { S.sortering = e.target.value; husk(S.sortering); tegnListe(); }
   });
 

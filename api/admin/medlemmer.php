@@ -32,6 +32,108 @@ if (Foresporsel::metode() === 'POST') {
 
     $handling = Foresporsel::tekst('handling', 'meld-inn');
 
+    if ($handling === 'deaktiver') {
+        $id = Foresporsel::heltall('medlemId');
+        $m = DB::en('SELECT id, navn, telefon, rolle, status, anonymisert_at FROM members WHERE id = :i', ['i' => $id]);
+        if ($m === null || $m['anonymisert_at'] !== null) {
+            Svar::feil('Fant ikke medlemmet.', 404);
+        }
+        if ((int) $m['id'] === (int) $jeg['id'] || $m['rolle'] === 'admin'
+            || in_array(normaliser_telefon((string) ($m['telefon'] ?? '')), Config::adminNumre(), true)) {
+            Svar::feil('Adminkontoer kan ikke deaktiveres som medlem.');
+        }
+        if (!in_array((string) $m['status'], ['aktiv', 'prove'], true)) {
+            Svar::feil('Medlemmet er ikke aktivt.');
+        }
+        $uavklart = (int) DB::verdi(
+            "SELECT COUNT(*) FROM payments WHERE member_id = :m AND type = 'recurring_charge'
+              AND status IN ('opprettet', 'venter', 'autorisert')",
+            ['m' => $id]
+        );
+        if ($uavklart > 0) {
+            Svar::feil('Et Vipps-trekk er allerede bestilt. Stopp eller avklar trekket før du deaktiverer medlemmet.');
+        }
+        $forsteFelt = DB::harKolonne('subscriptions', 'forste_trekk_sjekket')
+            ? ', forste_trekk_sjekket' : ', NULL AS forste_trekk_sjekket';
+        $avtaler = DB::alle(
+            "SELECT id, vipps_agreement_id, status, created_at{$forsteFelt} FROM subscriptions
+              WHERE member_id = :m AND status IN ('aktiv', 'venter') ORDER BY id",
+            ['m' => $id]
+        );
+        if (count($avtaler) > 1) {
+            Svar::feil('Medlemmet har flere åpne avtaler. Avklar dem før deaktivering.');
+        }
+        $avtale = $avtaler[0] ?? null;
+        $vippsId = trim((string) ($avtale['vipps_agreement_id'] ?? ''));
+        if ($avtale !== null && $avtale['status'] === 'venter') {
+            Svar::feil('Vipps-avtalen venter fortsatt på avklaring. Avklar den før deaktivering.');
+        }
+        if ($vippsId !== '' && (string) ($avtale['created_at'] ?? '') >= Medlemskap::FORSTE_TREKK_VED_GODKJENNING_FRA
+            && $avtale['forste_trekk_sjekket'] === null
+            && !DB::verdi("SELECT 1 FROM payments WHERE subscription_id = :s AND idempotency_key LIKE 'init:%' LIMIT 1", ['s' => (int) $avtale['id']])) {
+            Svar::feil('Den første Vipps-betalingen er ikke avklart i regnskapet. Avklar den før deaktivering.');
+        }
+        $iDag = (new DateTimeImmutable('today', new DateTimeZone('Europe/Oslo')))->format('Y-m-d');
+        $vippsStoppet = false;
+        try {
+            DB::iTransaksjon(static function () use ($id, $avtale, $vippsId, $iDag, $jeg, &$vippsStoppet): void {
+                $laast = DB::en('SELECT id, rolle, status FROM members WHERE id = :i FOR UPDATE', ['i' => $id]);
+                if ($laast === null || $laast['rolle'] === 'admin' || !in_array($laast['status'], ['aktiv', 'prove'], true)) {
+                    throw new DomainException('Medlemsstatusen ble endret underveis. Last siden på nytt.');
+                }
+                $uavklartNaa = (int) DB::verdi(
+                    "SELECT COUNT(*) FROM payments WHERE member_id = :m AND type = 'recurring_charge'
+                      AND status IN ('opprettet', 'venter', 'autorisert')",
+                    ['m' => $id]
+                );
+                if ($uavklartNaa > 0) {
+                    throw new DomainException('Et Vipps-trekk er allerede bestilt. Stopp eller avklar trekket før du deaktiverer medlemmet.');
+                }
+                $aapneNaa = DB::alle(
+                    "SELECT id FROM subscriptions WHERE member_id = :m AND status IN ('aktiv', 'venter') FOR UPDATE",
+                    ['m' => $id]
+                );
+                if (count($aapneNaa) !== ($avtale === null ? 0 : 1)
+                    || ($avtale !== null && (int) $aapneNaa[0]['id'] !== (int) $avtale['id'])) {
+                    throw new DomainException('Vipps-avtalene ble endret underveis. Last siden på nytt.');
+                }
+                if ($avtale !== null) {
+                    $gjeldende = DB::en('SELECT id, status, vipps_agreement_id FROM subscriptions WHERE id = :i FOR UPDATE', ['i' => (int) $avtale['id']]);
+                    if ($gjeldende === null || $gjeldende['status'] !== 'aktiv'
+                        || (string) $gjeldende['vipps_agreement_id'] !== $vippsId) {
+                        throw new DomainException('Vipps-avtalen ble endret underveis. Last siden på nytt.');
+                    }
+                }
+                if ($vippsId !== '') {
+                    try {
+                        Vipps::stoppAvtale($vippsId);
+                    } catch (Throwable $e) {
+                        try { $stoppet = strtoupper((string) (Vipps::hentAvtale($vippsId)['status'] ?? '')) === 'STOPPED'; }
+                        catch (Throwable) { $stoppet = false; }
+                        if (!$stoppet) { throw new RuntimeException('Vipps stoppet ikke avtalen. Medlemmet er fortsatt aktivt. Prøv igjen.', 0, $e); }
+                    }
+                    $vippsStoppet = true;
+                }
+                if ($avtale !== null) {
+                    DB::oppdater('subscriptions', [
+                        'status' => 'stoppet', 'neste_trekk' => null,
+                        'sagt_opp_at' => gmdate('Y-m-d H:i:s'), 'slutter' => $iDag,
+                    ], ['id' => (int) $avtale['id']]);
+                }
+                DB::oppdater('members', ['status' => 'oppsagt', 'slutt_dato' => $iDag], ['id' => $id]);
+                revider('medlem_deaktivert', 'member', $id, ['av' => (int) $jeg['id'], 'avtale' => $avtale['id'] ?? null]);
+            });
+        } catch (DomainException $e) {
+            Svar::feil($e->getMessage(), 409);
+        } catch (Throwable $e) {
+            logg_feil('Vipps kan vaere stoppet, men lokal deaktivering feilet for medlem ' . $id, $e);
+            Svar::feil($vippsStoppet
+                ? 'Vipps er stoppet, men medlemsstatus ble ikke lagret. Prøv deaktivering igjen eller avklar status før neste trekk.'
+                : 'Medlemmet ble ikke deaktivert. ' . $e->getMessage(), 500);
+        }
+        Svar::ok(['beskjed' => ($m['navn'] ?: 'Medlemmet') . ' er deaktivert og flyttet til Tidligere medlemmer. Betalinger og historikk er beholdt.']);
+    }
+
     // ── Avslutt, ta inn igjen, slett ───────────────────────────────────
     //
     // Et medlemskap tok aldri slutt av seg selv med mindre Vipps-avtalen
@@ -114,6 +216,14 @@ if (Foresporsel::metode() === 'POST') {
         }
 
         if ($handling === 'gjenapne') {
+            $stoppetAvtale = DB::verdi(
+                "SELECT 1 FROM subscriptions WHERE member_id = :m AND status = 'stoppet'
+                  AND slutter IS NOT NULL LIMIT 1",
+                ['m' => $id]
+            );
+            if ($stoppetAvtale && $avtale === null) {
+                Svar::feil('Vipps-avtalen er stoppet. Medlemmet må opprette et nytt medlemskap med betaling før tilgangen kan åpnes igjen.');
+            }
             // Oppsigelsen trekkes tilbake, ikke bare statusen. Uten dette ble
             // «slutter» staaende paa avtalen, og cron stoppet den i Vipps paa
             // den gamle datoen — et medlem som var aapnet igjen ville mistet

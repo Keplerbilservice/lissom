@@ -101,8 +101,7 @@
       catch (err) { toast(esc(err.message)); } finally { S.opptatt = false; b.disabled = false; }
       return;
     }
-    // Kampanjeskjemaet finnes i admin-ny (bilde, tekst, pris, mal) og lages ikke på nytt her.
-    if (b.dataset.mss === 'nykampanje') { location.href = '/admin-ny#kampanjer'; return; }
+    if (b.dataset.mss === 'nykampanje') { NA().gaTil('kampanjer'); return; }
     if (b.dataset.mss === 'legguti') {
       const t = document.getElementById('mss-intern'), em = document.getElementById('mss-emne');
       const tekst = (t?.value || '').trim(), emne = (em?.value || '').trim();

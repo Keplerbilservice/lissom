@@ -49,17 +49,15 @@
     Varsler: ['Push på telefonen for det som må gjøres finnes ikke (verkstedet får e-post/SMS etter malene over).',
       '«Nye påmeldinger samlet kl. 18» finnes ikke: hver påmelding sendes for seg.', '«Stille mellom 21 og 07» finnes ikke.'],
     Innlogging: ['«Hold meg innlogget i 30 dager» og lista over innloggede enheter finnes ikke ennå (hører til innloggingen i skallet).'],
-    Kurs: ['Standardtekstene for kurs redigeres fortsatt i gammel admin.'],
     Medlemskap: ['Planene (navn, timer, pris) endres fortsatt i gammel admin.'],
     Priser: ['Kursprisene står på hvert kurs og endres på kurssiden. Prisene her endres fortsatt i gammel admin.'],
-    Betaling: ['Vipps-oppsettet og betalingsvarslene ligger fortsatt i gammel admin.'],
   };
   const LENKER = {
-    Kurs: [['Standardtekster for kurs', '/admin-ny#kursstandard']],
-    Medlemskap: [['Frys av medlemskap', '/admin-ny#frys'], ['Grupperabatter', '/admin-ny#rabatter']],
-    Priser: [['Butikk og frakt', '/admin-ny#butikk']],
-    Betaling: [['Vipps og betalingsvarsler', '/admin-ny#vippsoppsett'], ['Betalinger', '/admin-ny#betalinger']],
-    Meldinger: [['Tekstmaler med e-postoppsett', '/admin-ny#maler']],
+    Kurs: [['Standardtekster for kurs', 'kursstandard']],
+    Medlemskap: [['Frys av medlemskap', 'frys'], ['Grupperabatter', 'rabatter']],
+    Priser: [['Butikk og frakt', 'frakt']],
+    Betaling: [['Vipps og betalingsvarsler', 'vipps'], ['Betalinger', '#betalinger']],
+    Meldinger: [['E-postoppsett', 'epostoppsett']],
   };
 
   const S = { fane: 'Meldinger', el: null, maler: null, telling: null, innhold: null, medl: null, fraktOre: null, opptatt: false, ark: null, oppf: null };
@@ -234,7 +232,7 @@
       <label style="display:grid;gap:5px"><small>Tekst${m.oppsett ? ' (SMS og ren tekst)' : ''}</small><textarea id="inn-tekst" style="width:100%;min-height:150px;padding:12px;border-radius:9px;border:1px solid #c6b1a0;background:var(--field);font:inherit">${esc(m.tekst)}</textarea></label>
       ${m.felter && m.felter.length ? `<small>Fylles inn automatisk: ${m.felter.map(f => `<span title="${esc(f.hva)}">{${esc(f.felt)}}</span>`).join(' ')}</small>` : ''}
       ${m.oppsett ? `<div class="sms"><b>E-posten bruker oppsettet:</b><br>${esc(m.oppsett.overskrift)}${m.oppsett.avsnitt ? '<br>' + esc(m.oppsett.avsnitt).replace(/\n/g, '<br>') : ''}
-        <br><button class="knapp liten" style="margin-top:8px" data-inn-gaa="/admin-ny#maler">Endre e-postoppsettet</button></div>` : ''}
+        <br><button class="knapp liten" style="margin-top:8px" data-inn-gaa="epostoppsett">Endre e-postoppsettet</button></div>` : ''}
       <p class="feil" id="inn-feil" role="alert" hidden style="color:var(--red)"></p>
       <div class="ark-fot"><button class="knapp" data-inn-gjor="lukk">Avbryt</button><button class="knapp hoved" data-inn-gjor="lagretekst" data-navn="${esc(m.navn)}">Lagre</button></div>`);
   }
@@ -245,11 +243,105 @@
     return d;
   }
 
+  async function arkInnstilling(del) {
+    const N = NA();
+    N.apneArk(N.arkHode('Henter …'));
+    try {
+      if (del === 'kursstandard') {
+        const d = await kall('kurs.php');
+        const felt = [['', 'bekreftelseStandard', 'Standard bekreftelse', d.bekreftelseStandard || '']];
+        for (const kategori of ['Dreiing', 'Håndbygging', 'Events', 'Kun medlemmer'])
+          for (const navn of ['punkter', 'praktisk', 'ferdigTid'])
+            felt.push([kategori, navn, kategori + ' · ' + navn, d.standardtekster?.[kategori]?.[navn] || '']);
+        const inn = N.apneArk(`${N.arkHode('Standardtekster for kurs')}${felt.map(([kategori, navn, tittel, verdi], i) => `<section class="kort"><label class="felt"><small>${esc(tittel)}</small><textarea data-standard-felt="${i}">${esc(verdi)}</textarea></label><button class="knapp liten" type="button" data-standard-lagre="${i}">Lagre tekst</button></section>`).join('')}`, {bred: true});
+        inn.onclick = async e => {
+          const b = e.target.closest('[data-standard-lagre]'); if (!b) return;
+          const i = Number(b.dataset.standardLagre), [kategori, navn] = felt[i];
+          const tekst = inn.querySelector(`[data-standard-felt="${i}"]`).value;
+          b.disabled = true;
+          try { const r = await kall('kurs.php', kategori ? {handling: 'standardtekst', kategori, felt: navn, tekst} : {handling: 'bekreftelseStandard', tekst}); toast(esc(r.beskjed || 'Teksten er lagret.')); }
+          catch (err) { toast(esc(err.message)); } finally { b.disabled = false; }
+        };
+      } else if (del === 'frys') {
+        const d = await kall('frys.php');
+        const inn = N.apneArk(`${N.arkHode('Frys av medlemskap')}${(d.soknader || []).map(r => `<section class="kort"><h3>${esc(r.navn)}</h3><p>${esc([r.fra, r.til, r.grunn].filter(Boolean).join(' · '))}</p>${r.ubetalt ? `<p class="feil">${esc(r.ubetalt)}</p>` : ''}<p>${r.venter ? 'Venter på svar' : r.loper ? 'Pågår' : ''}</p>${r.venter ? `<label class="felt"><small>Svar til medlemmet</small><textarea data-frys-svar="${r.id}" maxlength="500"></textarea></label>` : ''}<div class="knapper">${r.venter ? `<button class="knapp liten" data-frys="avslag" data-id="${r.id}">Avslå</button><button class="knapp liten hoved" data-frys="godkjenn" data-id="${r.id}">Godkjenn</button>` : r.loper ? `<button class="knapp liten" data-frys="avslutt" data-id="${r.id}">Avslutt frys</button>` : ''}</div></section>`).join('') || '<p>Ingen søknader eller pågående frys.</p>'}`, {bred: true});
+        inn.onclick = async e => {
+          const b = e.target.closest('[data-frys]'); if (!b) return;
+          const handling = b.dataset.frys;
+          if (!await N.bekreft('Endre frys?', 'Handling: ' + handling + '. Medlemmet får beskjed etter reglene i systemet.', 'Bekreft')) return;
+          try { const r = await kall('frys.php', {handling, id: Number(b.dataset.id), svar: inn.querySelector(`[data-frys-svar="${b.dataset.id}"]`)?.value.trim() || ''}); toast(esc(r.advarsel || r.beskjed || 'Lagret.')); arkInnstilling('frys'); }
+          catch (err) { toast(esc(err.message)); }
+        };
+      } else if (del === 'rabatter') {
+        const d = await kall('rabatter.php');
+        const maal = d.maal || [];
+        const rad = (r, i) => `<div class="rad" data-rabatt-rad><label class="felt"><small>Fra antall</small><input name="min" type="number" min="2" max="99" value="${esc(r.min || 2)}"></label><label class="felt"><small>Rabatt %</small><input name="prosent" type="number" min="1" max="90" step="0.01" value="${esc(r.prosent || 1)}"></label><label class="felt"><small>Gjelder</small><select name="gjelder">${maal.map(m => `<option value="${esc(m.verdi)}" ${m.verdi === r.gjelder ? 'selected' : ''}>${esc(m.navn)}</option>`).join('')}</select></label><label><input name="aktiv" type="checkbox" ${r.aktiv ? 'checked' : ''}> Aktiv</label><button class="knapp liten" type="button" data-rabatt-fjern="${i}">Fjern</button></div>`;
+        const inn = N.apneArk(`${N.arkHode('Grupperabatter')}<form data-rabatter><div data-rabatt-liste>${(d.nivaer || []).map(rad).join('')}</div><div class="ark-fot"><button class="knapp" type="button" data-rabatt-ny>Legg til nivå</button><button class="knapp hoved" type="submit">Lagre rabatter</button></div></form>`, {bred: true});
+        inn.onclick = e => {
+          if (e.target.closest('[data-rabatt-ny]')) inn.querySelector('[data-rabatt-liste]').insertAdjacentHTML('beforeend', rad({min: 2, prosent: 1, gjelder: 'alle', aktiv: true}, Date.now()));
+          if (e.target.closest('[data-rabatt-fjern]')) e.target.closest('[data-rabatt-rad]').remove();
+        };
+        inn.querySelector('form').onsubmit = async e => {
+          e.preventDefault();
+          const nivaer = [...inn.querySelectorAll('[data-rabatt-rad]')].map(r => ({min: Number(r.querySelector('[name=min]').value), prosent: Number(r.querySelector('[name=prosent]').value), gjelder: r.querySelector('[name=gjelder]').value, aktiv: r.querySelector('[name=aktiv]').checked}));
+          if (!await N.bekreft('Lagre grupperabatter?', 'Hele settet med ' + nivaer.length + ' rabattnivåer blir oppdatert.', 'Lagre')) return;
+          try { const r = await kall('rabatter.php', {handling: 'lagre', nivaer}); toast(esc(r.beskjed || 'Lagret.')); N.lukkArk(true); }
+          catch (err) { toast(esc(err.message)); }
+        };
+      } else if (del === 'frakt') {
+        const d = await kall('produkter.php');
+        const inn = N.apneArk(`${N.arkHode('Butikk og frakt')}<p><button class="knapp" type="button" data-inn-varer>Åpne varer i ny admin</button></p><form data-frakt><label class="felt"><small>Frakt i kroner</small><input name="frakt" type="number" min="0" step="1" value="${Number(d.fraktOre || 0) / 100}"></label><div class="ark-fot"><button class="knapp hoved" type="submit">Lagre frakt</button></div></form>`);
+        inn.querySelector('[data-inn-varer]').onclick = () => { N.lukkArk(true); N.gaTil('varer'); };
+        inn.querySelector('form').onsubmit = async e => {
+          e.preventDefault(); const frakt = Number(e.target.elements.frakt.value);
+          if (!Number.isInteger(frakt) || frakt < 0) { toast('Oppgi frakt i hele kroner.'); return; }
+          try { const r = await kall('produkter.php', {handling: 'frakt', frakt}); S.fraktOre = r.fraktOre; toast(esc(r.beskjed)); N.lukkArk(true); tegnFane(); }
+          catch (err) { toast(esc(err.message)); }
+        };
+      } else if (del === 'vipps') {
+        const [ok, w] = await Promise.all([kall('okonomi.php'), kall('vipps-webhook.php')]);
+        const inn = N.apneArk(`${N.arkHode('Vipps og betalingsvarsler')}<h3>Vipps-produkter</h3>${(ok.vipps?.produkter || []).map(p => `<div class="rad"><b>${esc(p.navn)}</b><small>${esc(p.status || p.hva || '')}</small></div>`).join('')}<h3>Betalingsoppsett</h3>${(ok.vipps?.felter || []).map(f => `<div class="rad"><span>${esc(f.navn)}</span><strong>${esc(f.verdi)}</strong></div>`).join('')}<button class="knapp" type="button" data-vipps-test>Test Vipps</button><div data-vipps-svar></div><h3>Webhook</h3><p>${esc(w.adresse || '')}</p><p>${w.registrert ? 'Registrert' : 'Ikke registrert'}${w.har_hemmelighet ? ' · Hemmelighet er satt' : ''}</p>${(w.webhooks || []).map(x => `<div class="rad"><small>${esc(x.url)}</small><button class="knapp liten" data-webhook-slett="${esc(x.id)}">Fjern</button></div>`).join('')}<div class="ark-fot"><button class="knapp hoved" type="button" data-webhook-registrer>Registrer webhook</button></div>`, {bred: true});
+        inn.onclick = async e => {
+          const test = e.target.closest('[data-vipps-test]');
+          if (test) {
+            test.disabled = true;
+            try {
+              const r = await N.api('/api/vipps-test.php');
+              inn.querySelector('[data-vipps-svar]').innerHTML = `<p>${r.alt_ok ? 'Alt virker. Prøvebetalingen på én krone ble avbrutt.' : 'Noe mangler ennå.'}</p>${(r.kort || []).map(x => `<div class="rad"><b>${esc(x.hva)}</b><small>${esc(x.sier)}</small><strong>${x.ok ? '✓' : '✕'}</strong></div>`).join('')}`;
+            } catch (err) { toast(esc(err.message)); }
+            finally { test.disabled = false; }
+            return;
+          }
+          const slett = e.target.closest('[data-webhook-slett]'); const reg = e.target.closest('[data-webhook-registrer]'); if (!slett && !reg) return;
+          const handling = slett ? 'slett' : 'registrer';
+          if (!await N.bekreft('Endre Vipps-webhook?', slett ? 'Fjern denne webhooken hos Vipps.' : 'Registrer webhooken hos Vipps.', 'Bekreft')) return;
+          try { const r = await kall('vipps-webhook.php', {handling, ...(slett ? {id: slett.dataset.webhookSlett} : {})}); toast(esc(r.beskjed || 'Lagret.')); arkInnstilling('vipps'); }
+          catch (err) { toast(esc(err.message)); }
+        };
+      } else if (del === 'epostoppsett') {
+        const d = await kall('varsler.php');
+        const felter = Object.entries(d.oppsett || {});
+        const inn = N.apneArk(`${N.arkHode('E-postoppsett')}<form data-epostoppsett>${felter.map(([k, v]) => `<label class="felt"><small>${esc(k)}${v.fra_fil ? ' · styres fra serverfil' : ''}${v.hemmelig && v.satt ? ' · satt' : ''}</small>${k.startsWith('epost_signatur') ? `<textarea name="${esc(k)}" ${v.fra_fil ? 'disabled' : ''}>${esc(v.verdi || '')}</textarea>` : `<input name="${esc(k)}" value="${v.hemmelig ? '' : esc(v.verdi || '')}" ${v.hemmelig ? 'type="password" autocomplete="new-password"' : 'type="text"'} ${v.fra_fil ? 'disabled' : ''}>`}</label>`).join('')}<div class="ark-fot"><button class="knapp hoved" type="submit">Lagre oppsett</button></div></form>`, {bred: true});
+        inn.querySelector('form').onsubmit = async e => {
+          e.preventDefault(); const data = {handling: 'lagre'};
+          for (const [k, v] of felter) { const felt = e.target.elements.namedItem(k); if (felt && !felt.disabled && felt.value !== (v.hemmelig ? '' : String(v.verdi || ''))) data[k] = felt.value; }
+          if (Object.keys(data).length === 1) { toast('Ingen endringer å lagre.'); return; }
+          try { const r = await kall('varsler.php', data); toast(esc(r.beskjed || 'Lagret.')); N.lukkArk(true); }
+          catch (err) { toast(esc(err.message)); }
+        };
+      }
+    } catch (e) { N.apneArk(N.arkHode('Kunne ikke åpne innstillingen') + `<p class="feil">${esc(e.message)}</p>`); }
+  }
+
   document.addEventListener('click', async e => {
     const b = e.target.closest('[data-inn-fane],[data-inn-gaa],[data-inn-malpaa],[data-inn-kanal],[data-inn-tekst],[data-inn-flagg],[data-inn-gjor]'); if (!b) return;
     const ds = b.dataset;
     if (ds.innFane) { S.fane = ds.innFane; tegnFane(); hent(); return; }
-    if (ds.innGaa) { location.href = ds.innGaa; return; }
+    if (ds.innGaa) {
+      if (ds.innGaa.startsWith('#')) NA().gaTil(ds.innGaa.slice(1));
+      else arkInnstilling(ds.innGaa);
+      return;
+    }
     if (ds.innTekst) { arkTekst(ds.innTekst); return; }
     if (ds.innGjor === 'lukk') { NA().lukkArk(); return; }
     if (S.opptatt) return;

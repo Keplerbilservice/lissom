@@ -752,6 +752,44 @@ switch ($handling) {
     // (eieren, 26. september 2026: ekte bilder fra verkstedet). Resten av
     // karusellen staar. Samme vakt som «lagre»: et filnavn i rota, eller et
     // opplastet bilde bak api/bilde.php.
+    case 'bilder':
+        $id = Foresporsel::heltall('id');
+        $kropp = Foresporsel::kropp();
+        if (!is_array($kropp['bilder'] ?? null) || !is_array($kropp['forrigeBilder'] ?? null)
+            || count($kropp['bilder']) > 20) {
+            Svar::feil('Ugyldig bildeliste.');
+        }
+        $vask = static function (array $liste): array {
+            $ut = [];
+            foreach ($liste as $f) {
+                $bilde = trim((string) $f);
+                if ($bilde === '') { continue; }
+                $gyldig = preg_match('~^api/bilde\.php\?artikkel=[A-Za-z0-9._-]{1,120}$~', $bilde) === 1
+                    || preg_match('~^design/underlogoer/[a-z0-9-]+/[a-z0-9-]+\.(png|jpe?g)$~', $bilde) === 1
+                    || (basename($bilde) === $bilde && is_file(dirname(__DIR__, 2) . '/' . $bilde));
+                if (!$gyldig) { Svar::feil('Fant ikke bildet.'); }
+                if (!in_array($bilde, $ut, true)) { $ut[] = $bilde; }
+            }
+            return $ut;
+        };
+        $nye = $vask($kropp['bilder']);
+        $forrige = $vask($kropp['forrigeBilder']);
+        DB::iTransaksjon(static function () use ($id, $nye, $forrige): void {
+            $harListe = DB::harKolonne('courses', 'bilder');
+            $kurs = DB::en('SELECT id, bilde' . ($harListe ? ', bilder' : '')
+                . ' FROM courses WHERE id = :i FOR UPDATE', ['i' => $id]);
+            if ($kurs === null) { Svar::feil('Fant ikke kurset.', 404); }
+            $lagret = $harListe ? json_decode((string) ($kurs['bilder'] ?? ''), true) : null;
+            $lagret = is_array($lagret) ? array_values(array_filter($lagret, 'is_string')) : [];
+            if ($lagret === [] && (string) ($kurs['bilde'] ?? '') !== '') { $lagret = [(string) $kurs['bilde']]; }
+            if ($lagret !== $forrige) { Svar::feil('Bildene ble endret i en annen fane. Last kurset på nytt før du lagrer.', 409); }
+            $data = ['bilde' => $nye[0] ?? null];
+            if ($harListe) { $data['bilder'] = $nye ? json_encode($nye, JSON_UNESCAPED_SLASHES) : null; }
+            DB::oppdater('courses', $data, ['id' => $id]);
+            revider('kurs_bilder_endret', 'course', $id, ['antall' => count($nye)]);
+        });
+        Svar::ok(['beskjed' => 'Kursbildene er lagret.']);
+
     case 'hovedbilde':
         $id = Foresporsel::heltall('id');
         $raa = trim(Foresporsel::tekst('bilde'));

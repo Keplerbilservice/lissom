@@ -2480,6 +2480,14 @@ final class Medlemskap
             self::avlysForsok($gammelt);
         }
 
+        $medlemVedStart = DB::en(
+            'SELECT status, slutt_dato FROM members WHERE id = :i',
+            ['i' => (int) $medlem['id']]
+        );
+        if ($medlemVedStart === null || (string) $medlemVedStart['status'] !== (string) $medlem['status']) {
+            throw new RuntimeException('Medlemsstatusen er endret. Last siden på nytt før du oppretter avtalen.');
+        }
+
         $vipps = Vipps::opprettAvtale(
             $planNavn,
             (int) $plan['pris_ore'],
@@ -2500,16 +2508,36 @@ final class Medlemskap
 
         $binding = (int) ($plan['engangs'] ?? 0) === 1 ? 0 : (int) $plan['binding_mnd'];
 
-        $id = DB::settInn('subscriptions', [
-            'member_id'          => (int) $medlem['id'],
-            'plan'               => $planNavn,
-            'pris_ore'           => (int) $plan['pris_ore'],
-            'vipps_agreement_id' => $vipps['avtaleId'],
-            'status'             => 'venter',
-            'binding_til'        => $binding > 0
-                ? (new DateTimeImmutable('now'))->modify('+' . $binding . ' months')->format('Y-m-d')
-                : null,
-        ]);
+        try {
+            $id = DB::iTransaksjon(static function () use ($medlem, $medlemVedStart, $planNavn, $plan, $vipps, $binding): int {
+                $laast = DB::en(
+                    'SELECT status, slutt_dato FROM members WHERE id = :i FOR UPDATE',
+                    ['i' => (int) $medlem['id']]
+                );
+                if ($laast === null || $laast['status'] !== $medlemVedStart['status']
+                    || $laast['slutt_dato'] !== $medlemVedStart['slutt_dato']) {
+                    throw new RuntimeException('Medlemsstatusen er endret. Last siden på nytt før du oppretter avtalen.');
+                }
+                if (self::hindrerNytt(self::avtale((int) $medlem['id']), $planNavn)
+                    || self::paagaaendeForsok((int) $medlem['id'], $planNavn, true) !== null) {
+                    throw new RuntimeException('Det finnes allerede et medlemskap eller avtaleforsøk. Last siden på nytt.');
+                }
+                return DB::settInn('subscriptions', [
+                    'member_id'          => (int) $medlem['id'],
+                    'plan'               => $planNavn,
+                    'pris_ore'           => (int) $plan['pris_ore'],
+                    'vipps_agreement_id' => $vipps['avtaleId'],
+                    'status'             => 'venter',
+                    'binding_til'        => $binding > 0
+                        ? (new DateTimeImmutable('now'))->modify('+' . $binding . ' months')->format('Y-m-d')
+                        : null,
+                ]);
+            });
+        } catch (Throwable $e) {
+            try { Vipps::stoppAvtale((string) $vipps['avtaleId']); }
+            catch (Throwable $stoppFeil) { logg_feil('Nytt avtaleforsøk kunne ikke stoppes etter avbrutt lagring', $stoppFeil); }
+            throw $e;
+        }
 
         self::husk((int) $id, (string) $vipps['url']);
         return ['url' => $vipps['url'], 'id' => $id, 'gjentakelse' => false];
@@ -2823,6 +2851,18 @@ final class Medlemskap
      */
     public static function oppdaterFraVipps(array $avtale, ?string $naa = null): string
     {
+        // Avstem et eventuelt foerste trekk foer et forsinket Vipps-svar
+        // avvises, saa en avsluttet avtale ikke mister betalingshistorikk.
+        $harSjekk = DB::harKolonne('subscriptions', 'forste_trekk_sjekket');
+        $lokal = DB::en('SELECT status, slutter' . ($harSjekk ? ', forste_trekk_sjekket' : '')
+            . ' FROM subscriptions WHERE id = :i', ['i' => (int) $avtale['id']]);
+        if ($lokal && $lokal['status'] === 'stoppet' && $lokal['slutter'] !== null) {
+            if ((string) ($avtale['created_at'] ?? '') >= self::FORSTE_TREKK_VED_GODKJENNING_FRA
+                && (!$harSjekk || $lokal['forste_trekk_sjekket'] === null)) {
+                self::foerForsteTrekk($avtale, self::forstePeriode($avtale));
+            }
+            return 'stoppet';
+        }
         // $naa (UTC, 'Y-m-d H:i:s') er bare for testene; ellers klokka.
         $id = (string) $avtale['vipps_agreement_id'];
         if ($id === '') {
@@ -2898,53 +2938,46 @@ final class Medlemskap
             $endring['neste_trekk'] = null;
         }
 
-        DB::oppdater('subscriptions', $endring, ['id' => (int) $avtale['id']]);
+        // Samme medlemslaas som admin-deaktivering: et Vipps-svar som ble
+        // hentet foer avtalen ble stoppet, kan ikke aapne den igjen etterpaa.
+        $resultat = DB::iTransaksjon(static function () use ($avtale, $endring, $ny): string {
+            DB::en('SELECT id FROM members WHERE id = :i FOR UPDATE', ['i' => (int) $avtale['member_id']]);
+            $gjeldende = DB::en('SELECT status, slutter FROM subscriptions WHERE id = :i FOR UPDATE', ['i' => (int) $avtale['id']]);
+            if ($gjeldende === null || ($gjeldende['status'] === 'stoppet' && $gjeldende['slutter'] !== null)) {
+                return 'stoppet';
+            }
+            DB::oppdater('subscriptions', $endring, ['id' => (int) $avtale['id']]);
 
-        // ── Foerste trekk foeres hos oss ────────────────────────────────
-        //
-        // Vipps lager det selv naar kunden godkjenner — vi ber aldri om det,
-        // og kjenner derfor ingen charge-id. Uten dette ville pengene ligget
-        // hos Vipps uten aa staa i Kassa, i regnskapet eller paa medlemmet.
-        //
-        // Kjores runden to ganger, skal raden bare bli til én: noekkelen er
-        // trekkets egen id hos Vipps.
-        if ($ny === 'aktiv' && $avtale['neste_trekk'] === null) {
+            // Medlemsstatusen folger avtalen under samme laas.
+            if ($ny === 'aktiv') {
+                DB::oppdater('members', [
+                    'status'          => 'aktiv',
+                    'medlemskap_type' => $avtale['plan'],
+                    'start_dato'      => DB::verdi('SELECT start_dato FROM members WHERE id = :m', ['m' => $avtale['member_id']])
+                                          ?: gmdate('Y-m-d'),
+                ], ['id' => (int) $avtale['member_id']]);
+            } elseif (in_array($ny, ['stoppet', 'utlopt'], true) && (string) $avtale['status'] === 'aktiv') {
+                self::oppsagtOmIngenLoeper((int) $avtale['member_id']);
+            }
+            return $ny;
+        });
+        if ($resultat === 'stoppet' && $ny === 'aktiv'
+            && (string) ($avtale['created_at'] ?? '') >= self::FORSTE_TREKK_VED_GODKJENNING_FRA
+            && (!$harSjekk || ($lokal['forste_trekk_sjekket'] ?? null) === null)) {
+            self::foerForsteTrekk($avtale, self::forstePeriode($avtale));
+        }
+        if ($resultat === 'aktiv' && $avtale['neste_trekk'] === null) {
             self::foerForsteTrekk($avtale, $forsteFra);
         }
-
-        // Medlemsstatusen folger avtalen. Uten dette ville noen betalt uten aa
-        // faa tilgang, eller hatt tilgang uten aa betale.
-        if ($ny === 'aktiv' && (string) $avtale['status'] !== 'aktiv') {
+        if ($resultat === 'aktiv' && (string) $avtale['status'] !== 'aktiv') {
             self::erstattProve((int) $avtale['member_id'], (int) $avtale['id'], (string) $avtale['plan']);
-        }
-        if ($ny === 'aktiv') {
-            DB::oppdater('members', [
-                'status'          => 'aktiv',
-                'medlemskap_type' => $avtale['plan'],
-                'start_dato'      => DB::verdi('SELECT start_dato FROM members WHERE id = :m', ['m' => $avtale['member_id']])
-                                      ?: gmdate('Y-m-d'),
-            ], ['id' => (int) $avtale['member_id']]);
-        } elseif (in_array($ny, ['stoppet', 'utlopt'], true) && (string) $avtale['status'] === 'aktiv') {
-            // L-1: bare avtalen som loep, kan ta medlemskapet med seg — og
-            // bare naar ingen annen loeper. Et forsoek som aldri ble godkjent
-            // (EXPIRED, eller avslaatt i appen) endrer bare sin egen rad over.
-            self::oppsagtOmIngenLoeper((int) $avtale['member_id']);
-        }
-
-        // Vervepremien. Avtalen er aktiv og foerste trekk tatt — kom vennen
-        // fra en vervelenke, faar den som vervet timene sine naa. Trygg aa
-        // kalle hver gang: premien gis én gang per venn. Feiler den, skal
-        // ikke medlemskapet til vennen stoppe av det. Bare naar avtalen GAAR
-        // over til aktiv — ikke hver gang en aktiv avtale sjekkes.
-        if ($ny === 'aktiv' && (string) $avtale['status'] !== 'aktiv') {
             try {
                 Verving::premier((int) $avtale['member_id'], (int) $avtale['id'], (string) $avtale['plan']);
             } catch (Throwable $e) {
                 logg_feil('Vervepremien feilet for avtale ' . $avtale['id'], $e);
             }
         }
-
-        return $ny;
+        return $resultat;
     }
 
     /**
@@ -3908,6 +3941,10 @@ final class Medlemskap
             $avtale, $maaned, $tidligere, $paaNytt, $periodeFra, $lagre, $kropp, $nokkel
         ): array {
             DB::en('SELECT id FROM members WHERE id = :i FOR UPDATE', ['i' => (int) $avtale['member_id']]);
+            $gjeldendeAvtale = DB::en('SELECT status FROM subscriptions WHERE id = :i', ['i' => (int) $avtale['id']]);
+            if ($gjeldendeAvtale === null || $gjeldendeAvtale['status'] !== 'aktiv') {
+                return ['stoppet', 0];
+            }
             $betaltFraFoer = self::betalingForMaaned((int) $avtale['member_id'], $maaned, true) !== null;
             if ($betaltFraFoer && $tidligere === null) {
                 self::flyttForbiBetaltMaaned($avtale);
@@ -3932,6 +3969,9 @@ final class Medlemskap
         if ($utfall === 'betalt') {
             logg('Trekk hoppet over: maaneden er alt betalt', ['avtale' => (int) $avtale['id'], 'maaned' => $maaned]);
             return 'betalt fra foer';
+        }
+        if ($utfall === 'stoppet') {
+            return 'avtalen er stoppet';
         }
         $betalingId = (int) $betalingId;
 

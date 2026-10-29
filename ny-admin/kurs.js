@@ -88,7 +88,7 @@ function tegnKursside(h) {
     ${gruppe('Send', [['Påminnelse', 'kursPaaminnelse'], [`Kursbevis til ${bet} som har betalt`, 'kursbevis'], ['Bekreftelse på nytt', 'bekreftAlle']])}
     ${gruppe('Datoen', [['Endre dato og tid', 'kursFlytt'], ['Avlys dato', 'kursAvlys', h.avlyst ? 'disabled' : ''], ['Kopier økta', 'kursKopier'], [h.visFullt ? 'Åpne for påmelding' : 'Steng for påmelding', 'kursSteng']])}
     ${erPop(h.kursId) ? popPrisliste() : ''}
-    ${erMobil() ? '' : gruppe('Kurset', [['Rediger kurset (gammel admin)', 'kursRediger'], ['Notat', 'kursNotat'], ['Legg til bilde (gammel admin)', 'kursBilde'], ['Slett kurs', 'kursSlett', 'style="color:var(--red)"']])}
+    ${erMobil() ? '' : gruppe('Kurset', [['Rediger kurset', 'kursRediger'], ['Kursinnstillinger', 'kursInnstillinger'], ['Notat', 'kursNotat'], ['Kursbilder', 'kursBilde'], ['Slett kurs', 'kursSlett', 'style="color:var(--red)"']])}
   </div></section>
   <section class="kort">
     <div class="kort-head"><h2>Deltakere ${h.pameldt}/${h.kap}</h2>${ub ? `<button class="knapp liten rod" data-k="filterUbetalt" aria-pressed="${KS.bareUbetalt}">${ub} ikke betalt</button>` : ''}</div>
@@ -105,7 +105,7 @@ async function tegn(el) {
     try {
       const {kurs, oktId} = await nesteOkt(KS.kurs);
       if (oktId) { KS.okt = oktId; KS.fra = KS.fra || 'kurs'; }
-      else { el.innerHTML = `<div class="nk-kurs"><button class="knapp liten" data-k="kursTilbake">← Alle kurs</button><h1 style="margin-top:16px">${esc(kurs?.tittel || 'Kurset')}</h1><p class="muted" style="margin-top:8px">Kurset har ingen kommende datoer.</p><div class="valgknapper" style="margin-top:14px"><button class="knapp hoved" data-k="serie">＋ Nye datoer</button><button class="knapp" data-k="kursRediger" data-kurs="${KS.kurs}">Rediger kurset (gammel admin)</button></div></div>`; return; }
+      else { el.innerHTML = `<div class="nk-kurs"><button class="knapp liten" data-k="kursTilbake">← Alle kurs</button><h1 style="margin-top:16px">${esc(kurs?.tittel || 'Kurset')}</h1><p class="muted" style="margin-top:8px">Kurset har ingen kommende datoer.</p><div class="valgknapper" style="margin-top:14px"><button class="knapp hoved" data-k="serie">＋ Nye datoer</button><button class="knapp" data-k="kursRediger" data-kurs="${KS.kurs}">Rediger kurset</button><button class="knapp" data-k="kursInnstillinger" data-kurs="${KS.kurs}">Kursinnstillinger</button><button class="knapp" data-k="kursBilde" data-kurs="${KS.kurs}">Kursbilder</button></div></div>`; return; }
     } catch (e) { el.innerHTML = `<div class="nk-kurs"><p class="feil">${esc(e.message)}</p></div>`; return; }
   }
   if (KS.okt) {
@@ -141,10 +141,333 @@ H.kursFlytt = () => arkFlytt([aktiv()], false);
 H.kursAvlys = () => arkFlytt([aktiv()], true);
 H.kursSteng = () => stengOkt(aktiv());
 H.kursKopier = () => kopierOkt(aktiv());
-// Kursoppsettet og bildet redigeres fortsatt i gammel admin. Kurs-id-en sendes med i adressen.
-const tilGammel = (id, vis) => { location.href = '/admin-ny#kurs?kurs=' + encodeURIComponent(id || aktiv()?.kursId || '') + (vis ? '&vis=' + vis : ''); };
-H.kursRediger = b => tilGammel(+b.dataset.kurs);
-H.kursBilde = () => tilGammel(0, 'bilde');
+const kursIdFor = b => +(b?.dataset?.kurs || aktiv()?.kursId || KS.kurs || 0);
+async function kursRad(id) {
+  const d = await hentKurs(true);
+  const k = (d.kurs || []).find(r => +r.id === id);
+  if (!k) throw Error('Fant ikke kurset.');
+  return k;
+}
+H.kursRediger = async b => {
+  try {
+    const k = await kursRad(kursIdFor(b));
+    ark(`<div class="ark-head"><h2>Rediger kurs</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
+      <div style="display:grid;gap:12px">
+        <label><small>Kursnavn</small><input id="nk-k-tittel" value="${esc(k.tittel)}" maxlength="191" required></label>
+        <label><small>Pris i kroner</small><input id="nk-k-pris" type="number" min="0" step="1" value="${esc(k.pris)}" required></label>
+        <label><small>Antall plasser</small><input id="nk-k-kapasitet" type="number" min="1" max="999" step="1" value="${esc(k.kapasitet)}" required></label>
+        <label><small>Type</small><select id="nk-k-type">${[['kurs','Kurs'],['event','Arrangement'],['workshop','Workshop']].map(([v,n]) => `<option value="${v}" ${k.type === v ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
+        <label><small>Synlighet</small><select id="nk-k-status">${[['kladd','Utkast'],['publisert','Publisert'],['avlyst','Avlyst']].map(([v,n]) => `<option value="${v}" ${k.status === v ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
+        <label><small>Beskrivelse</small><textarea id="nk-k-om" rows="5">${esc(k.om || '')}</textarea></label>
+        <label><small>Kursholdertekst</small><input id="nk-k-instruktor" value="${esc(k.instruktor || '')}"></label>
+        <label style="display:flex;gap:8px;align-items:center"><input id="nk-k-sms" type="checkbox" ${k.sms ? 'checked' : ''}>SMS-påminnelse</label>
+      </div>
+      <div class="ark-fot"><button class="knapp" data-k="lukk">Avbryt</button><button class="knapp hoved" data-k="kursLagre" data-kurs="${k.id}">Lagre kurs</button></div>`);
+  } catch (e) { toast(esc(e.message)); }
+};
+H.kursLagre = async b => {
+  const v = id => document.getElementById(id)?.value?.trim() || '';
+  const tittel = v('nk-k-tittel'), pris = v('nk-k-pris'), kapasitet = v('nk-k-kapasitet');
+  if (!tittel || !/^\d+$/.test(pris) || !/^[1-9]\d*$/.test(kapasitet) || +kapasitet > 999) return toast('Fyll ut navn, pris og antall plasser med gyldige tall.');
+  const status = v('nk-k-status');
+  if (status === 'publisert' && !await window.NA.bekreft('Publiser kurset?', 'Kurset blir synlig på nettsiden med den lagrede prisen.', 'Publiser')) return;
+  b.disabled = true;
+  try {
+    await api('kurs.php', {handling: 'lagre', id: +b.dataset.kurs, tittel, pris: +pris, kapasitet: +kapasitet,
+      type: v('nk-k-type'), status, om: v('nk-k-om'), instruktor: v('nk-k-instruktor'),
+      sms: document.getElementById('nk-k-sms')?.checked ? 'ja' : 'nei'});
+    lukk(true); toast('Kurset er lagret.'); await oppfrisk();
+  } catch (e) { b.disabled = false; toast(esc(e.message)); }
+};
+const KURS_TEKSTER = [['tema','Kategori'],['punkter','Dette er inkludert'],['laerer','Dette lærer du'],
+  ['praktisk','Praktisk informasjon'],['allergener','Allergener'],['passerNivaa','Passer nivå'],
+  ['passerHvem','Passer for'],['metode','Metode'],['varighet','Varighet'],['nivaaIntern','Internt nivå'],
+  ['nivaaTekst','Nivåtekst'],['kortBeskrivelse','Kort beskrivelse'],['bildeAlt','Beskrivelse av bildet'],
+  ['lagerDu','Dette lager du'],['medHjem','Dette får du med hjem'],['ferdigTid','Når arbeidet er ferdig'],
+  ['tillegg','Tillegg'],['varighetTekst','Varighet på nettsiden'],['bekreftelse','Tekst i bekreftelsen'],
+  ['seoTittel','Søketittel'],['seoMeta','Søkebeskrivelse']];
+const kursVerdi = id => document.getElementById(id)?.value?.trim() || '';
+const kursHake = id => !!document.getElementById(id)?.checked;
+async function lagreKursFelt(id, felt) {
+  const k = await kursRad(id);
+  await api('kurs.php', {handling: 'lagre', id, tittel: k.tittel, status: k.status, ...felt});
+  await oppfrisk();
+}
+H.kursInnstillinger = async b => {
+  try {
+    const k = await kursRad(kursIdFor(b));
+    const valg = [['Kursinnhold og søk','kursInnhold'],['Booking og kursholder','kursBooking'],
+      ['Åpent for booking','kursUkeplan'],['Dette kan du lage','kursKarusell'],
+      ['Gjentakelser','kursGjentakelser'],['Tekstforslag','kursTekstforslag'],
+      ['Kursbilder','kursBilde'],['Lag luftigere hovedbilde','kursBildeForslag']];
+    ark(`<div class="ark-head"><h2>Kursinnstillinger · ${esc(k.tittel)}</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
+      <div class="valgknapper">${valg.map(([navn, handling]) => `<button class="knapp" data-k="${handling}" data-kurs="${k.id}">${navn}</button>`).join('')}</div>`);
+  } catch (e) { toast(esc(e.message)); }
+};
+H.kursInnhold = async b => {
+  try {
+    const k = await kursRad(kursIdFor(b));
+    ark(`<div class="ark-head"><h2>Kursinnhold · ${esc(k.tittel)}</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
+      <div style="display:grid;gap:12px">${KURS_TEKSTER.map(([felt, navn]) => `<label><small>${navn}</small><textarea id="nk-ki-${felt}" rows="${felt === 'seoTittel' || felt === 'tema' ? 2 : 4}">${esc(k[felt] || '')}</textarea></label>`).join('')}</div>
+      <div class="ark-fot"><button class="knapp" data-k="kursInnstillinger" data-kurs="${k.id}">Tilbake</button><button class="knapp hoved" data-k="kursInnholdLagre" data-kurs="${k.id}">Lagre innhold</button></div>`);
+  } catch (e) { toast(esc(e.message)); }
+};
+H.kursInnholdLagre = async b => {
+  const id = +b.dataset.kurs;
+  const felt = Object.fromEntries(KURS_TEKSTER.map(([navn]) => [navn, kursVerdi('nk-ki-' + navn)]));
+  b.disabled = true;
+  try {
+    if ((await kursRad(id)).status === 'publisert' && !await window.NA.bekreft('Oppdater publisert kurs?', 'Tekstene blir synlige på nettsiden.', 'Publiser endringer')) { b.disabled = false; return; }
+    await lagreKursFelt(id, felt);
+    lukk(true); toast('Kursinnholdet er lagret.');
+  } catch (e) { b.disabled = false; toast(esc(e.message)); }
+};
+H.kursBooking = async b => {
+  try {
+    const id = kursIdFor(b), [k, d, r] = await Promise.all([kursRad(id), hentKurs(true), api('ressurser.php')]);
+    const valg = (id, liste, valgt, standard) => `<select id="${id}"><option value="0">${standard}</option>${liste.map(x => `<option value="${x.id}" ${+x.id === +valgt ? 'selected' : ''}>${esc(x.navn)}</option>`).join('')}</select>`;
+    ark(`<div class="ark-head"><h2>Booking · ${esc(k.tittel)}</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
+      <div style="display:grid;gap:12px">
+        <label><small>Kursholder</small>${valg('nk-kb-holder', d.kursholdere || [], k.kursholderId, 'Verkstedets standard')}</label>
+        <label><small>Delt ressurs</small>${valg('nk-kb-ressurs', r.ressurser || [], k.ressursId, 'Ingen delt ressurs')}</label>
+        <label><input type="checkbox" id="nk-kb-uten" ${k.visUtenDato ? 'checked' : ''}> Vis kurset uten framtidige datoer</label>
+        <label><input type="checkbox" id="nk-kb-kasse" ${k.gjenstandIKassa ? 'checked' : ''}> Gjenstanden betales i verkstedet</label>
+        <label><input type="checkbox" id="nk-kb-fra" ${k.fraPris ? 'checked' : ''}> Vis prisen som fra-pris</label>
+      </div><div class="ark-fot"><button class="knapp" data-k="kursInnstillinger" data-kurs="${id}">Tilbake</button><button class="knapp hoved" data-k="kursBookingLagre" data-kurs="${id}">Lagre bookingvalg</button></div>`);
+  } catch (e) { toast(esc(e.message)); }
+};
+H.kursBookingLagre = async b => {
+  const id = +b.dataset.kurs;
+  const felt = {kursholderId: +kursVerdi('nk-kb-holder'), ressursId: +kursVerdi('nk-kb-ressurs'),
+    visUtenDato: kursHake('nk-kb-uten') ? 'ja' : 'nei', gjenstandIKassa: kursHake('nk-kb-kasse') ? 'ja' : 'nei',
+    fraPris: kursHake('nk-kb-fra') ? 'ja' : 'nei'};
+  b.disabled = true;
+  try {
+    if ((await kursRad(id)).status === 'publisert' && !await window.NA.bekreft('Oppdater bookingen?', 'Endre innstillinger som brukes på nettsiden.', 'Lagre innstillinger')) { b.disabled = false; return; }
+    await lagreKursFelt(id, felt);
+    lukk(true); toast('Bookingvalgene er lagret.');
+  } catch (e) { b.disabled = false; toast(esc(e.message)); }
+};
+const UKEDAGER = ['Mandag','Tirsdag','Onsdag','Torsdag','Fredag','Lørdag','Søndag'];
+H.kursUkeplan = async b => {
+  try {
+    const k = await kursRad(kursIdFor(b)), plan = k.ukeplan || [], forste = plan[0] || {};
+    ark(`<div class="ark-head"><h2>Åpent for booking · ${esc(k.tittel)}</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
+      <p class="muted">Velg dagene og tidsrommet folk kan komme. Tom dagliste følger åpningstidene.</p>
+      <div style="display:grid;gap:10px">${UKEDAGER.map((navn, i) => `<label><input type="checkbox" id="nk-ku-dag${i + 1}" ${plan.some(x => +x.ukedag === i + 1) ? 'checked' : ''}> ${navn}</label>`).join('')}
+        <label><small>Fra</small><input type="time" id="nk-ku-fra" value="${esc(forste.fra || '17:00')}"></label>
+        <label><small>Til</small><input type="time" id="nk-ku-til" value="${esc(forste.til || '20:00')}"></label>
+        <label><small>Hvor lenge varer en plass (minutter)</small><input type="number" id="nk-ku-min" min="15" max="1440" step="15" value="${esc(k.plassMinutter || '')}"></label>
+        ${k.folgerApningstid ? '' : `<label><input type="checkbox" id="nk-ku-uten" ${k.utenPlassgrense ? 'checked' : ''}> Ingen plassgrense</label>`}
+      </div><div class="ark-fot"><button class="knapp" data-k="kursInnstillinger" data-kurs="${k.id}">Tilbake</button><button class="knapp hoved" data-k="kursUkeplanLagre" data-kurs="${k.id}">Lagre åpningstid</button></div>`);
+  } catch (e) { toast(esc(e.message)); }
+};
+H.kursUkeplanLagre = async b => {
+  const dager = UKEDAGER.map((_, i) => kursHake('nk-ku-dag' + (i + 1)) ? i + 1 : 0).filter(Boolean);
+  const fra = kursVerdi('nk-ku-fra'), til = kursVerdi('nk-ku-til'), min = kursVerdi('nk-ku-min');
+  if (dager.length && (!fra || !til || til <= fra)) return toast('Sluttid må være etter starttid.');
+  if (min && (!/^\d+$/.test(min) || +min < 15 || +min > 1440 || +min % 15)) return toast('Plasslengden må være 15–1440 minutter i trinn på 15.');
+  b.disabled = true;
+  try {
+    const r = await api('kurs.php', {handling: 'ukeplan', kursId: +b.dataset.kurs, dager: dager.join(','), fra, til,
+      plassMinutter: min || 0, utenPlassgrense: kursHake('nk-ku-uten') ? 'ja' : 'nei'});
+    lukk(true); toast(esc(r.beskjed || 'Åpningstiden er lagret.')); await oppfrisk();
+  } catch (e) { b.disabled = false; toast(esc(e.message)); }
+};
+H.kursKarusell = async b => {
+  try {
+    const k = await kursRad(kursIdFor(b)), d = await hentKurs(true);
+    const valgte = new Set(k.karusellFra || []);
+    const kurs = (d.kurs || []).filter(x => x.id !== k.id);
+    kurs.sort((a, b) => (valgte.has(a.id) ? 0 : 1) - (valgte.has(b.id) ? 0 : 1)
+      || (valgte.has(a.id) && valgte.has(b.id) ? k.karusellFra.indexOf(a.id) - k.karusellFra.indexOf(b.id) : 0));
+    ark(`<div class="ark-head"><h2>Dette kan du lage · ${esc(k.tittel)}</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
+      <p class="muted">Velg kurs som karusellen skal hente bilde og korttekst fra, i rekkefølgen under.</p>
+      <div style="display:grid;gap:9px;max-height:400px;overflow:auto">${kurs.map(x => `<label><input type="checkbox" data-nk-karusell="${x.id}" ${valgte.has(x.id) ? 'checked' : ''}> ${esc(x.tittel)}</label>`).join('')}</div>
+      <div class="ark-fot"><button class="knapp" data-k="kursInnstillinger" data-kurs="${k.id}">Tilbake</button><button class="knapp hoved" data-k="kursKarusellLagre" data-kurs="${k.id}">Lagre karusell</button></div>`);
+  } catch (e) { toast(esc(e.message)); }
+};
+H.kursKarusellLagre = async b => {
+  b.disabled = true;
+  try {
+    const karusellFra = [...document.querySelectorAll('[data-nk-karusell]:checked')].map(x => +x.dataset.nkKarusell);
+    await lagreKursFelt(+b.dataset.kurs, {karusellFra});
+    lukk(true); toast('Karusellen er lagret.');
+  } catch (e) { b.disabled = false; toast(esc(e.message)); }
+};
+H.kursGjentakelser = async b => {
+  try {
+    const k = await kursRad(kursIdFor(b));
+    ark(`<div class="ark-head"><h2>Gjentakelser · ${esc(k.tittel)}</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
+      <button class="knapp hoved" data-k="kursSerieNy" data-kurs="${k.id}">Ny gjentakelse</button>
+      <div style="display:grid;gap:10px;margin-top:16px">${(k.serier || []).map(s => `<div class="rad"><span>${esc(s.tekst || s.monster || 'Gjentakende kursdatoer')}</span><button class="knapp liten rod" data-k="kursSerieAv" data-kurs="${k.id}" data-serie="${s.id}">Stopp gjentakelsen</button></div>`).join('') || '<p class="muted">Ingen aktive gjentakelser.</p>'}</div>
+      <div class="ark-fot"><button class="knapp" data-k="kursInnstillinger" data-kurs="${k.id}">Tilbake</button></div>`);
+  } catch (e) { toast(esc(e.message)); }
+};
+H.kursSerieNy = async b => {
+  try {
+    const k = await kursRad(kursIdFor(b));
+    const select = (id, label, valg) => `<label><small>${label}</small><select id="${id}">${valg.map(([v, n]) => `<option value="${v}">${n}</option>`).join('')}</select></label>`;
+    ark(`<div class="ark-head"><h2>Ny gjentakelse · ${esc(k.tittel)}</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
+      <div style="display:grid;gap:12px">
+        ${select('nk-ks-monster','Gjentakelse',[['ukentlig','Hver uke'],['annenhver','Annenhver uke'],['manedlig','Månedlig']])}
+        ${select('nk-ks-ukedag','Ukedag',UKEDAGER.map((n, i) => [i + 1, n]))}
+        <label><small>Dato i måneden (ved månedlig)</small><input type="number" id="nk-ks-dag" min="1" max="31"></label>
+        <label><small>Startdato</small><input type="date" id="nk-ks-start" value="${idag()}"></label>
+        <label><small>Fra</small><input type="time" id="nk-ks-fra" value="18:00"></label>
+        <label><small>Til</small><input type="time" id="nk-ks-til" value="20:00"></label>
+        <label><small>Lag datoer så mange uker fram</small><input type="number" id="nk-ks-uker" min="1" max="52" value="8"></label>
+        <label><small>Antall ganger (tomt til regelen stoppes)</small><input type="number" id="nk-ks-antall" min="1" max="500"></label>
+        <label><small>Antall plasser</small><input type="number" id="nk-ks-kap" min="1" max="999" value="${esc(k.kapasitet)}"></label>
+      </div><div class="ark-fot"><button class="knapp" data-k="kursGjentakelser" data-kurs="${k.id}">Tilbake</button><button class="knapp hoved" data-k="kursSerieLagre" data-kurs="${k.id}">Opprett gjentakelse</button></div>`);
+  } catch (e) { toast(esc(e.message)); }
+};
+H.kursSerieLagre = async b => {
+  const monster = kursVerdi('nk-ks-monster'), dag = kursVerdi('nk-ks-dag'), fra = kursVerdi('nk-ks-fra'), til = kursVerdi('nk-ks-til');
+  const uker = kursVerdi('nk-ks-uker'), antall = kursVerdi('nk-ks-antall'), kap = kursVerdi('nk-ks-kap');
+  if (!kursVerdi('nk-ks-start') || !fra || !til || til <= fra || !/^[1-9]\d*$/.test(uker) || +uker > 52 ||
+    (monster === 'manedlig' && (!/^[1-9]\d*$/.test(dag) || +dag > 31)) ||
+    (antall && (!/^[1-9]\d*$/.test(antall) || +antall > 500)) ||
+    (kap && (!/^[1-9]\d*$/.test(kap) || +kap > 999))) return toast('Kontroller dato, klokkeslett og antall.');
+  if (!await window.NA.bekreft('Lag gjentakende datoer?', 'Opprett kursdatoer etter denne regelen.', 'Opprett')) return;
+  b.disabled = true;
+  try {
+    const r = await api('kurs.php', {handling: 'serie', kursId: +b.dataset.kurs, monster,
+      ukedag: +kursVerdi('nk-ks-ukedag'), dagIMaaned: +dag || 0, startDato: kursVerdi('nk-ks-start'), fra, til,
+      ukerFram: +uker, antall: +antall || 0, kapasitet: +kap || 0});
+    toast(esc(r.beskjed || 'Gjentakelsen er lagret.')); await oppfrisk(); await H.kursGjentakelser(b);
+  } catch (e) { b.disabled = false; toast(esc(e.message)); }
+};
+H.kursSerieAv = async b => {
+  if (!await window.NA.bekreft('Stopp gjentakelsen?', 'Regelen stoppes. Kursdatoer med påmeldinger beholdes.', 'Stopp')) return;
+  b.disabled = true;
+  try {
+    const r = await api('kurs.php', {handling: 'serieAv', serieId: +b.dataset.serie});
+    toast(esc(r.beskjed || 'Gjentakelsen er stoppet.')); await oppfrisk(); await H.kursGjentakelser(b);
+  } catch (e) { b.disabled = false; toast(esc(e.message)); }
+};
+H.kursTekstforslag = async b => {
+  try {
+    const k = await kursRad(kursIdFor(b));
+    const felt = [['om','Beskrivelse'], ...KURS_TEKSTER.filter(([id]) => !['tema','nivaaIntern'].includes(id))];
+    ark(`<div class="ark-head"><h2>Tekstforslag · ${esc(k.tittel)}</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
+      <label><small>Hvilken tekst?</small><select id="nk-kt-felt">${felt.map(([id, n]) => `<option value="${id}">${n}</option>`).join('')}</select></label>
+      <div class="ark-fot"><button class="knapp" data-k="kursInnstillinger" data-kurs="${k.id}">Tilbake</button><button class="knapp hoved" data-k="kursTekstLag" data-kurs="${k.id}">Lag forslag</button></div>`);
+  } catch (e) { toast(esc(e.message)); }
+};
+H.kursTekstLag = async b => {
+  const felt = kursVerdi('nk-kt-felt'), label = felt === 'om' ? 'Beskrivelse' : KURS_TEKSTER.find(([id]) => id === felt)?.[1];
+  if (!label || !await window.NA.bekreft('Lag tekstforslag?', 'Dette bruker AI-budsjettet. Du kontrollerer teksten før lagring.', 'Lag forslag')) return;
+  b.disabled = true;
+  try {
+    const k = await kursRad(+b.dataset.kurs);
+    const data = felt === 'om'
+      ? {handling: 'kursbeskrivelse', tittel: k.tittel, kategori: k.tema, pris: k.pris, plasser: k.kapasitet}
+      : {handling: 'felttekst', felt: label, om: k.tittel, hvor: 'Kurs',
+        form: ['punkter','laerer','lagerDu','medHjem'].includes(felt) ? 'punkter' : 'avsnitt',
+        kontekst: Object.fromEntries([['Beskrivelse', k.om], ...KURS_TEKSTER.map(([id, n]) => [n, k[id]])])};
+    const r = await api('ai.php', data);
+    ark(`<div class="ark-head"><h2>Kontroller tekstforslaget · ${esc(label)}</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
+      <p class="muted">Kostnad: ${esc(r.kostnad || '')}. Kontroller opplysningene og rediger teksten før lagring.</p>
+      <textarea id="nk-kt-tekst" rows="12" style="width:100%">${esc(r.tekst || '')}</textarea>
+      <div class="ark-fot"><button class="knapp" data-k="lukk">Avbryt</button><button class="knapp hoved" data-k="kursTekstLagre" data-kurs="${k.id}" data-felt="${felt}">Lagre teksten</button></div>`);
+  } catch (e) { b.disabled = false; toast(esc(e.message)); }
+};
+H.kursTekstLagre = async b => {
+  const tekst = kursVerdi('nk-kt-tekst');
+  if (!tekst || !await window.NA.bekreft('Publiser teksten?', 'Erstatt teksten på kurset med det kontrollerte forslaget.', 'Lagre')) return;
+  b.disabled = true;
+  try { await lagreKursFelt(+b.dataset.kurs, {[b.dataset.felt]: tekst}); lukk(true); toast('Teksten er lagret.'); }
+  catch (e) { b.disabled = false; toast(esc(e.message)); }
+};
+H.kursBildeForslag = async b => {
+  const id = kursIdFor(b);
+  if (!await window.NA.bekreft('Lag bildeforslag?', 'Dette bruker AI-budsjettet. Du velger etterpå om bildet skal brukes.', 'Lag forslag')) return;
+  b.disabled = true;
+  try {
+    const k = await kursRad(id), r = await api('gemini.php', {handling: 'utvidKursbilde', id});
+    ark(`<div class="ark-head"><h2>Kontroller bildeforslaget · ${esc(k.tittel)}</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
+      ${k.bilde ? `<p>Nåværende bilde</p><img src="${esc(bildeSrc(k.bilde))}" alt="" style="width:100%;max-height:220px;object-fit:contain">` : ''}
+      <p>Nytt forslag</p><img src="${esc(bildeSrc(r.url))}" alt="" style="width:100%;max-height:220px;object-fit:contain">
+      <p class="muted">Kostnad: ${esc(r.kostnad || '')}</p>
+      <div class="ark-fot"><button class="knapp" data-k="lukk">Avbryt</button><button class="knapp hoved" data-k="kursBildeForslagBruk" data-kurs="${id}" data-url="${esc(r.url)}">Bruk det nye bildet</button></div>`);
+  } catch (e) { b.disabled = false; toast(esc(e.message)); }
+};
+H.kursBildeForslagBruk = async b => {
+  if (!await window.NA.bekreft('Bytt bildet?', 'Ta det nye bildet i bruk som hovedbilde.', 'Bruk bildet')) return;
+  b.disabled = true;
+  try { await api('kurs.php', {handling: 'hovedbilde', id: +b.dataset.kurs, bilde: b.dataset.url}); lukk(true); toast('Bildet er byttet.'); await oppfrisk(); }
+  catch (e) { b.disabled = false; toast(esc(e.message)); }
+};
+const kursBilder = k => k.bilder?.length ? k.bilder : k.bilde ? [k.bilde] : [];
+const bildeSrc = url => '/' + String(url || '').replace(/^\/+/, '');
+H.kursBilde = async b => {
+  try {
+    const k = await kursRad(kursIdFor(b));
+    const d = await api('bilder.php');
+    const bilder = kursBilder(k);
+    const bibliotek = [...(d.egne || []), ...(d.medfolgende || [])];
+    ark(`<div class="ark-head"><h2>Kursbilder · ${esc(k.tittel)}</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
+      <p class="muted">Første bilde er hovedbildet. Bildene vises i denne rekkefølgen på kurssiden.</p>
+      <div style="display:grid;gap:12px;margin:16px 0">${bilder.length ? bilder.map((url, i) => `<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <img src="${esc(bildeSrc(url))}" alt="" style="width:96px;height:72px;object-fit:cover;border-radius:8px">
+        <span>${i === 0 ? 'Hovedbilde' : `Bilde ${i + 1}`}</span>
+        ${i ? `<button class="knapp liten" data-k="kursBildeForst" data-kurs="${k.id}" data-nr="${i}">Flytt først</button>` : ''}
+        <button class="knapp liten" data-k="kursBildeFjern" data-kurs="${k.id}" data-nr="${i}">Fjern fra kurset</button></div>`).join('') : '<p>Ingen kursbilder ennå.</p>'}</div>
+      <label style="display:grid;gap:5px;margin:14px 0"><small>Last opp et bilde</small><input type="file" id="nk-k-opplast" data-kurs="${k.id}" accept="image/jpeg,image/png,image/webp"></label>
+      <h3>Velg fra bildearkivet</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;max-height:350px;overflow:auto">
+        ${bibliotek.map(r => `<div style="border:1px solid var(--line);border-radius:9px;padding:5px"><img src="${esc(bildeSrc(r.mini || r.url))}" alt="" loading="lazy" style="width:100%;height:88px;object-fit:cover;border-radius:5px">
+          <button class="knapp liten" data-k="kursBildeVelg" data-kurs="${k.id}" data-url="${esc(r.url)}" style="width:100%;margin-top:5px">${bilder.length ? 'Legg til' : 'Bruk bilde'}</button></div>`).join('')}</div>`);
+  } catch (e) { toast(esc(e.message)); }
+};
+async function lagreKursBilder(k, bilder) {
+  await api('kurs.php', {handling: 'bilder', id: k.id, forrigeBilder: kursBilder(k), bilder});
+  await oppfrisk();
+  await H.kursBilde({dataset: {kurs: k.id}});
+}
+H.kursBildeVelg = async b => {
+  b.disabled = true;
+  try {
+    const k = await kursRad(+b.dataset.kurs), bilder = kursBilder(k);
+    if (bilder.includes(b.dataset.url)) { b.disabled = false; return toast('Bildet er allerede på kurset.'); }
+    await lagreKursBilder(k, [...bilder, b.dataset.url]);
+    toast('Bildet er lagt til.');
+  } catch (e) { b.disabled = false; toast(esc(e.message)); }
+};
+H.kursBildeForst = async b => {
+  b.disabled = true;
+  try {
+    const k = await kursRad(+b.dataset.kurs), bilder = kursBilder(k), nr = +b.dataset.nr;
+    if (!bilder[nr]) return;
+    await lagreKursBilder(k, [bilder[nr], ...bilder.filter((_, i) => i !== nr)]);
+    toast('Rekkefølgen er lagret.');
+  } catch (e) { b.disabled = false; toast(esc(e.message)); }
+};
+H.kursBildeFjern = async b => {
+  try {
+    const k = await kursRad(+b.dataset.kurs), bilder = kursBilder(k), nr = +b.dataset.nr;
+    if (!bilder[nr] || !await window.NA.bekreft('Fjern bildet fra kurset?', 'Bildefilen blir liggende i bildearkivet.', 'Fjern')) return;
+    b.disabled = true;
+    await lagreKursBilder(k, bilder.filter((_, i) => i !== nr));
+    toast('Bildet er fjernet fra kurset.');
+  }
+  catch (e) { b.disabled = false; toast(esc(e.message)); }
+};
+document.addEventListener('change', async e => {
+  if (e.target.id !== 'nk-k-opplast' || !e.target.files?.[0]) return;
+  const felt = e.target, fil = felt.files[0];
+  felt.disabled = true;
+  try {
+    const fd = new FormData(); fd.append('handling', 'last-opp'); fd.append('bilde', fil);
+    const r = await fetch('/api/admin/bilder.php', {method: 'POST', body: fd, credentials: 'same-origin'});
+    let d = {}; try { d = await r.json(); } catch { /* tomt svar */ }
+    if (!r.ok || d.ok === false || !d.url) throw Error(d.feil || 'Kunne ikke laste opp bildet.');
+    const k = await kursRad(+felt.dataset.kurs);
+    await lagreKursBilder(k, [...kursBilder(k), d.url]);
+    toast('Bildet er lastet opp og lagt til kurset.');
+  } catch (err) { felt.disabled = false; toast(esc(err.message)); }
+});
 
 // Ta betalt (eieren 09.10.2026): kassa (/kasse) med personen og det som står igjen ferdig i kurven, for alle datoer,
 // i samme vindu; «✕ Lukk» i kassa går tilbake hit.
@@ -323,7 +646,7 @@ H.dAvmeld = () => {
   if (d.status === 'Betalt') {
     ark(`${tilbakeDelt()}<div class="ark-head"><h2>Avmeld deltaker</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
       <p>${esc(d.navn)} har en betalt påmelding. Du kan avmelde deltakeren og beholde betalingen, eller åpne refusjonsflyten. Å åpne betalingsoversikten avmelder ingen og tilbakebetaler ikke penger.</p>
-      <div class="ark-fot"><button class="knapp" data-k="deltaker" data-booking="${d.bookingId}">Avbryt</button><button class="knapp rod" data-k="dAvmeldBetalt">Avmeld og behold betalingen</button><a class="knapp hoved" href="/admin-ny#betalinger?booking=${d.bookingId}">Åpne refusjonsflyten</a></div>`);
+      <div class="ark-fot"><button class="knapp" data-k="deltaker" data-booking="${d.bookingId}">Avbryt</button><button class="knapp rod" data-k="dAvmeldBetalt">Avmeld og behold betalingen</button><a class="knapp hoved" href="/admin#betalinger?booking=${d.bookingId}">Åpne refusjonsflyten</a></div>`);
     return;
   }
   sikker('Avmeld deltaker?', `Avmeld ${esc(d.navn)} fra ${esc(aktiv()?.tittel || 'kurset')} (${d.antall} ${d.antall === 1 ? 'plass' : 'plasser'}). Plassen blir ledig for andre. Ingen penger tilbakebetales. Kunden kan få avbestillingsbekreftelse på e-post etter gjeldende varselinnstilling.`, 'Ja, avmeld deltaker', 'dAvmeldOk');

@@ -127,6 +127,23 @@ small{font-size:15px;color:var(--muted)}
 .laster{color:var(--muted);padding:20px 0}
 
 /* I dag */
+.idag-head{align-items:flex-start}
+.idag-head .idag-ovn{flex:1 1 420px;max-width:620px;min-width:0}
+html:not(.na-mobil) .idag-head .idag-ovn{display:grid;grid-template-columns:minmax(0,280px) minmax(0,1fr);gap:10px;align-items:center}
+html:not(.na-mobil) .idag-head .idag-ovn .kort-head{display:inline;margin:0 6px 0 0}
+html:not(.na-mobil) .idag-head .idag-ovn .kort-head h2{display:inline;font-size:16px}
+html:not(.na-mobil) .idag-head .idag-ovn .ovnstatus{display:inline;font-size:16px}
+html:not(.na-mobil) .idag-head .idag-ovn .ovn-knapper{grid-template-columns:repeat(3,minmax(0,1fr))}
+html:not(.na-mobil) .idag-head .idag-ovn .ovn-knapper button,html:not(.na-mobil) .idag-head .idag-ovn .ovn-knapper select{min-height:40px;padding:0 4px;font-size:12px}
+.idag-head .idag-ovn .ovn-knapper button:not([aria-pressed=true]),.idag-head .idag-ovn .ovn-knapper select{background:var(--paper)}
+.idag-info-side{display:grid;justify-items:end;gap:5px;margin-left:auto}
+.idag-bestilt{color:var(--muted);font-size:12px;line-height:1.2;white-space:nowrap}
+.idag-info-status{display:flex;align-items:center;gap:8px}
+@media (max-width:760px){
+  html:not(.na-mobil) .idag-head .idag-ovn.idag-ovn-lav{display:block}
+  html:not(.na-mobil) .idag-head .idag-ovn.idag-ovn-lav .ovn-knapper{grid-template-columns:1fr;margin-top:10px}
+  html:not(.na-mobil) .idag-head .idag-ovn.idag-ovn-lav .ovn-knapper button,html:not(.na-mobil) .idag-head .idag-ovn.idag-ovn-lav .ovn-knapper select{min-height:52px;font-size:16px}
+}
 .ovnstatus{font-family:var(--f-head);font-size:26px;letter-spacing:-.03em}
 .ovn-knapper{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .ovn-knapper button,.ovn-knapper select{min-height:56px;border-radius:13px;border:1px solid var(--line);background:var(--ground);color:var(--ink);font:800 14px var(--f-body);padding:0 12px;text-align:center}
@@ -230,6 +247,7 @@ dialog#ark::backdrop{background:#27110870}
   .kort{padding:18px;border-radius:18px}
   .head{display:block;margin-bottom:18px}
   .head h1{font-size:32px}
+  .idag-head .idag-ovn{margin-top:14px}
   .rad{align-items:flex-start}
   .rad .knapper{width:100%}
   .rad .knapper .knapp{flex:1 1 auto}

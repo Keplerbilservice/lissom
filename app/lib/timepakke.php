@@ -88,10 +88,6 @@ final class Timepakke
         if ($tak === null) {
             return 'Medlemskapet ditt har ingen timebegrensning.';
         }
-        $brukt = Stempling::minutterDenneManeden((int) $medlem['id']);
-        if ($brukt < (int) round($tak * 60)) {
-            return 'Timepakken kan kjøpes når timene er brukt opp.';
-        }
         return '';
     }
 

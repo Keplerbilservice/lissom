@@ -6044,7 +6044,7 @@ window.__resources = {
                naa bak menyvalget Medlemskap, med de samme radene. -->
           <sc-if value="{{ msFaneHjem }}" hint-placeholder-val="{{ true }}">
           <sc-if value="{{ erMedlem }}" hint-placeholder-val="{{ true }}">
-          <sc-if value="{{ msNyTpKortVis }}" hint-placeholder-val="{{ false }}">
+          <sc-if value="{{ erMedlem }}" hint-placeholder-val="{{ true }}">
             <div data-msny="hjem" class="msny-kort msny-tp-kort" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
               <div><strong>Ekstra timer</strong><div style="font-size: var(--text-sm); color: var(--text-muted);">{{ msNyTpKortTekst }}</div></div>
               <sc-if value="{{ msNyTpPilleVis }}" hint-placeholder-val="{{ false }}"><button type="button" class="msny-pille msny-tp-pille" onClick="{{ msNyTpApne }}">{{ msNyTpPilleTekst }}</button></sc-if>

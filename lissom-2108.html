@@ -6044,7 +6044,7 @@ window.__resources = {
                naa bak menyvalget Medlemskap, med de samme radene. -->
           <sc-if value="{{ msFaneHjem }}" hint-placeholder-val="{{ true }}">
           <sc-if value="{{ erMedlem }}" hint-placeholder-val="{{ true }}">
-          <sc-if value="{{ erMedlem }}" hint-placeholder-val="{{ true }}">
+          <sc-if value="{{ msNyTpKortVis }}" hint-placeholder-val="{{ false }}">
             <div data-msny="hjem" class="msny-kort msny-tp-kort" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
               <div><strong>Ekstra timer</strong><div style="font-size: var(--text-sm); color: var(--text-muted);">{{ msNyTpKortTekst }}</div></div>
               <sc-if value="{{ msNyTpPilleVis }}" hint-placeholder-val="{{ false }}"><button type="button" class="msny-pille msny-tp-pille" onClick="{{ msNyTpApne }}">{{ msNyTpPilleTekst }}</button></sc-if>
@@ -33897,15 +33897,13 @@ class Component extends DCLogic {
       msNyTimeflisIgjen: tall(igjen) + ' t igjen',
       msNyTimelinje: !timeflisVis ? '' : tall(t.brukt) + ' av ' + tall(t.perMnd) + ' timer brukt i ' + maaned
         + (betaltTil && vis('abonnement') ? ' · betalt til ' + betaltTil : ''),
-      // Timepakken som pille under timeflisen (eieren 19.10.2026, visningen
-      // DTmtwYnXHWiybMRcQeS7HM). Samme regel som vindu 2 (timeneBruktOpp), og
-      // den staar ogsaa etter «Ikke nå». Ikke mens man er innstemplet: da
-      // aapnes ikke vinduet. Timer og pris fra timepakken i admin.
-      msNyTpPilleVis: timeflisVis && this.timeneBruktOpp() && !this.erInne(),
-      msNyTpKortVis: medlem && hjem && ((this.timeneBruktOpp() && !this.erInne()) || pakkeIgjen > 0),
+      // Timepakken kan kjøpes når som helst av medlemmer med timebegrensning.
+      // Timer og pris kommer fra timepakken i admin.
+      msNyTpPilleVis: medlem && hjem && !!((st || {}).timepakke || {}).kanKjope,
+      msNyTpKortVis: medlem && hjem && (!!((st || {}).timepakke || {}).kanKjope || pakkeIgjen > 0),
       msNyTpKortTekst: pakkeIgjen > 0
         ? tall(pakkeIgjen) + ' kjøpte timer til gode. De går ikke ut.'
-        : 'Når månedens timer er brukt opp, kan du kjøpe flere timer.',
+        : 'Kjøp flere timer når du vil. Timene går ikke ut.',
       msNyTpPilleTekst: 'Kjøp timepakke · ' + tall(Number(((this.state.stempling || {}).timepakke || {}).timer) || 0)
         + ' t for kr ' + Math.round((((this.state.stempling || {}).timepakke || {}).prisOre || 0) / 100).toLocaleString('nb-NO'),
       msNyTpApne: () => this.setState({ tpVindu: '2', tpLukket: false }),
@@ -45989,8 +45987,7 @@ class Component extends DCLogic {
     const st = this.state.stempling;
     if (!st || !st.timepakke || !st.timer || st.timer.perMnd === null || !this.medlemsvisning()) return av;
     if (this.state.side !== 'minside') return av;
-    // Utstempling og kvitteringen må være tilgjengelige før tilbud om flere timer.
-    if (this.erInne() || this.state.utstApen || this.state.innstRute || this.state.kvittering) return av;
+    if (this.state.utstApen || this.state.innstRute || this.state.kvittering) return av;
     const tp = st.timepakke;
     const igjen = st.timer.igjen;
     const oslo = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Oslo' }));
@@ -46058,14 +46055,14 @@ class Component extends DCLogic {
       const tall = String(igjen).replace('.', ',') + (igjen === 1 ? ' time' : ' timer');
       return Object.assign(ut, { tpVanlig: true,
         tpTittel: 'Snart tomt for timer',
-        tpTekst: 'Du har ' + tall + ' igjen denne måneden. Når timene er brukt opp, kan du kjøpe en timepakke med '
+        tpTekst: 'Du har ' + tall + ' igjen denne måneden. Du kan allerede nå kjøpe en timepakke med '
           + tp.timer + ' timer for ' + kr + '. Timene går ikke ut, og følger med over til neste måned.',
         tpKnapper: [{ tekst: 'Greit å vite', stil: hoved, klikk: () => lukk(() => skriv('lissom_tp_v1', mnd)) }],
       });
     }
     if (vindu === '2') {
       return Object.assign(ut, { tpVanlig: true,
-        tpTittel: 'Månedens timer er brukt opp',
+        tpTittel: 'Kjøp ekstra timer',
         tpTekst: 'Fortsett arbeidet med en timepakke. Timene går ikke ut, og følger med over til neste måned.',
         tpFakta: true, tpFaktaNavn: 'Timepakke · ' + tp.timer + ' timer', tpFaktaPris: kr,
         tpKnapper: [

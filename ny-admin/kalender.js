@@ -935,13 +935,14 @@ export async function hentKurs(tving) { if (!KURS || tving) KURS = await api('ku
 async function hentFerier() { if (!FERIER) { try { FERIER = (await api('skoleferier.php')).perioder || []; } catch { FERIER = []; } } return FERIER; }
 const VARIGHET = [['4 uker', 4], ['8 uker', 8], ['12 uker', 12], ['Til jul', null, 'jul'], ['Til sommeren', null, 'sommer'], ['Velg sluttdato', null, 'egen']];
 const SE = {};
+const standardHolder = () => (KURS?.kursholdere || []).find(h => h.standard && h.aktiv !== false) || null;
 export async function arkSerie({start, enDato = false, kursId = 0} = {}) {
   ark('<div class="ark-head"><h2>Nytt kurs eller serie</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div><p class="muted">Henter kursene …</p>');
-  const [k] = await Promise.all([hentKurs(), hentFerier(), hentPop()]);
+  const [k] = await Promise.all([hentKurs(true), hentFerier(), hentPop()]);
   const liste = (k.kurs || []).filter(x => x.status !== 'avlyst');
   const forste = liste.find(x => x.id === kursId) || null;
   // Ingen forhåndsvalg (eierens regel): klokkeslett, hvor ofte, hvor lenge og skoleferiene velges hver gang.
-  Object.assign(SE, {kursId: forste?.id || 0, holderId: forste?.kursholderId || 0, fra: '', til: '',
+  Object.assign(SE, {kursId: forste?.id || 0, holderId: 0, fra: '', til: '',
     plasser: forste?.kapasitet || '', pris: forste ? String(forste.pris) : '', start: start || pluss(idag(), 1),
     gjentas: enDato ? 1 : 0, varighet: enDato ? -1 : null, egen: '', ferier: new Set(), hoppFerier: false, enDato});
   tegnSerie();
@@ -973,7 +974,7 @@ function tegnSerie() {
   ark(`<div class="ark-head"><h2>Nytt kurs eller serie</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
    <div class="to-felt">
      <label><small>Kursmal</small><select id="se-kurs"><option value="0">Velg kurs …</option>${liste.map(x => `<option value="${x.id}" ${x.id === SE.kursId ? 'selected' : ''}>${esc(x.tittel)}${x.status !== 'publisert' ? ' (' + esc(x.status) + ')' : ''}</option>`).join('')}</select></label>
-     <label><small>Kursholder</small><select id="se-holder"><option value="0">Som kurset</option>${holdere.map(h => `<option value="${h.id}" ${h.id === SE.holderId ? 'selected' : ''}>${esc(h.navn)}</option>`).join('')}</select></label>
+     <label><small>Kursholder</small><select id="se-holder"><option value="0">${esc(standardHolder()?.navn || 'Standardkursholder')} (standard)</option>${holdere.map(h => `<option value="${h.id}" ${h.id === SE.holderId ? 'selected' : ''}>${esc(h.navn)}</option>`).join('')}</select></label>
      <label><small>Fra kl.</small><input type="time" id="se-fra" value="${esc(SE.fra)}"></label>
      <label><small>Til kl.</small><input type="time" id="se-til" value="${esc(SE.til)}"></label>
      <label><small>Plasser</small><input type="number" min="1" id="se-plasser" value="${esc(SE.plasser)}"></label>
@@ -1009,7 +1010,7 @@ document.addEventListener('change', e => {
   if (t.id === 'se-hopp-ferier') { lesSerie(); SE.hoppFerier = t.checked; SE.ferier = new Set(t.checked ? (FERIER || []).map(f => f.fra) : []); tegnSerie(); return; }
   if (t.id === 'se-kurs') {
     lesSerie(); const k = (KURS?.kurs || []).find(x => x.id === SE.kursId);
-    if (k) { SE.plasser = k.kapasitet || ''; SE.pris = String(k.pris); SE.holderId = k.kursholderId || 0; }
+    if (k) { SE.plasser = k.kapasitet || ''; SE.pris = String(k.pris); SE.holderId = 0; }
     tegnSerie(); return;
   }
   if (['se-start', 'se-egen', 'se-gjentas', 'se-fra', 'se-til'].includes(t.id)) { lesSerie(); tegnSerie(); }
@@ -1025,7 +1026,8 @@ H.seOk = async b => {
   if (!erPop(k.id) && pris !== '' && !/^\d+$/.test(pris)) return toast('Skriv prisen i hele kroner, uten komma eller minus.');
   const datoer = serieDatoer().filter(x => !x[1]).map(([d]) => ({start: `${d} ${SE.fra}`, slutt: `${d} ${SE.til}`}));
   b.disabled = true;
-  const felles = {kursId: k.id, ...(SE.holderId ? {kursholderId: SE.holderId} : {}), ...(+SE.plasser > 0 ? {kapasitet: +SE.plasser} : {})};
+  const holderId = SE.holderId || standardHolder()?.id || 0;
+  const felles = {kursId: k.id, ...(holderId ? {kursholderId: holderId} : {}), ...(+SE.plasser > 0 ? {kapasitet: +SE.plasser} : {})};
   let lagtInn = [], hoppet = 0;
   try {
     const r = await api('kurs.php', {handling: 'nydatoer', ...felles, datoer});

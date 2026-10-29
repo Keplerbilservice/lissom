@@ -151,9 +151,11 @@ $id       = Foresporsel::heltall('id');
 // kommer til kassa.
 $rolle    = in_array(Foresporsel::tekst('rolle'), ['admin', 'regnskap', 'kasse'], true)
                 ? Foresporsel::tekst('rolle') : 'medlem';
-// «kursholder» er ingen egen rolle i basen: en medlemsinnlogging som i tillegg
-// staar i kursholderregisteret.
-$somKursholder = Foresporsel::tekst('rolle') === 'kursholder';
+// «kursholder» er ingen egen rolle i basen. En admin kan ogsaa vaere kursholder.
+$holderValgSendt = array_key_exists('kursholder', Foresporsel::kropp());
+$somKursholder = Foresporsel::tekst('rolle') === 'kursholder'
+    || (in_array(Foresporsel::tekst('rolle'), ['admin', 'medlem'], true)
+        && $holderValgSendt && Foresporsel::tekst('kursholder') === 'ja');
 
 /**
  * Taaler kolonnen rollen?
@@ -195,6 +197,12 @@ if ($handling === 'opprett') {
     }
     if ($somKursholder && $epost === '') {
         Svar::feil('Skriv e-posten til kursholderen.');
+    }
+    if ($holderValgSendt && $somKursholder && DB::verdi(
+        'SELECT 1 FROM members WHERE LOWER(TRIM(epost)) = :e LIMIT 1',
+        ['e' => mb_strtolower(trim($epost))]
+    )) {
+        Svar::feil('E-postadressen brukes av en annen konto. Kursholderen maa ha en egen e-postkobling.');
     }
     $sjekkPassord($passord, $brukernavn);
 
@@ -307,15 +315,55 @@ if ($handling === 'endre') {
     // Kursholderen foelger innloggingen paa e-post. Byttes e-posten, flyttes
     // koblingen med, ellers ville hen mistet kursene sine paa Min side.
     $holderFoer = $kursholderFor($bruker['epost'] ?? null);
-    DB::iTransaksjon(static function () use ($data, $id, $bruker, $somKursholder, $holderFoer, $epostEtter, $blirKursholder): void {
+    $erAdminFoer = $bruker['rolle'] === 'admin' || in_array(
+        normaliser_telefon((string) ($bruker['telefon'] ?? '')), Config::adminNumre(), true
+    );
+    $fjernKursholder = $holderFoer && !$somKursholder
+        && (($holderValgSendt && in_array(Foresporsel::tekst('rolle'), ['admin', 'medlem'], true))
+            || ($erAdminFoer && Foresporsel::tekst('rolle') === 'medlem'));
+    $beholdKursholder = $holderFoer && !$holderValgSendt
+        && $erAdminFoer && !in_array(Foresporsel::tekst('rolle'), ['medlem', 'kursholder'], true);
+    $beholdKursholder = $beholdKursholder || ($holderFoer && $holderValgSendt
+        && in_array(Foresporsel::tekst('rolle'), ['regnskap', 'kasse'], true)
+        && Foresporsel::tekst('kursholder') === 'behold');
+    $epostEndret = mb_strtolower(trim($epostEtter)) !== mb_strtolower(trim((string) ($bruker['epost'] ?? '')));
+    $koblingEndres = ($holderValgSendt && in_array(Foresporsel::tekst('rolle'), ['admin', 'medlem'], true)
+            && ($somKursholder ? (!$holderFoer || $epostEndret) : (bool) $holderFoer))
+        || $fjernKursholder
+        || ($beholdKursholder && $epostEndret);
+    $epostKobling = ($somKursholder || $beholdKursholder) ? $epostEtter : (string) ($bruker['epost'] ?? '');
+    if ($koblingEndres
+        && DB::verdi('SELECT 1 FROM members WHERE id <> :i AND LOWER(TRIM(epost)) = :e LIMIT 1',
+            ['i' => $id, 'e' => mb_strtolower(trim($epostKobling))])) {
+        Svar::feil('E-postadressen brukes av en annen konto. Kursholderstatus kan ikke endres entydig.');
+    }
+    if ($holderFoer && $epostEndret && ($holderValgSendt || $beholdKursholder) && ($somKursholder || $beholdKursholder)) {
+        $annenHolder = $kursholderFor($epostEtter);
+        if ($annenHolder && (int) $annenHolder['id'] !== (int) $holderFoer['id']) {
+            Svar::feil('E-postadressen er allerede knyttet til en annen kursholder.');
+        }
+    }
+    if ($fjernKursholder) {
+        $holderId = (int) $holderFoer['id'];
+        $brukt = (DB::harKolonne('kursholdere', 'standard')
+                && DB::verdi('SELECT standard FROM kursholdere WHERE id = :i', ['i' => $holderId]))
+            || (DB::harKolonne('courses', 'kursholder_id')
+                && DB::verdi('SELECT 1 FROM courses WHERE kursholder_id = :i LIMIT 1', ['i' => $holderId]))
+            || (DB::harKolonne('course_sessions', 'kursholder_id')
+                && DB::verdi('SELECT 1 FROM course_sessions WHERE kursholder_id = :i LIMIT 1', ['i' => $holderId]));
+        if ($brukt) {
+            Svar::feil('Kan ikke fjerne kursholderstatus fordi personen er knyttet til kurs eller standardvalget.');
+        }
+    }
+    DB::iTransaksjon(static function () use ($data, $id, $bruker, $rolle, $somKursholder, $beholdKursholder, $holderValgSendt, $holderFoer, $epostEtter, $blirKursholder): void {
         DB::oppdater('members', $data, ['id' => $id]);
-        if ($somKursholder) {
+        if ($somKursholder || $beholdKursholder) {
             if ($holderFoer) {
                 DB::oppdater('kursholdere', ['epost' => mb_substr($epostEtter, 0, 191)], ['id' => $holderFoer['id']]);
             } else {
                 $blirKursholder((string) ($data['navn'] ?? $bruker['navn']), $epostEtter, $bruker['telefon'] ?? null);
             }
-        } elseif ($holderFoer && Foresporsel::tekst('rolle') === 'medlem') {
+        } elseif ($holderFoer && (Foresporsel::tekst('rolle') === 'medlem' || ($rolle === 'admin' && $holderValgSendt))) {
             DB::oppdater('kursholdere', ['aktiv' => 0], ['id' => $holderFoer['id']]);
             revider('kursholder_sluttet', 'kursholder', (int) $holderFoer['id'], ['fra' => 'brukere']);
         }

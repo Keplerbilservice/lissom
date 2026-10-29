@@ -3,7 +3,7 @@
 // samme endepunktene som admin-ny: pamelding.php for deltakerne, venteliste.php for koen,
 // kurs.php for datoen, beskjed.php og okt-varsel.php for beskjeder med eksisterende maler.
 import {api, ark, lukk, toast, registrer, poll, gaaTil, esc, idag, pluss, langDato, kortDato, kr, erMobil,
-  OKTER, KURSHOLDERE, hentPeriode, erOkt, samleDag, ubetalte, H, oppfrisk, vedOppfrisk,
+  OKTER, hentPeriode, erOkt, samleDag, ubetalte, H, oppfrisk, vedOppfrisk,
   arkFlytt, arkBeskjed, arkPaaminnelse, arkSerie, stengOkt, kopierOkt, hentKurs, hentPop, erPop, popPrisliste, popUkjent, POP_FEIL} from './kalender.js';
 
 const KS = {okt: 0, fra: '', kurs: 0, booking: 0, venteliste: false, el: null, liste: null, feil: '', bareUbetalt: false, delt: null};
@@ -195,10 +195,11 @@ H.tbOk = async b => {
 };
 
 // ── Kursholder ──────────────────────────────────────────────────────────────
-H.holder = () => {
+H.holder = async () => {
   const h = aktiv();
+  const holdere = (await hentKurs(true)).kursholdere.filter(k => k.aktiv);
   ark(`<div class="ark-head"><h2>Velg kursholder</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
-    <div class="valgknapper">${KURSHOLDERE.map(k => `<button class="knapp" data-k="settHolder" data-id="${k.id}" aria-pressed="${h.kursholderId === k.id}">${esc(k.navn)}</button>`).join('')}</div>
+    <div class="valgknapper">${holdere.map(k => `<button class="knapp" data-k="settHolder" data-id="${k.id}" aria-pressed="${h.kursholderId === k.id}">${esc(k.navn)}</button>`).join('')}</div>
     <small>Kursholderen ser kurset og deltakerlista på sin side.</small>`);
 };
 H.settHolder = async b => { await api('kurs.php', {handling: 'dato', oktId: KS.okt, kursholderId: +b.dataset.id}); lukk(true); toast('Kursholder er lagret.'); await oppfrisk(); };

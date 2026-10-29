@@ -1019,9 +1019,10 @@ $maGjores = (static function () use ($medlemsstatus, $nyeste): array {
         }
         $hvem = mb_strtolower(trim((string) ($b['epost'] ?: $b['navn'])));
         $p = &$pameldinger[$hvem . '|' . mb_strtolower((string) $b['tittel'])];
-        $p ??= ['b' => $b, 'ider' => [], 'plasser' => 0, 'datoer' => [], 'betalt' => true];
+        $p ??= ['b' => $b, 'ider' => [], 'plasser' => 0, 'datoer' => [], 'betalt' => true, 'bestiltTid' => ''];
         $p['ider'][] = (int) $b['id'];
         $p['plasser'] += max(1, (int) $b['antall']);
+        $p['bestiltTid'] = max($p['bestiltTid'], (string) $b['created_at']);
         if ($b['start_tid']) {
             $p['datoer'][] = Booking::norskDato((string) $b['start_tid']);
         }
@@ -1037,7 +1038,8 @@ $maGjores = (static function () use ($medlemsstatus, $nyeste): array {
                 implode(', ', array_unique($p['datoer'])),
                 $p['betalt'] ? 'Betalt' : 'Ikke betalt'])), 'pameldte?booking=' . (int) $b['id'],
             // Ny admin viser betalingen som merke (eieren 11.10.2026: «fint om jeg kan se om de er betalt eller ikke»).
-            ['ider' => $p['ider'], 'betalt' => $p['betalt']]
+            ['ider' => $p['ider'], 'betalt' => $p['betalt'],
+             'bestiltTid' => $p['bestiltTid'], 'bestiltDato' => Booking::norskDatoKort($p['bestiltTid'])]
             + ['oktId' => $b['course_session_id'] !== null ? (int) $b['course_session_id'] : null]);
     }
     $trygt('venteliste', static function () use ($sak): void {

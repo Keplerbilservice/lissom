@@ -3,8 +3,8 @@
  * Timepakken og svarene etter «Ikke nå», mot databasen.
  *
  * Eieren, 28. september 2026: 6 timer for kr 800, pris og timer i admin.
- * Kan bare kjoepes naar maanedens timer er brukt opp, og ikke paa Prøv
- * Lissom. Timene gaar ikke ut, foelger med til neste maaned og brukes
+ * Kan kjoepes naar som helst av vanlige medlemmer med timegrense, men ikke
+ * paa Prøv Lissom. Timene gaar ikke ut, foelger med til neste maaned og brukes
  * etter maanedens timer.
  *
  * Kjor:  php tests/timepakke.php
@@ -53,13 +53,10 @@ $stemple = static function (int $id, int $min, ?string $inn = null): void {
     ]);
 };
 
-// ── Vanlig medlem med timer igjen: kan ikke kjoepe ───────────────────
+// ── Vanlig medlem med timer igjen: kan kjoepe ─────────────────────────
 $a = $nytt('aktiv', $basis);
-sjekk('timer igjen: kan ikke kjoepe', Timepakke::hvorforIkke($medlem($a)) === 'Timepakken kan kjøpes når timene er brukt opp.',
+sjekk('timer igjen: kan kjoepe', Timepakke::hvorforIkke($medlem($a)) === '',
     Timepakke::hvorforIkke($medlem($a)));
-$avvist = '';
-try { Timepakke::start($medlem($a)); } catch (RuntimeException $e) { $avvist = $e->getMessage(); }
-sjekk('… og serveren avviser kjoepet', $avvist !== '');
 
 // ── Brukt opp: kan kjoepe ─────────────────────────────────────────────
 $stemple($a, $basisTimer * 60 + 90);
@@ -91,7 +88,7 @@ sjekk('taket uten pakke er planen', (float) Medlemskap::timerMedGaver($medlem($a
 $adm = Timepakke::forAdmin($a);
 sjekk('admin: pakken staar der', count($adm['kjopt']) === 1 && $adm['kjopt'][0]['timer'] === 6);
 sjekk('admin: 90 minutter over foer kjoepet er trukket — 270 igjen', $adm['igjenMin'] === 270, (string) $adm['igjenMin']);
-sjekk('med pakketimer igjen: kan ikke kjoepe ny', Timepakke::hvorforIkke($medlem($a)) !== '');
+sjekk('med pakketimer igjen: kan kjoepe ny', Timepakke::hvorforIkke($medlem($a)) === '');
 
 // ── Maaneden er over: bruken skrives, resten foelger med ──────────────
 $b = $nytt('aktiv', $basis);

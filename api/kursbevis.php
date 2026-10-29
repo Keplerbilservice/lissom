@@ -140,6 +140,9 @@ if ($instruktor === '') {
     $instruktor = 'Monica Væthe-Larsen';
     $signatur   = 'signatur-monica.png';
 }
+if ($signatur === '' && strcasecmp($instruktor, 'Eirin Neslow') === 0) {
+    $signatur = 'signatur-eirin-neslow.png';
+}
 
 // Filnavn, eller et bilde eieren har lastet opp. Ingen skraastreker, ingen
 // mappebytting.

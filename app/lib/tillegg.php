@@ -17,8 +17,8 @@ final class Tillegg
 {
     public const MAKS_ALDER = 12;
 
-    /** Fra denne dagen i maaneden kan neste maaned kjoepes paa forskudd. */
-    private const FORSKUDD_FRA_DAG = 25;
+    /** Etter den 20. kjøpes neste måned, med tilgang fra betalingstidspunktet. */
+    private const FORSKUDD_FRA_DAG = 21;
 
     public static function klar(): bool
     {
@@ -67,17 +67,16 @@ final class Tillegg
     }
 
     /**
-     * Maanedene som kan kjoepes naa: denne, og fra den 25. ogsaa neste.
+     * Før den 21. kjøpes denne måneden; deretter neste, med tilgang straks.
      * @return list<string>
      */
     public static function kjopbare(): array
     {
         $naa = self::oslo();
-        $ut = [$naa->format('Y-m')];
         if ((int) $naa->format('j') >= self::FORSKUDD_FRA_DAG) {
-            $ut[] = $naa->modify('first day of next month')->format('Y-m');
+            return [$naa->modify('first day of next month')->format('Y-m')];
         }
-        return $ut;
+        return [$naa->format('Y-m')];
     }
 
     /**
@@ -93,6 +92,17 @@ final class Tillegg
             "SELECT * FROM medlem_tillegg WHERE member_id = :m AND maaned = :mnd AND status = 'aktiv' ORDER BY id DESC LIMIT 1",
             ['m' => $medlemId, 'mnd' => $maaned ?? self::maanedNaa()]
         );
+    }
+
+    /** Betalt neste måned fra den 21. gir også tilgang resten av denne måneden. */
+    public static function aktivtNaa(int $medlemId): ?array
+    {
+        $naa = self::aktivt($medlemId);
+        if ($naa !== null || (int) self::oslo()->format('j') < self::FORSKUDD_FRA_DAG) {
+            return $naa;
+        }
+        $neste = self::oslo()->modify('first day of next month')->format('Y-m');
+        return self::aktivt($medlemId, $neste);
     }
 
     /**

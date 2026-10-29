@@ -10,8 +10,8 @@
  *   - Besoeket varer courses.plass_minutter (admin), fra ankomsten.
  *   - Med plassgrense (ressursen «Paint on Pots» under Ressurser) telles personer som er
  *     til stede SAMTIDIG gjennom hele besoeket (stoerste overlapp), ikke alle
- *     dagens bestillinger. PoP teller ikke mot verkstedplassene, og kurs og
- *     medlemmer teller ikke mot PoP.
+ *     dagens bestillinger. Den egne stolgrensen gjelder i tillegg til
+ *     verkstedets samlede persontak for nye bookinger.
  *   - «Ingen plassgrense» (ressursen slått av): ingen avvisning paa grunn
  *     av kapasitet.
  *   - Unntak per dato (pop_dager, migrasjon 258): fullt (fra et klokkeslett
@@ -346,12 +346,11 @@ final class Malebord
      * Ledige stoler gjennom hele tidsrommet. Aldri under null.
      * Uten plassgrense: Booking::UTEN_GRENSE.
      */
-    public static function ledige(int $kursId, string $fraUtc, string $tilUtc, int $utenBooking = 0): int
+    public static function ledige(int $kursId, string $fraUtc, string $tilUtc, int $utenBooking = 0, bool $medSamlet = true): int
     {
-        if (self::utenGrense($kursId)) {
-            return Booking::UTEN_GRENSE;
-        }
-        return max(0, self::stoler($kursId) - self::opptatt($kursId, $fraUtc, $tilUtc, $utenBooking));
+        $egne = self::utenGrense($kursId) ? Booking::UTEN_GRENSE
+            : max(0, self::stoler($kursId) - self::opptatt($kursId, $fraUtc, $tilUtc, $utenBooking));
+        return $medSamlet ? min($egne, Booking::samletLedige($fraUtc, $tilUtc, $utenBooking)) : $egne;
     }
 
     /**
@@ -380,6 +379,12 @@ final class Malebord
         );
         $uten = self::utenGrense($kursId);
         $stoler = self::stoler($kursId);
+        $samletTak = Booking::samletTak();
+        $samletBesok = $samletTak === Booking::UTEN_GRENSE ? [] : Booking::verkstedBesok(
+            $dagStart->setTimezone($utc)->format('Y-m-d H:i:s'),
+            $dagStart->modify('+2 days')->setTimezone($utc)->format('Y-m-d H:i:s'),
+            $utenBooking
+        );
 
         $tider = [];
         foreach ($vinduer as $v) {
@@ -396,6 +401,14 @@ final class Malebord
                 if (!self::sperret($dato, $start->format('H:i'))) {
                     $ledige = $uten ? Booking::UTEN_GRENSE
                         : max(0, $stoler - self::topp($besok, $start->getTimestamp(), $til->getTimestamp()));
+                    if ($samletTak !== Booking::UTEN_GRENSE) {
+                        $samletBrukt = self::topp($samletBesok, $start->getTimestamp(), $til->getTimestamp());
+                        if ($start->getTimestamp() <= time() && time() < $til->getTimestamp()) {
+                            // Innstemplede medlemmer holdes av for nye besøk, aldri avvises selv.
+                            $samletBrukt += Booking::inneAntallNaa();
+                        }
+                        $ledige = min($ledige, max(0, $samletTak - $samletBrukt));
+                    }
                     if ($ledige >= $antall) {
                         $tider[] = ['tid' => $start->format('H:i'), 'slutt' => $til->format('H:i'), 'ledige' => $ledige];
                     }

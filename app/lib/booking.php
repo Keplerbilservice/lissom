@@ -57,6 +57,130 @@ final class Booking
         return self::$tak;
     }
 
+    /** Samlet persontak i verkstedet; PoP-stolene er en del av rommet, ikke ekstra romkapasitet. */
+    public static function samletTak(): int
+    {
+        if (!DB::harTabell('ressurser')) {
+            return self::UTEN_GRENSE;
+        }
+        $tak = (int) DB::verdi(
+            "SELECT COALESCE(SUM(antall), 0) FROM ressurser
+              WHERE aktiv = 1 AND navn <> 'Paint on Pots' AND antall > 0"
+        );
+        return $tak > 0 ? $tak : self::UTEN_GRENSE;
+    }
+
+    private static function verkstedSluttSql(): string
+    {
+        $minutter = DB::harKolonne('courses', 'plass_minutter')
+            ? 'COALESCE(NULLIF(c.plass_minutter, 0), 120)' : '120';
+        $apen = DB::harKolonne('courses', 'folger_apningstid')
+            ? "COALESCE(c.folger_apningstid, 0) = 1" : '0 = 1';
+        return "COALESCE(cs.slutt_tid, cs.start_tid + INTERVAL IF({$apen}, {$minutter}, 180) MINUTE)";
+    }
+
+    /** Et flerdagerskurs bruker sitt klokkevindu hver dag, ikke hele natten. */
+    private static function verkstedVinduer(int $start, int $end): array
+    {
+        if ($end - $start <= 86400) {
+            return [[$start, $end]];
+        }
+        $vinduer = [];
+        $fraKlokke = $start % 86400;
+        $tilKlokke = $end % 86400;
+        for ($dag = $start - $fraKlokke; $dag <= $end - $tilKlokke; $dag += 86400) {
+            $a = $dag + $fraKlokke;
+            $b = $dag + $tilKlokke + ($tilKlokke <= $fraKlokke ? 86400 : 0);
+            if ($a < $end && $b > $start) {
+                $vinduer[] = [$a, $b];
+            }
+        }
+        return $vinduer;
+    }
+
+    private static function verkstedTopp(array $besok, int $start, int $end): int
+    {
+        $topp = 0;
+        foreach (self::verkstedVinduer($start, $end) as [$a, $b]) {
+            $topp = max($topp, Malebord::topp($besok, $a, $b));
+        }
+        return $topp;
+    }
+
+    private static function verkstedInneIVindu(int $start, int $end, int $naa): bool
+    {
+        foreach (self::verkstedVinduer($start, $end) as [$a, $b]) {
+            if ($a <= $naa && $naa < $b) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Bookede personer i tidsrommet, fra alle kurs og Paint on Pots. */
+    public static function verkstedBesok(string $fraUtc, string $tilUtc, int $utenBooking = 0): array
+    {
+        $slutt = self::verkstedSluttSql();
+        $aktiv = self::aktivSql('b');
+        $besok = [];
+        foreach (DB::alle(
+            "SELECT cs.start_tid, {$slutt} AS slutt,
+                    COALESCE(cs.manuelt_opptatt, 0)
+                    + COALESCE((SELECT SUM(b.antall) FROM bookings b
+                                 WHERE b.course_session_id = cs.id AND b.id <> :uten
+                                   AND {$aktiv}), 0) AS antall
+               FROM course_sessions cs
+               JOIN courses c ON c.id = cs.course_id
+              WHERE cs.status = 'planlagt' AND c.status <> 'avlyst'
+                AND cs.start_tid < :til AND {$slutt} > :fra",
+            ['fra' => $fraUtc, 'til' => $tilUtc, 'uten' => $utenBooking]
+        ) as $r) {
+            $n = (int) $r['antall'];
+            if ($n <= 0) {
+                continue;
+            }
+            $start = strtotime((string) $r['start_tid'] . ' UTC');
+            $end = strtotime((string) $r['slutt'] . ' UTC');
+            foreach (self::verkstedVinduer($start, $end) as [$a, $b]) {
+                $besok[] = [$a, $b, $n];
+            }
+        }
+        return $besok;
+    }
+
+    /** Ledige plasser for nye påmeldinger; innstemplede medlemmer slipper alltid inn. */
+    public static function samletLedige(string $fraUtc, string $tilUtc, int $utenBooking = 0): int
+    {
+        $tak = self::samletTak();
+        if ($tak === self::UTEN_GRENSE) {
+            return $tak;
+        }
+        $a = strtotime($fraUtc . ' UTC');
+        $b = strtotime($tilUtc . ' UTC');
+        $opptatt = self::verkstedTopp(self::verkstedBesok($fraUtc, $tilUtc, $utenBooking), $a, $b);
+        $naa = time();
+        if (self::verkstedInneIVindu($a, $b, $naa)) {
+            $opptatt += array_sum(self::inneNaa());
+        }
+        return max(0, $tak - $opptatt);
+    }
+
+    /** Største planlagte belegg resten av dagen, for varselet på Min side. */
+    public static function beleggIdag(): array
+    {
+        $oslo = new DateTimeZone('Europe/Oslo');
+        $utc = new DateTimeZone('UTC');
+        $naa = new DateTimeImmutable('now', $utc);
+        $slutt = (new DateTimeImmutable('tomorrow', $oslo))->setTimezone($utc);
+        $fra = $naa->format('Y-m-d H:i:s');
+        $til = $slutt->format('Y-m-d H:i:s');
+        $besok = self::verkstedBesok($fra, $til);
+        $topp = Malebord::topp($besok, $naa->getTimestamp(), $slutt->getTimestamp());
+        $naaOpptatt = Malebord::topp($besok, $naa->getTimestamp(), $naa->getTimestamp() + 1)
+            + array_sum(self::inneNaa());
+        return ['antall' => max($topp, $naaOpptatt), 'tak' => self::samletTak()];
+    }
+
     /** Leses paa nytt naar noen har endret tallene. */
     public static function glemTak(): void
     {
@@ -210,6 +334,11 @@ final class Booking
         return self::$inne;
     }
 
+    public static function inneAntallNaa(): int
+    {
+        return array_sum(self::inneNaa());
+    }
+
     /** @var array<int, int>|null */
     private static ?array $inne = null;
 
@@ -223,6 +352,12 @@ final class Booking
         // Utenfor en transaksjon gir FOR UPDATE ingen mening; visningen av
         // «3 plasser igjen» skal heller ikke laase noe.
         if ($medLaas && DB::kobling()->inTransaction()) {
+            // Alle nye påmeldinger deler også ett romtak, på tvers av ressurser.
+            // Ta den samme låsen først i hver reservasjon.
+            if (DB::harTabell('ressurser')) {
+                DB::en("SELECT id FROM ressurser WHERE aktiv = 1 AND navn <> 'Paint on Pots'
+                         ORDER BY id LIMIT 1 FOR UPDATE");
+            }
             DB::en('SELECT id FROM course_sessions WHERE id = :id FOR UPDATE', ['id' => $oktId]);
 
             // Okta alene er ikke nok. Plassene deles med alle oektene som
@@ -291,13 +426,50 @@ final class Booking
         // hver sitt — og den ene som ble glemt er reserveveien, som bare
         // kjorer paa en base uten ressurstabellen. Da hadde feilen vaert
         // usynlig helt til den dagen den ikke var det.
-        return self::medVisFullt(self::medMalebord(self::ledigeRegnet($oktIder)));
+        return self::medVisFullt(self::medSamletTak(self::medMalebord(self::ledigeRegnet($oktIder))));
+    }
+
+    private static function medSamletTak(array $ledige): array
+    {
+        if ($ledige === [] || self::samletTak() === self::UTEN_GRENSE) {
+            return $ledige;
+        }
+        $inn = implode(',', array_map('intval', array_keys($ledige)));
+        $slutt = self::verkstedSluttSql();
+        $okter = DB::alle(
+            "SELECT cs.id, cs.start_tid, {$slutt} AS slutt
+               FROM course_sessions cs JOIN courses c ON c.id = cs.course_id
+              WHERE cs.status = 'planlagt' AND cs.id IN ({$inn})"
+        );
+        if ($okter === []) {
+            return $ledige;
+        }
+        $fra = min(array_column($okter, 'start_tid'));
+        $til = max(array_column($okter, 'slutt'));
+        $besok = self::verkstedBesok($fra, $til);
+        $tak = self::samletTak();
+        $naa = time();
+        foreach ($okter as $okt) {
+            $id = (int) $okt['id'];
+            $a = strtotime((string) $okt['start_tid'] . ' UTC');
+            $b = strtotime((string) $okt['slutt'] . ' UTC');
+            $brukt = self::verkstedTopp($besok, $a, $b);
+            if (self::verkstedInneIVindu($a, $b, $naa)) {
+                $brukt += array_sum(self::inneNaa());
+            }
+            $for = $ledige[$id] ?? 0;
+            $ledige[$id] = max(0, min($for, $tak - $brukt));
+            if ($for > 0 && $ledige[$id] === 0) {
+                self::$sperret[$id] = true;
+            }
+        }
+        return $ledige;
     }
 
     /**
      * Malebordet (eieren, 7. og 8. oktober 2026): kurs som foelger
-     * aapningstidene (Paint on Pots) regnes mot sin egen ressurs, ikke
-     * verkstedtaket. Ledige = grensen minus flest personer til stede samtidig
+     * aapningstidene (Paint on Pots) regnes mot sin egen ressurs, og etterpå
+     * mot verkstedets samlede persontak. Ledige = grensen minus flest samtidig
      * i oektas tidsrom. En dag merket fullt fra et klokkeslett, eller «Ingen
      * PoP», gir null ledige. Ingen plassgrense: UTEN_GRENSE.
      *
@@ -331,7 +503,8 @@ final class Booking
                 ? (string) $r['slutt_tid']
                 : (new DateTimeImmutable($start, new DateTimeZone('UTC')))
                     ->modify('+' . Apent::plassMinutter($kursId) . ' minutes')->format('Y-m-d H:i:s');
-            $ledige[$id] = Malebord::ledige($kursId, $start, $slutt);
+            // Felles persontak legges på samlet for hele katalogen nedenfor.
+            $ledige[$id] = Malebord::ledige($kursId, $start, $slutt, 0, false);
         }
         return $ledige;
     }
@@ -402,15 +575,15 @@ final class Booking
             return 0;
         }
 
-        // Malebordet (eieren, 7. og 8. oktober 2026): egen ressurs, personer
-        // til stede samtidig, utenfor verkstedtaket. Kurs og medlemmer
-        // trekker ikke fra den.
+        // Malebordet har sin egen stolgrense, i tillegg til felles persontak.
         if ($malebord) {
             return Malebord::ledige($kursId, $startUtc, $sluttUtc);
         }
 
+        $samletLedige = self::samletLedige($startUtc, $sluttUtc);
+
         if (self::utenPlassgrense($kursId)) {
-            return self::apenPlassTak($kursId, $startUtc, $sluttUtc);
+            return min(self::apenPlassTak($kursId, $startUtc, $sluttUtc), $samletLedige);
         }
 
         $aktiv2 = self::aktivSql('b2');
@@ -433,7 +606,7 @@ final class Booking
 
         $ressurs = $kurs['ressurs_id'] === null ? 0 : (int) $kurs['ressurs_id'];
         $tak = self::verkstedTak();
-        // Malebordets bookinger tar ikke verkstedplasser (eieren, 7. oktober 2026).
+        // PoP tar ikke fra den enkelte verkstedressursen, men fra felles persontak.
         $ikkeMalebord = DB::harKolonne('courses', 'folger_apningstid')
             ? "
                 AND COALESCE(c2.folger_apningstid, 0) = 0" : '';
@@ -454,7 +627,7 @@ final class Booking
                     AND ({$iVeien})",
                 $par + ['k' => $kursId]
             );
-            return max(0, $kapasitet - $brukt);
+            return min(max(0, $kapasitet - $brukt), $samletLedige);
         }
 
         $brukt = (int) DB::verdi(
@@ -495,7 +668,7 @@ final class Booking
 
         // Kursets eget plasstall er ogsaa et tak: er rommet satt til seks,
         // hjelper det ikke at ressursen har tolv.
-        return max(0, min($kapasitet > 0 ? $kapasitet : $igjen, $igjen));
+        return min(max(0, min($kapasitet > 0 ? $kapasitet : $igjen, $igjen)), $samletLedige);
     }
 
     /**
@@ -608,8 +781,8 @@ final class Booking
         // svarer alle kurs som foer — samme vakt som ressurstabellen har.
         $grenseKol = DB::harKolonne('courses', 'uten_plassgrense')
             ? 'COALESCE(c.uten_plassgrense, 0)' : '0';
-        // Malebordets bookinger (Paint on Pots) tar ikke verkstedplasser.
-        // Eieren, 7. oktober 2026. PoP selv regnes i medMalebord().
+        // PoP tar ikke fra Bordplass/Dreieskive. Felles persontak legges på
+        // etterpå, og PoP sin egen grense regnes i medMalebord().
         $ikkeMalebord = DB::harKolonne('courses', 'folger_apningstid')
             ? "
                            AND COALESCE(c2.folger_apningstid, 0) = 0" : '';

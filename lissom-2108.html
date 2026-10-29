@@ -756,6 +756,7 @@ img{max-width:100%;display:block}
    én rad; er barnet aktivt, staar «Aktivt · <maaned>» i stedet for pris og knapp.
    Har medlemmet trykket «Skjul», er kortet borte fra forsiden. */
 .msny-hjem #minside-verving { order: 7; }
+.msny-hjem .msny-tp-kort { order: 8; }
 .msny-hjem .ms-o-ovn { order: 8; }
 .msny-hjem .msny-khm { order: 9; }
 .msny-hjem #minside-verving:has(> .ms-modulvalg [aria-checked="false"]),
@@ -770,7 +771,7 @@ img{max-width:100%;display:block}
 .msny-hjem .ms-o-barn .ms-barn-pris em { display: inline; font-family: var(--font-sans); font-weight: 500; font-size: 13px; color: var(--text-muted); }
 .msny-hjem .ms-o-barn .ms-barn-knapper { grid-column: 3; grid-row: 1 / span 2; flex-wrap: nowrap; }
 .msny-hjem .ms-o-barn .ms-barn-knapper button { padding: 10px 18px !important; font-weight: 800 !important; white-space: nowrap; }
-.msny-hjem .ms-o-barn:has(.ms-barn-aktiv) .ms-barn-knapper { display: none !important; }
+.msny-hjem .ms-o-barn:has(.ms-barn-aktiv) .ms-barn-knapper:not(:has(button)) { display: none !important; }
 @media (max-width: 760px) {
   .msny-hjem .ms-o-barn { grid-template-columns: auto minmax(0, 1fr); padding: 16px; row-gap: 8px; }
   .msny-hjem .ms-o-barn > * { grid-column: 1 / -1; }
@@ -5687,6 +5688,9 @@ window.__resources = {
             <div style="display: grid; gap: 6px; min-width: 0;">
               <sc-if value="{{ msIkkeVelkomst }}" hint-placeholder-val="{{ true }}">
               <h1 style="margin: 0; font-size: var(--text-4xl);">{{ minsideHilsen }}</h1>
+              <sc-if value="{{ msTrangtVis }}" hint-placeholder-val="{{ false }}">
+                <p role="status" style="margin: var(--space-3) 0 0; padding: 12px 14px; border-radius: 12px; background: var(--clay-100); color: var(--lissom-brown);">{{ msTrangtTekst }}</p>
+              </sc-if>
               <sc-if value="{{ msErDeltaker }}" hint-placeholder-val="{{ false }}">
                 <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted);">Her finner du kursene dine, kursbevisene og beskjeder fra verkstedet.</p>
               </sc-if>
@@ -5788,10 +5792,6 @@ window.__resources = {
                     </sc-if>
                   </div>
                   <sc-if value="{{ msNyTimeflisVis }}" hint-placeholder-val="{{ false }}"><div class="msny-status msny-timelinje">{{ msNyTimelinje }}</div></sc-if>
-                  <!-- Timepakken som pille under timeflisen (eieren 19.10.2026, visningen
-                       DTmtwYnXHWiybMRcQeS7HM): bare naar maanedens timer er brukt opp og
-                       pakken kan kjoepes, samme regel som vindu 2. Trykk aapner vindu 2. -->
-                  <sc-if value="{{ msNyTpPilleVis }}" hint-placeholder-val="{{ false }}"><div style="margin-top: 10px;"><button type="button" class="msny-pille msny-tp-pille" onClick="{{ msNyTpApne }}">{{ msNyTpPilleTekst }}</button></div></sc-if>
                 </div>
               </sc-if>
               <sc-if value="{{ msNyGlemtVis }}" hint-placeholder-val="{{ false }}">
@@ -6044,6 +6044,12 @@ window.__resources = {
                naa bak menyvalget Medlemskap, med de samme radene. -->
           <sc-if value="{{ msFaneHjem }}" hint-placeholder-val="{{ true }}">
           <sc-if value="{{ erMedlem }}" hint-placeholder-val="{{ true }}">
+          <sc-if value="{{ msNyTpKortVis }}" hint-placeholder-val="{{ false }}">
+            <div data-msny="hjem" class="msny-kort msny-tp-kort" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
+              <div><strong>Ekstra timer</strong><div style="font-size: var(--text-sm); color: var(--text-muted);">{{ msNyTpKortTekst }}</div></div>
+              <sc-if value="{{ msNyTpPilleVis }}" hint-placeholder-val="{{ false }}"><button type="button" class="msny-pille msny-tp-pille" onClick="{{ msNyTpApne }}">{{ msNyTpPilleTekst }}</button></sc-if>
+            </div>
+          </sc-if>
           <!-- Ovnkortet. Eieren, 12. og 13. september 2026: «Ovn er tømt»,
                «Råbrann satt» og «Glasurbrann satt» som piller i kortet, og
                statusen — det siste trykket — oeverst i det samme kortet.
@@ -31458,7 +31464,7 @@ window.__resources = {
       <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Ta med barn · {{ barnRuteMaaned }}</div>
       <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading); line-height: 1.15; margin-bottom: var(--space-3);">Før du betaler</div>
       <ul style="margin: 0 0 var(--space-4); padding-left: 18px; font-size: var(--text-sm); color: var(--text-body);">
-        <li>Tillegget gjelder ett barn opptil {{ barnMaksAlder }} år, ut {{ barnRuteMaaned }}.</li>
+        <li>{{ barnRuteGyldighet }}</li>
         <li>Leire og glasur er ikke inkludert.</li>
         <li>Barnet kan ikke være alene i verkstedet, og må alltid være sammen med en voksen.</li>
         <li>Du som foresatt sørger for at barnet følger verkstedets ordensregler og HMS-regler.</li>
@@ -33843,9 +33849,18 @@ class Component extends DCLogic {
     // (fri tilgang eller 0) eller uten Verkstedet naa: det gamle kortet.
     const timeflisVis = verkstedVis && medlVis && vis('stempel') && !!t && t.perMnd !== null && Number(t.perMnd) > 0;
     const igjen = timeflisVis ? Math.max(0, Number(t.igjen) || 0) : 0;
+    const pakkeIgjen = Math.max(0, Math.min(
+      Number(((st || {}).timepakke || {}).tilgode) || 0, Number((t || {}).igjen) || 0));
 
     return {
       msNyPaa: true,
+      msTrangtVis: !!(this.state.verkstedIdag && this.state.verkstedIdag.tak > 0
+        && this.state.verkstedIdag.tak < 9999
+        && this.state.verkstedIdag.antall >= Math.ceil(this.state.verkstedIdag.tak * 0.8)),
+      msTrangtTekst: this.state.verkstedIdag
+        ? 'I dag blir det folksomt på verkstedet (opptil ' + this.state.verkstedIdag.antall
+          + ' av ' + this.state.verkstedIdag.tak + ' personer samtidig), men vi gleder oss til å se deg også!'
+        : '',
       msHjemKlasse: 'msny msny-' + side + (medlem ? '' : ' msny-deltaker'),
       msNyUnderside: !hjem,
       msNyTittel: NAVN[side] || '',
@@ -33887,6 +33902,10 @@ class Component extends DCLogic {
       // den staar ogsaa etter «Ikke nå». Ikke mens man er innstemplet: da
       // aapnes ikke vinduet. Timer og pris fra timepakken i admin.
       msNyTpPilleVis: timeflisVis && this.timeneBruktOpp() && !this.erInne(),
+      msNyTpKortVis: medlem && hjem && ((this.timeneBruktOpp() && !this.erInne()) || pakkeIgjen > 0),
+      msNyTpKortTekst: pakkeIgjen > 0
+        ? tall(pakkeIgjen) + ' kjøpte timer til gode. De går ikke ut.'
+        : 'Når månedens timer er brukt opp, kan du kjøpe flere timer.',
       msNyTpPilleTekst: 'Kjøp timepakke · ' + tall(Number(((this.state.stempling || {}).timepakke || {}).timer) || 0)
         + ' t for kr ' + Math.round((((this.state.stempling || {}).timepakke || {}).prisOre || 0) / 100).toLocaleString('nb-NO'),
       msNyTpApne: () => this.setState({ tpVindu: '2', tpLukket: false }),
@@ -46482,23 +46501,28 @@ class Component extends DCLogic {
     const alder = String(this.state.barnAlder || '').trim();
     const kan = navn.length >= 2 && /^\d{1,2}$/.test(alder) && !!this.state.barnVilkaar && !this._barnKjoper;
     const valg = (t && t.kanKjope) || [];
-    const ruteNavn = (valg.find(k => k.maaned === rute) || {}).navn || '';
+    const ruteValg = valg.find(k => k.maaned === rute) || {};
+    const ruteNavn = ruteValg.navn || '';
     return {
       barnVis: vis,
       barnMaksAlder: (t && t.maksAlder) || 12,
       barnPris: (t && t.pris) || '',
       barnAktivt: !!a,
       barnIkkeAktivt: !a,
-      barnAktivMaaned: a ? a.maanedNavn : '',
+      barnAktivMaaned: a ? (a.maaned > new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Oslo' }).slice(0, 7)
+        ? 'nå til og med ' + a.maanedNavn : a.maanedNavn) : '',
       barnAktivTekst: a
         ? 'Betalt ' + a.betalt + '. Gjelder ut ' + a.maanedNavn + ' — ' + a.barnNavn + (a.barnAlder !== null ? ' (' + a.barnAlder + ')' : '') + '. Husk: barnet er alltid sammen med deg.'
         : '',
       barnMerkeStil: { display: 'inline-block', fontSize: 11, fontWeight: 800, letterSpacing: 'var(--tracking-caps)', textTransform: 'uppercase', padding: '4px 9px', borderRadius: 999, background: 'var(--sage-100, #e3e7d9)', color: 'var(--text-heading)' },
-      barnKjopValg: valg.map(k => ({ navn: k.navn, velg: () => this.setState({ barnRute: k.maaned, barnVilkaar: false }) })),
+      barnKjopValg: valg.map(k => ({ navn: k.fraNaa ? 'neste måned' : k.navn, velg: () => this.setState({ barnRute: k.maaned, barnVilkaar: false }) })),
       barnKnappStil: { appearance: 'none', cursor: 'pointer', border: 'none', borderRadius: 999, padding: '9px 14px', font: 'var(--type-body-sm)', fontWeight: 700, background: 'var(--lissom-yellow)', color: 'var(--lissom-brown)' },
       // Ruta.
       barnRuteVis: rute !== '',
       barnRuteMaaned: ruteNavn,
+      barnRuteGyldighet: ruteValg.fraNaa
+        ? 'Tillegget gjelder ett barn opptil ' + ((t && t.maksAlder) || 12) + ' år fra betalingen er bekreftet og ut ' + ruteNavn + '.'
+        : 'Tillegget gjelder ett barn opptil ' + ((t && t.maksAlder) || 12) + ' år ut ' + ruteNavn + '.',
       barnRuteLukk: () => this.setState({ barnRute: '' }),
       barnNavn: this.state.barnNavn || '',
       barnAlder: this.state.barnAlder || '',
@@ -58573,7 +58597,7 @@ class Component extends DCLogic {
       this._plasserHentes = true;
       fetch('/api/mine-plasser.php', { credentials: 'same-origin' })
         .then(r => r.json())
-        .then(d => { if (d && d.plasser) this.setState({ minePlasser: d.plasser }); })
+        .then(d => { if (d && d.plasser) this.setState({ minePlasser: d.plasser, verkstedIdag: d.verkstedIdag || null }); })
         .catch(() => {})
         .then(() => { this._plasserHentes = false; });
     }
@@ -69392,7 +69416,7 @@ class Component extends DCLogic {
             const ledige = r.antall != null ? Math.max(0, Number(r.antall) - Number(r.iBruk || 0)) : null;
             return {
               navn: r.navn,
-              ledig: ledige == null ? '' : ledige + ' ledige',
+              ledig: ledige == null ? '' : ledige + ' ledige nå',
               boksStil: {
                 appearance: 'none', cursor: 'pointer', border: '1.5px solid var(--lissom-brown)', borderRadius: 12,
                 padding: '12px 10px', textAlign: 'center',

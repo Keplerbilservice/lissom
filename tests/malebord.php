@@ -6,8 +6,8 @@
  * et verkstedkurs paa en annen ressurs, og proever:
  *   - ankomst hvert kvarter innenfor tidene, hele besoeket maa faa plass
  *   - personer til stede SAMTIDIG telles, ikke alle dagens bestillinger
- *   - verkstedet og PoP teller ikke mot hverandre
- *   - ressursen slått av = ingen plassgrense
+ *   - egne ressursgrenser gjelder, og alle teller mot samlet persontak
+ *   - PoP-ressursen slått av fjerner bare PoP sin egen grense
  *   - unntak per dato: fullt fra et klokkeslett, «Ingen PoP», andre tider
  *   - bookinger som alt er gjort, og oektene deres, roeres aldri
  *   - ingen faste bolker legges ut, og katalogen viser én dato per dag
@@ -109,21 +109,22 @@ sjekk('for 2 personer er 13:00 ikke ledig', !isset($t2['13:00']));
 sjekk('ledigePlasser på økta 12:00 er 1', Booking::ledigePlasser($a) === 1, (string) Booking::ledigePlasser($a));
 sjekk('flere bestillinger kan ha samme ankomsttid (samme økt gjenbrukes)', Apent::oktForTid($pop, $dato . ' 12:00') === $a);
 
-echo "\n── Verkstedet og PoP er adskilt ─────────────────────────────\n";
+echo "\n── Egne ressurser og samlet persontak ───────────────────────\n";
 $v = $okt($verk, '12:00', '14:00');
 $book($verk, $v, 4);
 $t = $tider();
-sjekk('fullt verksted endrer ikke PoP (12:00 fortsatt 1 ledig)', ($t['12:00'] ?? null) === 1);
+sjekk('egen PoP-grense er fortsatt 3 (12:00 har 1 ledig)', ($t['12:00'] ?? null) === 1);
 sjekk('verkstedkurset er fullt av sine egne, ikke av PoP', Booking::ledigePlasser($v) === 0);
 DB::oppdater('bookings', ['status' => 'avbestilt'], ['course_session_id' => $v]);
-sjekk('… og PoP-bookingene tar ikke verkstedplasser (4 ledige)', Booking::ledigePlasser($v) === 4, (string) Booking::ledigePlasser($v));
+sjekk('PoP tar ikke verkstedets bordressurs (4 ledige)', Booking::ledigePlasser($v) === 4, (string) Booking::ledigePlasser($v));
 
 echo "\n── Plassgrensen er ressursen ────────────────────────────────\n";
 sjekk('grensen leses fra ressursen (3)', Malebord::stoler($pop) === 3 && !Malebord::utenGrense($pop));
 DB::oppdater('ressurser', ['aktiv' => 0], ['id' => $resPop]);
 Malebord::glem();
-$t = $tider(40);
-sjekk('ressursen slått av = ingen plassgrense: 40 personer kl. 13:00 går', isset($t['13:00']));
+$t = $tider();
+sjekk('PoP-ressursen av: felles persontak gjelder fortsatt',
+    ($t['13:00'] ?? null) === max(0, Booking::samletTak() - 2));
 sjekk('maks antall uten grense er ' . Malebord::MAKS_ANTALL, Malebord::maksAntall($pop) === Malebord::MAKS_ANTALL);
 DB::oppdater('ressurser', ['aktiv' => 1, 'antall' => 1], ['id' => $resPop]);
 Malebord::glem();

@@ -194,4 +194,4 @@ foreach ($venteliste as $v) {
     ];
 }
 
-Svar::json(['plasser' => $plasser]);
+Svar::json(['plasser' => $plasser, 'verkstedIdag' => Booking::beleggIdag()]);

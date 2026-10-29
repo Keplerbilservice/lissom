@@ -139,7 +139,7 @@ foreach (Tillegg::kjopbare() as $mnd) {
         $aktive[] = Tillegg::ut($a);
     }
 }
-$naa = Tillegg::aktivt($id);
+$naa = Tillegg::aktivtNaa($id);
 Svar::json([
     'klar'      => true,
     'paa'       => $paa,
@@ -150,7 +150,11 @@ Svar::json([
     'aktive'    => $aktive,
     // Maanedene som kan kjoepes naa, uten dem som alt er aktive.
     'kanKjope'  => array_values(array_map(
-        static fn(string $mnd): array => ['maaned' => $mnd, 'navn' => Tillegg::maanedNavn($mnd)],
+        static fn(string $mnd): array => [
+            'maaned' => $mnd,
+            'navn' => Tillegg::maanedNavn($mnd),
+            'fraNaa' => $mnd !== Tillegg::maanedNaa(),
+        ],
         array_filter(Tillegg::kjopbare(), static fn(string $mnd): bool => Tillegg::aktivt($id, $mnd) === null)
     )),
 ]);

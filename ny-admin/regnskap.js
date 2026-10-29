@@ -48,17 +48,68 @@
 
   async function betalinger(el) {
     try {
-      const d = await N.api('betalinger.php');
+      const booking = Number(N.params().get('booking')) || 0;
+      const d = await N.api('betalinger.php' + (booking > 0 ? '?bookingId=' + booking : ''));
       el.innerHTML = hode('Betalinger', 'Registrerte innbetalinger og refusjoner.')
+        + (booking > 0 ? `<p class="muted">Betalinger for påmelding ${booking}</p><button class="knapp liten" data-regnskap-alle>Vis alle betalinger</button>` : '')
         + '<label class="felt"><small>Søk betaling</small><input type="search" data-regnskap-sok placeholder="Navn, formål eller beløp"></label><div data-regnskap-liste></div>';
       const liste = el.querySelector('[data-regnskap-liste]');
       const vis = q => {
         const treff = (d.betalinger || []).filter(p => [p.medlem, p.formal, p.belop, p.maate, p.referanse].some(v => String(v || '').toLocaleLowerCase('nb-NO').includes(q)));
-        liste.innerHTML = treff.map(p => rad(p.medlem || p.formal || 'Betaling', [p.tidspunkt, p.maate, p.formal, p.status, p.refundert ? 'Refundert ' + p.refundert : ''].filter(Boolean).join(' · '), p.belop)).join('') || tom;
+        liste.innerHTML = treff.map(p => `<div class="rad"><span class="tekst"><b>${esc(p.medlem || p.formal || 'Betaling')}</b><small>${esc([p.tidspunkt, p.maate, p.formal, p.kurs, p.kursDato, p.status, p.refundert ? 'Refundert ' + p.refundert : ''].filter(Boolean).join(' · '))}</small></span><strong>${esc(p.belop)}</strong>${!N.meg?.regnskap && p.referanse && ((p.kanRefunderes && p.belopOre > p.refundertOre) || p.bookingId || p.ordreId) ? `<button class="knapp liten" type="button" data-regnskap-betaling="${p.id}">Åpne</button>` : ''}</div>`).join('') || tom;
       };
       vis('');
       el.querySelector('[data-regnskap-sok]').oninput = e => vis(e.target.value.trim().toLocaleLowerCase('nb-NO'));
+      el.querySelector('[data-regnskap-alle]')?.addEventListener('click', () => N.gaTil('betalinger'));
+      liste.onclick = e => {
+        const id = Number(e.target.closest('[data-regnskap-betaling]')?.dataset.regnskapBetaling);
+        const p = (d.betalinger || []).find(r => r.id === id);
+        if (p) arkBetaling(p, el);
+      };
     } catch (e) { feil(el, e); }
+  }
+
+  function refusjonsnokkel(referanse, belop) {
+    const navn = 'lissom-refund:' + referanse + ':' + belop;
+    let id = sessionStorage.getItem(navn);
+    if (!id) { id = crypto.randomUUID(); sessionStorage.setItem(navn, id); }
+    return {navn, id};
+  }
+
+  function arkBetaling(p, el) {
+    const igjen = Math.max(0, p.belopOre - p.refundertOre);
+    const inn = N.apneArk(`${N.arkHode(esc(p.medlem || p.formal || 'Betaling'))}
+      <p>${esc([p.tidspunkt, p.maate, p.formal, p.kurs, p.kursDato, p.status].filter(Boolean).join(' · '))}</p>
+      <p>Betalt: ${esc(p.belop)}${p.refundert ? ' · Refundert: ' + esc(p.refundert) : ''}</p>
+      <div class="ark-fot"><button class="knapp" type="button" data-lukk>Lukk</button>
+        ${p.referanse && (p.bookingId || p.ordreId) ? '<button class="knapp" type="button" data-kvittering>Send kvittering på nytt</button>' : ''}
+        ${p.referanse && p.kanRefunderes && igjen > 0 ? '<button class="knapp rod" type="button" data-refunder>Refunder</button>' : ''}</div>`);
+    inn.querySelector('[data-kvittering]')?.addEventListener('click', async () => {
+      if (!await N.bekreft('Send kvittering?', 'Send kvitteringen for ' + p.belop + ' på nytt.', 'Send')) return;
+      try { const r = await N.api('betalinger.php', {data: {handling: 'kvittering', referanse: p.referanse}}); N.lukkArk(true); N.toast(esc(r.beskjed || 'Kvittering sendt.')); }
+      catch (e) { N.toast(esc(e.message)); }
+    });
+    inn.querySelector('[data-refunder]')?.addEventListener('click', () => {
+      const form = N.apneArk(`${N.arkHode('Refunder betaling')}<p>Gjenstår: ${kr(igjen)}</p>
+        <form data-refusjon><label class="felt"><small>Delbeløp i hele kroner (tomt = alt)</small><input name="belop" type="number" min="1" max="${Math.floor(igjen / 100)}" step="1"></label>
+        <div class="ark-fot"><button class="knapp" type="button" data-lukk>Avbryt</button><button class="knapp hoved" type="submit">Refunder</button></div></form>`);
+      form.querySelector('form').onsubmit = async e => {
+        e.preventDefault();
+        const belop = e.target.elements.belop.value.trim() === '' ? 0 : Number(e.target.elements.belop.value);
+        if (belop !== 0 && (!Number.isInteger(belop) || belop < 1 || belop * 100 > igjen)) { N.toast('Ugyldig beløp.'); return; }
+        if (!await N.bekreft('Refunder betalingen?', 'Betal tilbake ' + kr(belop ? belop * 100 : igjen) + ' gjennom Vipps.', 'Refunder')) return;
+        const knapp = e.target.querySelector('[type=submit]');
+        knapp.disabled = true;
+        try {
+          const nokkel = refusjonsnokkel(p.referanse, belop);
+          const r = await N.api('betalinger.php', {data: {referanse: p.referanse, belop, operasjonId: nokkel.id}});
+          sessionStorage.removeItem(nokkel.navn);
+          N.lukkArk(true);
+          N.toast(esc(r.merknad || 'Refusjonen er registrert.'));
+          await betalinger(el);
+        } catch (err) { N.toast(esc(err.message)); knapp.disabled = false; }
+      };
+    });
   }
 
   async function timeliste(el) {

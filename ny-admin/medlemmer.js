@@ -12,7 +12,7 @@
   const toast = h => NA().toast(h);
   const registrer = (id, opp) => { const f = NA().registrerSide; if (typeof f === 'function') f(id, opp); else document.addEventListener('DOMContentLoaded', () => registrer(id, opp), { once: true }); };
 
-  const S = { medlemmer: [], gaver: [], sok: '', el: null, tikk: 0, opptatt: false, person: 0, planer: [], sortering: '', typeFilter: '', ble: null, oppf: null };
+  const S = { medlemmer: [], gaver: [], sok: '', el: null, tikk: 0, opptatt: false, person: 0, planer: [], sortering: '', typeFilter: '', visning: 'aktive', adminFraMedlem: 0, ble: null, oppf: null };
 
   /* ── Sortering, type og «sist innom» (eieren 12.10.2026, visningen «Medlemmer og oppfølging») ──
      Medlemskapene og rekkefølgen kommer fra membership_plans (planer, sortert på «sortering»). */
@@ -51,7 +51,14 @@
   const tall = t => String(Math.round(Number(t) * 10) / 10).replace('.', ',');
   const igjenTekst = m => m.timer == null || m.timerIgjen == null ? '' : `${esc(m.timerIgjen)} av ${tall(m.timer)} t igjen`;
   // «Aktiv»/«Prøveperiode» står først som før (vedtaket medlemmer-betalt-merke), så medlemskapet, «sist innom» og betalingen.
-  const statusMerke = m => m.status === 'prove' ? '<span class="merke gul">Prøveperiode</span>' : '<span class="merke gronn">Aktiv</span>';
+  const statusMerke = (m, knapp = false) => {
+    const aktiv = erMedlem(m);
+    const tekst = aktiv ? (m.status === 'prove' ? 'Prøveperiode' : 'Aktiv') : 'Tidligere';
+    const klasse = aktiv ? (m.status === 'prove' ? 'gul' : 'gronn') : '';
+    return knapp && aktiv
+      ? `<button type="button" class="merke trykk ${klasse}" data-mlm="status" data-id="${m.id}">${tekst}</button>`
+      : `<span class="merke ${klasse}">${tekst}</span>`;
+  };
   // knapp = id: merket blir en trykkbar pille som åpner betalingen for personen (lista).
   function betalingMerke(m, knapp = 0) {
     const [k, t] = m.betalingUte ? ['rod', m.betalingTekst || 'Ikke betalt']
@@ -74,10 +81,11 @@
   }
   function tegnVelger() {
     const boks = document.getElementById('mlm-velger'); if (!boks) return;
-    const alle = liste();
+    const alle = visteMedlemmer();
     const typer = S.planer.map(p => p.navn).filter(n => alle.some(m => m.medlemskap === n));
     const piller = [['', `Alle (${alle.length})`], ...typer.map(n => [n, `${n} (${alle.filter(m => m.medlemskap === n).length})`])];
-    boks.innerHTML = `<label style="display:grid;gap:5px;max-width:280px"><small>Sorter etter</small><select id="mlm-sorter" style="padding:11px;border-radius:9px;border:1px solid #c6b1a0;background:var(--field);font:inherit;min-height:44px">${SORTER.map(([v, t]) => `<option value="${v}" ${S.sortering === v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
+    boks.innerHTML = `<div class="faner" style="margin:0 0 12px"><button type="button" data-mlm="visning" data-v="aktive" aria-pressed="${S.visning === 'aktive'}">Aktive</button><button type="button" data-mlm="visning" data-v="tidligere" aria-pressed="${S.visning === 'tidligere'}">Tidligere medlemmer</button></div>
+      <label style="display:grid;gap:5px;max-width:280px"><small>Sorter etter</small><select id="mlm-sorter" style="padding:11px;border-radius:9px;border:1px solid #c6b1a0;background:var(--field);font:inherit;min-height:44px">${SORTER.map(([v, t]) => `<option value="${v}" ${S.sortering === v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
       <div class="faner" style="margin:12px 0 4px">${piller.map(([v, t]) => `<button type="button" data-mlm="typefilter" data-v="${esc(v)}" aria-pressed="${S.typeFilter === v}">${esc(t)}</button>`).join('')}</div>`;
   }
   function tegnBle() {
@@ -96,12 +104,14 @@
   const GV = { type: '', til: '', medlemId: 0, timer: 0, belop: '', hilsen: '' };
 
   /** Bare medlemmene: aktive og på prøve, uten admin-brukerne (samme utvalg som «Send beskjed» når). */
-  const erMedlem = m => !m.rolleAdmin && (m.status === 'aktiv' || m.status === 'prove');
+  const erMedlem = m => !m.rolleAdmin && (m.status === 'aktiv' || m.status === 'prove') && (!m.sluttDato || m.sluttDato >= new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Oslo' }));
   const liste = () => S.medlemmer.filter(erMedlem);
+  const tidligereListe = () => S.medlemmer.filter(m => !m.rolleAdmin && !erMedlem(m) && (m.medlemskap || m.startDato || ['oppsagt', 'pause'].includes(m.status)));
+  const visteMedlemmer = () => S.visning === 'tidligere' ? tidligereListe() : liste();
 
   /* Status og betaling hver for seg (eieren 12.10.2026: «vil jeg også se om det er betalt eller ikke, nå står det bare aktivt»). */
   function merke(m) {
-    const status = m.status === 'prove' ? '<span class="merke gul">Prøveperiode</span>' : '<span class="merke gronn">Aktiv</span>';
+    const status = statusMerke(m);
     const betaling = m.betalingUte ? `<span class="merke rod">${esc(m.betalingTekst || 'Ikke betalt')}</span>`
       : m.betaling === 'betalt' ? '<span class="merke gronn">Betalt</span>'
       : m.betaling === 'fri' ? '<span class="merke">Betaler ikke</span>'
@@ -130,7 +140,7 @@
     if (!boks) return;
     if (!document.getElementById('mlm-rader')) boks.innerHTML = '<div id="mlm-velger"></div><div id="mlm-rader"></div>';
     const q = S.sok.trim().toLowerCase();
-    const L = sorter(liste().filter(m => (!S.typeFilter || m.medlemskap === S.typeFilter)
+    const L = sorter(visteMedlemmer().filter(m => (!S.typeFilter || m.medlemskap === S.typeFilter)
       && (!q || [m.navn, m.epost, m.telefon, m.medlemskap].some(v => String(v || '').toLowerCase().includes(q)))));
     tegnVelger();
     /* Rutenett med faste kolonner (eieren 12.10.2026, «Alle merkene på linje»): Navn · Status · Medlemskap · Betaling.
@@ -142,14 +152,14 @@
         return `<div role="button" tabindex="0" class="rad radknapp mlm-rad ${m.id === S.person ? 'markert' : ''}" data-mlm="medlem" data-id="${m.id}"><span class="tekst">
           <span class="navn" data-mlm-navn>${esc(m.navn)}${m.medlemFra ? `<span class="boble" role="tooltip">Medlem i ${esc(varighet(m.medlemFra))} · siden ${esc(maanedAar(m.medlemFra))}</span>` : ''}</span>
           ${under ? `<small class="igjen">${under}</small>` : ''}</span>
-          <span class="merker"><span>${statusMerke(m)}</span>
-          <span>${m.medlemskap ? `<button type="button" class="merke trykk ${typeKlasse(m.medlemskap)}" data-mlm="endre" data-id="${m.id}">${esc(m.medlemskap)}</button>` : ''}</span>
+          <span class="merker"><span>${statusMerke(m, true)}</span>
+          <span>${m.medlemskap ? erMedlem(m) ? `<button type="button" class="merke trykk ${typeKlasse(m.medlemskap)}" data-mlm="byttplan" data-id="${m.id}">${esc(m.medlemskap)}</button>` : `<span class="merke ${typeKlasse(m.medlemskap)}">${esc(m.medlemskap)}</span>` : ''}</span>
           <span>${betalingMerke(m, m.id)}</span></span></div>`;
       }).join('')}</div>`
       : '<p class="muted">Ingen treff.</p>';
     const r = document.getElementById('mlm-rader'); if (r) r.innerHTML = rader;
-    const n = liste().length;
-    const ey = document.getElementById('mlm-antall'); if (ey) ey.textContent = `${n} medlemmer`;
+    const n = visteMedlemmer().length;
+    const ey = document.getElementById('mlm-antall'); if (ey) ey.textContent = S.visning === 'tidligere' ? `${n} tidligere medlemmer` : `${n} medlemmer`;
   }
   // Medlemmet fra adressen (person=): markeres i lista og åpnes. Er det ikke aktivt medlem, finnes det i gammel admin.
   function visPerson() {
@@ -160,12 +170,18 @@
     arkMedlem(id);
     S.person = 0;
   }
-  function arkMedlem(id) {
+  function arkMedlem(id, vis = '') {
     const m = S.medlemmer.find(x => x.id === id);
     if (!m) {
       NA().apneArk(`<div class="ark-head"><h2>Medlemmet</h2><button class="lukk" data-mlm="lukk" aria-label="Lukk">×</button></div>
-        <p class="muted">Står ikke blant de aktive medlemmene. Betaling og historikk finnes i gammel admin.</p>
-        <div class="ark-fot"><a class="knapp hoved" href="/admin-ny#folk?person=${id}">Til personen i gammel admin</a></div>`);
+        <p class="muted">Fant ikke personen i medlemsregisteret.</p>`);
+      return;
+    }
+    if (vis === 'betaling') {
+      NA().apneArk(`<div class="ark-head"><h2>${esc(m.navn)} · Betalinger</h2><button class="lukk" data-mlm="lukk" aria-label="Lukk">×</button></div>
+        <p>${merke(m)}</p><div id="mlm-hist" data-id="${m.id}"><p class="muted">Henter betalingshistorikk …</p></div>
+        <div class="ark-fot"><button class="knapp" data-mlm="medlem" data-id="${m.id}">Til medlemmet</button></div>`);
+      hentHist(m, true);
       return;
     }
     NA().apneArk(`<div class="ark-head"><h2>${esc(m.navn)}</h2><button class="lukk" data-mlm="lukk" aria-label="Lukk">×</button></div>
@@ -176,11 +192,11 @@
         <button class="av" type="button" data-mlm="dugnadfri" data-id="${m.id}" aria-pressed="${m.dugnadUtenGodkjenning}" aria-label="Dugnad uten godkjenning"></button></div>` : ''}
       <div id="mlm-oppf" data-id="${m.id}"></div>
       <div class="valgknapper"><button class="knapp" data-mlm="endre" data-id="${m.id}">Endre</button>
-        <button class="knapp" data-mlm="gave" data-id="${m.id}">🎁 Gi gave</button>
+        ${erMedlem(m) ? `${m.erAdmin ? '' : `<button class="knapp" data-mlm="adminrolle" data-id="${m.id}">Gi admintilgang</button>`}<button class="knapp" data-mlm="gave" data-id="${m.id}">🎁 Gi gave</button>` : ''}
         <button class="knapp" data-mlm="beskjeden" data-id="${m.id}" ${m.epost || m.telefon ? '' : 'disabled'}>✉ Send beskjed</button>
         <button class="knapp" data-mlm="stempling" data-id="${m.id}">Verkstedtid</button>
         <button class="knapp" data-mlm="juster" data-id="${m.id}">Juster timer</button>
-        <a class="knapp" href="/admin-ny#folk?person=${m.id}">Betaling og detaljer (gammel admin)</a></div>
+        <button class="knapp" data-mlm="betaling" data-id="${m.id}">Betalinger</button></div>
       <div id="mlm-hist" data-id="${m.id}"><p class="muted">Henter historikk …</p></div>`);
     hentOppf(m);
     hentHist(m);
@@ -189,7 +205,7 @@
      timene denne måneden med «Juster timer», betalinger, kurs, ventelister og endringsloggen. Samme kall som
      gammel admin (medlemmer.php?person=). */
   const tt = min => String(Math.round(Math.abs(min) / 60 * 10) / 10).replace('.', ',') + ' t';
-  async function hentHist(m) {
+  async function hentHist(m, bareBetaling = false) {
     let d; try { d = await kall('medlemmer.php?person=' + m.id); } catch (e) {
       const b = document.getElementById('mlm-hist'); if (b && Number(b.dataset.id) === m.id) b.innerHTML = '<p class="feil">' + esc(e.message) + '</p>'; return;
     }
@@ -208,11 +224,17 @@
         + rad('Brukt (stemplet)', '', tt(t.bruktMin || 0))
         + (t.tak == null ? '' : rad('Igjen', '', tt(Math.max(0, t.tak * 60 - (t.bruktMin || 0)))));
     }
-    boks.innerHTML = del('Timer i ' + esc(mnd), timer)
-      + del('Betalingshistorikk', (d.betalinger || []).map(p => rad((p.kurs || 'Betaling') + (p.annullert ? ' (annullert)' : ''), [p.maate, p.naar, p.kommentar].filter(Boolean).join(' · '), p.belop)).join('') || ingen)
-      + del('Kurshistorikk', (d.historikk || []).map(k => rad(k.tittel, [k.naar, k.status].filter(Boolean).join(' · '), k.sum)).join('') || ingen)
+    const avtaler = bareBetaling ? del('Vipps-avtaler', (d.avtaler || []).map(a => `<section class="kort"><b>${esc(a.plan)}</b><small> · ${esc(a.status)}${a.neste ? ' · Neste trekk ' + esc(a.neste) : ''}</small>
+      ${a.trekkId ? `<div class="rad"><span>Bestilt trekk ${esc(a.trekkBelop)} · ${esc(a.trekkDato)}</span><button class="knapp liten" data-mlm="stoppbestilt" data-id="${m.id}" data-trekk="${a.trekkId}">Stopp bestilt trekk</button></div>` : ''}
+      ${(a.trekk || []).map(t => `<div class="rad"><span>${esc(t.dato)} · ${esc(t.belop)}${t.refundert ? ' · Refundert ' + esc(t.refundert) : ''}</span>${t.kanTilbake ? `<button class="knapp liten" data-mlm="tilbake" data-id="${m.id}" data-trekk="${t.id}" data-igjen="${t.igjenOre}">Betal tilbake</button>` : ''}</div>`).join('')}</section>`).join('') || ingen) : '';
+    const betalinger = del('Betalingshistorikk', (d.betalinger || []).map(p => rad((p.kurs || 'Betaling') + (p.annullert ? ' (annullert)' : ''), [p.maate, p.naar, p.kommentar].filter(Boolean).join(' · '), p.belop)).join('') || ingen);
+    boks.innerHTML = (bareBetaling ? '' : del('Timer i ' + esc(mnd), timer))
+      + avtaler
+      + betalinger
+      + (bareBetaling ? '' : (
+        del('Kurshistorikk', (d.historikk || []).map(k => rad(k.tittel, [k.naar, k.status].filter(Boolean).join(' · '), k.sum)).join('') || ingen)
       + del('Ventelister', (d.ventelister || []).map(v => rad(v.kurs || v.tittel || 'Venteliste', v.siden ? 'Siden ' + v.siden : '')).join('') || ingen)
-      + del('Endringslogg', (d.logg || []).map(l => rad(l.hva, [l.av, l.naar].filter(Boolean).join(' · '))).join('') || ingen);
+      + del('Endringslogg', (d.logg || []).map(l => rad(l.hva, [l.av, l.naar].filter(Boolean).join(' · '))).join('') || ingen)));
   }
   function arkJuster(id) {
     const m = S.medlemmer.find(x => x.id === id) || { navn: 'Medlemmet' };
@@ -290,6 +312,20 @@
      Samme kall som gammel admin: medlemmer.php «kontakt» (navn, e-post, telefon, datoer, timer) og «bytt-plan».
      Datoene og timetallet tømmes når feltet er tomt, så skjemaet fylles med det som står. Byttes medlemskapet,
      kjøres «bytt-plan» sist: sluttdatoen hører til planen (engangsplan = én måned). */
+  function arkStatus(id) {
+    const m = S.medlemmer.find(x => x.id === id); if (!m || !erMedlem(m)) return;
+    NA().apneArk(`<div class="ark-head"><h2>Deaktiver ${esc(m.navn)}?</h2><button class="lukk" data-mlm="lukk" aria-label="Lukk">×</button></div>
+      <p>Medlemstilgangen stoppes med én gang. En aktiv Vipps-avtale stoppes også. Betalinger og historikk beholdes; allerede betalt tid refunderes ikke automatisk.</p>
+      <p class="feil" id="mlm-status-feil" hidden></p>
+      <div class="ark-fot"><button class="knapp" data-mlm="medlem" data-id="${id}">Avbryt</button><button class="knapp rod" data-mlm="deaktiver" data-id="${id}">Deaktiver nå</button></div>`);
+  }
+  function arkByttPlan(id) {
+    const m = S.medlemmer.find(x => x.id === id); if (!m || !erMedlem(m)) return;
+    NA().apneArk(`<div class="ark-head"><h2>Bytt medlemskap · ${esc(m.navn)}</h2><button class="lukk" data-mlm="lukk" aria-label="Lukk">×</button></div>
+      <label class="felt"><small>Medlemskap</small><select id="mlm-by-plan">${S.planer.map(p => `<option value="${esc(p.navn)}" ${p.navn === m.medlemskap ? 'selected' : ''}>${esc(p.navn)}${p.pris ? ' · ' + esc(p.pris) : ''}</option>`).join('')}</select></label>
+      <p class="feil" id="mlm-by-feil" hidden></p>
+      <div class="ark-fot"><button class="knapp" data-mlm="medlem" data-id="${id}">Avbryt</button><button class="knapp hoved" data-mlm="lagreplan" data-id="${id}">Bytt medlemskap</button></div>`);
+  }
   function arkEndre(id) {
     const m = S.medlemmer.find(x => x.id === id); if (!m) return;
     const planer = S.planer.some(p => p.navn === m.medlemskap) || !m.medlemskap ? S.planer : [{ navn: m.medlemskap, pris: '' }, ...S.planer];
@@ -361,6 +397,17 @@
       </div>
       <div class="ark-fot"><button class="knapp" data-mlm="brukere">Tilbake</button><button class="knapp hoved" data-mlm="lagrebruker" data-id="${id}">Lagre bruker</button></div>`);
   }
+  async function arkAdminFraMedlem(id) {
+    try {
+      const d = await kall('brukere.php?person=' + id);
+      const r = (d.brukere || []).find(x => x.id === id);
+      if (!r || r.rolle === 'admin') throw new Error('Fant ikke medlemmet som skal få admintilgang.');
+      Object.assign(RB, { minst: d.minstLengde || 12, kanKasse: !!d.kanKasse });
+      RB.liste = [...RB.liste.filter(x => x.id !== id), r];
+      S.adminFraMedlem = id;
+      arkBruker(id, { ...r, rolle: 'admin', kursholder: r.kursholder ? 'ja' : 'nei' });
+    } catch (e) { toast(esc(e.message)); }
+  }
   async function lagreBruker(b, id) {
     const v = x => (document.getElementById(x)?.value || '').trim();
     const data = { handling: id ? 'endre' : 'opprett', id, navn: v('mlm-b-navn'), brukernavn: v('mlm-b-brukernavn'), epost: v('mlm-b-epost'), rolle: v('mlm-b-rolle'), passord: document.getElementById('mlm-b-passord')?.value || '' };
@@ -370,9 +417,11 @@
     const vis = t => arkBruker(id, data, t);
     if (data.passord && data.passord.length < RB.minst) return vis('Passordet må være minst ' + RB.minst + ' tegn.');
     if ((data.rolle === 'kursholder' || data.kursholder === 'ja') && !data.epost) return vis('Skriv e-posten til kursholderen.');
+    const gammel = RB.liste.find(r => r.id === id);
+    if (id === S.adminFraMedlem && data.rolle === 'admin' && !gammel?.harVipps && !gammel?.harPassord && (!data.brukernavn || !data.passord)) return vis('Skriv brukernavn og passord for admininnlogging.');
     const tekst = { admin: 'Denne personen får tilgang til hele administrasjonen.', regnskap: 'Denne personen får tilgang til økonomi og betalinger.', kasse: 'Denne kontoen kommer bare til kassa på iPaden.', kursholder: 'Denne personen får medlemstilgang og blir lagt til under Kursholdere.' }[data.rolle] || 'Denne personen får vanlig medlemstilgang.';
     if (!await NA().bekreft('Lagre tilgang?', tekst, 'Lagre bruker')) return vis('');
-    try { await kall('brukere.php', data); toast('Brukeren er lagret.'); arkBrukere(); }
+    try { await kall('brukere.php', data); toast('Brukeren er lagret.'); S.adminFraMedlem = 0; await hentMedlemmer(); arkBrukere(); }
     catch (e) { vis(e.message); }
   }
   function arkKassePin(id) {
@@ -506,7 +555,35 @@
       navn.classList.toggle('vis', vis);
       return;
     }
-    if (h === 'betaling') { location.href = '/admin-ny#folk?person=' + id; return; }
+    if (h === 'betaling') return arkMedlem(id, 'betaling');
+    if (h === 'stoppbestilt') {
+      const trekkId = Number(b.dataset.trekk);
+      if (!await NA().bekreft('Stopp bestilt trekk?', 'Vipps-trekket avlyses. Du kan deretter deaktivere medlemmet.', 'Stopp trekket')) return;
+      try { const r = await kall('medlemmer.php', {handling: 'stopp-trekk', medlemId: id, trekkId}); toast(esc(r.beskjed || 'Trekket er stoppet.')); arkMedlem(id, 'betaling'); }
+      catch (err) { toast(esc(err.message)); }
+      return;
+    }
+    if (h === 'tilbake') {
+      const trekkId = Number(b.dataset.trekk), igjen = Number(b.dataset.igjen);
+      const inn = NA().apneArk(`${NA().arkHode('Betal tilbake avtaletrekk')}<p>Gjenstår: ${esc((igjen / 100).toLocaleString('nb-NO'))} kr</p>
+        <form data-mlm-refusjon><label class="felt"><small>Beløp i kroner</small><input name="belop" type="number" min="0.01" max="${igjen / 100}" step="0.01" value="${igjen / 100}" required></label>
+        <div class="ark-fot"><button class="knapp" type="button" data-lukk>Avbryt</button><button class="knapp hoved" type="submit">Betal tilbake</button></div></form>`);
+      inn.querySelector('form').onsubmit = async e => {
+        e.preventDefault();
+        const belopOre = Math.round(Number(e.target.elements.belop.value) * 100);
+        if (!Number.isInteger(belopOre) || belopOre < 1 || belopOre > igjen) { toast('Ugyldig beløp.'); return; }
+        if (!await NA().bekreft('Betal tilbake?', 'Refunder ' + (belopOre / 100).toLocaleString('nb-NO') + ' kr gjennom Vipps.', 'Refunder')) return;
+        const navn = 'lissom-refund-trekk:' + trekkId + ':' + belopOre;
+        let operasjonId = sessionStorage.getItem(navn);
+        if (!operasjonId) { operasjonId = crypto.randomUUID(); sessionStorage.setItem(navn, operasjonId); }
+        try { const r = await kall('medlemmer.php', {handling: 'betal-tilbake', medlemId: id, trekkId, belopOre, operasjonId}); sessionStorage.removeItem(navn); toast(esc(r.beskjed || 'Beløpet er tilbakebetalt.')); arkMedlem(id, 'betaling'); }
+        catch (err) { toast(esc(err.message)); }
+      };
+      return;
+    }
+    if (h === 'status') return arkStatus(id);
+    if (h === 'byttplan') return arkByttPlan(id);
+    if (h === 'visning') { S.visning = b.dataset.v === 'tidligere' ? 'tidligere' : 'aktive'; S.typeFilter = ''; return tegnListe(); }
     if (h === 'medlem') return arkMedlem(id);
     if (h === 'stempling') return arkStempling(id);
     if (h === 'juster') return arkJuster(id);
@@ -545,6 +622,28 @@
       finally { S.opptatt = false; b.disabled = false; }
       return;
     }
+    if (h === 'deaktiver') {
+      if (S.opptatt) return;
+      S.opptatt = true; b.disabled = true;
+      try {
+        const d = await kall('medlemmer.php', { handling: 'deaktiver', medlemId: id });
+        NA().lukkArk(true); S.visning = 'tidligere'; S.typeFilter = ''; await hentMedlemmer(); toast(esc(d.beskjed || 'Medlemmet er deaktivert.'));
+      } catch (e) { const f = document.getElementById('mlm-status-feil'); if (f) { f.textContent = e.message; f.hidden = false; } b.disabled = false; }
+      finally { S.opptatt = false; }
+      return;
+    }
+    if (h === 'lagreplan') {
+      if (S.opptatt) return;
+      const m = S.medlemmer.find(x => x.id === id), plan = document.getElementById('mlm-by-plan')?.value;
+      if (!m || !plan || plan === m.medlemskap) return arkMedlem(id);
+      if (!await NA().bekreft('Bytt medlemskap?', `Bytt fra ${m.medlemskap} til ${plan}. En aktiv Vipps-avtale følger reglene i bekreftelsen fra systemet.`, 'Bytt medlemskap')) return arkByttPlan(id);
+      S.opptatt = true; b.disabled = true;
+      try { const d = await kall('medlemmer.php', { handling: 'bytt-plan', medlemId: id, type: plan }); await hentMedlemmer(); arkMedlem(id); toast(esc(d.beskjed || 'Medlemskapet er endret.')); }
+      catch (e) { const f = document.getElementById('mlm-by-feil'); if (f) { f.textContent = e.message; f.hidden = false; } b.disabled = false; }
+      finally { S.opptatt = false; }
+      return;
+    }
+    if (h === 'adminrolle') return arkAdminFraMedlem(id);
     if (h === 'endre') return arkEndre(id);
     if (h === 'lagreendre') return lagreEndre(b, id);
     if (h === 'gave') { Object.assign(GV, { type: '', timer: 0, belop: '', hilsen: '', til: id ? 'en' : '', medlemId: id }); return arkGave(); }

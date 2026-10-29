@@ -81,6 +81,7 @@
       : t.slag === 'glasurbrann' && t.temperatur ? `Glasurbrann ${t.temperatur} °C er satt`
       : OVN[t.slag] || 'Ovn er tømt';
     const okter = dagensOkter(d);
+    const taUtLeire = d.taUtLeire || [];
     const sett = d.settPaaServer ? new Set() : settLes();
     const maa = NA.maGjores(d).filter(s => s.type !== 'taut' && !gjort.has(nokkel(s)));
     const salgIgjen = salg.filter(x => !gjort.has('salg:' + x.id));
@@ -127,6 +128,8 @@
                 <button class="knapp hoved liten" type="button" data-startkurs="${o.oktId}">Start dagens kurs</button></div>`; }).join('') : '<p class="tom">Ingen kurs i dag.</p>'}
           </section>
         </div>
+        ${taUtLeire.length ? `<section class="kort" aria-label="Ta ut leire"><div class="kort-head"><h2>Ta ut leire</h2></div>
+          ${taUtLeire.map(r => `<div class="rad"><div class="tekst"><b>${esc(r.vare)}</b><small>${Number(r.antall)} på lager</small></div><button class="knapp liten" type="button" data-taut="${Number(r.id)}" ${Number(r.antall) > 0 ? '' : 'disabled'}>Ta ut 1</button></div>`).join('')}</section>` : ''}
         <section class="kort" aria-label="Må gjøres">
           <div class="kort-head"><h2>Må gjøres</h2></div>
           ${maa.length || salgIgjen.length || nMigr || oppfHtml ? (nMigr ? radMigr(nMigr) : '') + salgIgjen.map(radSalg).join('') + maa.map(radSak).join('') + oppfHtml : '<p class="tom">Alt er gjort. Fint!</p>'}
@@ -182,7 +185,6 @@
   }
   function radSak(s) {
     const k = esc(nokkel(s));
-    const gammel = `<a class="knapp liten" href="/admin-ny#${esc(String(s.rute || 'idag'))}">I gammel admin</a>`;
     const h = {
       henvendelse: () => s.feilStempling && s.medlemId
         ? knapp('Rett verkstedtid', 'stempling-gammel', true, `data-k="${k}"`) + knapp('Svar', 'svar', false, `data-k="${k}"`)
@@ -204,7 +206,7 @@
       feil: () => knapp('Løst', 'feil-lost', false, `data-k="${k}"`) + knapp('Les detaljer', 'feil', true, `data-k="${k}"`),
       /* Avlyst dato, betalt kontant/kort i kassa (eieren 09.10.2026): verkstedet gir pengene tilbake og merker det her. */
       tilbakebetal: () => knapp('Betalt tilbake', 'tilbakebetalt', true, `data-k="${k}"`),
-    }[s.type] || (() => gammel);
+    }[s.type] || (() => '');
     return `<div class="rad${radMaal(s) ? ` klikkrad" data-rad="${k}" role="button" tabindex="0` : ''}"><div class="tekst"><span class="type">${TYPE[s.type] || esc(s.gruppe || '')}</span><b>${esc(s.tittel)}</b>${s.under ? `<small>${esc(s.under)}</small>` : ''}</div><div class="knapper">${h()}</div></div>`;
   }
   /* Hele raden er trykkbar og åpner det saken gjelder (eieren 12.10.2026: «alle steder klikkbart»). Knappene virker som før.
@@ -228,9 +230,37 @@
       case 'venteliste': return s.oktId ? () => tilKurs(Number(s.oktId), {venteliste: 1}) : s.kursId ? () => NA.gaTil('kurs', {kurs: Number(s.kursId), fra: 'idag', venteliste: 1}) : null;
       case 'pamelding': case 'tilbakebetal': return s.oktId ? () => tilKurs(Number(s.oktId), {booking: id}) : null;
       case 'lager': return NA.erMobil() ? null : () => NA.gaTil('varer', {vare: id});
-      case 'soknad': return () => { location.href = '/admin-ny#' + String(s.rute || 'soknader'); };
+      case 'soknad': return () => arkSoknad(s);
     }
     return null;
+  }
+
+  async function arkSoknad(s) {
+    try {
+      const [d, m] = await Promise.all([NA.api('soknader.php?status=venter'), NA.api('medlemmer.php')]);
+      const rad = (d.soknader || []).find(r => r.id === Number(s.id));
+      if (!rad) { NA.toast('Søknaden er allerede behandlet eller finnes ikke.'); await oppdater(true); return; }
+      const typer = [...new Set([rad.type, ...(m.planer || []).map(p => p.navn)].filter(Boolean))];
+      const inn = NA.apneArk(`${NA.arkHode(esc(rad.navn))}
+        <p>${esc([rad.sendt, rad.type, rad.epost, rad.telefon].filter(Boolean).join(' · '))}</p>
+        ${rad.erfaring ? `<p><b>Erfaring</b><br>${esc(rad.erfaring)}</p>` : ''}
+        ${rad.melding ? `<p><b>Melding</b><br>${esc(rad.melding)}</p>` : ''}
+        <label class="felt"><small>Medlemskap ved godkjenning</small><select data-soknad-type>${typer.map(type => `<option value="${esc(type)}" ${type === rad.type ? 'selected' : ''}>${esc(type)}</option>`).join('')}</select></label>
+        <label class="felt"><small>Begrunnelse ved avslag</small><textarea data-soknad-grunn maxlength="500"></textarea></label>
+        <div class="ark-fot"><button class="knapp" type="button" data-lukk>Lukk</button><button class="knapp rod" type="button" data-soknad-vedtak="avslatt">Avslå</button><button class="knapp hoved" type="button" data-soknad-vedtak="godkjent">Godkjenn</button></div>`);
+      inn.onclick = async e => {
+        const b = e.target.closest('[data-soknad-vedtak]');
+        if (!b) return;
+        const vedtak = b.dataset.soknadVedtak;
+        const grunn = inn.querySelector('[data-soknad-grunn]').value.trim();
+        if (!await NA.bekreft(vedtak === 'godkjent' ? 'Godkjenn søknaden?' : 'Avslå søknaden?', vedtak === 'godkjent' ? 'Vipps-betalingen kontrolleres før tilgang gis.' : 'Søkeren får beskjed, og en ventende Vipps-avtale stoppes.', vedtak === 'godkjent' ? 'Godkjenn' : 'Avslå')) return;
+        try {
+          const svar = await NA.api('soknader.php', {data: {id: rad.id, vedtak, type: inn.querySelector('[data-soknad-type]').value, begrunnelse: grunn}});
+          NA.lukkArk(true); NA.toast(esc(svar.beskjed || 'Søknaden er behandlet.'));
+          await oppdater(true);
+        } catch (err) { NA.toast(esc(err.message)); }
+      };
+    } catch (e) { NA.toast(esc(e.message)); }
   }
 
   /* ── oppdatering ─────────────────────────────────────────────────────── */
@@ -670,8 +700,7 @@
       case 'svar': return svarForesporsel(s);
       case 'besvart': return kall('foresporsler.php', {id, status: 'besvart'}, 'Merket som besvart.');
       case 'soknad':
-        if (!await NA.bekreft('Godkjenn søknaden?', 'Godkjenn søknaden fra ' + s.under + '. Betalingen i Vipps settes i gang etter medlemskapet.', 'Godkjenn')) return;
-        return kall('soknader.php', {id, vedtak: 'godkjent'}, 'Søknaden er godkjent.');
+        return arkSoknad(s);
       case 'frys-godkjenn': return kall('frys.php', {handling: 'godkjenn', id}, 'Frysen er godkjent.');
       case 'frys-avslag': return kall('frys.php', {handling: 'avslag', id}, 'Frysen er avslått.');
       case 'bidrag': return arkBidrag(s);
@@ -727,6 +756,12 @@
         else if (b.hasAttribute('data-ovnendre')) { ovnApen = !ovnApen; tegn(NA.sist); el.querySelector('[data-ovnendre]')?.focus(); }
         else if (b.dataset.inneperson) { if (NA.arkMedlem) NA.arkMedlem(Number(b.dataset.inneperson)); }
         else if (b.dataset.startkurs) arkStartKurs(Number(b.dataset.startkurs));
+        else if (b.dataset.taut) {
+          b.disabled = true;
+          NA.api('produkter.php', {data: {handling: 'taUt', id: Number(b.dataset.taut)}})
+            .then(r => { NA.toast(esc(r.beskjed || 'Tatt ut.')); oppdater(true); })
+            .catch(err => { NA.toast(esc(err.message)); b.disabled = false; });
+        }
         else if (b.dataset.gjor) gjor(b);
         else if (b.dataset.utfort) utfort(b);
         else if (b.dataset.oppf === 'snakket') arkSnakket(b);

@@ -1,6 +1,5 @@
 /* Ny admin, del C: Mer (eierens GO 08.10.2026, prototypen lissom-enklere-admin-2).
-   Det som brukes sjeldnere. Hvert kort åpner den eksisterende skjermen i admin-ny;
-   ingenting lages på nytt her. */
+   Det som brukes sjeldnere. Kortene åpner sidene i ny admin. */
 (() => {
   'use strict';
   const NA = () => window.NyAdmin || window;
@@ -9,12 +8,11 @@
 
   // [tittel, undertekst, adresse]. Adresse null = finnes ikke på nett ennå.
   const KORT = [
-    ['Rapporter', 'Omsetning, kurs og medlemmer', '/admin-ny#penger'],
-    ['Markedsføring', 'Nyhetsbrev, SMS, kampanjer', '/admin-ny#marked'],
+    ['Rapporter', 'Omsetning og inntektskilder', '#penger'],
+    ['Markedsføring', 'Nyhetsbrev, SMS, kampanjer', '#marked'],
     ['Keramikkmaler', 'Dokumenter med former og oppskrifter', '#maler'],
     ['Vedtak', 'Regler og priser', null],
     ['Eksport', 'Regnskap og lister', '#regnskap'],
-    // «Gammel admin» står i menyen (eieren 11.10.2026), ikke to steder på samme skjerm.
   ];
 
   function tegn(el) {
@@ -42,5 +40,27 @@
 
   document.addEventListener('click', e => { const b = e.target.closest('[data-mer-gaa]'); if (!b) return; if (b.dataset.merGaa === 'vedlikehold') arkVedlikehold(); else location.href = b.dataset.merGaa; });
 
+  async function penger(el) {
+    const N = NA();
+    el.innerHTML = '<p class="laster">Henter omsetning …</p>';
+    try {
+      const d = await N.api('oversikt.php');
+      const kilder = d.omsetning?.kilder || {};
+      let valgt = 'idag';
+      const tegnPenger = () => {
+        const p = kilder[valgt] || {sumEksOre: 0, kilder: []};
+        el.innerHTML = `<div class="head"><div><h1>Penger</h1><p class="muted">Innbetalinger vises når betalingen er bekreftet.</p></div></div>
+          <div class="faner">${[['idag', 'I dag'], ['maned', 'Denne måneden'], ['forrige', 'Forrige måned']].map(([id, navn]) => `<button type="button" data-penger-periode="${id}" aria-pressed="${id === valgt}">${navn}</button>`).join('')}</div>
+          <section class="kort"><h2>Omsetning uten mva</h2><strong>${N.kr(p.sumEksOre || 0)}</strong></section>
+          <h2>Hvor pengene kommer fra</h2>${(p.kilder || []).map(r => `<details class="kort"><summary>${esc(r.navn)} · ${N.kr(r.eksOre || 0)}</summary>${(r.salg || []).map(s => `<div class="rad"><span class="tekst"><b>${esc(s.hva)}</b><small>${esc(s.dato)}</small></span><strong>${N.kr(s.eksOre || 0)}</strong></div>`).join('') || '<p>Ingen salg i perioden.</p>'}</details>`).join('') || '<p>Ingen salg i perioden.</p>'}
+          <div class="knapper"><button class="knapp" data-penger-til="regnskap">Dagsoppgjør og månedsrapport</button><button class="knapp" data-penger-til="betalinger">Betalinger</button><button class="knapp" data-penger-til="medlemmer">Medlemmer og betalingsstatus</button><button class="knapp" data-penger-til="kasse">Kasse</button></div>`;
+        el.querySelectorAll('[data-penger-periode]').forEach(b => b.onclick = () => { valgt = b.dataset.pengerPeriode; tegnPenger(); });
+        el.querySelectorAll('[data-penger-til]').forEach(b => b.onclick = () => N.gaTil(b.dataset.pengerTil));
+      };
+      tegnPenger();
+    } catch (e) { el.innerHTML = `<p class="feil">${esc(e.message)}</p>`; }
+  }
+
   registrer('mer', { tittel: 'Mer', ikon: '…', tegn, mobil: false });
+  registrer('penger', { tittel: 'Penger', ikon: '○', tegn: penger, mobil: false });
 })();

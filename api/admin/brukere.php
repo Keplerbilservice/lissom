@@ -85,6 +85,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     // ingen hadde tilgang.
     $numre = Config::adminNumre();
     $plass = $numre ? implode(',', array_fill(0, count($numre), '?')) : "''";
+    $person = Foresporsel::heltall('person');
+    $personVilkaar = $person > 0 ? ' OR id = ' . $person : '';
 
     // Kasse-PIN (migrasjon 263): bare om personen har en, aldri selve PIN-en.
     $pinFelt = DB::harKolonne('members', 'kasse_pin_hash')
@@ -96,7 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
            FROM members
           WHERE brukernavn IS NOT NULL
              OR rolle IN ('admin', 'regnskap')
-             OR telefon IN ({$plass})
+             OR telefon IN ({$plass}){$personVilkaar}
        ORDER BY rolle = 'admin' DESC, rolle = 'regnskap' DESC,
                 brukernavn IS NULL, brukernavn, navn",
         $numre

@@ -14,6 +14,7 @@
   const NA = window.NA;
   const {esc, kr} = NA;
   const OVN = {raabrann: 'Råbrann satt', glasurbrann: 'Glasurbrann satt', tomt: 'Ovn er tømt'};
+  const OVN_SMAL = matchMedia('(max-width:760px)');
   /* Samme nøkkel som admin-ny (ramme.js): «Sett» huskes i nettleseren før migrasjon 265 er kjørt. */
   const SETT = 'lissom-sett-pameldinger';
   const settLes = () => { try { return new Set(JSON.parse(localStorage.getItem(SETT) || '[]')); } catch { return new Set(); } };
@@ -87,10 +88,11 @@
     const salgIgjen = salg.filter(x => !gjort.has('salg:' + x.id));
     const nMigr = migr?.mangler?.length || 0;
     const oppfHtml = radOppf();
-    const info = (d.maGjores || []).filter(s => s.type === 'pamelding' && !gjort.has(nokkel(s)) && !(s.ider || [s.id]).every(i => sett.has(i)));
+    const info = (d.maGjores || []).filter(s => s.type === 'pamelding' && !gjort.has(nokkel(s)) && !(s.ider || [s.id]).every(i => sett.has(i)))
+      .sort((a, b) => String(b.bestiltTid || '').localeCompare(String(a.bestiltTid || '')) || Number(b.id) - Number(a.id));
     const dato = new Date().toLocaleDateString('nb-NO', {weekday: 'long', day: 'numeric', month: 'long'});
     const hurtig = NA.hurtig();
-    const mobil = NA.erMobil(), inne = d.verkstedet || [];
+    const mobil = NA.erMobil(), ovnKompakt = mobil || OVN_SMAL.matches, inne = d.verkstedet || [];
     const ovnAv = ovn && ovn.klar === false ? 'disabled' : '';
     const ovnKnapper = `<div class="ovn-knapper">
       <button type="button" data-ovn="raabrann" aria-pressed="${t?.slag === 'raabrann'}" ${ovnAv}>${OVN.raabrann}</button>
@@ -100,27 +102,30 @@
       <button type="button" data-ovn="tomt" aria-pressed="${t?.slag === 'tomt'}" ${ovnAv}>${OVN.tomt}</button>
     </div>`;
     /* Mobil: ovnen er én lav linje med status og sluttid; de tre knappene kommer fram med «Endre». */
-    const ovnKort = mobil
-      ? `<section class="kort ovn-lav" aria-label="Ovnen"><div class="ovn-linje"><span class="ovn-tekst"><b>Ovn · ${esc(status)}</b>${brenning ? `<small>${esc(brenning.s.tekst)}</small>` : ''}</span><button type="button" class="na-pille" data-ovnendre aria-expanded="${ovnApen}">Endre</button></div>
-          ${ovnApen ? ovnKnapper + '<p class="muted" style="margin-top:10px;font-size:15px">«Ovn er tømt» = ferdigbrent. Du velger hvilke kursdatoer som får «Klar til henting».</p>' : ''}</section>`
-      : `<section class="kort" aria-label="Ovnen">
-            <div class="kort-head"><h2>Ovnen</h2></div>
-            <div class="ovnstatus">${status}</div>
-            <p class="muted" style="margin:4px 0 16px">${t ? esc(t.av) + ' · ' + naarTekst(t.naar) + ' · medlemmene ser det på Min side' : 'Ingen har trykket det siste døgnet'}</p>
+    const ovnFelt = ovnKompakt
+      ? `<div class="idag-ovn idag-ovn-lav" aria-label="Ovnen"><div class="ovn-linje"><span class="ovn-tekst"><b>Ovn · ${esc(status)}</b>${brenning ? `<small>${esc(brenning.s.tekst)}</small>` : ''}</span><button type="button" class="na-pille" data-ovnendre aria-expanded="${ovnApen}">Endre</button></div>
+          ${ovnApen ? ovnKnapper : ''}</div>`
+      : `<div class="idag-ovn" aria-label="Ovnen">
+            <div class="idag-ovn-tekst"><div class="kort-head"><h2>Ovnen</h2></div>
+            <div class="ovnstatus">${status}</div></div>
             ${ovnKnapper}
-            <p class="muted" style="margin-top:12px;font-size:15px">«Ovn er tømt» = ferdigbrent. Du velger hvilke kursdatoer som får «Klar til henting».</p>
-          </section>`;
+           </div>`;
     /* Mobil: hvem som er inne, som eget kort øverst. Et navn åpner medlemsarket. */
     const inneKort = mobil ? `<section class="kort inne-kort" aria-label="I verkstedet nå"><h2>I verkstedet nå · ${inne.length}</h2>
         ${inne.length ? `<div class="inne-piller">${inne.map(x => `<button type="button" class="na-pille" data-inneperson="${Number(x.id)}">${esc(x.navn)}</button>`).join('')}</div>` : '<p class="muted">Ingen</p>'}</section>` : '';
+    const maaKort = `<section class="kort" aria-label="Må gjøres">
+      <div class="kort-head"><h2>Må gjøres</h2></div>
+      ${maa.length || salgIgjen.length || nMigr || oppfHtml ? (nMigr ? radMigr(nMigr) : '') + salgIgjen.map(radSalg).join('') + maa.map(radSak).join('') + oppfHtml : '<p class="tom">Alt er gjort. Fint!</p>'}
+      <div class="kort-head" style="margin:22px 0 4px"><h3>Til info</h3><small>Forsvinner av seg selv etter 3 dager</small></div>
+      ${info.length ? info.map(s => `<div class="rad idag-info-rad${radMaal(s) ? ` klikkrad" data-rad="${esc(nokkel(s))}" role="button" tabindex="0` : ''}"><div class="tekst"><span class="type">Ny påmelding</span><b>${esc(String(s.tittel).replace(/^Ny påmelding: /, ''))}</b><small>${esc(String(s.under).replace(/ · (Ikke betalt|Betalt)$/, ''))}</small></div><div class="idag-info-side">${s.bestiltDato ? `<small class="idag-bestilt">Bestilt ${esc(s.bestiltDato)}</small>` : ''}<div class="idag-info-status">${s.betalt === true ? '<span class="merke gronn">Betalt</span>' : s.betalt === false ? '<span class="merke rod">Ikke betalt</span>' : ''}<button class="knapp liten" type="button" data-utfort="${esc(nokkel(s))}">Utført</button></div></div></div>`).join('') : '<p class="tom">Ingen nye.</p>'}
+    </section>`;
     el.innerHTML = `
-      <div class="head"><div><div class="eyebrow">${esc(dato.charAt(0).toUpperCase() + dato.slice(1))}</div><h1>${hilsen()}, ${esc(String(NA.meg?.navn || '').split(' ')[0])}</h1></div></div>
+      <div class="head idag-head"><div><div class="eyebrow">${esc(dato.charAt(0).toUpperCase() + dato.slice(1))}</div><h1>${hilsen()}, ${esc(String(NA.meg?.navn || '').split(' ')[0])}</h1></div>${ovnFelt}</div>
       <div style="display:grid;gap:20px">
         ${inneKort}
-        ${mobil ? ovnKort : ''}
         ${hurtig.length ? `<div class="bare-mobil"><div class="fliser">${hurtig.map(h => `<button class="flis" type="button" data-hurtig="${h[0]}"><span class="flis-ikon" aria-hidden="true">${h[2]}</span><span class="flis-tittel">${h[1]}</span></button>`).join('')}</div></div>` : ''}
         <div class="grid">
-          ${mobil ? '' : ovnKort}
+          ${maaKort}
           <section class="kort" aria-label="Dagens kurs">
             <div class="kort-head"><h2>Dagens kurs</h2></div>
             ${okter.length ? okter.map(o => { const h = kal.get(o.oktId); const ub = ikkeBetalt(h).length; const n = h ? h.pameldt : o.pameldte, kap = h ? h.kap : o.kapasitet;
@@ -130,14 +135,9 @@
         </div>
         ${taUtLeire.length ? `<section class="kort" aria-label="Ta ut leire"><div class="kort-head"><h2>Ta ut leire</h2></div>
           ${taUtLeire.map(r => `<div class="rad"><div class="tekst"><b>${esc(r.vare)}</b><small>${Number(r.antall)} på lager</small></div><button class="knapp liten" type="button" data-taut="${Number(r.id)}" ${Number(r.antall) > 0 ? '' : 'disabled'}>Ta ut 1</button></div>`).join('')}</section>` : ''}
-        <section class="kort" aria-label="Må gjøres">
-          <div class="kort-head"><h2>Må gjøres</h2></div>
-          ${maa.length || salgIgjen.length || nMigr || oppfHtml ? (nMigr ? radMigr(nMigr) : '') + salgIgjen.map(radSalg).join('') + maa.map(radSak).join('') + oppfHtml : '<p class="tom">Alt er gjort. Fint!</p>'}
-          <div class="kort-head" style="margin:22px 0 4px"><h3>Til info</h3><small>Forsvinner av seg selv etter 3 dager</small></div>
-          ${info.length ? info.map(s => `<div class="rad${radMaal(s) ? ` klikkrad" data-rad="${esc(nokkel(s))}" role="button" tabindex="0` : ''}"><div class="tekst"><span class="type">Ny påmelding</span><b>${esc(String(s.tittel).replace(/^Ny påmelding: /, ''))}</b><small>${esc(String(s.under).replace(/ · (Ikke betalt|Betalt)$/, ''))}</small></div>${s.betalt === true ? '<span class="merke gronn">Betalt</span>' : s.betalt === false ? '<span class="merke rod">Ikke betalt</span>' : ''}<button class="knapp liten" type="button" data-utfort="${esc(nokkel(s))}">Utført</button></div>`).join('') : '<p class="tom">Ingen nye.</p>'}
-        </section>
       </div>`;
   }
+  OVN_SMAL.addEventListener('change', () => { if (el?.isConnected && NA.sist) tegn(NA.sist); });
   const TYPE = {henvendelse: 'Forespørsel', soknad: 'Medlemssøknad', frys: 'Frys', bidrag: 'Medlemsbidrag', betaling: 'Betaling', venteliste: 'Venteliste',
     henting: 'Klar til henting', leire: 'Leirebestilling', dugnad: 'Dugnad', lager: 'Lager', chat: 'Chat', innboks: 'Innboks', feil: 'Feilmelding',
     tilbakebetal: 'Avlyst dato', stempling: 'Verkstedtid'};

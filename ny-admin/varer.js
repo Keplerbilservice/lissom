@@ -247,7 +247,8 @@
     const [t, f] = SALG_STATUS[g.status] || [g.status, ''];
     NA().apneArk(`<div class="ark-head"><h2>${esc(g.tittel)}</h2><button class="lukk" data-var-gjor="lukk" aria-label="Lukk">×</button></div>
       <p><span class="merke ${f}">${esc(t)}</span> <small>${esc(g.laget)} · ${esc(g.medlem)}</small></p>
-      ${g.bilde ? `<img src="${esc(g.bilde)}" alt="" style="width:120px;height:120px;object-fit:cover;border-radius:12px;border:1px solid var(--line)">` : ''}
+      <div style="display:flex;gap:10px;overflow-x:auto">${(g.bilder?.length ? g.bilder : (g.bilde ? [{ url: g.bilde, tekst: '' }] : [])).map(b =>
+        `<figure style="margin:0;flex:0 0 120px"><img src="${esc(b.url)}" alt="${esc(b.tekst || g.tittel)}" style="width:120px;height:120px;object-fit:cover;border-radius:12px;border:1px solid var(--line)"><figcaption style="font-size:12px">${esc(b.tekst || '')}</figcaption></figure>`).join('')}</div>
       <label style="display:grid;gap:5px"><small>Navn</small><input id="salg-tittel" value="${esc(g.tittel)}" maxlength="191" style="${felt}"></label>
       <label style="display:grid;gap:5px"><small>Beskrivelse</small><textarea id="salg-beskr" rows="3" style="${felt};min-height:90px">${esc(g.tekst || '')}</textarea></label>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">

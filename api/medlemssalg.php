@@ -24,12 +24,25 @@ require __DIR__ . '/_boot.php';
 const MAKS_PER_MEDLEM = 20;
 const KATEGORIER = ['Kopper', 'Boller', 'Fat', 'Annet'];
 
+$bilderFor = static function (array $r): array {
+    $lagret = json_decode((string) ($r['bilder_json'] ?? ''), true);
+    if (!is_array($lagret) || !$lagret) {
+        $lagret = $r['bilde'] ? [['fil' => $r['bilde'], 'tekst' => '']] : [];
+    }
+    return array_values(array_map(static fn($b) => [
+        'fil' => (string) ($b['fil'] ?? ''),
+        'url' => '/api/bilde.php?salg=' . rawurlencode((string) ($b['fil'] ?? '')),
+        'tekst' => (string) ($b['tekst'] ?? ''),
+    ], array_filter($lagret, static fn($b) => is_array($b) && !empty($b['fil']))));
+};
+
 $ut = static fn(array $r, bool $eier): array => [
     'id'        => (int) $r['id'],
     'tittel'    => $r['tittel'],
     'tekst'     => $r['beskrivelse'],
     'laget'     => 'Laget av ' . ($r['produsent'] ?: 'et medlem'),
     'bilde'     => $r['bilde'] ? '/api/bilde.php?salg=' . rawurlencode((string) $r['bilde']) : null,
+    'bilder'    => $bilderFor($r),
     'fokus'     => (string) ($r['fokus'] ?? '50% 50%'),
     'pris'      => Booking::kroner((int) $r['pris_ore']),
     'kategori'  => $r['kategori'] ?: 'Annet',
@@ -186,6 +199,42 @@ if (isset($_FILES['bilde']) && ($_FILES['bilde']['error'] ?? UPLOAD_ERR_NO_FILE)
     }
 }
 
+// Maks åtte bilder i én annonse. Ved redigering kan gamle ekstrabilder
+// beholdes med oppdatert tekst, fjernes eller erstattes med nye.
+$eksisterende = $rediger ? $bilderFor($fra) : [];
+$behold = json_decode((string) ($_POST['bilderBehold'] ?? json_encode(array_slice($eksisterende, 1))), true);
+$nyeTekster = json_decode((string) ($_POST['ekstraTekst'] ?? '[]'), true);
+if (!is_array($behold) || !is_array($nyeTekster) || count($behold) > 7 || count($nyeTekster) > 7) {
+    Svar::feil('For mange bilder eller ugyldig bildeliste.');
+}
+if (1 + count($behold) + count($nyeTekster) > 8) {
+    Svar::feil('Du kan ha inntil åtte bilder per vare.');
+}
+if ((count($behold) + count($nyeTekster) > 0) && !DB::harKolonne('member_sales', 'bilder_json')) {
+    Svar::feil('Bildegalleriet er ikke klart ennå. Prøv igjen senere.');
+}
+$bildetekst = mb_substr(trim((string) ($_POST['bildeTekst'] ?? ($eksisterende[0]['tekst'] ?? ''))), 0, 160);
+$bilder = $bilde ? [['fil' => $bilde, 'tekst' => $bildetekst]] : [];
+$tillatt = array_column(array_slice($eksisterende, 1), 'fil');
+foreach ($behold as $radBilde) {
+    $fil = is_array($radBilde) ? (string) ($radBilde['fil'] ?? '') : '';
+    if (!in_array($fil, $tillatt, true) || $fil === $bilde) {
+        Svar::feil('Et av bildene tilhører ikke varen.');
+    }
+    $bilder[] = ['fil' => $fil, 'tekst' => mb_substr(trim((string) ($radBilde['tekst'] ?? '')), 0, 160)];
+}
+foreach ($nyeTekster as $i => $tekstBilde) {
+    $feltBilde = 'ekstra_' . $i;
+    if (!isset($_FILES[$feltBilde]) || ($_FILES[$feltBilde]['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+        Svar::feil('Et av bildene mangler.');
+    }
+    try {
+        $fil = Bilder::taImot($_FILES[$feltBilde], 'medlemssalg');
+    } catch (RuntimeException $e) {
+        Svar::feil($e->getMessage());
+    }
+    $bilder[] = ['fil' => $fil, 'tekst' => mb_substr(trim((string) $tekstBilde), 0, 160)];
+}
 // Auto-godkjenn.
 //
 // Eieren, 12. september 2026: «Jeg vil fortsatt godkjenne eller sette auto
@@ -231,6 +280,9 @@ $rad = [
 ];
 if (DB::harKolonne('member_sales', 'fokus')) {
     $rad['fokus'] = $fokus;
+}
+if (DB::harKolonne('member_sales', 'bilder_json')) {
+    $rad['bilder_json'] = json_encode($bilder, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 }
 
 // ── Endring: samme felter, samme rad ────────────────────────────────

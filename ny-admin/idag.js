@@ -361,6 +361,10 @@
   }
   async function arkStartKurs(oktId) {
     NA.apneArk(NA.arkHode('Start dagens kurs') + '<p class="laster">Henter deltakerne …</p>');
+    document.documentElement.classList.add('kursstart-apent');
+    document.getElementById('ark').addEventListener('close', () => {
+      document.documentElement.classList.remove('kursstart-apent');
+    }, {once: true});
     let k;
     try { k = await hentDeltakere(oktId); }
     catch (e) { NA.apneArk(NA.arkHode('Start dagens kurs') + `<p class="feil">${esc(e.message)}</p>`); return; }

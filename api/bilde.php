@@ -233,8 +233,22 @@ if ($sti === null) {
 
 // Bilder til varer som venter paa godkjenning, er avvist eller tatt ned skal
 // ikke ligge aapent. Eieren og selgeren selv far se dem.
-$rad = DB::en('SELECT member_id, status FROM member_sales WHERE bilde = :b', ['b' => $navn]);
-if ($rad !== null && $rad['status'] !== 'publisert') {
+$kandidater = DB::harKolonne('member_sales', 'bilder_json')
+    ? DB::alle('SELECT member_id, status, bilde, bilder_json FROM member_sales WHERE bilde = :b OR bilder_json LIKE :s',
+        ['b' => $navn, 's' => '%' . $navn . '%'])
+    : DB::alle('SELECT member_id, status, bilde FROM member_sales WHERE bilde = :b', ['b' => $navn]);
+$rad = null;
+foreach ($kandidater as $kandidat) {
+    $bilder = json_decode((string) ($kandidat['bilder_json'] ?? ''), true);
+    if ($kandidat['bilde'] === $navn || (is_array($bilder) && in_array($navn, array_column($bilder, 'fil'), true))) {
+        $rad = $kandidat;
+        break;
+    }
+}
+if ($rad === null) {
+    Svar::feil('Fant ikke bildet.', 404);
+}
+if ($rad['status'] !== 'publisert') {
     $m = Sesjon::medlem();
     $egen = $m !== null && (int) $m['id'] === (int) $rad['member_id'];
     if (!$egen && !Sesjon::erAdmin()) {

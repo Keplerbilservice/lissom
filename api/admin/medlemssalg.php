@@ -27,6 +27,11 @@ $hent = static fn(): array => array_map(static fn($r) => [
     // Er medlemsraden borte, mangler navnet — men varen skal staa.
     'medlem'   => $r['medlemsnavn'] ?: 'Ukjent medlem',
     'bilde'    => $r['bilde'] ? '/api/bilde.php?salg=' . rawurlencode((string) $r['bilde']) : null,
+    'bilder'   => array_values(array_map(static fn($b) => [
+        'url' => '/api/bilde.php?salg=' . rawurlencode((string) $b['fil']),
+        'tekst' => (string) ($b['tekst'] ?? ''),
+    ], array_filter(json_decode((string) ($r['bilder_json'] ?? ''), true) ?: ($r['bilde'] ? [['fil' => $r['bilde']]] : []),
+        static fn($b) => is_array($b) && !empty($b['fil'])))),
     'pris'     => Booking::kroner((int) $r['pris_ore']),
     // Hele kroner til «Rediger» i /ny-admin › Varer (09.10.2026).
     'prisKr'   => intdiv((int) $r['pris_ore'], 100),

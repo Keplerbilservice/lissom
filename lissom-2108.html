@@ -7371,6 +7371,17 @@ window.__resources = {
                       <sc-if value="{{ harSkBilde }}" hint-placeholder-val="{{ false }}">
                         <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Trykk i bildet for å velge hvilken del som skal ligge i midten av kvadratet.</p>
                       </sc-if>
+                      <input value="{{ skBildeTekst }}" onChange="{{ settSkBildeTekst }}" maxlength="160" placeholder="Bildetekst til hovedbildet (valgfritt)" aria-label="Bildetekst til hovedbildet" style="{{ skFeltStil }}">
+                      <label style="display: grid; gap: 6px; font-size: var(--text-sm); color: var(--text-heading);">Flere bilder (inntil 8 totalt)
+                        <input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange="{{ settSkEkstra }}" aria-label="Legg til flere produktbilder">
+                      </label>
+                      <sc-for list="{{ skEkstraBilder }}" as="b" hint-placeholder-count="0">
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                          <img src="{{ b.url }}" alt="" style="width: 68px; height: 68px; object-fit: cover; border-radius: 8px;">
+                          <input value="{{ b.tekst }}" onChange="{{ b.settTekst }}" maxlength="160" placeholder="Bildetekst (valgfritt)" aria-label="Bildetekst" style="{{ skFeltStil }}">
+                          <button type="button" onClick="{{ b.fjern }}" aria-label="Fjern bilde" style="cursor: pointer;">×</button>
+                        </div>
+                      </sc-for>
                       <input value="{{ skNavn }}" onChange="{{ settSk.navn }}" placeholder="Produktnavn *" style="{{ skFeltStil }}">
                       <input value="{{ skTekst }}" onChange="{{ settSk.tekst }}" placeholder="Kort beskrivelse *" style="{{ skFeltStil }}">
                       <div class="lx-cols2" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
@@ -9937,6 +9948,12 @@ window.__resources = {
                 <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ g.tittel }}</div>
                 <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ g.pris }} · {{ g.laget }} · Vipps {{ g.vipps }} · {{ g.levering }}</div>
                 <div style="font-size: var(--text-sm); color: var(--text-body); margin-top: 4px; text-wrap: pretty;">{{ g.tekst }}</div>
+                <sc-if value="{{ g.harBildetekst }}" hint-placeholder-val="{{ false }}"><div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 4px;">{{ g.bildetekst }}</div></sc-if>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;">
+                  <sc-for list="{{ g.bilderRest }}" as="b" hint-placeholder-count="0">
+                    <figure style="margin: 0; width: 72px;"><img src="{{ b.url }}" alt="{{ b.tekst }}" style="width: 72px; height: 72px; object-fit: cover; border-radius: 8px;"><figcaption style="font-size: 11px; color: var(--text-muted);">{{ b.tekst }}</figcaption></figure>
+                  </sc-for>
+                </div>
                 </div>
                 </div>
                 <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 8px;">
@@ -25203,6 +25220,12 @@ window.__resources = {
                 <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ g.tittel }}</div>
                 <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ g.pris }} · {{ g.laget }} · Vipps {{ g.vipps }} · {{ g.levering }}</div>
                 <div style="font-size: var(--text-sm); color: var(--text-body); margin-top: 4px; text-wrap: pretty;">{{ g.tekst }}</div>
+                <sc-if value="{{ g.harBildetekst }}" hint-placeholder-val="{{ false }}"><div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 4px;">{{ g.bildetekst }}</div></sc-if>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;">
+                  <sc-for list="{{ g.bilderRest }}" as="b" hint-placeholder-count="0">
+                    <figure style="margin: 0; width: 72px;"><img src="{{ b.url }}" alt="{{ b.tekst }}" style="width: 72px; height: 72px; object-fit: cover; border-radius: 8px;"><figcaption style="font-size: 11px; color: var(--text-muted);">{{ b.tekst }}</figcaption></figure>
+                  </sc-for>
+                </div>
               </div>
               </div>
               <div class="lx-pillerad" style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
@@ -27804,7 +27827,15 @@ window.__resources = {
     <div onClick="{{ lukkSalg }}" style="position: fixed; inset: 0; z-index: 95; background: rgba(45,20,12,.45); display: flex; align-items: center; justify-content: center; padding: var(--space-6);">
       <div onClick="{{ stoppKlikk }}" style="background: var(--surface-card); border-radius: var(--radius-xl, 22px); width: min(720px, 100%); max-height: 88vh; overflow: auto; box-shadow: var(--shadow-lg); position: relative;">
         <button type="button" onClick="{{ lukkSalg }}" aria-label="Lukk" style="position: absolute; top: 12px; right: 12px; z-index: 2; appearance: none; border: none; cursor: pointer; width: 40px; height: 40px; border-radius: 999px; background: var(--surface-card); color: var(--text-heading); font-size: 20px; line-height: 1; box-shadow: var(--shadow-sm); display: flex; align-items: center; justify-content: center;">×</button>
-        <div style="width: 100%; aspect-ratio: 16/10; background-color: var(--clay-200); background-image: {{ spBildeCss }}; background-size: cover; background-position: {{ spFokus }};" role="img" aria-label="{{ spTittel }}"></div>
+        <div style="position: relative;">
+          <div style="width: 100%; aspect-ratio: 16/10; background-color: var(--clay-200); background-image: {{ spBildeCss }}; background-size: cover; background-position: {{ spFokus }};" role="img" aria-label="{{ spBildeAlt }}"></div>
+          <sc-if value="{{ spFlereBilder }}" hint-placeholder-val="{{ false }}">
+            <button type="button" onClick="{{ spForrige }}" aria-label="Forrige bilde" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); border: 0; border-radius: 50%; width: 40px; height: 40px; background: var(--surface-card); cursor: pointer; font-size: 24px;">‹</button>
+            <button type="button" onClick="{{ spNeste }}" aria-label="Neste bilde" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); border: 0; border-radius: 50%; width: 40px; height: 40px; background: var(--surface-card); cursor: pointer; font-size: 24px;">›</button>
+          </sc-if>
+        </div>
+        <sc-if value="{{ spHarBildetekst }}" hint-placeholder-val="{{ false }}"><p style="margin: 10px 20px 0; text-align: center; font-size: var(--text-sm); color: var(--text-body);">{{ spBildetekst }}</p></sc-if>
+        <sc-if value="{{ spFlereBilder }}" hint-placeholder-val="{{ false }}"><p style="margin: 6px 20px 0; text-align: center; font-size: var(--text-xs); color: var(--text-muted);">{{ spBildeTeller }}</p></sc-if>
         <div style="padding: var(--space-8);">
           <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4);">
             <div>
@@ -68800,7 +68831,7 @@ class Component extends DCLogic {
         }));
         const medlem = this.galleriListe().filter(g => g.status === 'publisert').map(g => ({
           title: g.tittel, detalj: g.tekst, pris: g.pris, image: g.bilde,
-          visInfo: () => this.setState({ salgApen: g.id }),
+          visInfo: () => this.setState({ salgApen: g.id, spBildeIndex: 0 }),
           // Fokuspunktet medlemmet valgte da hun la den ut, ikke det admin
           // har satt paa fila. Kommer fra api/medlemssalg.php; «fokusFor» er
           // reserven for varer lagt ut for migrasjon 177.
@@ -68824,7 +68855,7 @@ class Component extends DCLogic {
           harAntall: (g.antall || 1) > 1,
           antallTekst: (g.antall || 1) + ' stk til salgs',
           cta: 'Se produkt',
-          velgHandling: () => this.setState({ salgApen: g.id }),
+          velgHandling: () => this.setState({ salgApen: g.id, spBildeIndex: 0 }),
         }));
         const alle = this.butikkKolleksjonNaa() === 'Medlem' ? medlem : egne;
         if (filter === 'Alt') return alle;
@@ -74407,13 +74438,23 @@ class Component extends DCLogic {
       ...(() => {
         const p = this.galleriListe().find(g => g.id === this.state.salgApen);
         if (!p) return { spTittel: '', spBildeCss: 'none', spFokus: 'center', spHarAntall: false, spAntall: '' };
+        const bilder = Array.isArray(p.bilder) && p.bilder.length ? p.bilder : [{ url: p.bilde, tekst: '' }];
+        const indeks = Math.min(Math.max(this.state.spBildeIndex || 0, 0), bilder.length - 1);
+        const valgtBilde = bilder[indeks];
         return {
           spTittel: p.tittel, spTekst: p.tekst, spLaget: p.laget, spPris: p.pris,
           spTelefon: p.vipps, spLevering: p.levering,
           spHarAntall: (p.antall || 1) > 1,
           spAntall: (p.antall || 1) + ' stk til salgs',
-          spBildeCss: "url('" + p.bilde + "')",
-          spFokus: p.fokus || this.fokusFor(p.bilde || ''),
+          spBildeCss: "url('" + valgtBilde.url + "')",
+          spFokus: indeks === 0 ? (p.fokus || this.fokusFor(p.bilde || '')) : '50% 50%',
+          spBildeAlt: valgtBilde.tekst || p.tittel,
+          spBildetekst: valgtBilde.tekst || '',
+          spHarBildetekst: !!valgtBilde.tekst,
+          spFlereBilder: bilder.length > 1,
+          spBildeTeller: (indeks + 1) + ' av ' + bilder.length,
+          spForrige: () => this.setState({ spBildeIndex: (indeks - 1 + bilder.length) % bilder.length }),
+          spNeste: () => this.setState({ spBildeIndex: (indeks + 1) % bilder.length }),
         };
       })(),
       skNavn: this.state.skNavn || '', skTekst: this.state.skTekst || '', skPris: this.state.skPris || '',
@@ -74421,6 +74462,27 @@ class Component extends DCLogic {
       skVipps: this.state.skVipps || '', skKontakt: this.state.skKontakt || '',
       skFeltStil: { boxSizing: 'border-box', width: '100%', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '10px 12px', font: 'var(--type-body-sm)', color: 'var(--text-heading)', background: 'var(--surface-card)' },
       skBildeCss: this.state.skBildeUrl ? "url('" + this.state.skBildeUrl + "')" : 'none',
+      skBildeTekst: this.state.skBildeTekst || '',
+      settSkBildeTekst: e => this.setState({ skBildeTekst: e.target.value }),
+      skEkstraBilder: (this.state.skEkstra || []).map((b, i) => ({
+        url: b.url, tekst: b.tekst || '',
+        settTekst: e => this.setState({ skEkstra: this.state.skEkstra.map((v, n) => n === i ? { ...v, tekst: e.target.value } : v) }),
+        fjern: () => {
+          if (b.file) URL.revokeObjectURL(b.url);
+          this.setState({ skEkstra: this.state.skEkstra.filter((_, n) => n !== i) });
+        },
+      })),
+      settSkEkstra: e => {
+        const filer = Array.from(e.target.files || []);
+        if ((this.state.skEkstra || []).length + filer.length > 7) {
+          this.setState({ skFeil: 'Du kan ha inntil åtte bilder per vare.' }); return;
+        }
+        if (filer.some(f => f.size > 8 * 1024 * 1024 || !['image/jpeg', 'image/png', 'image/webp'].includes(f.type))) {
+          this.setState({ skFeil: 'Bruk JPG, PNG eller WEBP på maks 8 MB per bilde.' }); return;
+        }
+        this.setState({ skEkstra: [...(this.state.skEkstra || []), ...filer.map(file => ({ file, url: URL.createObjectURL(file), tekst: '' }))], skFeil: null });
+        e.target.value = '';
+      },
       skFokus: this.state.skFokus || '50% 50%',
       // ── Fokuspunktene ─────────────────────────────────────────────────
       //
@@ -74507,12 +74569,13 @@ class Component extends DCLogic {
       skSkjemaTittel: this.state.skRedigerer ? 'Endre varen' : 'Selg keramikk',
       skAvbrytRediger: () => {
         if (this._skUrl) { URL.revokeObjectURL(this._skUrl); this._skUrl = null; }
+        (this.state.skEkstra || []).forEach(b => { if (b.file) URL.revokeObjectURL(b.url); });
         this._skFil = null;
         this.setState({
           skRedigerer: null, skFeil: null,
           skNavn: '', skTekst: '', skPris: '', skAntall: '', skProdusent: '',
           skVipps: '', skKontakt: '', skKategori: '',
-          skBildeNavn: '', skBildeUrl: '', skFokus: '50% 50%',
+          skBildeNavn: '', skBildeUrl: '', skFokus: '50% 50%', skBildeTekst: '', skEkstra: [],
         });
       },
       skSend: () => {
@@ -74559,6 +74622,11 @@ class Component extends DCLogic {
         skjema.append('kategori', s.skKategori);
         if (this._skFil) skjema.append('bilde', this._skFil);
         skjema.append('fokus', s.skFokus || '50% 50%');
+        skjema.append('bildeTekst', s.skBildeTekst || '');
+        skjema.append('bilderBehold', JSON.stringify((s.skEkstra || []).filter(b => b.fil).map(b => ({ fil: b.fil, tekst: b.tekst || '' }))));
+        const nyeBilder = (s.skEkstra || []).filter(b => b.file);
+        skjema.append('ekstraTekst', JSON.stringify(nyeBilder.map(b => b.tekst || '')));
+        nyeBilder.forEach((b, i) => skjema.append('ekstra_' + i, b.file));
 
         this.setState({ skSender: true, skFeil: null });
         fetch('/api/medlemssalg.php', { method: 'POST', credentials: 'same-origin', body: skjema })
@@ -74583,6 +74651,7 @@ class Component extends DCLogic {
             // lenge sida er aapen.
             this._skFil = null;
             if (this._skUrl) { URL.revokeObjectURL(this._skUrl); this._skUrl = null; }
+            (s.skEkstra || []).forEach(b => { if (b.file) URL.revokeObjectURL(b.url); });
             // En endring er ikke en innsending. «gDelSendt» bytter hele
             // skjemaet mot «Takk! Produktet er sendt inn og venter paa
             // godkjenning» — og det stemmer ikke naar hun bare rettet en
@@ -74593,7 +74662,7 @@ class Component extends DCLogic {
               skRedigerer: null,
               skNavn: '', skTekst: '', skPris: '', skAntall: '', skProdusent: '',
               skVipps: '', skKontakt: '', skKategori: '',
-              skBildeNavn: '', skBildeUrl: '', skFokus: '50% 50%',
+              skBildeNavn: '', skBildeUrl: '', skFokus: '50% 50%', skBildeTekst: '', skEkstra: [],
               b1: false, b2: false, b3: false,
               kvittering: endret ? 'Lagret' : 'Sendt til godkjenning',
               kvitteringDetalj: d.beskjed || '',
@@ -74658,6 +74727,8 @@ class Component extends DCLogic {
         endre: () => {
           this._skFil = null;
           if (this._skUrl) { URL.revokeObjectURL(this._skUrl); this._skUrl = null; }
+          (this.state.skEkstra || []).forEach(b => { if (b.file) URL.revokeObjectURL(b.url); });
+          const bilder = Array.isArray(v.bilder) ? v.bilder : [];
           this.setState({
             skRedigerer: v.id,
             skNavn: v.tittel || '',
@@ -74671,6 +74742,8 @@ class Component extends DCLogic {
             skKategori: v.kategori || '',
             skBildeNavn: v.bilde ? 'Bildet du valgte' : '',
             skBildeUrl: v.bilde || '',
+            skBildeTekst: bilder[0]?.tekst || '',
+            skEkstra: bilder.slice(1).map(b => ({ fil: b.fil, url: b.url, tekst: b.tekst || '' })),
             skFokus: v.fokus || '50% 50%',
             skFeil: null, gDelSendt: false,
           });
@@ -74694,6 +74767,9 @@ class Component extends DCLogic {
       })),
       harMineSalg: (this.state.mineSalg || []).length > 0,
       gVenter: this.galleriListe().filter(g => g.status === 'venter').map(g => Object.assign({}, g, {
+        bildetekst: (g.bilder || [])[0]?.tekst || '',
+        harBildetekst: !!(g.bilder || [])[0]?.tekst,
+        bilderRest: (g.bilder || []).slice(1),
         // Bildet av varen. Eieren, 16. september 2026: «poenget med å
         // godkjenne må jo være å se produktet!!!!» — og han hadde rett:
         // lista sto med tittel, pris og Vipps-nummer, og ikke ett bilde.

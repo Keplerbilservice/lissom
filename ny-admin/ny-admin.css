@@ -56,6 +56,7 @@ small{font-size:15px;color:var(--muted)}
 .sokres button:hover,.sokres button:focus-visible{background:var(--ground)}
 .sokres small{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.06em;font-weight:800}
 #topptall{display:flex;gap:8px;flex-wrap:wrap}
+html.kursstart-apent #topptall :is([data-topp="omsetning"],[data-topp="ubetalt"]){display:none!important}
 .tall-pille{position:relative;display:flex;flex-direction:column;align-items:flex-start;line-height:1.1;border:1px solid var(--line);background:var(--ground);border-radius:12px;padding:6px 12px;min-height:44px;text-align:left}
 .tall-pille small{font-size:12px;text-transform:uppercase;letter-spacing:.06em;font-weight:700}
 .tall-pille b{font-family:var(--f-head);font-size:18px;font-variant-numeric:tabular-nums}

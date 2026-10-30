@@ -416,8 +416,9 @@ try {
         $tekst($s) . ' ' . json_encode($ordre));
     sjekk('… lageret 3 → 1', (int) DB::verdi('SELECT lager FROM products WHERE id = :i', ['i' => $produkt]) === 1);
     $oppEtter = $oppgjor();
-    $annen = static fn(array $o): int => (int) (array_column($o['rader'], 'ore', 'navn')['Betalt på annen måte'] ?? 0);
-    sjekk('Dagens oppgjør: «Betalt på annen måte» +580 kr', $annen($oppEtter) - $annen($oppFor) === 58000);
+    // Vipps-nummer på egen linje (eieren 30.10.2026, før «Betalt på annen måte»).
+    $annen = static fn(array $o): int => (int) (array_column($o['rader'], 'ore', 'navn')['Vipps-nummer'] ?? 0);
+    sjekk('Dagens oppgjør: «Vipps-nummer» +580 kr', $annen($oppEtter) - $annen($oppFor) === 58000);
 
     $s = kall($K, ['handling' => 'regn', 'kurv' => ['timepakke' => true], 'betaler' => []], $kasseToken);
     sjekk('timepakke uten medlem avvises', $s[0] === 400 && ($s[1]['feil'] ?? '') === 'Velg medlemmet som skal ha timepakken.', $tekst($s));
@@ -618,11 +619,13 @@ try {
         ['p' => (int) ($kariBetalinger[0] ?? 0)]);
     $d = new DateTimeImmutable('now', $oslo);
     $mnd = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember'];
-    $ventet = 'Takk for handelen hos Lissom! Betalt 1' . "\u{a0}" . '150' . "\u{a0}" . 'kr med kontant ' . (int) $d->format('j') . '. '
-        . $mnd[(int) $d->format('n') - 1] . '. Hilsen oss i Lissom';
-    sjekk('SMS-kvitteringen ligger i kø med beløp, måte og dato', $s[0] === 200 && $sms !== null && $sms['kanal'] === 'sms'
+    // Ny tekst med én vare per linje (eieren 30.10.2026, migrasjon 282).
+    $smsLinjer = explode("\n", str_replace("\u{a0}", ' ', trim((string) ($sms['tekst'] ?? ''))));
+    $ventetSlutt = ['Betalt 1 150 kr med kontant ' . (int) $d->format('j') . '. ' . $mnd[(int) $d->format('n') - 1] . '.', 'Hilsen oss i Lissom'];
+    sjekk('SMS-kvitteringen ligger i kø med varene, beløp, måte og dato', $s[0] === 200 && $sms !== null && $sms['kanal'] === 'sms'
         && normaliser_telefon((string) $sms['mottaker']) === normaliser_telefon('+4799887766')
-        && str_replace([' ', "\u{a0}"], ' ', trim((string) $sms['tekst'])) === str_replace([' ', "\u{a0}"], ' ', $ventet),
+        && ($smsLinjer[0] ?? '') === 'Takk for handelen hos Lissom!' && array_slice($smsLinjer, -2) === $ventetSlutt
+        && count($smsLinjer) >= 4 && array_filter(array_slice($smsLinjer, 1, -2), static fn($l) => !str_ends_with($l, ' kr')) === [],
         $tekst($s) . ' ' . json_encode($sms, JSON_UNESCAPED_UNICODE));
     $s = kall($K, ['handling' => 'kvittering', 'kanal' => 'sms', 'betalinger' => $kariBetalinger, 'betaler' => ['bookingId' => $kari]], $kasseToken);
     sjekk('SMS-kvittering nr. 2 for samme betaling avvises: «Kvittering på SMS er alt sendt for dette kjøpet.»', $s[0] === 409

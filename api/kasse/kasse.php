@@ -15,14 +15,16 @@
  * Kurven kan ha «priser» { linjens nøkkel: kroner } og «rabatt» { prosent | kr,
  * hvorfor } (KasseKurv::deler, KasseJustering).
  *   POST handling=regn     { kurv, betaler }               kurven, regnet her
- *   POST handling=betal    { kurv, betaler, maate, nokler, forventet }
+ *   POST handling=betal    { kurv, betaler, maate, nokler, forventet, kode? }
+ *                                         (maate Gavekort: hele beløpet fra kortet med koden)
  *   POST handling=delt     { kurv, betaler, deler, nokler, forventet }
  *   POST handling=qr       { kurv, betaler, del, nokler, forventet }
  *   POST handling=status   { poll: {bookingId} | {referanse} }
  *   POST handling=kvitteringValg { betaler, betalinger }   etter Vipps-QR
  *   POST handling=betalteIkke { bookingId }               «Endre» → «Betalte ikke»
- *   POST handling=kvittering  { betalinger, kanal, betaler }
- *   POST handling=oppgjor                                 dagens oppgjør
+ *   POST handling=kvittering  { betalinger, kanal, betaler, telefon? }
+ *   POST handling=oppgjor                                 dagens oppgjør, med «Dagens salg»
+ *   POST handling=angre       { salgId }                   «Angre» et salg fra kassa i dag
  *
  * «nokler» og «forventet» er per del, med delens faste id som nøkkel
  * (KasseKurv::deler). Alt krever at kassa er låst opp med PIN
@@ -75,11 +77,11 @@ try {
 
         case 'regn':
             $betaler = KasseKurv::betaler($liste('betaler'));
-            Svar::ok(KasseKurv::visning(KasseKurv::deler($liste('kurv'), $betaler)));
+            Svar::ok(KasseKurv::regn($liste('kurv'), $betaler));
 
         case 'betal':
             Svar::ok(Kasse::betal($liste('kurv'), $liste('betaler'), Foresporsel::tekst('maate'),
-                $liste('nokler'), $liste('forventet'), $person));
+                $liste('nokler'), $liste('forventet'), $person, null, Foresporsel::tekst('kode')));
 
         case 'delt':
             Svar::ok(Kasse::betal($liste('kurv'), $liste('betaler'), '',
@@ -102,11 +104,15 @@ try {
 
         case 'kvittering':
             Kasse::kvittering(array_values($liste('betalinger')), Foresporsel::tekst('kanal'),
-                KasseKurv::betaler($liste('betaler')));
+                KasseKurv::betaler($liste('betaler')), Foresporsel::tekst('telefon'));
             Svar::ok(['beskjed' => 'Kvitteringen er sendt.']);
 
         case 'oppgjor':
             Svar::ok(KasseKurv::oppgjor());
+
+        case 'angre':
+            // «Angre» i Dagens salg (eieren 30. oktober 2026): salget motføres, ingenting slettes.
+            Svar::ok(Kasse::angre(Foresporsel::heltall('salgId'), $person) + ['oppgjor' => KasseKurv::oppgjor()]);
 
         default:
             Svar::feil('Ukjent handling.');

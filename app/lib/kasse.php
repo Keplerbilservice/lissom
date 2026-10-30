@@ -217,17 +217,20 @@ final class Kasse
      * @param array{id:int,navn:string} $person
      * @return array<string,mixed>
      */
-    public static function betal(array $kurv, array $betalerInn, string $maate, array $nokler, array $forventet, array $person, ?array $delt = null): array
+    public static function betal(array $kurv, array $betalerInn, string $maate, array $nokler, array $forventet, array $person, ?array $delt = null, string $gavekortKode = ''): array
     {
         $betaler = KasseKurv::betaler($betalerInn);
         $deler = self::sjekkKurv(KasseKurv::deler($kurv, $betaler, $nokler), $nokler, $forventet);
 
         $betalinger = null;
+        $kort = null;
         if ($delt !== null) {
             if (count($deler) !== 1 || !in_array($deler[0]['type'], ['booking', 'ordre'], true)) {
                 throw new RuntimeException('Del betalingen gjelder ett kjøp om gangen: en påmelding eller varer.');
             }
             $betalinger = self::lesDelt($delt, (int) $deler[0]['sumOre']);
+        } elseif ($maate === 'Gavekort') {
+            $kort = self::helGavekort($deler, $gavekortKode);
         } elseif (!in_array($maate, self::MAATER, true)) {
             throw new RuntimeException('Velg hvordan kunden betaler.');
         }
@@ -252,7 +255,7 @@ final class Kasse
             // eksempel før «Tilbake»), stoppes hos Vipps før kontanten tas.
             self::stoppOktensQr($nokkelListe);
             foreach ($deler as $d) {
-                $rader = $betalinger ?? [['maate' => $maate, 'ore' => (int) $d['sumOre']]];
+                $rader = $betalinger ?? [['maate' => $maate, 'ore' => (int) $d['sumOre']] + ($kort !== null ? ['kort' => $kort] : [])];
                 $nokkel = (string) $d['nokkel'];
                 switch ($d['type']) {
                     case 'booking':
@@ -279,12 +282,144 @@ final class Kasse
             }
         }
         $sum = array_sum(array_column($deler, 'sumOre'));
-        $maateTekst = $delt !== null ? 'Del betalingen' : ($maate === 'Kontant' ? 'Kontant' : ($maate === 'Faktura' ? 'Faktura' : 'Vipps-nummer'));
-        revider('kassesalg_ipad', null, null, ['person' => $person['id'], 'sum' => $sum, 'maate' => $maateTekst, 'deler' => $resultat['deler']]);
+        $maateTekst = $delt !== null ? 'Del betalingen' : match ($maate) {
+            'Kontant' => 'Kontant', 'Faktura' => 'Faktura', 'Gavekort' => 'Gavekort', default => 'Vipps-nummer',
+        };
         $ider = self::betalingIder($deler);
+        $kvittering = self::kvitteringLinjer($deler);
+        // Salget i revisjonsloggen: hvem, når, kunden, betalingene og varene.
+        // «Dagens salg», «Angre» (eieren 30. oktober 2026) og varelinjene i
+        // SMS-kvitteringen leses herfra, ikke fra iPaden.
+        revider('kassesalg_ipad', null, null, ['person' => $person['id'], 'personNavn' => (string) ($person['navn'] ?? ''),
+            'sum' => $sum, 'maate' => $maateTekst, 'deler' => $resultat['deler'], 'betalinger' => $ider,
+            'kunde' => $betaler['navn'], 'okt' => self::oktId(),
+            'linjer' => array_values(array_map(static fn(array $l): array => ['navn' => $l['navn'], 'antall' => $l['antall'], 'ore' => $l['ore']],
+                array_filter($kvittering['linjer'], static fn(array $l): bool => $l['vare'])))]);
         return $resultat + ['sumOre' => $sum, 'sum' => KasseKurv::kr($sum), 'betalinger' => $ider,
             'endringer' => KasseJustering::kvitteringFor($deler),
+            'kvittering' => $kvittering,
             'kvitteringValg' => self::kvitteringValg($betaler, $ider)];
+    }
+
+    /**
+     * «Gavekort» som betalingsmåte (eieren 30. oktober 2026): hele beløpet
+     * trekkes fra kortet, med den gavekortlogikken som finnes (finnGavekort,
+     * og gavekortDekker() og trekket i samme transaksjon som betalingen).
+     *
+     * Dekker kortet ikke hele beløpet, avvises betalingen. Midlertidig løsning
+     * til eieren har bestemt hva som skal skje (ingen delbetaling her).
+     *
+     * @param list<array<string,mixed>> $deler
+     * @return array<string,mixed> kortet
+     */
+    private static function helGavekort(array $deler, string $kode): array
+    {
+        foreach ($deler as $d) {
+            if (!in_array($d['type'], ['booking', 'ordre'], true)) {
+                throw new RuntimeException('Gavekort og timepakke kan ikke betales med gavekort.');
+            }
+        }
+        $kort = Booking::finnGavekort($kode);
+        if ($kort === null) {
+            throw new RuntimeException('Fant ikke gavekortet. Sjekk koden — den kan være brukt opp eller gått ut på dato.');
+        }
+        $sum = array_sum(array_column($deler, 'sumOre'));
+        if ($sum > (int) $kort['saldo_ore']) {
+            throw new RuntimeException('Gavekortet har bare ' . KasseKurv::kr((int) $kort['saldo_ore'])
+                . ' igjen og dekker ikke hele beløpet. Velg en annen betalingsmåte.', 409);
+        }
+        return $kort;
+    }
+
+    // ── Kvitteringen på skjermen ───────────────────────────────────────
+
+    /**
+     * «KJØPET» på Betalt-skjermen (eieren 30. oktober 2026): hver vare med
+     * antall og pris, «inkl. mva» eller «uten mva», og mva-en regnet fra
+     * varenes mva-innstilling — ikke fra skjermen.
+     *
+     *   varer med vare-id   products.mva_prosent
+     *   «Skriv beløp»       med mva: satsen for butikk (Omsetning::mvaSats('ordre')),
+     *                       uten mva: 0
+     *   påmelding, PoP      satsen for kurs (Omsetning::mvaSats('booking'))
+     *   gavekort            0 (gjeld, ikke salg)
+     *   timepakke           satsen for medlemskap
+     *
+     * Trekk (betalt ved booking, rabatt) står som egne linjer. Mva-en for en
+     * del er regnet av det som faktisk betales, fordelt på varene etter pris.
+     *
+     * @param list<array<string,mixed>> $deler
+     * @return array{linjer:list<array<string,mixed>>, totalOre:int, total:string, mvaOre:int, mva:string}
+     */
+    public static function kvitteringLinjer(array $deler): array
+    {
+        $linjer = [];
+        $mvaSum = 0;
+        $total = 0;
+        foreach ($deler as $d) {
+            $varer = [];   // [navn, antall, øre, sats]
+            $trekk = [];
+            if ($d['type'] === 'ordre') {
+                $erBooking = ($d['formal'] ?? '') === 'booking';
+                $mvaProdukt = [];
+                $ider = array_values(array_filter(array_map(static fn(array $v): int => (int) ($v['produktId'] ?? 0), $d['varer'])));
+                if ($ider !== []) {
+                    foreach (DB::alle('SELECT id, mva_prosent FROM products WHERE id IN (' . implode(',', $ider) . ')') as $p) {
+                        $mvaProdukt[(int) $p['id']] = (int) $p['mva_prosent'];
+                    }
+                }
+                foreach ($d['varer'] as $v) {
+                    $pid = (int) ($v['produktId'] ?? 0);
+                    if ($pid > 0) {
+                        $sats = $mvaProdukt[$pid] ?? Omsetning::mvaSats('ordre');
+                    } elseif (($d['id'] ?? '') === 'utenmva') {
+                        $sats = 0;
+                    } else {
+                        $sats = Omsetning::mvaSats($erBooking ? 'booking' : 'ordre');
+                    }
+                    $varer[] = [(string) $v['tittel'], (int) $v['antall'], (int) $v['prisOre'] * (int) $v['antall'], $sats];
+                }
+                foreach ($d['linjer'] as $l) {
+                    if ((int) $l['ore'] < 0) {
+                        $trekk[] = $l;
+                    }
+                }
+            } else {
+                $sats = match ($d['type']) {
+                    'booking'   => Omsetning::mvaSats('booking'),
+                    'timepakke' => Omsetning::mvaSats('medlemskap'),
+                    default     => 0,
+                };
+                foreach ($d['linjer'] as $l) {
+                    if ((int) $l['ore'] < 0) {
+                        $trekk[] = $l;
+                        continue;
+                    }
+                    $antall = (int) ($l['antall'] ?? 1);
+                    $navn = preg_replace('/ × \d+$/u', '', (string) $l['tekst']) ?? (string) $l['tekst'];
+                    $varer[] = [$navn, max(1, $antall), (int) $l['ore'], $sats];
+                }
+            }
+            // Mva av det som betales for delen, fordelt på varene etter pris.
+            $betales = max(0, (int) $d['sumOre']);
+            $brutto = array_sum(array_map(static fn(array $v): int => $v[2], $varer));
+            $fordelt = 0;
+            $siste = array_key_last($varer);
+            foreach ($varer as $i => [$navn, $antall, $ore, $sats]) {
+                $andel = $i === $siste ? $betales - $fordelt : ($brutto > 0 ? intdiv($betales * $ore, $brutto) : 0);
+                $fordelt += $andel;
+                $mvaSum += Omsetning::delMva($andel, $sats)['mvaOre'];
+                $linjer[] = ['navn' => $navn, 'antall' => $antall, 'ore' => $ore, 'kr' => KasseKurv::kr($ore),
+                             'mva' => $sats > 0 ? 'inkl. mva' : 'uten mva', 'vare' => true];
+            }
+            foreach ($trekk as $l) {
+                $linjer[] = ['navn' => (string) $l['tekst'], 'antall' => 1, 'ore' => (int) $l['ore'],
+                             'kr' => '−' . KasseKurv::kr(abs((int) $l['ore'])), 'mva' => '', 'vare' => false];
+            }
+            $total += $betales;
+        }
+        return ['linjer' => $linjer, 'totalOre' => $total, 'total' => KasseKurv::kr($total),
+                'mvaOre' => $mvaSum, 'mva' => KasseKurv::kr($mvaSum)];
     }
 
     /**
@@ -1212,6 +1347,275 @@ final class Kasse
         return $ut;
     }
 
+    // ── Dagens salg og «Angre» ─────────────────────────────────────────
+
+    /**
+     * «Dagens salg» i Dagens oppgjør (eieren 30. oktober 2026): salgene fra
+     * kassa i dag, nyeste først, med klokkeslett, kunde, beløp, måte og om
+     * salget kan angres eller er angret (hvem og når). Leses fra
+     * revisjonsloggen (kassesalg_ipad, kassesalg_angret), der betal() og
+     * angre() skriver dem.
+     *
+     * @return list<array<string,mixed>>
+     */
+    public static function dagensSalg(): array
+    {
+        [$fra, $til] = KasseKurv::dagen();
+        $angret = [];
+        foreach (DB::alle(
+            "SELECT objekt_id, detaljer, created_at FROM audit_log
+              WHERE handling = 'kassesalg_angret' AND objekt_type = 'kassesalg' AND created_at >= :fra AND created_at < :til",
+            ['fra' => $fra, 'til' => $til]
+        ) as $a) {
+            $angret[(int) $a['objekt_id']] = $a;
+        }
+        $ut = [];
+        foreach (DB::alle(
+            "SELECT id, detaljer, created_at FROM audit_log
+              WHERE handling = 'kassesalg_ipad' AND created_at >= :fra AND created_at < :til
+           ORDER BY id DESC LIMIT 200",
+            ['fra' => $fra, 'til' => $til]
+        ) as $r) {
+            $d = json_decode((string) $r['detaljer'], true);
+            if (!is_array($d)) {
+                continue;
+            }
+            $id = (int) $r['id'];
+            $a = $angret[$id] ?? null;
+            $ad = $a !== null ? (json_decode((string) $a['detaljer'], true) ?: []) : [];
+            $sum = (int) ($d['sum'] ?? 0);
+            $ut[] = [
+                'id'      => $id,
+                'kl'      => self::klokke((string) $r['created_at']),
+                'kunde'   => trim((string) ($d['kunde'] ?? '')),
+                'sumOre'  => $sum,
+                'sum'     => KasseKurv::kr($sum),
+                'maate'   => (string) ($d['maate'] ?? ''),
+                'kanAngre'=> $a === null && self::kanAngre(self::salgBetalinger($d)),
+                'angret'  => $a === null ? null : ['kl' => self::klokke((string) $a['created_at']), 'hvem' => (string) ($ad['personNavn'] ?? '')],
+            ];
+        }
+        return $ut;
+    }
+
+    /** «14:05» i Oslo-tid fra et UTC-tidspunkt i basen. */
+    private static function klokke(string $utc): string
+    {
+        return (new DateTimeImmutable($utc, new DateTimeZone('UTC')))->setTimezone(new DateTimeZone('Europe/Oslo'))->format('H:i');
+    }
+
+    /** @return list<int> betalingene et salg i revisjonsloggen ble gjort opp med */
+    private static function salgBetalinger(array $d): array
+    {
+        return array_values(array_unique(array_filter(array_map('intval', is_array($d['betalinger'] ?? null) ? $d['betalinger'] : []))));
+    }
+
+    /**
+     * Kan salget motføres i kassa? Bare når hver betaling er ført for hånd
+     * (kontant, Vipps-nummer, gavekort som betaling), står som betalt og
+     * gjelder en påmelding eller et salg av varer. Det er de som har en
+     * motføring fra før: annullering av betalingen på påmeldingen
+     * (api/admin/kursbetaling.php) og annullering av salget med varene
+     * tilbake på lager (api/admin/uttak.php). Vipps-betalinger refunderes
+     * under Økonomi; solgte gavekort og timepakker har ingen motføring i
+     * kassa, og får ingen «Angre».
+     *
+     * @param list<int> $ider
+     */
+    private static function kanAngre(array $ider): bool
+    {
+        if ($ider === []) {
+            return false;
+        }
+        foreach ($ider as $id) {
+            $p = DB::en('SELECT type, status, annullert_at, formal, booking_id, order_id FROM payments WHERE id = :i', ['i' => $id]);
+            if ($p === null || (string) $p['type'] !== 'manuell' || (string) $p['status'] !== 'betalt' || $p['annullert_at'] !== null) {
+                return false;
+            }
+            if ($p['order_id'] === null && $p['booking_id'] === null) {
+                return false;
+            }
+            if ($p['order_id'] === null && DB::harTabell('avlyst_tilbakebetal')
+                && DB::verdi('SELECT booking_id FROM avlyst_tilbakebetal WHERE booking_id = :b', ['b' => (int) $p['booking_id']]) !== null) {
+                return false;
+            }
+            if (!in_array((string) $p['formal'], ['booking', 'ordre'], true)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * «Angre» i Dagens salg (eieren 30. oktober 2026). Ingenting slettes:
+     *
+     *   varer       som «Annuller» av et salg over disk (api/admin/uttak.php):
+     *               ordren kansellert, betalingene refundert, varene tilbake
+     *               på lager, gavekortet får beløpet tilbake
+     *   påmelding   som «Annuller» av en betaling (api/admin/kursbetaling.php):
+     *               betalingen avbrutt med hvem og når, gavekortet får beløpet
+     *               tilbake, og påmeldingen regnes på nytt (skylder igjen)
+     *
+     * Hvem og når står på betalingsradene (annullert_at, annullert_av) og i
+     * revisjonsloggen (kassesalg_angret), ved siden av salget.
+     *
+     * @param array{id:int,navn:string} $person
+     * @return array{sumOre:int, sum:string}
+     */
+    public static function angre(int $salgId, array $person): array
+    {
+        [$fra, $til] = KasseKurv::dagen();
+        $rad = DB::en(
+            "SELECT id, detaljer FROM audit_log WHERE id = :i AND handling = 'kassesalg_ipad' AND created_at >= :fra AND created_at < :til",
+            ['i' => $salgId, 'fra' => $fra, 'til' => $til]
+        );
+        if ($rad === null) {
+            throw new RuntimeException('Fant ikke salget i dag.', 404);
+        }
+        $d = json_decode((string) $rad['detaljer'], true) ?: [];
+        $ider = self::salgBetalinger($d);
+        if ((int) DB::verdi('SELECT GET_LOCK(:l, 10)', ['l' => 'kasse-angre:' . $salgId]) !== 1) {
+            throw new RuntimeException('Et annet trykk for det samme kjøpet er i gang. Prøv igjen.', 409);
+        }
+        try {
+            if (DB::verdi("SELECT id FROM audit_log WHERE handling = 'kassesalg_angret' AND objekt_type = 'kassesalg' AND objekt_id = :i",
+                    ['i' => $salgId]) !== null) {
+                throw new RuntimeException('Salget er alt angret.', 409);
+            }
+            if (!self::kanAngre($ider)) {
+                throw new RuntimeException('Dette salget kan ikke angres i kassa. Se Penger i admin.', 409);
+            }
+            $naa = gmdate('Y-m-d H:i:s');
+            $rader = DB::alle('SELECT id, order_id, booking_id, belop_ore, kommentar FROM payments WHERE id IN (' . implode(',', $ider) . ')');
+            $ordrer = [];
+            $bookinger = [];
+            foreach ($rader as $p) {
+                if ($p['order_id'] !== null) {
+                    $ordrer[(int) $p['order_id']] = true;
+                } else {
+                    $bookinger[(int) $p['booking_id']][] = $p;
+                }
+            }
+            // Varene: alle delene av salget (payments.order_id), som uttak.php.
+            foreach (array_keys($ordrer) as $ordreId) {
+                $deler = DB::alle('SELECT id, belop_ore FROM payments WHERE order_id = :o', ['o' => $ordreId]);
+                foreach ($deler as $p) {
+                    Booking::angreGavekort((int) $p['id']);
+                }
+                DB::iTransaksjon(static function () use ($ordreId, $deler, $person, $naa): void {
+                    $n = DB::kjor("UPDATE orders SET status = 'kansellert' WHERE id = :i AND status <> 'kansellert'", ['i' => $ordreId])->rowCount();
+                    if ($n < 1) {
+                        throw new RuntimeException('Salget er alt annullert.', 409);
+                    }
+                    Booking::leggTilbakeLager($ordreId);
+                    foreach ($deler as $p) {
+                        DB::oppdater('payments', [
+                            'status'        => 'refundert',
+                            'refundert_ore' => (int) $p['belop_ore'],
+                            'annullert_at'  => $naa,
+                            'annullert_av'  => (int) $person['id'],
+                        ], ['id' => (int) $p['id']]);
+                    }
+                });
+                revider('uttak_annullert', 'ordre', $ordreId, ['deler' => count($deler), 'kasse' => $person['id'], 'kassesalg' => $salgId]);
+            }
+            // Påmeldingene: betalingen annulleres, som kursbetaling.php.
+            foreach ($bookinger as $bid => $betalinger) {
+                DB::iTransaksjon(static function () use ($bid, $betalinger, $person, $naa): void {
+                    DB::verdi('SELECT id FROM bookings WHERE id = :b FOR UPDATE', ['b' => $bid]);
+                    foreach ($betalinger as $p) {
+                        if (DB::verdi('SELECT annullert_at FROM payments WHERE id = :i FOR UPDATE', ['i' => (int) $p['id']]) !== null) {
+                            throw new RuntimeException('Denne er alt annullert.', 409);
+                        }
+                        DB::oppdater('payments', [
+                            'status'       => 'avbrutt',
+                            'annullert_at' => $naa,
+                            'annullert_av' => (int) $person['id'],
+                            'kommentar'    => mb_substr(trim((string) ($p['kommentar'] ?? '') . ' · Annullert: angret i kassa'), 0, 300),
+                        ], ['id' => (int) $p['id']]);
+                    }
+                });
+                foreach ($betalinger as $p) {
+                    Booking::angreGavekort((int) $p['id']);
+                    revider('betaling_annullert', 'booking', $bid, ['betaling' => (int) $p['id'], 'belop_ore' => (int) $p['belop_ore'],
+                        'kasse' => $person['id'], 'kassesalg' => $salgId]);
+                }
+                Booking::settBetaltStatus($bid);
+            }
+            $sum = (int) ($d['sum'] ?? 0);
+            revider('kassesalg_angret', 'kassesalg', $salgId, ['person' => $person['id'], 'personNavn' => (string) ($person['navn'] ?? ''),
+                'betalinger' => $ider, 'sum' => $sum]);
+            return ['sumOre' => $sum, 'sum' => KasseKurv::kr($sum)];
+        } finally {
+            DB::verdi('SELECT RELEASE_LOCK(:l)', ['l' => 'kasse-angre:' . $salgId]);
+        }
+    }
+
+    /**
+     * Varelinjene til SMS-kvitteringen: fra salget i revisjonsloggen
+     * (betal() skriver dem), eller — for et salg uten (Vipps-QR) — fra
+     * ordrelinjene og påmeldingen. «[navn] [beløp]», én per linje.
+     *
+     * @param list<array<string,mixed>> $rader fra kvitteringRader()
+     */
+    private static function smsVarer(array $rader): string
+    {
+        $ider = array_map(static fn(array $r): int => (int) $r['id'], $rader);
+        [$fra] = KasseKurv::dagen();
+        $linjer = null;
+        foreach (DB::alle(
+            "SELECT detaljer FROM audit_log WHERE handling = 'kassesalg_ipad' AND created_at >= :fra ORDER BY id DESC LIMIT 200",
+            ['fra' => $fra]
+        ) as $a) {
+            $d = json_decode((string) $a['detaljer'], true);
+            if (is_array($d) && is_array($d['linjer'] ?? null) && array_diff($ider, self::salgBetalinger($d)) === []) {
+                $linjer = $d['linjer'];
+                break;
+            }
+        }
+        if ($linjer === null) {
+            $linjer = [];
+            foreach (array_unique(array_filter(array_map(static fn(array $r): int => (int) $r['order_id'], $rader))) as $o) {
+                foreach (DB::alle('SELECT tittel, antall, pris_ore FROM order_lines WHERE order_id = :o', ['o' => $o]) as $l) {
+                    $linjer[] = ['navn' => (string) $l['tittel'], 'antall' => (int) $l['antall'], 'ore' => (int) $l['pris_ore'] * (int) $l['antall']];
+                }
+            }
+            foreach ($rader as $r) {
+                if ($r['booking_id'] !== null && $r['order_id'] === null) {
+                    $t = DB::verdi('SELECT c.tittel FROM bookings b JOIN courses c ON c.id = b.course_id WHERE b.id = :b', ['b' => (int) $r['booking_id']]);
+                    $linjer[] = ['navn' => (string) $t, 'antall' => 1,
+                                 'ore' => max(0, (int) $r['belop_ore'] - (int) $r['refundert_ore']) + (int) $r['gavekort_ore']];
+                }
+            }
+        }
+        return implode("\n", array_map(static fn(array $l): string =>
+            (string) $l['navn'] . ((int) ($l['antall'] ?? 1) > 1 ? ' × ' . (int) $l['antall'] : '') . ' ' . KasseKurv::kr((int) $l['ore']), $linjer));
+    }
+
+    /**
+     * Hører betalingene til ett salg fra denne iPaden i dag? For
+     * kontantkunden (ingen påmelding, medlem eller telefon å sjekke mot) er
+     * det sjekken på at kvitteringen hører til kunden: betalingene må være
+     * akkurat ett salg denne innloggingen registrerte.
+     *
+     * @param list<array<string,mixed>> $rader
+     */
+    private static function ettSalgHer(array $rader): bool
+    {
+        $ider = array_map(static fn(array $r): int => (int) $r['id'], $rader);
+        [$fra] = KasseKurv::dagen();
+        foreach (DB::alle(
+            "SELECT detaljer FROM audit_log WHERE handling = 'kassesalg_ipad' AND created_at >= :fra ORDER BY id DESC LIMIT 200",
+            ['fra' => $fra]
+        ) as $a) {
+            $d = json_decode((string) $a['detaljer'], true);
+            if (is_array($d) && ($d['okt'] ?? '') === self::oktId() && $ider !== [] && array_diff($ider, self::salgBetalinger($d)) === []) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // ── Kvittering ─────────────────────────────────────────────────────
 
     /**
@@ -1310,10 +1714,14 @@ final class Kasse
             }
             $alleHans = $alleHans && self::tilhorer($r, $betaler);
         }
+        $smsKan = $rader !== [] && self::smsKvitteringPaa() && !self::smsSendt($rader);
         return [
             'epost'      => $harEpostDel && $betaler['epost'] !== '' && filter_var($betaler['epost'], FILTER_VALIDATE_EMAIL) !== false,
-            'sms'        => $alleHans && normaliser_telefon((string) $betaler['telefon']) !== '' && self::smsKvitteringPaa()
-                            && !self::smsSendt($rader),
+            'sms'        => $alleHans && normaliser_telefon((string) $betaler['telefon']) !== '' && $smsKan,
+            // «Send kvittering» på Betalt-skjermen (eieren 30. oktober 2026):
+            // telefonfeltet, fylt inn når kunden har kjent telefon.
+            'smsMulig'   => $smsKan,
+            'telefon'    => (string) $betaler['telefon'],
             'betalinger' => array_map(static fn(array $r): int => (int) $r['id'], $rader),
         ];
     }
@@ -1340,16 +1748,19 @@ final class Kasse
      *
      *   e-post  den vanlige veien (som «Send kvittering på nytt» i Penger):
      *           bekreftelsen for påmeldingen, ordrebekreftelsen for varene
-     *   sms     den korte kvitteringen kassekvittering_sms (eieren, 8. oktober
-     *           2026): «Takk for handelen hos Lissom! Betalt {belop} med
-     *           {maate} {dato}. Hilsen oss i Lissom»
+     *   sms     den korte kvitteringen kassekvittering_sms, med én vare per
+     *           linje ({varer}, eieren 30. oktober 2026, migrasjon 282), og
+     *           uten kundens navn. Sendes bare når «Send» trykkes, til
+     *           nummeret i feltet (fylt inn når kunden har kjent telefon).
      *
-     * Bare for det som er betalt i kassa i dag, og bare til den som betalte.
+     * Bare for det som er betalt i kassa i dag, og bare til den som betalte:
+     * med kjent kunde sjekkes betalingene mot kunden (tilhorer()); for
+     * kontantkunden må de være akkurat ett salg fra denne iPaden (ettSalgHer()).
      *
      * @param list<mixed> $ider
      * @param array<string,mixed> $betaler fra KasseKurv::betaler()
      */
-    public static function kvittering(array $ider, string $kanal, array $betaler): int
+    public static function kvittering(array $ider, string $kanal, array $betaler, string $telefon = ''): int
     {
         if (!in_array($kanal, ['epost', 'sms'], true)) {
             throw new RuntimeException('Velg e-post eller SMS.');
@@ -1359,11 +1770,16 @@ final class Kasse
             throw new RuntimeException('Fant ingen betaling i dag å sende kvittering for.', 404);
         }
         if ($kanal === 'sms') {
-            $tlf = normaliser_telefon((string) $betaler['telefon']);
-            if ($tlf === '' || !self::smsKvitteringPaa()) {
+            $tlf = normaliser_telefon(trim($telefon) !== '' ? $telefon : (string) $betaler['telefon']);
+            if ($tlf === '' || !preg_match('/^\+\d{8,15}$/', $tlf) || !self::smsKvitteringPaa()) {
                 throw new RuntimeException('Kvittering på SMS kan ikke sendes til denne kunden.', 409);
             }
-            foreach ($rader as $r) {
+            $kjent = (int) ($betaler['bookingId'] ?? 0) > 0 || (int) ($betaler['medlemId'] ?? 0) > 0
+                || normaliser_telefon((string) $betaler['telefon']) !== '';
+            if (!$kjent && !self::ettSalgHer($rader)) {
+                throw new RuntimeException('Kvitteringen hører ikke til denne kunden.', 409);
+            }
+            foreach ($kjent ? $rader : [] as $r) {
                 if (!self::tilhorer($r, $betaler)) {
                     throw new RuntimeException('Kvitteringen hører ikke til denne kunden.', 409);
                 }
@@ -1384,6 +1800,7 @@ final class Kasse
                 $d = new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo'));
                 $mnd = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember'];
                 Varsel::mal('kassekvittering_sms', ['telefon' => $tlf], [
+                    'varer' => self::smsVarer($rader),
                     'belop' => KasseKurv::kr($sum),
                     'maate' => self::maateTekst($rader),
                     'dato'  => (int) $d->format('j') . '. ' . $mnd[(int) $d->format('n') - 1],

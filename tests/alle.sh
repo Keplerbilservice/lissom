@@ -130,6 +130,7 @@ kjor "kasse på iPad (tilgang, PIN, beløp på serveren, Vipps-QR)" php tests/ka
 kjor "enkel kasse (dagens kurs, ny kunde, endret pris og rabatt)" php tests/kasse-enkel.php
 kjor "messevisning (kassens PIN) og bedriftsskjemaet" php tests/messe.php
 kjor "Ta betalt i ny admin → kassa (?booking=, alle datoer)" php tests/kasse-ta-betalt.php
+kjor "ny kasse (Har betalt, gavekort, mva, Dagens salg og Angre, SMS med varer)" php tests/kasse-ny.php
 kjor "avlyst dato (Min side, refusjon, kassa, melding)" php tests/avlyst-dato.php
 kjor "refusjonsklient" node tests/refusjon-klient.mjs
 gruppe backend

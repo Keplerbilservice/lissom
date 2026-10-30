@@ -2,8 +2,10 @@
 /**
  * Den enklere kassa på iPad (eieren, «ja» 8. oktober 2026, oppsett A).
  *
- *   A  Dagens kurs: bare kurs der noen skal betale, sortert etter klokkeslett
- *      (8 kurs samme dag); kurset åpnet viser bare de som ikke har betalt
+ *   A  Dagens kurs: alle dagens økter med påmeldte, også der alle har betalt
+ *      (eieren 30.10.2026, «Alle har betalt»), sortert etter klokkeslett
+ *      (8 kurs samme dag); kurset åpnet viser de som ikke har betalt og
+ *      «Har betalt» for seg
  *      (samme påmeldinger som Kalender), Paint on Pots med depositum; betalt
  *      i kassa = betalt i admin og ute av lista.
  *   B  Ny kunde: «Bare kjøp» (navn og telefon på ordren) og «Knytt til
@@ -294,10 +296,12 @@ try {
     $klokke = array_column($kursListe, 'kl');
     $sortert = $klokke;
     sort($sortert);
-    sjekk('8 kurs + Paint on Pots der noen skal betale (9), sortert etter klokkeslett', count($kursListe) === 9 && $klokke === $sortert
+    sjekk('alle dagens økter med påmeldte (8 kurs + Betalt + Paint on Pots + Lite kurs = 11), sortert etter klokkeslett', count($kursListe) === 11 && $klokke === $sortert
         && ($klokke[0] ?? '') === '09:00' && end($klokke) === '21:00', json_encode($kursListe, JSON_UNESCAPED_UNICODE));
-    sjekk('kurs der alle har betalt, og kurset i morgen, vises ikke', !in_array($tag . ' Betalt', $tittler, true)
-        && !in_array($tag . ' Lite kurs', $tittler, true));
+    $alleBetalt = array_column($kursListe, 'alleBetalt', 'oktId');
+    sjekk('kurs der alle har betalt vises med «Alle har betalt»; kurset i morgen vises ikke', ($alleBetalt[$betaltOkt] ?? null) === true
+        && ($alleBetalt[$liteOkt] ?? null) === true && ($alleBetalt[$okter['09:00']] ?? null) === false
+        && !in_array($imorgen, array_column($kursListe, 'oktId'), true), json_encode($alleBetalt));
     $popKort = array_values(array_filter($kursListe, static fn($k) => $k['oktId'] === $popOkt))[0] ?? null;
     sjekk('Paint on Pots: «pop» og 1 skal betale', $popKort !== null && $popKort['pop'] === true && $popKort['skalBetale'] === 1, json_encode($popKort));
     $ledige = array_column($mine($s[1]['ledigeKurs'] ?? []), 'ledige', 'oktId');
@@ -308,7 +312,8 @@ try {
     sjekk('kurset åpnet: Sara, 2 personer, 200 kr depositum', $s[0] === 200 && count($s[1]['rader'] ?? []) === 1
         && ($sararad['bookingId'] ?? 0) === $sara && ($sararad['depositumOre'] ?? 0) === 20000 && ($sararad['antall'] ?? 0) === 2, $tekst($s));
     $s = kall($K . '?okt=' . $betaltOkt, null, $kasseToken);
-    sjekk('kurs der alle har betalt: tom liste', $s[0] === 200 && ($s[1]['rader'] ?? null) === [] && ($s[1]['skalBetale'] ?? -1) === 0, $tekst($s));
+    sjekk('kurs der alle har betalt: ingen som skylder, og «Har betalt» med den ene', $s[0] === 200 && ($s[1]['rader'] ?? null) === [] && ($s[1]['skalBetale'] ?? -1) === 0
+        && array_column($s[1]['betalte'] ?? [], 'bookingId') === [$bb], $tekst($s));
     $s = kall($K . '?okt=' . $imorgen, null, $kasseToken);
     sjekk('kurs i morgen: 404', $s[0] === 404, $tekst($s));
 
@@ -319,9 +324,11 @@ try {
     sjekk('09:00-deltakeren betaler 1 010 kr kontant: påmeldingen er betalt', $s[0] === 200 && ($k['forventet']['booking:' . $b0900] ?? 0) === 101000
         && DB::verdi('SELECT status FROM bookings WHERE id = :i', ['i' => $b0900]) === 'betalt', $tekst($s));
     $s = kall($K . '?okt=' . $okter['09:00'], null, $kasseToken);
-    sjekk('… og står ikke lenger i lista til kurset', ($s[1]['rader'] ?? null) === [], $tekst($s));
+    sjekk('… og står under «Har betalt», ikke blant dem som skylder', ($s[1]['rader'] ?? null) === []
+        && array_column($s[1]['betalte'] ?? [], 'bookingId') === [$b0900], $tekst($s));
     $s = kall($K, null, $kasseToken);
-    sjekk('… og kurset er borte fra «Dagens kurs» (8 igjen)', count($mine($s[1]['kurs'] ?? [])) === 8);
+    $etter = array_column($mine($s[1]['kurs'] ?? []), 'alleBetalt', 'oktId');
+    sjekk('… og kurset står igjen i «Dagens kurs» med «Alle har betalt»', count($etter) === 11 && ($etter[$okter['09:00']] ?? null) === true);
 
     // ══ B: ny kunde ═════════════════════════════════════════════════════
     echo "\n── B: ny kunde ──\n";

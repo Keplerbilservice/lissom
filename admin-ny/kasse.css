@@ -1,15 +1,24 @@
-/* Lissom Kasse på iPad (eieren 08.10.2026, oppsett A: valgene til venstre, kurven fast til høyre). Lissom-drakten fra design.css; laget for iPad liggende (1024–1366 px), trykkflater minst 64 px. Kortene har fast høyde og strekkes ikke; bare venstre flate ruller. */
-body.kasse{background:var(--ground);min-height:100vh;min-height:100dvh;overscroll-behavior:none;-webkit-user-select:none;user-select:none}
+/* Lissom Kasse på iPad (eieren 08.10.2026, oppsett A: valgene til venstre, kurven fast til høyre). Ny kasse etter eierens design 30.10.2026:
+   Lissom-stilen (gul #FFCF38, brun #4D1D12, mørk #2E1002, krem #F4EBDE og #FBF6EE, linjer #E8DBC8, dempet tekst #6B4A3A), Bitter for overskrifter og
+   summer, Alegreya Sans for resten. Laget for iPad liggende (1024–1366 px), trykkflater minst 48 px. Kortene har fast høyde og strekkes ikke; bare venstre flate ruller. */
+body.kasse{--yellow:#ffcf38;--ink:#4d1d12;--dark:#2e1002;--ground:#f4ebde;--paper:#fbf6ee;--line:#e8dbc8;--muted:#6b4a3a;background:var(--ground);min-height:100vh;min-height:100dvh;overscroll-behavior:none;-webkit-user-select:none;user-select:none;font-family:'Alegreya Sans',system-ui,sans-serif}
 #kasse{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column}
-.k-topp{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px max(16px,env(safe-area-inset-right)) 10px max(16px,env(safe-area-inset-left));background:var(--yellow);color:var(--ink);font-weight:800;font-size:19px;min-height:64px}
-.k-topp .k-tittel{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.k-topp{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px max(16px,env(safe-area-inset-right)) 10px max(16px,env(safe-area-inset-left));background:var(--ink);color:var(--paper);font-weight:800;font-size:19px;min-height:64px}
+.k-topp .k-tittel{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:Bitter,Georgia,serif;letter-spacing:-.02em}
 .k-topp .k-valg{display:flex;gap:10px;flex-shrink:0;align-items:center}
+.k-topp small{color:#f4ebdecc}
+.k-topp .k-pille{border-color:var(--paper);color:var(--paper)}
+.k-topp .k-pille.k-oppgjorknapp{background:var(--yellow);border-color:var(--yellow);color:var(--ink)}
+.k-person{font-weight:700}
 .k-pille{font:inherit;font-weight:700;font-size:16px;min-height:48px;padding:0 18px;border-radius:99px;border:1.5px solid var(--ink);background:transparent;color:var(--ink);display:inline-flex;align-items:center;justify-content:center;gap:6px}
 .k-pille.fylt{background:var(--ink);color:var(--paper)}
 .k-pille.valgt{background:var(--green);border-color:var(--green);color:#fff}
 .k-pille.v{border:2px solid var(--yellow);background:#fff3c9}
 .k-pille:disabled{opacity:.4}
 .k-pille.k-meny{font-size:24px;min-width:56px;padding:0 14px;line-height:1}
+/* Uten nett: gul stripe under toppen (eieren 30.10.2026). */
+.k-nett{background:var(--yellow);color:var(--dark);font-weight:800;font-size:18px;text-align:center;padding:12px 16px}
+.k-nett[hidden]{display:none}
 
 /* Oppsett A: 61 % valg, 34 % kurv */
 #kasse:has(.k-a){height:100vh;height:100dvh;overflow:hidden}
@@ -30,17 +39,41 @@ body.kasse{background:var(--ground);min-height:100vh;min-height:100dvh;overscrol
 .k-k b{font-family:'Alegreya Sans',system-ui,sans-serif;font-size:19px;font-weight:800;line-height:1.15;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .k-k small{font-size:15px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .k-k .k-merke{align-self:flex-start;margin-top:2px}
+.k-k.pris{height:112px;background:#fff}
 .k-k.pris b{font-size:21px}
+.k-pris{font-family:Bitter,Georgia,serif;font-weight:700;font-size:18px}
 .k-merke{font-size:14px;font-weight:800;border-radius:99px;padding:3px 11px;white-space:nowrap}
 .k-merke.skylder{background:var(--red);color:#fff}.k-merke.betalt{background:var(--green);color:#fff}
 .k-merke.dep{border:1.5px solid var(--green);color:var(--green)}
+.k-merke.solgt{background:var(--muted);color:#fff}
+.k-merke.angret{border:1.5px solid var(--muted);color:var(--muted)}
+
+/* Valgene: fire store knapper; den valgte er brun. Uten dagens kurs blir de større. */
+.k-velg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.k-velgknapp{font:inherit;font-family:Bitter,Georgia,serif;font-weight:700;font-size:19px;min-height:64px;border-radius:18px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink);padding:8px 10px}
+.k-velgknapp.valgt{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.k-velg.stor .k-velgknapp{min-height:96px;font-size:23px}
+.k-sok{font:inherit;font-size:19px;min-height:52px;border:1.5px solid var(--line);border-radius:14px;padding:8px 16px;background:#fff;-webkit-user-select:text;user-select:text;width:100%}
+.k-filtre .k-pille{min-height:48px}
+.k-k.vare{height:auto;min-height:0;padding:10px;justify-content:flex-start;background:#fff}
+.k-k.vare b{font-size:17px}
+.k-bilde{position:relative;display:block;width:100%;aspect-ratio:4/3;border-radius:12px;background:var(--ground);overflow:hidden;margin-bottom:6px}
+.k-bilde img{width:100%;height:100%;object-fit:cover;display:block}
+.k-antall{position:absolute;top:6px;right:6px;min-width:34px;height:34px;border-radius:99px;background:var(--yellow);color:var(--ink);font-weight:800;font-size:18px;display:flex;align-items:center;justify-content:center;padding:0 8px}
+.k-bilde .k-merke.solgt{position:absolute;left:6px;bottom:6px}
+.k-k.vare.solgt{filter:grayscale(1);opacity:.55}
+.k-bunn{margin-top:auto;padding-top:6px}
+.k-skrivbelop{min-height:48px}
 
 /* Kurven: alltid synlig til høyre */
 .k-kurvsone{background:var(--paper);border:1px solid var(--line);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:10px;min-height:0;min-width:0}
 .k-hvem{display:flex;justify-content:space-between;align-items:center;gap:10px;font-family:'Alegreya Sans',system-ui,sans-serif;font-weight:800;font-size:20px}
 .k-hvem span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .k-linjer{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:4px;border-top:1px solid var(--line);padding-top:6px}
-.k-linje{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:17px;min-height:64px;border-bottom:1px solid var(--line)}
+.k-linje{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:17px;min-height:64px;border-bottom:1px solid var(--line);padding:0 6px}
+/* Det siste som er lagt i kurven: gul bakgrunn, gul kant til venstre og «LAGT TIL» (eieren 30.10.2026). */
+.k-linje.sist{background:#fff3c9;border-left:5px solid var(--yellow);padding-left:8px}
+.k-lagttil{display:inline-block;margin-left:8px;font-size:12px;font-weight:800;letter-spacing:.08em;background:var(--yellow);color:var(--ink);border-radius:6px;padding:2px 7px;vertical-align:middle}
 .k-ltekst{flex:1;min-width:0}
 .k-endret{display:block;font-size:13px;color:var(--muted)}
 .k-linje.rabatt{color:var(--green);font-weight:700}
@@ -51,17 +84,31 @@ body.kasse{background:var(--ground);min-height:100vh;min-height:100dvh;overscrol
 .k-prisknapp{font:inherit;font-weight:800;color:inherit;background:transparent;border:1px dashed var(--line);border-radius:12px;min-height:56px;padding:0 10px;white-space:nowrap;flex-shrink:0}
 .k-rabattknapp{min-height:64px;width:100%}
 .k-regel{font-size:14px;margin:0}
-.k-sum{display:flex;justify-content:space-between;font-size:26px;font-weight:800}
-.k-betal2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.k-betal2 .k-k{height:84px;align-items:center;text-align:center;background:#fff}
-.k-betal2 .k-k b{font-size:22px}
-.k-flere{min-height:64px;width:100%}
+.k-sum{display:flex;justify-content:space-between;font-family:Bitter,Georgia,serif;font-size:26px;font-weight:800}
+/* Fire store betalingsknapper, to og to. */
+.k-betal4{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.k-betal4 .k-k{height:76px;align-items:center;text-align:center;background:#fff}
+.k-betal4 .k-k b{font-size:21px}
 .k-kurvsone .k-pille,.k-sone-topp .k-pille{min-height:64px}
-.k-qrsone{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;min-height:0}
 .k-ferdig{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center}
 .k-ferdig .k-g2{width:100%}
+.k-betalt-tekst{font-family:Bitter,Georgia,serif;font-size:26px;font-weight:800}
+.k-sendkv{min-height:64px;min-width:240px}
+.k-kvskjema{width:100%;justify-items:center}
+.k-idag{margin-top:auto}
+/* Betalt-skjermen til venstre: «KUNDE» og «KJØPET» som hvite fliser. */
+.k-flis{background:#fff;border:1px solid var(--line);border-radius:20px;padding:16px 18px}
+.k-flis h3{margin:0 0 6px}
+.k-flis-navn{font-family:Bitter,Georgia,serif;font-size:24px;font-weight:700}
+.k-kjop{display:flex;flex-direction:column}
+.k-kjop-linje{display:grid;grid-template-columns:minmax(0,1fr) 48px auto;gap:10px;align-items:center;font-size:18px;padding:10px 0;border-bottom:1px solid var(--line)}
+.k-kjop-linje small{display:block;font-size:14px;color:var(--muted)}
+.k-kjop-antall{text-align:center;color:var(--muted);font-weight:700}
+.k-kjop-sum{display:flex;justify-content:space-between;align-items:flex-start;padding-top:12px;font-family:Bitter,Georgia,serif;font-size:24px;font-weight:800}
+.k-kjop-sum>span:last-child{display:flex;flex-direction:column;align-items:flex-end}
+.k-kjop-sum small{font-family:'Alegreya Sans',system-ui,sans-serif;font-size:14px;font-weight:600;color:var(--muted)}
 
-@media (max-width:900px){#kasse:has(.k-a){height:auto;overflow:visible}.k-a{grid-template-columns:1fr;grid-template-rows:auto}.k-sone{overflow:visible}.k-g4{grid-template-columns:repeat(2,minmax(0,1fr))}.k-g3{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:900px){#kasse:has(.k-a){height:auto;overflow:visible}.k-a{grid-template-columns:1fr;grid-template-rows:auto}.k-sone{overflow:visible}.k-g4{grid-template-columns:repeat(2,minmax(0,1fr))}.k-g3{grid-template-columns:repeat(2,minmax(0,1fr))}.k-velg{grid-template-columns:repeat(2,minmax(0,1fr))}.k-oppgjor{grid-template-columns:1fr}}
 
 /* Innlogging, PIN og ark */
 .k-rad{display:flex;justify-content:space-between;align-items:center;gap:10px;border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:var(--paper);min-height:60px;text-align:left;width:100%;font:inherit;color:inherit}
@@ -81,14 +128,16 @@ body.kasse{background:var(--ground);min-height:100vh;min-height:100dvh;overscrol
 .k-feil{color:var(--red);font-weight:700;margin:0}
 .k-tabell{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:18px}
 .k-tabell td{padding:9px 4px;border-bottom:1px solid var(--line)}.k-tabell td:last-child{text-align:right;font-weight:700}
-.k-tabell tr.total td{font-weight:800}
+.k-tabell tr.total td{font-weight:800;font-family:Bitter,Georgia,serif}
 .k-felt{display:grid;gap:6px;text-align:left;width:min(360px,100%)}
 .k-felt input{font:inherit;font-size:20px;min-height:56px;border:1.5px solid var(--line);border-radius:12px;padding:8px 14px;background:#fff;-webkit-user-select:text;user-select:text}
+.k-belop-stor{font-family:Bitter,Georgia,serif;font-size:48px;font-weight:800;text-align:center;font-variant-numeric:tabular-nums}
 .k-tom{color:var(--muted);margin:4px 0}
 #meldinger{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:50;display:grid;gap:8px}
 #meldinger p{margin:0;background:var(--ink);color:var(--paper);padding:12px 18px;border-radius:12px;font-weight:700}
 .k-ark{position:fixed;inset:0;background:#2b1a1266;display:flex;align-items:center;justify-content:center;padding:16px;z-index:40}
 .k-ark>div{background:var(--paper);border-radius:20px;padding:22px;width:min(640px,100%);max-height:calc(100dvh - 32px);overflow:auto;display:grid;gap:14px}
+.k-ark.bred>div{width:min(1100px,100%)}
 .k-ark h2{margin:0}
 .k-ark .k-pille{min-height:64px}
 .k-ark .k-felt{width:100%}
@@ -96,3 +145,8 @@ body.kasse{background:var(--ground);min-height:100vh;min-height:100dvh;overscrol
 .k-skjema{display:grid;gap:14px}
 .k-valg-rad{display:flex;gap:10px;flex-wrap:wrap}
 .k-rad-knapper{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+/* Dagens oppgjør: tallene til venstre, «Dagens salg» til høyre. */
+.k-oppgjor{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:start}
+.k-salg{display:grid;gap:8px}
+.k-salgrad .k-pille{min-height:48px}
+.k-salgrad.angret>span:first-child,.k-salgrad.angret>b{color:var(--muted);text-decoration:line-through}

@@ -30,6 +30,9 @@ final class KasseKurv
     public const PRIS_OG_RABATT = 'Prisen er endret – rabatt kan ikke gis i tillegg.';
     private const MAKS_LINJER = 50;
 
+    /** Filtrene i «Keramikk», i eierens rekkefølge (30. oktober 2026). «Alt» står alltid først. */
+    public const FILTER_REKKEFOLGE = ['Lissom kolleksjon', 'Kopper', 'Tallerkener', 'Vaser', 'Materialer', 'Diverse'];
+
     // ── I dag ──────────────────────────────────────────────────────────
 
     /** @return array{0:string,1:string} start og slutt på dagen i dag (Oslo), i UTC */
@@ -181,10 +184,12 @@ final class KasseKurv
             $start = $klokke((string) $o['start_tid']);
             $erPop = Malebord::gjelder((int) $o['course_id']) && PopPris::erDepositum((int) $o['course_id']);
             $skalBetale = count(array_filter($rader, static fn(array $r): bool => $r['skalBetale']));
-            // «Dagens kurs» (eieren 8. oktober 2026, oppsett A): bare kurs der
-            // noen skal betale, sortert etter klokkeslett.
-            if ($skalBetale > 0) {
-                $kurs[] = ['oktId' => $oktId, 'tittel' => (string) $o['tittel'], 'kl' => $start, 'pop' => $erPop, 'skalBetale' => $skalBetale];
+            // «Dagens kurs» (eieren 30. oktober 2026, ny kasse): alle dagens
+            // økter med påmeldte, også der alle har betalt, sortert etter
+            // klokkeslett. Merket er «[n] skal betale» eller «Alle har betalt».
+            if ($rader !== []) {
+                $kurs[] = ['oktId' => $oktId, 'tittel' => (string) $o['tittel'], 'kl' => $start, 'pop' => $erPop, 'skalBetale' => $skalBetale,
+                           'alleBetalt' => $skalBetale === 0];
             }
             // «Ny kunde» → «Knytt til dagens kurs»: kurs med ledige plasser.
             if (($ledige[$oktId] ?? 0) > 0) {
@@ -211,12 +216,20 @@ final class KasseKurv
             ];
         }
 
+        // Varene. «keramikk» = nettbutikken på lissom.no (samme varer og priser
+        // som api/butikk.php, uten medlemskolleksjonen, som ligger i en egen
+        // tabell), «leire» = internbutikken på Min side (kun_medlemmer, samme
+        // kilde som internvarene). Eieren 30. oktober 2026.
         $varer = [];
+        $iNett = Lager::iNettbutikkSql();
         foreach (DB::alle(
-            "SELECT id, tittel, kategori, pris_ore, lager, status FROM products
+            "SELECT id, tittel, kategori, pris_ore, lager, status, bilde, kun_medlemmer,
+                    {$iNett} AS i_nett
+               FROM products
               WHERE status <> 'kladd' AND pris_ore > 0
            ORDER BY kategori IS NULL, kategori, tittel"
         ) as $v) {
+            $publisert = (string) $v['status'] === 'publisert';
             $varer[] = [
                 'id'       => (int) $v['id'],
                 'tittel'   => (string) $v['tittel'],
@@ -225,8 +238,21 @@ final class KasseKurv
                 'pris'     => self::kr((int) $v['pris_ore']),
                 'lager'    => $v['lager'] === null ? null : (int) $v['lager'],
                 'utsolgt'  => (string) $v['status'] === 'utsolgt' || ($v['lager'] !== null && (int) $v['lager'] <= 0),
+                'bilde'    => Lager::bildeUrl($v['bilde'] ?? null),
+                'keramikk' => $publisert && (int) $v['i_nett'] === 1,
+                'leire'    => $publisert && (int) $v['kun_medlemmer'] === 1,
             ];
         }
+        // Filtrene i «Keramikk»: kategoriene som finnes blant varene, i
+        // eierens rekkefølge (30. oktober 2026), andre kategorier etterpå.
+        $kategorier = [];
+        foreach ($varer as $v) {
+            if ($v['keramikk'] && $v['kategori'] !== '' && !in_array($v['kategori'], $kategorier, true)) {
+                $kategorier[] = $v['kategori'];
+            }
+        }
+        $plass = array_flip(self::FILTER_REKKEFOLGE);
+        usort($kategorier, static fn(string $a, string $b): int => [$plass[$a] ?? 99, $a] <=> [$plass[$b] ?? 99, $b]);
 
         return [
             'dato'      => self::norskDag(),
@@ -235,6 +261,7 @@ final class KasseKurv
             'ledigeKurs'=> $ledigeKurs,
             'inne'      => $inne,
             'varer'     => $varer,
+            'filtre'    => $kategorier,
             'nivaer'    => array_map(static fn(array $n): array => [
                 'id' => $n['id'], 'navn' => $n['navn'], 'prisOre' => $n['prisOre'], 'pris' => self::kr($n['prisOre']),
                 'gjenstander' => $n['gjenstander'],
@@ -323,8 +350,13 @@ final class KasseKurv
         if ($o === null) {
             throw new RuntimeException('Fant ikke kurset i dag.', 404);
         }
-        $rader = array_values(array_filter(self::deltakere($oktId), static fn(array $r): bool => $r['skalBetale']));
+        $alle = self::deltakere($oktId);
+        $rader = array_values(array_filter($alle, static fn(array $r): bool => $r['skalBetale']));
+        // «Har betalt» (eieren 30. oktober 2026): de på økta som har betalt alt,
+        // under dem som skylder. Trykk på en legger bookingen i kurven med 0 igjen.
+        $betalte = array_values(array_filter($alle, static fn(array $r): bool => !$r['skalBetale']));
         return [
+            'betalte'    => $betalte,
             'oktId'      => $oktId,
             'tittel'     => (string) $o['tittel'],
             'kl'         => (new DateTimeImmutable((string) $o['start_tid'], new DateTimeZone('UTC')))->setTimezone(new DateTimeZone('Europe/Oslo'))->format('H:i'),
@@ -584,8 +616,9 @@ final class KasseKurv
      * @param array<string,mixed> $betaler fra betaler()
      * @return list<array<string,mixed>>
      */
-    public static function deler(array $kurv, array $betaler, array $nokler = []): array
+    public static function deler(array $kurv, array $betaler, array $nokler = [], ?array &$betaltVis = null): array
     {
+        $betaltVis = null;
         $deler = [];
         // Endret pris per linje (linjens nøkkel => ny pris i øre). Linjer som
         // ikke finnes i kurven, er en kurv som er endret.
@@ -628,7 +661,11 @@ final class KasseKurv
                         unset($priser[$k]);
                     }
                 }
-            } elseif (self::erPop($b) && $pop !== []) {
+            }
+            // Linjene regnes også for en påmelding som er gjort opp: den vises
+            // i kurven med 0 igjen («Har betalt», eieren 30. oktober 2026), men
+            // er ingen del som betales ($betaltVis).
+            if (self::erPop($b) && $pop !== []) {
                 // Én linje per gjenstand (nivå og gjenstand), med nøkkelen
                 // prisendringen peker på. Har enhetene ulik pris (noen slått
                 // inn før med en annen nivåpris), gjelder prisendringen
@@ -671,7 +708,12 @@ final class KasseKurv
                 $tekst = (string) $b['tittel'] . ' · ' . $antall . ' '
                     . (self::erPop($b) ? ($antall === 1 ? 'person' : 'personer') : ($antall === 1 ? 'plass' : 'plasser'));
                 // Prisen på kurslinja: det linja viser (hele beløpet, eller det som står igjen).
-                if ($skyldig > 0 && $betalt > 0 && $belop - $betalt === $skyldig) {
+                if ($avgjort) {
+                    // Gjort opp: hele beløpet, og det som er betalt trukket fra.
+                    $l = ['tekst' => $tekst, 'ore' => $belop];
+                    $linjer[] = $l;
+                    $linjer[] = ['tekst' => 'Betalt ved booking', 'ore' => -min($betalt, $belop)];
+                } elseif ($skyldig > 0 && $betalt > 0 && $belop - $betalt === $skyldig) {
                     $l = self::prisLinje($delId, $tekst, (string) $b['tittel'], 1, $belop, $priser, $endringer[$delId], $prisTrekk[$delId], false);
                     $linjer[] = $l;
                     $linjer[] = ['tekst' => 'Betalt ved booking', 'ore' => -$betalt];
@@ -680,6 +722,10 @@ final class KasseKurv
                     $linjer[] = $l;
                 }
                 $full = $l['ore'];
+            }
+            if ($avgjort) {
+                $betaltVis = ['id' => $delId, 'bookingId' => $bid, 'tittel' => (string) $b['navn'],
+                              'linjer' => array_map(static fn(array $l): array => $l + ['kr' => ($l['ore'] < 0 ? '−' : '') . self::kr(abs($l['ore']))], $linjer)];
             }
             if (!$avgjort && ($skyldig > 0 || $pop !== [])) {
                 $etter = $skyldig - $prisTrekk[$delId];
@@ -1133,7 +1179,7 @@ final class KasseKurv
      * @param list<array<string,mixed>> $deler
      * @return array<string,mixed>
      */
-    public static function visning(array $deler): array
+    public static function visning(array $deler, ?array $betaltVis = null): array
     {
         $sum = array_sum(array_column($deler, 'sumOre'));
         $rabatt = null;
@@ -1160,7 +1206,18 @@ final class KasseKurv
             // pris og rabatt ikke på samme kjøp (skjermen gjør knappene grå).
             'prosentKan' => array_filter($deler, static fn(array $d): bool => (int) ($d['betaltOre'] ?? 0) > 0) === [],
             'prisEndret' => array_filter($deler, static fn(array $d): bool => ($d['justering']['linjer'] ?? []) !== []) !== [],
+            // En påmelding som er gjort opp («Har betalt»): vises i kurven med
+            // 0 igjen, men betales ikke.
+            'betalt'     => $betaltVis,
         ];
+    }
+
+    /** «regn»: kurven slik skjermen viser den, med en påmelding som er gjort opp. */
+    public static function regn(array $kurv, array $betaler): array
+    {
+        $betaltVis = null;
+        $deler = self::deler($kurv, $betaler, [], $betaltVis);
+        return self::visning($deler, $betaltVis);
     }
 
 
@@ -1171,8 +1228,9 @@ final class KasseKurv
      * dagsoppgjøret i admin (Omsetning::rader()), netto etter refusjon.
      *
      *   Kontant              raden eller ordren sier Kontant
-     *   Betalt på annen måte  ført for hånd med en annen måte (Vipps til
-     *                        verkstedets nummer, faktura)
+     *   Vipps-nummer         ført for hånd som Vipps til verkstedets nummer
+     *   Faktura              ført for hånd som faktura (bare med beløp)
+     *   Betalt på annen måte  ført for hånd med en annen måte (bare med beløp)
      *   Vipps                alt som gikk gjennom Vipps (QR, nettsida, trekk)
      *   Gavekort             det gavekort dekket (ingen penger inn i dag)
      *
@@ -1181,7 +1239,7 @@ final class KasseKurv
     public static function oppgjor(): array
     {
         [$fra, $til] = self::dagen();
-        $sum = ['Vipps' => 0, 'Kontant' => 0, 'Annen' => 0, 'Gavekort' => 0, 'Tilbake' => 0];
+        $sum = ['Vipps' => 0, 'Kontant' => 0, 'VippsNummer' => 0, 'Faktura' => 0, 'Annen' => 0, 'Gavekort' => 0, 'Tilbake' => 0];
         foreach (Omsetning::rader($fra, $til) as $r) {
             $penger = (int) $r['belop_ore'] - (int) ($r['refundert_ore'] ?? 0);
             $sum['Gavekort'] += (int) ($r['gavekort_ore'] ?? 0);
@@ -1200,23 +1258,40 @@ final class KasseKurv
                 // Annen maate gitt tilbake for haand: egen linje.
                 $sum['Tilbake'] += $penger;
             } elseif ((string) ($r['type'] ?? '') === 'manuell') {
-                $sum['Annen'] += $penger;
+                // Vipps til verkstedets nummer og faktura på hver sin linje
+                // (eieren 30. oktober 2026), så regnskapsfører ser riktig.
+                // En annen måte enn de to står som før.
+                if ($m === 'Vipps') {
+                    $sum['VippsNummer'] += $penger;
+                } elseif ($m === 'Faktura') {
+                    $sum['Faktura'] += $penger;
+                } else {
+                    $sum['Annen'] += $penger;
+                }
             } else {
                 $sum['Vipps'] += $penger;
             }
         }
+        // Linjene (eieren 30. oktober 2026): Vipps, Vipps-nummer, Kontant,
+        // Faktura og Gavekort bare når de har beløp.
         $rader = [
             ['navn' => 'Vipps', 'ore' => $sum['Vipps']],
+            ['navn' => 'Vipps-nummer', 'ore' => $sum['VippsNummer']],
             ['navn' => 'Kontant', 'ore' => $sum['Kontant']],
-            ['navn' => 'Betalt på annen måte', 'ore' => $sum['Annen']],
         ];
+        if ($sum['Faktura'] !== 0) {
+            $rader[] = ['navn' => 'Faktura', 'ore' => $sum['Faktura']];
+        }
+        if ($sum['Annen'] !== 0) {
+            $rader[] = ['navn' => 'Betalt på annen måte', 'ore' => $sum['Annen']];
+        }
         if ($sum['Tilbake'] !== 0) {
             $rader[] = ['navn' => 'Tilbakebetalt, annen måte', 'ore' => $sum['Tilbake']];
         }
         if ($sum['Gavekort'] > 0) {
             $rader[] = ['navn' => 'Gavekort', 'ore' => $sum['Gavekort']];
         }
-        $total = $sum['Vipps'] + $sum['Kontant'] + $sum['Annen'] + $sum['Tilbake'];
+        $total = $sum['Vipps'] + $sum['VippsNummer'] + $sum['Kontant'] + $sum['Faktura'] + $sum['Annen'] + $sum['Tilbake'];
         $endringer = KasseJustering::idag();
         return [
             // Endret pris og rabatt i kassa i dag: hvem, hva og hvorfor.
@@ -1228,6 +1303,9 @@ final class KasseKurv
             'total'      => self::kr($total),
             'kontantOre' => $sum['Kontant'],
             'kontant'    => self::kr($sum['Kontant']),
+            // «Dagens salg» (eieren 30. oktober 2026): salgene fra kassa i dag,
+            // med «Angre» (Kasse::dagensSalg, Kasse::angre).
+            'salg'       => Kasse::dagensSalg(),
         ];
     }
 }

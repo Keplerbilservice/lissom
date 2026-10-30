@@ -6510,7 +6510,7 @@
         {
             "id": "kasse-ipad-20261008",
             "dato": "2026-10-08",
-            "hva": "Lissom Kasse på iPad (skissen Rm1Casf4CpVv8i5zwyfecX, «ok, bygg det»): egen kasse på /kasse med rollen «kasse» (kommer bare til api/kasse/, innlogget i 30 dager), 4-sifret PIN per person (settes under Brukere, lagres som hash), låser seg etter 5 minutter uten bruk, bryteren «Vis/kasse» (av til eieren slår den på). I dag: dagens påmeldte med hva de skylder og medlemmer som er inne; varer med fast pris, Paint on Pots uten booking, gavekort, timepakke og «Skriv beløp». Paint on Pots: gjenstander per nivå, betalt ved booking trekkes fra, «Endre» → «Betalte ikke» annullerer beløpet ved booking (slettes ikke). Betaling: hvem betaler (personen eller Kontantkunde), Vipps-QR, Kontant, Del betalingen, Betalt på annen måte (Vipps-nummer, faktura). Beløpene regnes på serveren, idempotensnøkkel per del. Kvittering den vanlige veien, Dagens oppgjør fra samme rader som Penger.",
+            "hva": "Lissom Kasse på iPad (skissen Rm1Casf4CpVv8i5zwyfecX, «ok, bygg det»): egen kasse på /kasse med rollen «kasse» (kommer bare til api/kasse/, innlogget i 30 dager), 4-sifret PIN per person (settes under Brukere, lagres som hash), låser seg etter 5 minutter uten bruk, bryteren «Vis/kasse» (av til eieren slår den på). I dag: dagens påmeldte med hva de skylder og medlemmer som er inne; varer med fast pris, Paint on Pots uten booking, gavekort, timepakke og «Skriv beløp». Paint on Pots: gjenstander per nivå, betalt ved booking trekkes fra, «Endre» → «Betalte ikke» annullerer beløpet ved booking (slettes ikke). Betaling: hvem betaler (personen eller Kontantkunde), Vipps-QR, Kontant, Del betalingen, Betalt på annen måte (Vipps-nummer, faktura). Beløpene regnes på serveren, idempotensnøkkel per del. Kvittering den vanlige veien, Dagens oppgjør fra samme rader som Penger. Endret 30.10.2026 (eieren, ny kasse, vedtakene kasse-ny-*-20261030): det som vises på iPaden er erstattet; serverkoden står.",
             "hvor": "/kasse (kasse.html, admin-ny/kasse.js, admin-ny/kasse.css), api/kasse/, app/lib/kasse.php, Brukere og Synlighet i admin-ny",
             "kode": [
                 {
@@ -6542,8 +6542,6 @@
                         "'Hvem står i kassa?'",
                         "'Endre: betalte de ved booking?'",
                         "'Betalte ikke'",
-                        "kort({onclick:()=>{lukk();deltArk();}},el('b',{text:'Del betalingen'}),el('small',{text:'To eller flere betaler'}))",
-                        "kort({onclick:()=>{lukk();registrer('Vipps','med Vipps-nummer');}},el('b',{text:'Vipps-nummer'}),el('small',{text:'Betalt på annen måte'}))",
                         "'Telles ved stenging'"
                     ]
                 },
@@ -6577,7 +6575,7 @@
         {
             "id": "kasse-ipad-kontroll-sms-20261008",
             "dato": "2026-10-08",
-            "hva": "Kontrolløren (STOPP 267a748) og eierens SMS-kvittering: nøklene per del beholdes så lenge kurven er den samme, og alle QR-koder fra iPaden som venter stoppes hos Vipps før kontant/annen måte og før en ny QR (ingen dobbel betaling etter «Tilbake»); delene har faste id-er, så en påmelding betalt med QR ikke stopper varene; lås per nøkkel mellom qr() og betal(); «Fjern tilgang» fjerner kasse-PIN og låser kassa, og bare personer under Brukere kan bruke PIN; kassa delt i KasseTilgang, KasseKurv og Kasse. SMS-kvittering fra kassa (godkjent tekst): «Takk for handelen hos Lissom! Betalt {belop} med {maate} {dato}. Hilsen oss i Lissom», mal kassekvittering_sms (migrasjon 264), vises som «Kvittering på SMS» når kunden har mobil og SMS er satt opp; den fulle kvitteringen går på e-post.",
+            "hva": "Kontrolløren (STOPP 267a748) og eierens SMS-kvittering: nøklene per del beholdes så lenge kurven er den samme, og alle QR-koder fra iPaden som venter stoppes hos Vipps før kontant/annen måte og før en ny QR (ingen dobbel betaling etter «Tilbake»); delene har faste id-er, så en påmelding betalt med QR ikke stopper varene; lås per nøkkel mellom qr() og betal(); «Fjern tilgang» fjerner kasse-PIN og låser kassa, og bare personer under Brukere kan bruke PIN; kassa delt i KasseTilgang, KasseKurv og Kasse. SMS-kvittering fra kassa (godkjent tekst): «Takk for handelen hos Lissom! Betalt {belop} med {maate} {dato}. Hilsen oss i Lissom», mal kassekvittering_sms (migrasjon 264), vises som «Kvittering på SMS» når kunden har mobil og SMS er satt opp; den fulle kvitteringen går på e-post. Endret 30.10.2026 (eieren, ny kasse, vedtakene kasse-ny-*-20261030): det som vises på iPaden er erstattet; serverkoden står.",
             "hvor": "app/lib/kasse.php, app/lib/kassekurv.php, app/lib/kassetilgang.php, api/kasse/kasse.php, api/admin/brukere.php, admin-ny/kasse.js, app/lib/maler.php, db/migrations/264_kassekvittering_sms.sql",
             "kode": [
                 {
@@ -6612,8 +6610,7 @@
                 {
                     "fil": "admin-ny/kasse.js",
                     "finnes": [
-                        "if(s.noklerSig!==sig){s.nokler={};s.noklerSig=sig;}",
-                        "'Kvittering på SMS'"
+                        "if(s.noklerSig!==sig){s.nokler={};s.noklerSig=sig;}"
                     ]
                 },
                 {
@@ -7008,7 +7005,7 @@
         {
             "id": "enkel-kasse-oppsett-a-20261008",
             "dato": "2026-10-08",
-            "hva": "Den enklere kassa på iPad (eieren «ja» 8. oktober 2026, oppsett A fra fremvisningen enkel-kasse.html): valgene til venstre (61 %), kurven fast til høyre (34 %). Venstre: Kontantkunde og + Ny kunde; «Dagens kurs» fire i bredden med klokkeslett, navn og rødt «N skal betale», sortert etter tid, bare kurs der noen skal betale, kort med fast høyde, bare venstre flate ruller; «Paint on Pots · prislisten» (de fire nivåene fra pop_prisnivaer); «Annet salg»: Varer, Gavekort, Skriv beløp (Timepakke som fast valg der). Trykk på et kurs: bare de som ikke har betalt (samme påmeldinger som Kalender), med «Tilbake»; lista hentes på nytt hvert 15. sekund. + Ny kunde: navn og telefon, «Knytt til dagens kurs» (påmelding på en ledig plass, med lås) eller «Bare kjøp». Kurven: − antall +, trykk på prisen for å endre den, «Rabatt på kjøpet» i prosent (10/20/50) eller kroner med valgfritt hvorfor; serveren regner og validerer (pris ≥ 0, rabatt ≤ summen) og lagrer opprinnelig pris, ny pris, rabatt, hvem og hvorfor (kasse_justeringer, migrasjon 269); eierens regler: prosent bare når ingenting er betalt («Prosent kan bare gis når hele beløpet betales nå.»), og endret pris og rabatt ikke på samme kjøp («Prisen er endret – rabatt kan ikke gis i tillegg.» / «Rabatt er gitt – fjern den for å endre pris.»), sjekket på serveren; prisen kan settes både opp og ned (også på påmeldinger; Vipps-QR tar det høyere beløpet); kontrolløren (STOPP 98a3fb9): en påmelding som er gjort opp (betalt med QR som første del) er ute av kurven, låste andeler gjelder bare samme kurv (signatur); kontrolløren (STOPP 96ba278): rabattandelen låses per del første gang det tas betalt, og endringen skrives til påmeldingen først i samme transaksjon som betalingen (Vipps-QR: når den er betalt), som vises på kvitteringen og i Dagens oppgjør. Betal: to like kort, Vipps (QR-kode) og Kontant (eieren: «Kort» tas helt bort), og «Flere valg» (Del betalingen, Faktura, Vipps-nummer). Dagens oppgjør og Lås i menyen ⋯. Låsen etter 5 minutter og PIN som før.",
+            "hva": "Den enklere kassa på iPad (eieren «ja» 8. oktober 2026, oppsett A fra fremvisningen enkel-kasse.html): valgene til venstre (61 %), kurven fast til høyre (34 %). Venstre: Kontantkunde og + Ny kunde; «Dagens kurs» fire i bredden med klokkeslett, navn og rødt «N skal betale», sortert etter tid, bare kurs der noen skal betale, kort med fast høyde, bare venstre flate ruller; «Paint on Pots · prislisten» (de fire nivåene fra pop_prisnivaer); «Annet salg»: Varer, Gavekort, Skriv beløp (Timepakke som fast valg der). Trykk på et kurs: bare de som ikke har betalt (samme påmeldinger som Kalender), med «Tilbake»; lista hentes på nytt hvert 15. sekund. + Ny kunde: navn og telefon, «Knytt til dagens kurs» (påmelding på en ledig plass, med lås) eller «Bare kjøp». Kurven: − antall +, trykk på prisen for å endre den, «Rabatt på kjøpet» i prosent (10/20/50) eller kroner med valgfritt hvorfor; serveren regner og validerer (pris ≥ 0, rabatt ≤ summen) og lagrer opprinnelig pris, ny pris, rabatt, hvem og hvorfor (kasse_justeringer, migrasjon 269); eierens regler: prosent bare når ingenting er betalt («Prosent kan bare gis når hele beløpet betales nå.»), og endret pris og rabatt ikke på samme kjøp («Prisen er endret – rabatt kan ikke gis i tillegg.» / «Rabatt er gitt – fjern den for å endre pris.»), sjekket på serveren; prisen kan settes både opp og ned (også på påmeldinger; Vipps-QR tar det høyere beløpet); kontrolløren (STOPP 98a3fb9): en påmelding som er gjort opp (betalt med QR som første del) er ute av kurven, låste andeler gjelder bare samme kurv (signatur); kontrolløren (STOPP 96ba278): rabattandelen låses per del første gang det tas betalt, og endringen skrives til påmeldingen først i samme transaksjon som betalingen (Vipps-QR: når den er betalt), som vises på kvitteringen og i Dagens oppgjør. Betal: to like kort, Vipps (QR-kode) og Kontant (eieren: «Kort» tas helt bort), og «Flere valg» (Del betalingen, Faktura, Vipps-nummer). Dagens oppgjør og Lås i menyen ⋯. Låsen etter 5 minutter og PIN som før. Endret 30.10.2026 (eieren, ny kasse, vedtakene kasse-ny-*-20261030): det som vises på iPaden er erstattet; serverkoden står.",
             "hvor": "/kasse (admin-ny/kasse.js, admin-ny/kasse.css), api/kasse/kasse.php, app/lib/kassekurv.php, app/lib/kassejustering.php, app/lib/kasse.php, app/lib/poppris.php, db/migrations/269_kasse_pris_og_rabatt.sql, tests/kasse-enkel.php",
             "kode": [
                 {
@@ -7016,7 +7013,6 @@
                     "finnes": [
                         "el('h3',{text:'Dagens kurs'})",
                         "el('h3',{text:'Paint on Pots · prislisten'})",
-                        "el('h3',{text:'Annet salg'})",
                         "el('b',{text:'Kontantkunde'}),el('small',{text:'Salg uten navn'})",
                         "el('b',{text:'+ Ny kunde'}),el('small',{text:'Navn og telefon'})",
                         "text:k.skalBetale+' skal betale'",
@@ -7024,13 +7020,10 @@
                         "text:'Bare kjøp'",
                         "el('h3',{text:'Knytt til dagens kurs'})",
                         "'Pris endret fra '",
-                        "el('b',{text:'Vipps'}),el('small',{text:'QR-kode'})",
                         "el('b',{text:'Kontant'})",
-                        "text:'Flere valg'",
                         "el('b',{text:'Timepakke'})",
                         "},15000);}",
                         "aria-label':'Meny',text:'⋯'",
-                        "el('div',{class:'k-betal2'},",
                         "const laast=()=>!!salg&&(salg.vent||salg.betalt.size>0);",
                         "const RABATT_GITT='Rabatt er gitt – fjern den for å endre pris.';",
                         "const PRIS_ENDRET='Prisen er endret – rabatt kan ikke gis i tillegg.';",
@@ -10121,6 +10114,302 @@
                         "if (rute.id !== sistTalt) { sistTalt = rute.id; tell('ny_side_' + rute.id.replace(/-/g, '_')); }",
                         "if (d.hurtig) tell('ny_hurtig_' + d.hurtig);",
                         "if (b.id === 'stemple-topp') tell('ny_hurtig_stemple');"
+                    ],
+                    "ikkeFinnes": []
+                }
+            ]
+        },
+        {
+            "id": "kasse-ny-valgene-20261030",
+            "dato": "2026-10-30",
+            "hva": "Eieren 30.10.2026 («Ja, bygg», ny kasse på iPad): fire store valg i denne rekkefølgen: Paint on Pots, Keramikk, Gavekort, Leire. Paint on Pots er valgt når kassa åpnes; valgt knapp er brun. Paint on Pots = PopPris::nivaer() med navn, pris og gjenstander. Keramikk = nettbutikkens varer (uten medlemskolleksjonen), filtrene Alt, Lissom kolleksjon, Kopper, Tallerkener, Vaser, Materialer, Diverse (de som finnes), søk, bilde, navn, pris og antallet i kurven på bildet. Gavekort = «Gavekort / Velg beløp». Leire = internbutikkens varer (kun_medlemmer). «Skriv beløp» som liten knapp nederst, beløpet stort mens det tastes. Dagens kurs viser alle dagens økter, «[n] skal betale» eller grønt «Alle har betalt»; ingen økter = seksjonen borte og valgene større. Toppen er brun med «Lissom Kasse · [dato]», navnet, gul «Dagens oppgjør» og ⋯ med «Lås». Det sist lagt i kurven er gult med «LAGT TIL».",
+            "hvor": "Kassa på iPad (/kasse)",
+            "kode": [
+                {
+                    "fil": "admin-ny/kasse.js",
+                    "finnes": [
+                        "const VALG=[['pop','Paint on Pots'],['keramikk','Keramikk'],['gavekort','Gavekort'],['leire','Leire']];",
+                        "let valgt='pop',filter='Alt',sokTekst='';",
+                        "el('div',{class:'k-velg'+(data.kurs.length?'':' stor')}",
+                        "text:'Alle har betalt'",
+                        "text:'Dagens oppgjør',onclick:visOppgjor",
+                        "text:'LAGT TIL'",
+                        "pille('Skriv beløp',skrivBelopArk,'k-skrivbelop')"
+                    ],
+                    "ikkeFinnes": []
+                },
+                {
+                    "fil": "app/lib/kassekurv.php",
+                    "finnes": [
+                        "public const FILTER_REKKEFOLGE = ['Lissom kolleksjon', 'Kopper', 'Tallerkener', 'Vaser', 'Materialer', 'Diverse'];",
+                        "'keramikk' => $publisert && (int) $v['i_nett'] === 1,",
+                        "'leire'    => $publisert && (int) $v['kun_medlemmer'] === 1,",
+                        "'alleBetalt' => $skalBetale === 0];"
+                    ],
+                    "ikkeFinnes": []
+                },
+                {
+                    "fil": "admin-ny/kasse.css",
+                    "finnes": [
+                        ".k-velgknapp.valgt{background:var(--ink);border-color:var(--ink);color:var(--paper)}",
+                        ".k-linje.sist{background:#fff3c9;border-left:5px solid var(--yellow);padding-left:8px}"
+                    ],
+                    "ikkeFinnes": []
+                }
+            ]
+        },
+        {
+            "id": "kasse-ny-har-betalt-20261030",
+            "dato": "2026-10-30",
+            "hva": "Eieren 30.10.2026: når et kurs i «Dagens kurs» åpnes, står de som skylder som før, og under dem en ny seksjon «Har betalt» med grønt «Betalt». Trykk på en som har betalt: bookingen kommer i kurven med det hun valgte på nett, «Betalt ved booking» trukket fra og 0 kr igjen. Det som legges til fra prislisten, kommer på samme booking, og bare det ekstra betales.",
+            "hvor": "Kassa på iPad › Dagens kurs",
+            "kode": [
+                {
+                    "fil": "admin-ny/kasse.js",
+                    "finnes": [
+                        "el('h3',{text:'Har betalt'})",
+                        "if(r&&r.betalt)for(const l of r.betalt.linjer)linjer.push(kurvLinje({type:'booking',id:r.betalt.id},l,true));"
+                    ],
+                    "ikkeFinnes": []
+                },
+                {
+                    "fil": "app/lib/kassekurv.php",
+                    "finnes": [
+                        "'betalte'    => $betalte,",
+                        "public static function regn(array $kurv, array $betaler): array",
+                        "$linjer[] = ['tekst' => 'Betalt ved booking', 'ore' => -min($betalt, $belop)];"
+                    ],
+                    "ikkeFinnes": []
+                },
+                {
+                    "fil": "api/kasse/kasse.php",
+                    "finnes": [
+                        "Svar::ok(KasseKurv::regn($liste('kurv'), $betaler));"
+                    ],
+                    "ikkeFinnes": []
+                }
+            ]
+        },
+        {
+            "id": "kasse-ny-fire-betalingsknapper-20261030",
+            "dato": "2026-10-30",
+            "hva": "Eieren 30.10.2026: under totalen fire store betalingsknapper, to og to: Vipps-nummer, Kontant, Gavekort, Natura. Gavekort: koden, og hele beløpet trekkes fra kortet med gavekortlogikken som finnes. Dekker kortet ikke hele beløpet, avvises betalingen med en melding (midlertidig løsning til eieren avgjør; ingen delbetaling). Natura registrerer ingenting og viser bare «Haha, din perverse fjert! Dette er notert og delt på NRK nyheter» noen sekunder (på moro). «Flere valg», «Del betalingen» og Vipps-QR vises ikke på iPaden; serverkoden for QR og delt betaling står.",
+            "hvor": "Kassa på iPad › Kurven",
+            "kode": [
+                {
+                    "fil": "admin-ny/kasse.js",
+                    "finnes": [
+                        "el('div',{class:'k-betal4'},",
+                        "const NATURA='Haha, din perverse fjert! Dette er notert og delt på NRK nyheter';",
+                        "registrer('Gavekort','med gavekort',{kode:kode.value.trim()});"
+                    ],
+                    "ikkeFinnes": [
+                        "text:'Flere valg'",
+                        "handling:'qr'",
+                        "'Del betalingen'"
+                    ]
+                },
+                {
+                    "fil": "app/lib/kasse.php",
+                    "finnes": [
+                        "private static function helGavekort(array $deler, string $kode): array",
+                        "' igjen og dekker ikke hele beløpet. Velg en annen betalingsmåte.'",
+                        "public static function qr(array $kurv, array $betalerInn, string $delId, array $nokler, array $forventet, array $person): array",
+                        "private static function lesDelt(array $delt, int $sum): array"
+                    ],
+                    "ikkeFinnes": []
+                }
+            ]
+        },
+        {
+            "id": "kasse-ny-vipps-nummer-dialog-20261030",
+            "dato": "2026-10-30",
+            "hva": "Eieren 30.10.2026: «Vipps-nummer» (kunden har betalt med den løse QR-koden på disken) registreres som Vipps til verkstedets nummer som før, men spør først: «Har du sett at [sum] kr er kommet inn på Vipps?» med «Avbryt» og «Ja, registrer».",
+            "hvor": "Kassa på iPad › Kurven",
+            "kode": [
+                {
+                    "fil": "admin-ny/kasse.js",
+                    "finnes": [
+                        "ark(`Har du sett at ${sum} er kommet inn på Vipps?`",
+                        "pille('Ja, registrer',()=>{lukk();registrer('Vipps','med Vipps-nummer');},'fylt')"
+                    ],
+                    "ikkeFinnes": []
+                }
+            ]
+        },
+        {
+            "id": "kasse-ny-kvittering-paa-trykk-20261030",
+            "dato": "2026-10-30",
+            "hva": "Eieren 30.10.2026: Betalt-skjermen har et stort ✓, «Betalt [sum] kr [måte]», knappen «Send kvittering» og den store gule «I dag». «Send kvittering» gir feltet «Telefon» med «Avbryt» og «Send», fylt inn for kunder med kjent telefon. Det sendes aldri kvittering uten at det trykkes. Sperren mot to SMS-er for samme kjøp og sjekken på at kvitteringen hører til kunden står (kontantkunden: bare sitt eget salg fra samme iPad).",
+            "hvor": "Kassa på iPad › Betalt-skjermen",
+            "kode": [
+                {
+                    "fil": "admin-ny/kasse.js",
+                    "finnes": [
+                        "text:'Send kvittering'",
+                        "el('span',{text:'Telefon'})",
+                        "text:'I dag',onclick:()=>{ferdig=null;tegnVenstre();tegnKurv();}"
+                    ],
+                    "ikkeFinnes": []
+                },
+                {
+                    "fil": "app/lib/kasse.php",
+                    "finnes": [
+                        "public static function kvittering(array $ider, string $kanal, array $betaler, string $telefon = ''): int",
+                        "private static function ettSalgHer(array $rader): bool",
+                        "throw new RuntimeException('Kvittering på SMS er alt sendt for dette kjøpet.', 409);"
+                    ],
+                    "ikkeFinnes": []
+                }
+            ]
+        },
+        {
+            "id": "kasse-ny-sms-med-varer-20261030",
+            "dato": "2026-10-30",
+            "hva": "Eieren 30.10.2026: ny tekst i malen kassekvittering_sms (migrasjon 282), én vare per linje: «Takk for handelen hos Lissom!» / {varer} / «Betalt {belop} med {maate} {dato}.» / «Hilsen oss i Lissom». {varer} = «[navn] [beløp]» per linje, fra salget slik serveren registrerte det. Ikke kundens navn i SMS-en.",
+            "hvor": "Kassa på iPad › SMS-kvittering",
+            "kode": [
+                {
+                    "fil": "db/migrations/282_kassekvittering_sms_varer.sql",
+                    "finnes": [
+                        "-- godkjent av eieren: 2026-10-30",
+                        "'Takk for handelen hos Lissom!'",
+                        "'{varer}'",
+                        "'Betalt {belop} med {maate} {dato}.'",
+                        "'Hilsen oss i Lissom'"
+                    ],
+                    "ikkeFinnes": []
+                },
+                {
+                    "fil": "app/lib/kasse.php",
+                    "finnes": [
+                        "'varer' => self::smsVarer($rader),",
+                        "private static function smsVarer(array $rader): string"
+                    ],
+                    "ikkeFinnes": []
+                }
+            ]
+        },
+        {
+            "id": "kasse-ny-kunde-kjopet-mva-20261030",
+            "dato": "2026-10-30",
+            "hva": "Eieren 30.10.2026: Betalt-skjermen til venstre: «KUNDE» som egen hvit flis med kundens navn, eller «Kontant» for kontantkunden; «KJØPET» som hvit flis under, hver vare med antall og pris og «inkl. mva» eller «uten mva» under navnet, «Totalt [sum]» og rett under med liten skrift «mva [beløp] kr» — bare når kjøpet har mva. Mva regnes på serveren fra varenes mva-innstilling (products.mva_prosent, ellers satsen for formålet), ikke fra skjermen.",
+            "hvor": "Kassa på iPad › Betalt-skjermen",
+            "kode": [
+                {
+                    "fil": "admin-ny/kasse.js",
+                    "finnes": [
+                        "el('h3',{text:'KUNDE'})",
+                        "el('h3',{text:'KJØPET'})",
+                        "k.mvaOre>0?el('small',{text:'mva '+k.mva}):null",
+                        "kunde:s.kontantkunde||!s.navn?'Kontant':s.navn"
+                    ],
+                    "ikkeFinnes": []
+                },
+                {
+                    "fil": "app/lib/kasse.php",
+                    "finnes": [
+                        "public static function kvitteringLinjer(array $deler): array",
+                        "'mva' => $sats > 0 ? 'inkl. mva' : 'uten mva'",
+                        "SELECT id, mva_prosent FROM products WHERE id IN ("
+                    ],
+                    "ikkeFinnes": []
+                }
+            ]
+        },
+        {
+            "id": "kasse-ny-oppgjor-egne-linjer-20261030",
+            "dato": "2026-10-30",
+            "hva": "Eieren 30.10.2026: Dagens oppgjør har linjene Vipps, Vipps-nummer, Kontant, Faktura (bare med beløp) og Gavekort (bare med beløp), så «Totalt i dag» og «Kontant i kassa nå / Telles ved stenging». Vipps-nummer og faktura er ikke lenger samlet i «Betalt på annen måte», så regnskapsfører ser riktig (en annen manuell måte står der fortsatt, bare med beløp). «Dagens oppgjør» er en synlig gul knapp i toppen.",
+            "hvor": "Kassa på iPad › Dagens oppgjør",
+            "kode": [
+                {
+                    "fil": "app/lib/kassekurv.php",
+                    "finnes": [
+                        "['navn' => 'Vipps-nummer', 'ore' => $sum['VippsNummer']],",
+                        "if ($sum['Faktura'] !== 0) {",
+                        "$rader[] = ['navn' => 'Faktura', 'ore' => $sum['Faktura']];"
+                    ],
+                    "ikkeFinnes": []
+                }
+            ]
+        },
+        {
+            "id": "kasse-ny-angre-20261030",
+            "dato": "2026-10-30",
+            "hva": "Eieren 30.10.2026: «Dagens salg» til høyre i Dagens oppgjør: salgene fra kassa i dag med klokkeslett, kunde (eller «Kontantkunde»), beløp, betalingsmåte og «Angre». «Angre» spør «Angre salget på [beløp]?» med «Avbryt» og «Ja, angre». Ingenting slettes: varer som annullering av salg over disk (uttak.php: ordren kansellert, betalingen refundert, varene tilbake på lager, gavekortet får beløpet tilbake), påmelding som annullering av betaling (kursbetaling.php: avbrutt med hvem og når, påmeldingen regnes på nytt). Både salget og angringen står i revisjonsloggen og på betalingsradene med hvem og når. Vipps-betalinger, solgte gavekort og timepakker får ingen «Angre» (de har ingen motføring i kassa).",
+            "hvor": "Kassa på iPad › Dagens oppgjør",
+            "kode": [
+                {
+                    "fil": "admin-ny/kasse.js",
+                    "finnes": [
+                        "ark(`Angre salget på ${x.sum}?`",
+                        "pille('Ja, angre'",
+                        "el('h3',{text:'Dagens salg'})"
+                    ],
+                    "ikkeFinnes": []
+                },
+                {
+                    "fil": "app/lib/kasse.php",
+                    "finnes": [
+                        "public static function angre(int $salgId, array $person): array",
+                        "revider('kassesalg_angret', 'kassesalg', $salgId,",
+                        "Booking::leggTilbakeLager($ordreId);",
+                        "public static function dagensSalg(): array"
+                    ],
+                    "ikkeFinnes": []
+                },
+                {
+                    "fil": "api/kasse/kasse.php",
+                    "finnes": [
+                        "case 'angre':"
+                    ],
+                    "ikkeFinnes": []
+                }
+            ]
+        },
+        {
+            "id": "kasse-ny-solgt-unika-20261030",
+            "dato": "2026-10-30",
+            "hva": "Eieren 30.10.2026: i «Keramikk» vises et stykke som er solgt (her eller på nett), eller som ligger i kurven til siste stykke, grått med «Solgt», og kan ikke trykkes. Selges det i kassa, er det solgt i nettbutikken med en gang (lageret trekkes i samme transaksjon, og nettbutikken viser bare varer på lager).",
+            "hvor": "Kassa på iPad › Keramikk",
+            "kode": [
+                {
+                    "fil": "admin-ny/kasse.js",
+                    "finnes": [
+                        "const solgt=v=>v.lager!==null&&v.lager-iKurven(v.id)<=0;",
+                        "el('span',{class:'k-merke solgt',text:'Solgt'})"
+                    ],
+                    "ikkeFinnes": []
+                },
+                {
+                    "fil": "app/lib/kasse.php",
+                    "finnes": [
+                        "DB::kjor('UPDATE products SET lager = GREATEST(0, lager - :a) WHERE id = :p AND lager IS NOT NULL',"
+                    ],
+                    "ikkeFinnes": []
+                }
+            ]
+        },
+        {
+            "id": "kasse-ny-uten-nett-20261030",
+            "dato": "2026-10-30",
+            "hva": "Eieren 30.10.2026: når nettet er borte, eller kall mot serveren feiler fordi nettet er nede, vises en gul stripe under toppen: «Ingen nett – skriv salget på papir og legg det inn senere.» Mens stripa vises, er betalingsknappene grå. Stripa forsvinner av seg selv når nettet er tilbake.",
+            "hvor": "Kassa på iPad",
+            "kode": [
+                {
+                    "fil": "admin-ny/kasse.js",
+                    "finnes": [
+                        "const INGEN_NETT='Ingen nett – skriv salget på papir og legg det inn senere.';",
+                        "catch(e){settNett(false);throw Error(INGEN_NETT);}",
+                        "const kan=!!r&&r.deler.length>0&&!salg.feil&&!laast()&&!nettNede;"
+                    ],
+                    "ikkeFinnes": []
+                },
+                {
+                    "fil": "admin-ny/kasse.css",
+                    "finnes": [
+                        ".k-nett{background:var(--yellow);"
                     ],
                     "ikkeFinnes": []
                 }

@@ -615,7 +615,9 @@
           const tekst = `${data.dato} kl. ${data.inn}–${data.ut}. Telt tid: ${gammel} → ${forh.minutter} minutter. ${data.oktId ? 'Den valgte økten endres.' : 'En ny økt legges inn.'}${data.sakId ? ' Medlemmet får beskjed.' : ''}`;
           if (!await NA().bekreft('Rett verkstedtid?', tekst, 'Lagre rettingen')) return;
         }
-        const svar = await kall('stempling-rett.php', data); toast(esc(svar.beskjed || 'Lagret.')); await arkStempling(id);
+        const svar = await kall('stempling-rett.php', data); toast(esc(svar.beskjed || 'Lagret.'));
+        // Lagret riktig tid lukker kortet (eieren 31.10.2026); Be om info og Avslå viser saken på nytt.
+        if (h === 'stemplinglagre') NA().lukkArk(true); else await arkStempling(id);
       }
       catch (err) { const el = document.getElementById('mlm-st-feil'); if (el) { el.textContent = err.message; el.hidden = false; } }
       finally { S.opptatt = false; b.disabled = false; }

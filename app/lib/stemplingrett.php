@@ -141,8 +141,9 @@ final class StemplingRett
                                 string $grunn, int $adminId, int $sakId = 0): array
     {
         $grunn = trim($grunn);
-        if (mb_strlen($grunn) < 5 || mb_strlen($grunn) > 1000) {
-            throw new InvalidArgumentException('Skriv hvorfor tiden rettes (5–1000 tegn).');
+        // Begrunnelse er valgfri ved retting (eieren 31.10.2026).
+        if (mb_strlen($grunn) > 1000) {
+            throw new InvalidArgumentException('Begrunnelsen kan være høyst 1000 tegn.');
         }
         $tid = self::beregn($dato, $inn, $ut);
         return DB::iTransaksjon(static function () use ($medlemId, $oktId, $tid, $grunn, $adminId, $sakId): array {

@@ -284,7 +284,7 @@
       ${okt ? `<p>Registrert: ${esc(oktTekst(okt.inn, okt.ut))} · ${minTekst(okt.minutter || 0)} telt.</p>` : ''}
       ${sak ? `<p class="sms">Medlemmet foreslår ${esc(oktTekst(sak.inn, sak.ut))}. ${esc(sak.forklaring)}</p>` : ''}
       <div class="valgknapper"><label class="felt"><small>Dag i ${esc(new Date().toLocaleDateString('nb-NO', { month: 'long' }))}</small><select id="mlm-st-dato">${dagValg(dato)}</select></label><label class="felt"><small>Riktig inn</small><input id="mlm-st-inn" type="text" inputmode="numeric" maxlength="5" placeholder="11:00" value="${esc(fra)}"></label><label class="felt"><small>Riktig ut</small><input id="mlm-st-ut" type="text" inputmode="numeric" maxlength="5" placeholder="16:00" value="${esc(til)}"></label></div>
-      <label class="felt"><small>Begrunnelse</small><textarea id="mlm-st-grunn" placeholder="Hva ble avklart med medlemmet?"></textarea></label>
+      <label class="felt"><small>Begrunnelse (valgfri ved retting)</small><textarea id="mlm-st-grunn" placeholder="Hva ble avklart med medlemmet?"></textarea></label>
       <p id="mlm-st-feil" class="feil" role="alert" hidden></p>
       <div class="ark-fot"><button class="knapp hoved" data-mlm="stemplinglagre" data-id="${id}" data-okt="${okt?.id || 0}" data-sak="${sak?.id || 0}" data-gammelmin="${okt?.minutter ?? 0}">Lagre riktig tid</button>${sak ? `<button class="knapp" data-mlm="stemplinginfo" data-id="${id}" data-sak="${sak.id}">Be om info</button><button class="knapp" data-mlm="stemplingavslaa" data-id="${id}" data-sak="${sak.id}">Avslå</button>` : ''}</div>`, { bred: true });
     innhold.querySelector('#mlm-st-dato')?.focus();
@@ -610,7 +610,6 @@
       S.opptatt = true; b.disabled = true;
       try {
         if (h === 'stemplinglagre') {
-          if (data.grunn.length < 5) throw new Error('Skriv hvorfor tiden rettes (minst fem tegn).');
           const forh = await kall('stempling-rett.php', { handling: 'beregn', dato: data.dato, inn: data.inn, ut: data.ut });
           const gammel = Number(b.dataset.gammelmin) || 0;
           const tekst = `${data.dato} kl. ${data.inn}–${data.ut}. Telt tid: ${gammel} → ${forh.minutter} minutter. ${data.oktId ? 'Den valgte økten endres.' : 'En ny økt legges inn.'}${data.sakId ? ' Medlemmet får beskjed.' : ''}`;

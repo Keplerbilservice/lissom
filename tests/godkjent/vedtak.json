@@ -10414,6 +10414,23 @@
                     "ikkeFinnes": []
                 }
             ]
+        },
+        {
+            "id": "kasse-ny-gavekort-alt-eller-ingenting-20261031",
+            "dato": "2026-10-31",
+            "hva": "Kontrolløren 31.10.2026 (rettet etter oppdrag): 1) «Angre» på en påmelding gir gavekortet beløpet tilbake i samme transaksjon som betalingen annulleres – alt eller ingenting. 2) Hele kurven betalt med gavekort skrives i én transaksjon med kortet låst (SELECT ... FOR UPDATE); dekker saldoen ikke alt, avvises hele kurven samlet. Sjekkes i tests/kasse-ny.php del H.",
+            "hvor": "Kassa på iPad › Gavekort og Angre",
+            "kode": [
+                {
+                    "fil": "app/lib/kasse.php",
+                    "finnes": [
+                        "private static function betalMedGavekort(array $deler, array $betaler, array $kort, array $person): void",
+                        "private static function skrivPlaner(array $planer, ?array $kort): void",
+                        "if (!Booking::gavekortDekker((int) $kort['id'], $kortOre)) {"
+                    ],
+                    "ikkeFinnes": []
+                }
+            ]
         }
     ]
 }

@@ -254,8 +254,14 @@ final class Kasse
             // QR-koder fra denne iPaden som venter for en annen kurv (for
             // eksempel før «Tilbake»), stoppes hos Vipps før kontanten tas.
             self::stoppOktensQr($nokkelListe);
-            foreach ($deler as $d) {
-                $rader = $betalinger ?? [['maate' => $maate, 'ore' => (int) $d['sumOre']] + ($kort !== null ? ['kort' => $kort] : [])];
+            if ($kort !== null) {
+                // Hele kurven med gavekort: én transaksjon, kortet låst, alt
+                // eller ingenting (kontrolløren 31. oktober 2026).
+                self::betalMedGavekort($deler, $betaler, $kort, $person);
+                $resultat['deler'] = array_column($deler, 'type');
+            }
+            foreach ($kort !== null ? [] : $deler as $d) {
+                $rader = $betalinger ?? [['maate' => $maate, 'ore' => (int) $d['sumOre']]];
                 $nokkel = (string) $d['nokkel'];
                 switch ($d['type']) {
                     case 'booking':
@@ -329,6 +335,84 @@ final class Kasse
                 . ' igjen og dekker ikke hele beløpet. Velg en annen betalingsmåte.', 409);
         }
         return $kort;
+    }
+
+    /**
+     * Hele kurven betalt med gavekort (kontrolløren 31. oktober 2026): alle
+     * delene forberedes først, så skrives de i ÉN transaksjon med kortet låst
+     * (SELECT ... FOR UPDATE). Dekker saldoen ikke gavekortdelen av hele
+     * kurven, avvises alt samlet — ingen del står betalt mens en annen avvises.
+     *
+     * @param list<array<string,mixed>> $deler bare påmelding og varer (helGavekort())
+     * @param array<string,mixed> $kort
+     */
+    private static function betalMedGavekort(array $deler, array $betaler, array $kort, array $person): void
+    {
+        $planer = [];
+        try {
+            foreach ($deler as $d) {
+                $rader = [['maate' => 'Gavekort', 'ore' => (int) $d['sumOre'], 'kort' => $kort]];
+                $nokkel = (string) $d['nokkel'];
+                $plan = $d['type'] === 'booking'
+                    ? self::forberedBooking($d, $rader, $person, $nokkel)
+                    : self::forberedOrdre($d, $betaler, $rader, $person, $nokkel);
+                if ($plan !== null) {
+                    $planer[] = $plan;
+                }
+            }
+        } catch (Throwable $e) {
+            foreach ($planer as $p) {
+                ($p['slipp'])();
+            }
+            throw $e;
+        }
+        self::skrivPlaner($planer, $kort);
+    }
+
+    /**
+     * Skriver de forberedte delene i én transaksjon (alt eller ingenting).
+     * Med $kort låses kortet først, og saldoen må dekke gavekortdelen av alle
+     * delene samlet (Booking::gavekortDekker(), som regner med åpne
+     * betalinger på kortet). Låsene fra forberedelsen slippes til slutt.
+     *
+     * @param list<array{kortOre:int,skriv:callable,etter:callable,slipp:callable}> $planer
+     * @param array<string,mixed>|null $kort
+     */
+    private static function skrivPlaner(array $planer, ?array $kort): void
+    {
+        if ($planer === []) {
+            return;
+        }
+        try {
+            $kortOre = array_sum(array_column($planer, 'kortOre'));
+            try {
+                DB::iTransaksjon(static function () use ($planer, $kort, $kortOre): void {
+                    if ($kort !== null && $kortOre > 0) {
+                        Booking::laasKort([(int) $kort['id']]);
+                        if (!Booking::gavekortDekker((int) $kort['id'], $kortOre)) {
+                            throw new RuntimeException(Booking::GAVEKORT_AVVIST, 409);
+                        }
+                    }
+                    foreach ($planer as $p) {
+                        ($p['skriv'])();
+                    }
+                });
+            } catch (PDOException $e) {
+                // Et samtidig trykk med samme nøkkel rakk det først. Gjelder én
+                // del; i en samlet kurv er alt rullet tilbake, og feilen går videre.
+                if (count($planer) === 1 && self::erDuplikat($e)) {
+                    return;
+                }
+                throw $e;
+            }
+            foreach ($planer as $p) {
+                ($p['etter'])();
+            }
+        } finally {
+            foreach ($planer as $p) {
+                ($p['slipp'])();
+            }
+        }
     }
 
     // ── Kvitteringen på skjermen ───────────────────────────────────────
@@ -624,11 +708,28 @@ final class Kasse
      */
     private static function registrerBooking(array $d, array $rader, array $person, string $nokkel): void
     {
+        $plan = self::forberedBooking($d, $rader, $person, $nokkel);
+        if ($plan !== null) {
+            self::skrivPlaner([$plan], null);
+        }
+    }
+
+    /**
+     * Sjekkene for påmeldingen og det som må gjøres før betalingen, under
+     * KursstartKrav-låsen. Står det noe å betale, kommer en plan tilbake
+     * (skrivPlaner()) og låsen holdes til den er skrevet; ellers null.
+     *
+     * @param list<array{maate:string,ore:int,kort?:array}> $rader
+     * @return array{kortOre:int,skriv:callable,etter:callable,slipp:callable}|null
+     */
+    private static function forberedBooking(array $d, array $rader, array $person, string $nokkel): ?array
+    {
         $bid = (int) $d['bookingId'];
         if (self::radMed(self::manuellNokkel($nokkel)) !== null) {
-            return;   // alt registrert (nytt forsøk med samme nøkkel)
+            return null;   // alt registrert (nytt forsøk med samme nøkkel)
         }
         KursstartKrav::laas($bid);
+        $behold = false;
         try {
             $stopp = KursstartKrav::stoppVentende($bid);
             if ($stopp !== null) {
@@ -657,7 +758,7 @@ final class Kasse
             $skyldig = KursstartKrav::skyldig($bid, (int) $b['belop_ore'], (string) $b['status']);
             if ($skyldig === 0) {
                 Booking::settBetaltStatus($bid);
-                return;   // gjenstandene er slått inn, og ingenting står igjen
+                return null;   // gjenstandene er slått inn, og ingenting står igjen
             }
             // Endret pris og rabatt (låst for delen, KasseJustering::laas):
             // trekkes fra her, og skrives til påmeldingen i samme transaksjon
@@ -671,7 +772,7 @@ final class Kasse
                 // Rabatten dekker alt: ingen betaling, bare endringen.
                 DB::iTransaksjon(static fn(): int => KasseJustering::brukBooking($bid, $nokkel, null));
                 Booking::settBetaltStatus($bid);
-                return;
+                return null;
             }
             if ($viaVipps !== null && !PopPris::harRest($bid)) {
                 throw new RuntimeException('Denne er betalt gjennom Vipps. Bruk refusjon under Økonomi hvis noe skal rettes.', 409);
@@ -686,8 +787,10 @@ final class Kasse
                     $kort = $r['kort'];
                 }
             }
-            try {
-                DB::iTransaksjon(static function () use ($rader, $bid, $medlemId, $person, $nokkel, $kort): void {
+            $behold = true;
+            return [
+                'kortOre' => array_sum(array_column(array_filter($rader, static fn(array $r): bool => $r['maate'] === 'Gavekort'), 'ore')),
+                'skriv'   => static function () use ($rader, $bid, $medlemId, $person, $nokkel, $kort): void {
                     $forste = null;
                     if ($kort !== null) {
                         Booking::laasKort([(int) $kort['id']]);
@@ -723,18 +826,18 @@ final class Kasse
                     // Endret pris og rabatt skrives til påmeldingen her, i samme
                     // transaksjon som betalingen.
                     KasseJustering::brukBooking($bid, $nokkel, $forste);
-                });
-            } catch (PDOException $e) {
-                if (self::erDuplikat($e)) {
-                    return;   // et samtidig trykk rakk det først
-                }
-                throw $e;
-            }
-            Booking::settBetaltStatus($bid);
-            revider('betaling_registrert', 'booking', $bid, ['belop_ore' => $etter, 'trukket_ore' => $trekk, 'kasse' => $person['id'],
-                'maate' => implode(' + ', array_column($rader, 'maate'))]);
+                },
+                'etter'   => static function () use ($bid, $etter, $trekk, $person, $rader): void {
+                    Booking::settBetaltStatus($bid);
+                    revider('betaling_registrert', 'booking', $bid, ['belop_ore' => $etter, 'trukket_ore' => $trekk, 'kasse' => $person['id'],
+                        'maate' => implode(' + ', array_column($rader, 'maate'))]);
+                },
+                'slipp'   => static fn() => KursstartKrav::slipp($bid),
+            ];
         } finally {
-            KursstartKrav::slipp($bid);
+            if (!$behold) {
+                KursstartKrav::slipp($bid);
+            }
         }
     }
 
@@ -745,14 +848,28 @@ final class Kasse
      *
      * @param list<array{maate:string,ore:int,kort?:array}> $rader
      */
-    private static function registrerOrdre(array $d, array $betaler, array $rader, array $person, string $nokkel): int
+    private static function registrerOrdre(array $d, array $betaler, array $rader, array $person, string $nokkel): void
+    {
+        $plan = self::forberedOrdre($d, $betaler, $rader, $person, $nokkel);
+        if ($plan !== null) {
+            self::skrivPlaner([$plan], null);
+        }
+    }
+
+    /**
+     * Sjekkene før ordren skrives. Plan for skrivPlaner(), eller null når
+     * delen alt er betalt (Vipps-QR før kontanten, eller nytt forsøk).
+     *
+     * @param list<array{maate:string,ore:int,kort?:array}> $rader
+     * @return array{kortOre:int,skriv:callable,etter:callable,slipp:callable}|null
+     */
+    private static function forberedOrdre(array $d, array $betaler, array $rader, array $person, string $nokkel): ?array
     {
         if (self::stoppQr($nokkel) === 'betalt') {
-            return (int) (self::radMed($nokkel)['order_id'] ?? 0);   // betalt med Vipps-QR før kontanten
+            return null;   // betalt med Vipps-QR før kontanten
         }
-        $finnes = self::radMed(self::manuellNokkel($nokkel));
-        if ($finnes !== null) {
-            return (int) $finnes['order_id'];
+        if (self::radMed(self::manuellNokkel($nokkel)) !== null) {
+            return null;
         }
         if (array_sum(array_column($rader, 'ore')) !== (int) $d['sumOre']) {
             throw new RuntimeException('Beløpet er endret. Se over kurven og prøv igjen.', 409);
@@ -765,8 +882,9 @@ final class Kasse
                 $kort = $r['kort'];
             }
         }
-        try {
-            return (int) DB::iTransaksjon(static function () use ($d, $betaler, $rader, $person, $nokkel, $ordrenr, $maateTekst, $kort): int {
+        return [
+            'kortOre' => array_sum(array_column(array_filter($rader, static fn(array $r): bool => $r['maate'] === 'Gavekort'), 'ore')),
+            'skriv'   => static function () use ($d, $betaler, $rader, $person, $nokkel, $ordrenr, $maateTekst, $kort): void {
                 if ($kort !== null) {
                     Booking::laasKort([(int) $kort['id']]);
                 }
@@ -843,14 +961,10 @@ final class Kasse
                 KasseJustering::settOrdre($d, $nokkel, $ordreId, $person, $pengerad ?? $ider[0], true);
                 revider('kassesalg_registrert', 'ordre', $ordreId, ['ordrenr' => $ordrenr, 'sum' => (int) $d['sumOre'],
                     'maate' => $maateTekst, 'kasse' => $person['id']]);
-                return $ordreId;
-            });
-        } catch (PDOException $e) {
-            if (self::erDuplikat($e)) {
-                return (int) (self::radMed(self::manuellNokkel($nokkel))['order_id'] ?? 0);
-            }
-            throw $e;
-        }
+            },
+            'etter'   => static fn() => null,
+            'slipp'   => static fn() => null,
+        ];
     }
 
     /**
@@ -1519,9 +1633,18 @@ final class Kasse
                 });
                 revider('uttak_annullert', 'ordre', $ordreId, ['deler' => count($deler), 'kasse' => $person['id'], 'kassesalg' => $salgId]);
             }
-            // Påmeldingene: betalingen annulleres, som kursbetaling.php.
+            // Påmeldingene: betalingen annulleres, som kursbetaling.php. Gavekortet
+            // får beløpet tilbake i samme transaksjon — alt eller ingenting
+            // (kontrolløren 31. oktober 2026).
             foreach ($bookinger as $bid => $betalinger) {
                 DB::iTransaksjon(static function () use ($bid, $betalinger, $person, $naa): void {
+                    // Kortet før betalingen, samme rekkefølge som gavekortDekker().
+                    if (DB::harKolonne('payments', 'gavekort_id')) {
+                        Booking::laasKort(array_map('intval', array_column(DB::alle(
+                            'SELECT gavekort_id FROM payments WHERE gavekort_id IS NOT NULL AND id IN ('
+                            . implode(',', array_map(static fn(array $p): int => (int) $p['id'], $betalinger)) . ')'
+                        ), 'gavekort_id')));
+                    }
                     DB::verdi('SELECT id FROM bookings WHERE id = :b FOR UPDATE', ['b' => $bid]);
                     foreach ($betalinger as $p) {
                         if (DB::verdi('SELECT annullert_at FROM payments WHERE id = :i FOR UPDATE', ['i' => (int) $p['id']]) !== null) {
@@ -1533,10 +1656,10 @@ final class Kasse
                             'annullert_av' => (int) $person['id'],
                             'kommentar'    => mb_substr(trim((string) ($p['kommentar'] ?? '') . ' · Annullert: angret i kassa'), 0, 300),
                         ], ['id' => (int) $p['id']]);
+                        Booking::angreGavekort((int) $p['id']);
                     }
                 });
                 foreach ($betalinger as $p) {
-                    Booking::angreGavekort((int) $p['id']);
                     revider('betaling_annullert', 'booking', $bid, ['betaling' => (int) $p['id'], 'belop_ore' => (int) $p['belop_ore'],
                         'kasse' => $person['id'], 'kassesalg' => $salgId]);
                 }

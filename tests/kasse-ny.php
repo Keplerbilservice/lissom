@@ -22,6 +22,10 @@
  *   G  SMS-kvitteringen: ny tekst (migrasjon 282) med én vare per linje og
  *      uten kundens navn; sendes bare når den bes om, til nummeret i feltet;
  *      kontantkunden bare for sitt eget salg; sperren mot to SMS-er står.
+ *   H  Gavekort, alt eller ingenting (kontrolløren 31. oktober 2026): hele
+ *      kurven trekkes i én transaksjon med kortet låst og avvises samlet når
+ *      saldoen ikke dekker alt; «Angre» på en påmelding gir kortet beløpet
+ *      tilbake i samme transaksjon som annulleringen.
  *
  * Ekte endepunkter mot en isolert testbase og tests/falsk-vipps.mjs. Ingen
  * ekte betaling, e-post eller SMS (SMS-en blir liggende i køen, ingen cron).
@@ -55,6 +59,7 @@ if (!str_starts_with(Config::vippsBase(), 'http://127.0.0.1:')) {
 
 $tag = 'KNY-' . strtoupper(bin2hex(random_bytes(3)));
 $medlemmer = []; $kurs = []; $produkter = []; $kort = []; $ferdig = false;
+$trigger = 'kny_feil_' . bin2hex(random_bytes(4));
 $bryterFor = DB::verdi("SELECT verdi FROM content_blocks WHERE nokkel = 'Vis/kasse'");
 $smsFor = DB::harTabell('innstillinger')
     ? array_column(DB::alle("SELECT nokkel, verdi FROM innstillinger WHERE nokkel IN ('sveve_bruker', 'sveve_passord', 'sms_leverandor')"), 'verdi', 'nokkel')
@@ -63,8 +68,9 @@ $logg = sys_get_temp_dir() . '/lissom-kasse-ny-' . bin2hex(random_bytes(4)) . '.
 $ordreFor = (int) DB::verdi('SELECT COALESCE(MAX(id), 0) FROM orders');
 $betalingFor = (int) DB::verdi('SELECT COALESCE(MAX(id), 0) FROM payments');
 
-register_shutdown_function(static function () use (&$ferdig, &$medlemmer, &$kurs, &$produkter, &$kort, &$prosesser, $bryterFor, $ordreFor, $betalingFor, $smsFor): void {
+register_shutdown_function(static function () use (&$ferdig, &$medlemmer, &$kurs, &$produkter, &$kort, &$prosesser, $bryterFor, $ordreFor, $betalingFor, $smsFor, $trigger): void {
     foreach ($prosesser as $p) { if (is_resource($p)) { proc_terminate($p); } }
+    try { DB::kjor("DROP TRIGGER IF EXISTS `$trigger`"); } catch (Throwable $e) {}
     try {
         if ($bryterFor === null) { DB::kjor("DELETE FROM content_blocks WHERE nokkel = 'Vis/kasse'"); }
         else { DB::kjor("UPDATE content_blocks SET verdi = :v WHERE nokkel = 'Vis/kasse'", ['v' => (string) $bryterFor]); }
@@ -409,6 +415,59 @@ try {
     $sms = DB::en("SELECT tekst FROM notifications WHERE mal = 'kassekvittering_sms' ORDER BY id DESC LIMIT 1");
     sjekk('… SMS-en har ikke kundens navn', $s[0] === 200 && $sms !== null && !str_contains((string) $sms['tekst'], 'Kari') && !str_contains((string) $sms['tekst'], 'Nordmann'),
         $tekst($s) . ' ' . json_encode($sms, JSON_UNESCAPED_UNICODE));
+
+    // ══ H: Gavekort, alt eller ingenting ══════════════════════════════
+    echo "\n── H: Gavekort, alt eller ingenting ──\n";
+    $kortH = DB::settInn('gift_cards', ['kode' => 'E2E-' . strtoupper(bin2hex(random_bytes(4))), 'opprinnelig_ore' => 100000, 'saldo_ore' => 100000,
+        'gyldig_til' => gmdate('Y-m-d', strtotime('+1 year')), 'kjoper_navn' => $tag, 'status' => 'aktivt', 'opprinnelse' => 'kjopt']);
+    $kort[] = $kortH;
+    $kodeH = (string) DB::verdi('SELECT kode FROM gift_cards WHERE id = :i', ['i' => $kortH]);
+    $saldoH = static fn(): int => (int) DB::verdi('SELECT saldo_ore FROM gift_cards WHERE id = :i', ['i' => $kortH]);
+    $per = DB::settInn('bookings', ['course_id' => $popKurs, 'course_session_id' => $popOkt, 'gjest_navn' => $tag . ' Per',
+        'antall' => 1, 'belop_ore' => 30000, 'status' => 'reservert', 'betalt_maate' => 'Ikke betalt']);
+    // En åpen betaling (nettsiden) binder 500 kr av kortet: 500 kr er ledig.
+    $bundet = DB::settInn('payments', ['vipps_reference' => 'TEST-' . $tag . '-BUNDET', 'type' => 'manuell', 'formal' => 'ordre',
+        'maate' => 'Gavekort', 'belop_ore' => 0, 'gavekort_id' => $kortH, 'gavekort_ore' => 50000, 'status' => 'opprettet', 'registrert_av' => $monica, 'idempotency_key' => Vipps::uuid()]);
+    $lagerFor = (int) DB::verdi('SELECT lager FROM products WHERE id = :i', ['i' => $kopp]);
+    $k = $kjop(['bookingId' => $per, 'varer' => [['id' => $kopp, 'antall' => 1]]], ['bookingId' => $per]);
+    sjekk('kurven: påmeldingen (300 kr) og en tekopp (290 kr) som to deler', array_values($k['forventet']) === [30000, 29000], $tekst($k['regn']));
+    $forBet = (int) DB::verdi('SELECT COUNT(*) FROM payments');
+    $s = kall($K, ['handling' => 'betal', 'maate' => 'Gavekort', 'kode' => $kodeH] + $send($k), $kasseToken);
+    sjekk('590 kr med gavekort når bare 500 kr er ledig: hele kurven avvist samlet, ingen del betalt, saldoen og lageret urørt', $s[0] === 409
+        && ($s[1]['feil'] ?? '') === Booking::GAVEKORT_AVVIST
+        && (int) DB::verdi('SELECT COUNT(*) FROM payments') === $forBet && $saldoH() === 100000
+        && DB::verdi('SELECT status FROM bookings WHERE id = :i', ['i' => $per]) === 'reservert'
+        && (int) DB::verdi('SELECT lager FROM products WHERE id = :i', ['i' => $kopp]) === $lagerFor, $tekst($s));
+    DB::kjor('DELETE FROM payments WHERE id = :i', ['i' => $bundet]);
+    $k = $kjop(['bookingId' => $per, 'varer' => [['id' => $kopp, 'antall' => 1]]], ['bookingId' => $per]);
+    $s = kall($K, ['handling' => 'betal', 'maate' => 'Gavekort', 'kode' => $kodeH] + $send($k), $kasseToken);
+    $gaveRader = DB::alle("SELECT gavekort_ore FROM payments WHERE gavekort_id = :k AND status = 'betalt' ORDER BY id", ['k' => $kortH]);
+    sjekk('… når kortet er ledig: begge delene betalt i ett, kortet 1 000 → 410 kr, påmeldingen betalt, tekoppen ut av lageret', $s[0] === 200
+        && $saldoH() === 41000 && array_map('intval', array_column($gaveRader, 'gavekort_ore')) === [30000, 29000]
+        && DB::verdi('SELECT status FROM bookings WHERE id = :i', ['i' => $per]) === 'betalt'
+        && (int) DB::verdi('SELECT lager FROM products WHERE id = :i', ['i' => $kopp]) === $lagerFor - 1, $tekst($s) . ' ' . json_encode($gaveRader));
+
+    // «Angre» på en påmelding betalt med gavekort: stopper krediteringen av
+    // kortet, skal annulleringen også rulles tilbake (alt eller ingenting).
+    $per2 = DB::settInn('bookings', ['course_id' => $popKurs, 'course_session_id' => $popOkt, 'gjest_navn' => $tag . ' Per To',
+        'antall' => 1, 'belop_ore' => 10000, 'status' => 'reservert', 'betalt_maate' => 'Ikke betalt']);
+    $k = $kjop(['bookingId' => $per2], ['bookingId' => $per2]);
+    $s = kall($K, ['handling' => 'betal', 'maate' => 'Gavekort', 'kode' => $kodeH] + $send($k), $kasseToken);
+    $salgH = (int) DB::verdi("SELECT MAX(id) FROM audit_log WHERE handling = 'kassesalg_ipad'");
+    $betH = (int) DB::verdi("SELECT id FROM payments WHERE booking_id = :b AND maate = 'Gavekort'", ['b' => $per2]);
+    sjekk('påmeldingen 100 kr betalt med gavekort: kortet 410 → 310 kr', $s[0] === 200 && $betH > 0 && $saldoH() === 31000, $tekst($s));
+    DB::kjor("CREATE TRIGGER `$trigger` BEFORE UPDATE ON gift_cards FOR EACH ROW BEGIN IF NEW.id = $kortH AND NEW.saldo_ore > OLD.saldo_ore THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Syntetisk feil i krediteringen'; END IF; END");
+    $s = kall($K, ['handling' => 'angre', 'salgId' => $salgH], $kasseToken);
+    DB::kjor("DROP TRIGGER `$trigger`");
+    $bet = DB::en('SELECT status, annullert_at FROM payments WHERE id = :i', ['i' => $betH]);
+    sjekk('Angre der krediteringen av kortet feiler: ingenting endret, betalingen står betalt, kortet 310 kr, ikke merket angret', $s[0] !== 200
+        && $bet['status'] === 'betalt' && $bet['annullert_at'] === null && $saldoH() === 31000
+        && DB::verdi("SELECT COUNT(*) FROM audit_log WHERE handling = 'kassesalg_angret' AND objekt_id = :i", ['i' => $salgH]) == 0,
+        $tekst($s) . ' ' . json_encode($bet));
+    $s = kall($K, ['handling' => 'angre', 'salgId' => $salgH], $kasseToken);
+    $bet = DB::en('SELECT status, annullert_at FROM payments WHERE id = :i', ['i' => $betH]);
+    sjekk('… nytt «Angre» virker: betalingen annullert og kortet tilbake 310 → 410 kr', $s[0] === 200
+        && $bet['status'] === 'avbrutt' && $bet['annullert_at'] !== null && $saldoH() === 41000, $tekst($s) . ' ' . json_encode($bet));
 
     // ══ Skjermen: tekstene som er godkjent ordrett ════════════════════
     echo "\n── Skjermen ──\n";

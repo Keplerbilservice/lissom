@@ -1611,17 +1611,27 @@ final class Kasse
                 }
             }
             // Varene: alle delene av salget (payments.order_id), som uttak.php.
+            // Gavekortet får beløpet tilbake i samme transaksjon som ordren
+            // kanselleres, lageret legges tilbake og delene refunderes — alt
+            // eller ingenting, og aldri dobbel kreditering: er ordren alt
+            // kansellert, stopper vakten før kortet røres.
             foreach (array_keys($ordrer) as $ordreId) {
                 $deler = DB::alle('SELECT id, belop_ore FROM payments WHERE order_id = :o', ['o' => $ordreId]);
-                foreach ($deler as $p) {
-                    Booking::angreGavekort((int) $p['id']);
-                }
                 DB::iTransaksjon(static function () use ($ordreId, $deler, $person, $naa): void {
+                    // Kortet før ordren, samme rekkefølge som gavekortDekker().
+                    if (DB::harKolonne('payments', 'gavekort_id')) {
+                        Booking::laasKort(array_map('intval', array_column(DB::alle(
+                            'SELECT gavekort_id FROM payments WHERE gavekort_id IS NOT NULL AND order_id = :o', ['o' => $ordreId]
+                        ), 'gavekort_id')));
+                    }
                     $n = DB::kjor("UPDATE orders SET status = 'kansellert' WHERE id = :i AND status <> 'kansellert'", ['i' => $ordreId])->rowCount();
                     if ($n < 1) {
                         throw new RuntimeException('Salget er alt annullert.', 409);
                     }
                     Booking::leggTilbakeLager($ordreId);
+                    foreach ($deler as $p) {
+                        Booking::angreGavekort((int) $p['id']);
+                    }
                     foreach ($deler as $p) {
                         DB::oppdater('payments', [
                             'status'        => 'refundert',

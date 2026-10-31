@@ -10431,6 +10431,21 @@
                     "ikkeFinnes": []
                 }
             ]
+        },
+        {
+            "id": "kasse-ny-angre-ordre-gavekort-20261031",
+            "dato": "2026-10-31",
+            "hva": "Betalingseksperten 31.10.2026 (rettet etter oppdrag): «Angre» på varer betalt med gavekort gir kortet beløpet tilbake i samme transaksjon som ordren kanselleres, lageret legges tilbake og delene refunderes – alt eller ingenting, kan trykkes på nytt etter feil, aldri dobbel kreditering. Sjekkes i tests/kasse-ny.php del H.",
+            "hvor": "Kassa på iPad › Angre",
+            "kode": [
+                {
+                    "fil": "app/lib/kasse.php",
+                    "finnes": [
+                        "'SELECT gavekort_id FROM payments WHERE gavekort_id IS NOT NULL AND order_id = :o', ['o' => $ordreId]"
+                    ],
+                    "ikkeFinnes": []
+                }
+            ]
         }
     ]
 }

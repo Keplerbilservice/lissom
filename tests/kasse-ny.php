@@ -469,6 +469,36 @@ try {
     sjekk('… nytt «Angre» virker: betalingen annullert og kortet tilbake 310 → 410 kr', $s[0] === 200
         && $bet['status'] === 'avbrutt' && $bet['annullert_at'] !== null && $saldoH() === 41000, $tekst($s) . ' ' . json_encode($bet));
 
+    // «Angre» på varer betalt med gavekort: kreditering av kortet, kansellering
+    // av ordren, lagerretur og refusjon i én transaksjon. Stopper siste steg
+    // (refusjonen av delen), skal kortet ikke ha fått pengene tilbake.
+    $lagerFor = (int) DB::verdi('SELECT lager FROM products WHERE id = :i', ['i' => $kopp]);
+    $k = $kjop(['varer' => [['id' => $kopp, 'antall' => 1]]], []);
+    $s = kall($K, ['handling' => 'betal', 'maate' => 'Gavekort', 'kode' => $kodeH] + $send($k), $kasseToken);
+    $salgO = (int) DB::verdi("SELECT MAX(id) FROM audit_log WHERE handling = 'kassesalg_ipad'");
+    $betO = (int) DB::verdi("SELECT MAX(id) FROM payments WHERE gavekort_id = :k AND order_id IS NOT NULL", ['k' => $kortH]);
+    $ordreO = (int) DB::verdi('SELECT order_id FROM payments WHERE id = :i', ['i' => $betO]);
+    sjekk('tekopp 290 kr betalt med gavekort: kortet 410 → 120 kr, lageret −1', $s[0] === 200 && $betO > 0 && $ordreO > 0 && $saldoH() === 12000
+        && (int) DB::verdi('SELECT lager FROM products WHERE id = :i', ['i' => $kopp]) === $lagerFor - 1, $tekst($s));
+    DB::kjor("CREATE TRIGGER `$trigger` BEFORE UPDATE ON payments FOR EACH ROW BEGIN IF NEW.id = $betO AND NEW.status = 'refundert' THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Syntetisk feil i refusjonen'; END IF; END");
+    $s = kall($K, ['handling' => 'angre', 'salgId' => $salgO], $kasseToken);
+    DB::kjor("DROP TRIGGER `$trigger`");
+    $bet = DB::en('SELECT status, annullert_at FROM payments WHERE id = :i', ['i' => $betO]);
+    sjekk('Angre der refusjonen feiler etter krediteringen: ingenting endret, kortet 120 kr, ordren ikke kansellert, lageret urørt, ikke merket angret', $s[0] !== 200
+        && $bet['status'] === 'betalt' && $saldoH() === 12000
+        && DB::verdi('SELECT status FROM orders WHERE id = :i', ['i' => $ordreO]) !== 'kansellert'
+        && (int) DB::verdi('SELECT lager FROM products WHERE id = :i', ['i' => $kopp]) === $lagerFor - 1
+        && DB::verdi("SELECT COUNT(*) FROM audit_log WHERE handling = 'kassesalg_angret' AND objekt_id = :i", ['i' => $salgO]) == 0,
+        $tekst($s) . ' ' . json_encode($bet));
+    $s = kall($K, ['handling' => 'angre', 'salgId' => $salgO], $kasseToken);
+    $bet = DB::en('SELECT status, annullert_at FROM payments WHERE id = :i', ['i' => $betO]);
+    sjekk('… nytt «Angre» virker: ordren kansellert, delen refundert, lageret tilbake og kortet 120 → 410 kr (én gang)', $s[0] === 200
+        && $bet['status'] === 'refundert' && $saldoH() === 41000
+        && DB::verdi('SELECT status FROM orders WHERE id = :i', ['i' => $ordreO]) === 'kansellert'
+        && (int) DB::verdi('SELECT lager FROM products WHERE id = :i', ['i' => $kopp]) === $lagerFor, $tekst($s) . ' ' . json_encode($bet));
+    $s = kall($K, ['handling' => 'angre', 'salgId' => $salgO], $kasseToken);
+    sjekk('… tredje «Angre»: avvist, kortet fortsatt 410 kr', $s[0] === 409 && $saldoH() === 41000, $tekst($s));
+
     // ══ Skjermen: tekstene som er godkjent ordrett ════════════════════
     echo "\n── Skjermen ──\n";
     $js = (string) file_get_contents($rot . '/admin-ny/kasse.js');

@@ -945,6 +945,7 @@ export async function arkSerie({start, enDato = false, kursId = 0} = {}) {
   Object.assign(SE, {kursId: forste?.id || 0, holderId: 0, fra: '', til: '',
     plasser: forste?.kapasitet || '', pris: forste ? String(forste.pris) : '', start: start || pluss(idag(), 1),
     gjentas: enDato ? 1 : 0, varighet: enDato ? -1 : null, egen: '', ferier: new Set(), hoppFerier: false, enDato});
+  nyNK();
   tegnSerie();
 }
 function sluttDato() {
@@ -973,7 +974,7 @@ function tegnSerie() {
   const fmt = d => DAG[ukedag(d)].slice(0, 3) + ' ' + kortDato(d);
   ark(`<div class="ark-head"><h2>Nytt kurs eller serie</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
    <div class="to-felt">
-     <label><small>Kursmal</small><select id="se-kurs"><option value="0">Velg kurs …</option>${liste.map(x => `<option value="${x.id}" ${x.id === SE.kursId ? 'selected' : ''}>${esc(x.tittel)}${x.status !== 'publisert' ? ' (' + esc(x.status) + ')' : ''}</option>`).join('')}</select></label>
+     <label><small>Kursmal</small><select id="se-kurs"><option value="0">Velg kurs …</option><option value="ny">＋ Lag nytt kurs …</option>${liste.map(x => `<option value="${x.id}" ${x.id === SE.kursId ? 'selected' : ''}>${esc(x.tittel)}${x.status !== 'publisert' ? ' (' + esc(x.status) + ')' : ''}</option>`).join('')}</select></label>
      <label><small>Kursholder</small><select id="se-holder"><option value="0">${esc(standardHolder()?.navn || 'Standardkursholder')} (standard)</option>${holdere.map(h => `<option value="${h.id}" ${h.id === SE.holderId ? 'selected' : ''}>${esc(h.navn)}</option>`).join('')}</select></label>
      <label><small>Fra kl.</small><input type="time" id="se-fra" value="${esc(SE.fra)}"></label>
      <label><small>Til kl.</small><input type="time" id="se-til" value="${esc(SE.til)}"></label>
@@ -1008,6 +1009,8 @@ document.addEventListener('change', e => {
   // Eieren 09.10.2026: «la meg få mulighet til å huke av hopp over skoleferier, så det er valgfritt». Av som standard;
   // huker du av, velges alle feriene i perioden, og du kan ta bort enkeltferier.
   if (t.id === 'se-hopp-ferier') { lesSerie(); SE.hoppFerier = t.checked; SE.ferier = new Set(t.checked ? (FERIER || []).map(f => f.fra) : []); tegnSerie(); return; }
+  // «＋ Lag nytt kurs …» (eieren 02.11.2026): det som er fylt inn står, og kursmalen er den samme til et nytt kurs er lagret.
+  if (t.id === 'se-kurs' && t.value === 'ny') { const forrige = SE.kursId; lesSerie(); SE.kursId = forrige; arkNyttKurs(); return; }
   if (t.id === 'se-kurs') {
     lesSerie(); const k = (KURS?.kurs || []).find(x => x.id === SE.kursId);
     if (k) { SE.plasser = k.kapasitet || ''; SE.pris = String(k.pris); SE.holderId = 0; }
@@ -1015,6 +1018,53 @@ document.addEventListener('change', e => {
   }
   if (['se-start', 'se-egen', 'se-gjentas', 'se-fra', 'se-til'].includes(t.id)) { lesSerie(); tegnSerie(); }
 });
+// ── «Nytt kurs» fra «Nytt kurs eller serie» (eieren 02.11.2026, «ja, fint» på visningen) ─────────────
+// Samme lagring som Kurs › Rediger og gamle admin (kurs.php handling=lagre, id 0). Ingen forhåndsvalg på synlighet.
+// Etter lagring er det nye kurset valgt i serie-arket, med plasser og pris fra kurset.
+const NK = {};
+const nyNK = () => Object.assign(NK, {navn: '', pris: '', plasser: '', synlig: '', om: ''});
+nyNK();
+const nkKlar = () => !!(NK.navn.trim() && String(NK.pris).trim() !== '' && +NK.plasser > 0 && NK.synlig);
+function arkNyttKurs() {
+  ark(`<div class="ark-head"><h2>Nytt kurs</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
+   <p class="muted">Kurset legges i lista over kursmaler. Etterpå setter du opp datoene.</p>
+   <div class="to-felt">
+     <label style="grid-column:1/-1"><small>Kursnavn</small><input id="nk-navn" maxlength="191" value="${esc(NK.navn)}"></label>
+     <label><small>Pris (kr)</small><input id="nk-pris" inputmode="numeric" value="${esc(NK.pris)}"></label>
+     <label><small>Plasser</small><input id="nk-plasser" type="number" min="1" value="${esc(NK.plasser)}"></label>
+   </div>
+   <div><small>Synlig på nettsida</small><div class="valgknapper" style="margin-top:6px">
+     <button class="knapp ${NK.synlig === 'kladd' ? 'valgt-knapp' : ''}" data-k="nkSynlig" data-v="kladd" aria-pressed="${NK.synlig === 'kladd'}">Utkast – ikke synlig ennå</button>
+     <button class="knapp ${NK.synlig === 'publisert' ? 'valgt-knapp' : ''}" data-k="nkSynlig" data-v="publisert" aria-pressed="${NK.synlig === 'publisert'}">Publisert</button></div></div>
+   <label style="display:grid;gap:5px"><small>Beskrivelse</small><textarea class="felt" id="nk-om">${esc(NK.om)}</textarea></label>
+   <small class="muted">Bilder og resten av teksten legger du inn under Kurs › Rediger, som i dag.</small>
+   <div class="ark-fot"><button class="knapp" data-k="nkTilbake">Tilbake</button><button class="knapp hoved" data-k="nkLagre" ${nkKlar() ? '' : 'disabled'}>Lagre kurset</button></div>`);
+  if (NK.navn || NK.pris || NK.plasser || NK.om) F().arkEndret?.(true);
+}
+document.addEventListener('input', e => {
+  const k = {'nk-navn': 'navn', 'nk-pris': 'pris', 'nk-plasser': 'plasser', 'nk-om': 'om'}[e.target.id];
+  if (!k) return;
+  NK[k] = e.target.value;
+  const b = document.querySelector('[data-k="nkLagre"]'); if (b) b.disabled = !nkKlar();
+});
+H.nkSynlig = b => { NK.synlig = b.dataset.v; arkNyttKurs(); };
+H.nkTilbake = () => tegnSerie();
+H.nkLagre = async b => {
+  if (!nkKlar()) return;
+  const pris = String(NK.pris).trim();
+  if (!/^\d+$/.test(pris)) return toast('Skriv prisen i hele kroner, uten komma eller minus.');
+  b.disabled = true;
+  let r;
+  try {
+    r = await api('kurs.php', {handling: 'lagre', id: 0, tittel: NK.navn.trim(), pris: +pris, kapasitet: +NK.plasser,
+      status: NK.synlig, om: NK.om.trim(), type: 'kurs', sms: 'nei'});
+  } catch (e) { b.disabled = false; return toast(esc(e.message)); }
+  const ny = ((await hentKurs(true)).kurs || []).find(x => x.id === +r.id);
+  Object.assign(SE, {kursId: +r.id, holderId: 0, plasser: ny?.kapasitet || +NK.plasser, pris: String(ny?.pris ?? pris)});
+  nyNK();
+  tegnSerie();
+  toast('Kurset er lagret.');
+};
 H.seOk = async b => {
   lesSerie();
   const k = (KURS?.kurs || []).find(x => x.id === SE.kursId); if (!k) return toast('Velg kursmal først.');

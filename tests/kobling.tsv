@@ -35,6 +35,10 @@ ny-admin/*	php tests/ferdige-foresporsler.php
 ny-admin.html	php tests/ny-admin.php
 tests/ny-admin.php	php tests/ny-admin.php
 
+# «＋ Lag nytt kurs …» i Nytt kurs eller serie (eieren 02.11.2026)
+ny-admin/kalender.js	php tests/nytt-kurs-ark.php
+tests/nytt-kurs-ark.php	php tests/nytt-kurs-ark.php
+
 # Må gjøres i admin-ny (idé 3, 4, 5 og 7)
 api/admin/ma-gjores-mer.php	php tests/ma-gjores-mer.php
 admin-ny/ma-gjores-mer.js	php tests/ma-gjores-mer.php

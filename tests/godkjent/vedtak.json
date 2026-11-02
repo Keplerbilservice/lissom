@@ -10536,6 +10536,42 @@
                     "ikkeFinnes": []
                 }
             ]
+        },
+        {
+            "id": "morgenmelding-kursholder-20261102",
+            "dato": "2026-11-02",
+            "hva": "Eieren 02.11.2026 («ja, sms er godkjent» på visningen ELZJvxhMw3AnGcuhmfB7mW): (a) I Monicas morgen-SMS står « (Navn)» bak hvert kurs som holdes av en annen kursholder enn Monica, f.eks. «• 18:00 Kveldskurs keramikk – 6 påmeldte (Eirin)». Kurs Monica holder selv eller uten kursholder er uendret. Kursholderen er den samme som i admin (Kursholder: datoen, ellers kurset, ellers verkstedets standard; bare aktive). (b) Kursholdere (ikke Monica) med telefon og aktiv=1 som holder kurs i dag får egen SMS med bare sine kurs, malen intern_morgenmelding_kursholder (migrasjon 283), teksten ordrett: «God morgen, {navn}! ☀️ / Du holder kurs i dag: / {dagen} / Lykke til, og ha en fin dag i verkstedet! 🤍». Ingen kalendernotater, ingen SMS de dagene hen ikke holder kurs, samme én-gang-om-dagen-merke (innstillinger.morgenmelding_sendt). Malen kan endres og slås av under Tekst maler; ingen egen bryter per kursholder. Sjekkes i tests/morgenmelding.php.",
+            "hvor": "app/lib/morgenmelding.php, db/migrations/283_morgenmelding_kursholder.sql, app/lib/maler.php, bin/cron.php (varsler)",
+            "kode": [
+                {
+                    "fil": "db/migrations/283_morgenmelding_kursholder.sql",
+                    "finnes": [
+                        "'intern_morgenmelding_kursholder', 'sms'",
+                        "'God morgen, {navn}! ☀️\\nDu holder kurs i dag:\\n\\n{dagen}\\n\\nLykke til, og ha en fin dag i verkstedet! 🤍'",
+                        "-- godkjent av eieren: 2026-11-02"
+                    ],
+                    "ikkeFinnes": []
+                },
+                {
+                    "fil": "app/lib/morgenmelding.php",
+                    "finnes": [
+                        "$linje .= \" ({$holder})\";",
+                        "'intern_morgenmelding_kursholder',",
+                        "['navn' => $h['fornavn'], 'dagen' => self::linjer($h['kurs'], false)],",
+                        "LEFT JOIN kursholdere hs ON hs.id = cs.kursholder_id AND hs.aktiv = 1",
+                        "LEFT JOIN kursholdere hk ON hk.id = c.kursholder_id AND hk.aktiv = 1",
+                        "$holder = $r['holder_dato'] ?? $r['holder_kurs'] ?? $standard;"
+                    ],
+                    "ikkeFinnes": []
+                },
+                {
+                    "fil": "app/lib/maler.php",
+                    "finnes": [
+                        "'intern_morgenmelding_kursholder' => ["
+                    ],
+                    "ikkeFinnes": []
+                }
+            ]
         }
     ]
 }

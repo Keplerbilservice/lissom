@@ -51,3 +51,10 @@ docs/*	-
 *.ico	-
 *.pdf	-
 fonts/*	-
+
+# Morgenmeldingen til Monica og kursholderne (eieren 02.11.2026). maler.php er
+# registeret over malene; morgenmelding-testen sjekker at malene staar der.
+app/lib/morgenmelding.php	php tests/morgenmelding.php
+tests/morgenmelding.php	php tests/morgenmelding.php
+db/migrations/283_morgenmelding_kursholder.sql	php tests/morgenmelding.php
+app/lib/maler.php	php tests/morgenmelding.php

@@ -1,8 +1,11 @@
 name: Tester
 
-# Kjører hele testpakken mot en tom database bare ved manuell bestilling.
+# Kjører hele testpakken mot en tom database ved manuell bestilling, og fra
+# deploy.yml bare når en endret kodefil ikke har noen kobling i tests/kobling.tsv
+# (eieren 03.10.2026: aldri hele testpakken automatisk ellers).
 on:
   workflow_dispatch:
+  workflow_call:
 
 jobs:
   # Eieren, 2. oktober 2026: testene tok ~30 min i én jobb. Naa deles de i

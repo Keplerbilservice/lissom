@@ -466,18 +466,28 @@
                 {
                     "fil": ".github/workflows/deploy.yml",
                     "finnes": [
-                        "uses: ./.github/workflows/tester.yml",
-                        "needs: tester"
-                    ]
+                        "bash bin/kontroll-endret.sh velg",
+                        "needs: [velg, kontroll, full]",
+                        "uses: ./.github/workflows/tester.yml"
+                    ],
+                    "ikkeFinnes": []
                 },
                 {
-                    "fil": "tests/alle.sh",
+                    "fil": "bin/kontroll-endret.sh",
                     "finnes": [
-                        "Ubehandlet feil",
-                        "node tests/vedtak.mjs"
-                    ]
+                        "tests/kobling.tsv"
+                    ],
+                    "ikkeFinnes": []
+                },
+                {
+                    "fil": "tests/kobling.tsv",
+                    "finnes": [
+                        "tests/godkjent/vedtak.json"
+                    ],
+                    "ikkeFinnes": []
                 }
-            ]
+            ],
+            "oppdatert": "2026-11-02: sperren kjører bare testene som er koblet til filene i pushen (tests/kobling.tsv via bin/kontroll-endret.sh), og stopper utleggingen ved rødt. Hele pakken (tester.yml) kjøres bare når en endret kodefil ikke har noen kobling. Eierens regel 03.10.2026 og senere: «Aldri hele testpakken automatisk … Kjør bare kontroller som er relevante for endrede filer.» Sperren forsvant 14.10.2026 i be984933 («Kjør full test bare ved uttrykkelig bestilling») og c593fa76 18.10.2026."
         },
         {
             "id": "ikke-betalt-forst",
@@ -694,16 +704,24 @@
                 {
                     "fil": ".github/workflows/tester.yml",
                     "finnes": [
-                        "continue-on-error: ${{ github.ref != 'refs/heads/main' }}"
+                        "workflow_call:",
+                        "workflow_dispatch:"
+                    ],
+                    "ikkeFinnes": [
+                        "push:",
+                        "pull_request:"
                     ]
                 },
                 {
                     "fil": ".github/workflows/deploy.yml",
                     "finnes": [
-                        "needs: tester"
-                    ]
+                        "branches: [main]",
+                        "needs: [velg, kontroll, full]"
+                    ],
+                    "ikkeFinnes": []
                 }
-            ]
+            ],
+            "oppdatert": "2026-11-02: testene kjøres ikke på arbeidsgrener i det hele tatt (tester.yml har ingen push/pull_request), så ingen grener sender e-post. På main kjører deploy.yml de koblede testene og stopper ved feil. Eierens regel 03.10.2026: aldri hele testpakken automatisk."
         },
         {
             "id": "kursnavn-liten-forbokstav",
@@ -4786,12 +4804,13 @@
                 {
                     "fil": "api/admin/brukere.php",
                     "finnes": [
-                        "$somKursholder = Foresporsel::tekst('rolle') === 'kursholder';",
+                        "$somKursholder = Foresporsel::tekst('rolle') === 'kursholder'",
                         "$blirKursholder($navn, $epost, $telefon);",
                         "Svar::feil('Skriv e-posten til kursholderen.');"
                     ]
                 }
-            ]
+            ],
+            "oppdatert": "2026-11-02: teksten i koden er skrevet om i 1c7e94e6 (kursholdervalget utvidet til admin og medlemmer), samme oppførsel; sjekken følger den nye teksten."
         },
         {
             "id": "adminny-kjopt-i-dag-dato-ledige",
@@ -5776,7 +5795,7 @@
                 {
                     "fil": "app/lib/booking.php",
                     "finnes": [
-                        "return self::medVisFullt(self::medMalebord(self::ledigeRegnet($oktIder)));",
+                        "return self::medVisFullt(self::medSamletTak(self::medMalebord(self::ledigeRegnet($oktIder))));",
                         "AND COALESCE(c2.folger_apningstid, 0) = 0"
                     ]
                 },
@@ -5848,7 +5867,8 @@
                         "13:00 har 1 ledig: 2 samtidig, ikke 2 + 2 = 4"
                     ]
                 }
-            ]
+            ],
+            "oppdatert": "2026-11-02: teksten i koden er skrevet om i 4bd2c013 (samlet tak lagt rundt, malebordet står), samme oppførsel; sjekken følger den nye teksten."
         },
         {
             "id": "kursbevis-sms",
@@ -6443,7 +6463,7 @@
                 {
                     "fil": "api/admin/manedsrapport.php",
                     "finnes": [
-                        "krev_admin();",
+                        "krev_regnskap();",
                         "Omsetning::perKilde("
                     ]
                 },
@@ -6453,7 +6473,8 @@
                         "'sumBruttoOre' => $brutto"
                     ]
                 }
-            ]
+            ],
+            "oppdatert": "2026-11-02: c9ccd248 lot også regnskapsføreren hente rapporten; krev_regnskap() slipper fortsatt admin inn (Sesjon::erRegnskap)."
         },
         {
             "id": "admin-ny-gammel-inn-20261008",
@@ -6485,8 +6506,8 @@
                 {
                     "fil": "api/stempling.php",
                     "finnes": [
-                        "'https://lissom.no/admin-ny#folk'",
-                        "'https://lissom.no/admin-ny#foresporsler'",
+                        "'https://lissom.no/admin#medlemmer'",
+                        "'https://lissom.no/admin#idag'",
                         "'type'    => 'Feil stemplingstid',"
                     ]
                 },
@@ -6505,7 +6526,8 @@
                         "button('Utregning og lapp',()=>glasurKalkulator(r))"
                     ]
                 }
-            ]
+            ],
+            "oppdatert": "2026-11-02: lenkene går til dagens admin (735a4047), etter eieren 12.10.2026: ny admin ligger på /admin. 2026-11-02: se over."
         },
         {
             "id": "kasse-ipad-20261008",
@@ -6804,7 +6826,7 @@
                     "fil": "api/admin/oversikt.php",
                     "finnes": [
                         "' (' . $p['plasser'] . ' plasser)'",
-                        "['ider' => $p['ider'], 'betalt' => $p['betalt']]"
+                        "['ider' => $p['ider'], 'betalt' => $p['betalt'],"
                     ]
                 },
                 {
@@ -6814,7 +6836,8 @@
                         "(s.ider||[s.id]).every(i=>sett.has(i))"
                     ]
                 }
-            ]
+            ],
+            "oppdatert": "2026-11-02: teksten i koden er skrevet om i b81227b4 (bestillingsdato lagt til i samme rad), samme oppførsel; sjekken følger den nye teksten."
         },
         {
             "id": "pop-pris-ett-sted-20261008",
@@ -7249,7 +7272,7 @@
                 {
                     "fil": "ny-admin/mer.js",
                     "finnes": [
-                        "'/admin-ny#regnskap'"
+                        "['Eksport', 'Regnskap og lister', '#regnskap']"
                     ]
                 },
                 {
@@ -7260,7 +7283,8 @@
                         "DB::oppdater('notification_templates', ['kanal' => $kanal]"
                     ]
                 }
-            ]
+            ],
+            "oppdatert": "2026-11-02: Regnskap ligger nå i ny admin (ceb70853); eieren 09.10.2026 «alt i ny admin» og 12.10.2026 ny admin på /admin."
         },
         {
             "id": "ny-admin-flettet-20261008",
@@ -7760,7 +7784,7 @@
                 {
                     "fil": "ny-admin/kurs.js",
                     "finnes": [
-                        "H.kursBilde = () => tilGammel(0, 'bilde');"
+                        "H.kursBilde = async b => {"
                     ]
                 },
                 {
@@ -7770,7 +7794,8 @@
                         "pv==='bilde'"
                     ]
                 }
-            ]
+            ],
+            "oppdatert": "2026-11-02: kursbildene redigeres nå direkte i ny admin (d86c8602), etter eieren 09.10.2026 «alt i ny admin»."
         },
         {
             "id": "avlyst-dato-min-side-melding",
@@ -8567,7 +8592,7 @@
                 {
                     "fil": "api/admin/oversikt.php",
                     "finnes": [
-                        "'betalt' => $p['betalt']]"
+                        "'betalt' => $p['betalt'],"
                     ]
                 },
                 {
@@ -8576,7 +8601,8 @@
                         "'<span class=\"merke rod\">Ikke betalt</span>'"
                     ]
                 }
-            ]
+            ],
+            "oppdatert": "2026-11-02: teksten i koden er skrevet om i b81227b4 (bestillingsdato lagt til i samme rad), samme oppførsel; sjekken følger den nye teksten."
         },
         {
             "id": "stempling-uten-pop",
@@ -8744,7 +8770,7 @@
                     "fil": "lissom-2108.html",
                     "finnes": [
                         "    return Math.min(erDreiing ? 8 : 12, ledige > 0 ? ledige : Infinity);",
-                        "        const antall = this.valgtAntall();"
+                        "const antall = this.valgtAntall();"
                     ]
                 },
                 {
@@ -8760,7 +8786,8 @@
                         "sjekk('flere plasser enn ledig avvises'"
                     ]
                 }
-            ]
+            ],
+            "oppdatert": "2026-11-02: teksten i koden er skrevet om i c3be7d15 (linja flyttet ved medlemsrabatt), samme oppførsel; sjekken følger den nye teksten."
         },
         {
             "id": "handlekurv-ikon-til-handlekurv",
@@ -8828,9 +8855,9 @@
                         "`${esc(m.timerIgjen)} av ${tall(m.timer)} t igjen`",
                         "d + ' d siden sist'",
                         "<span class=\"boble\" role=\"tooltip\">Medlem i ${esc(varighet(m.medlemFra))} · siden ${esc(maanedAar(m.medlemFra))}</span>",
-                        "data-mlm=\"endre\" data-id=\"${m.id}\">${esc(m.medlemskap)}</button>",
+                        "data-mlm=\"byttplan\" data-id=\"${m.id}\">${esc(m.medlemskap)}</button>",
                         "data-mlm=\"betaling\" data-id=\"${knapp}\"",
-                        "<span class=\"merker\"><span>${statusMerke(m)}</span>"
+                        "<span class=\"merker\"><span>${statusMerke(m, true)}</span>"
                     ],
                     "ikkeFinnes": [
                         "${sistMerke(m)}"
@@ -8881,7 +8908,8 @@
                         "'Hei {navn}! Vi savner deg i verkstedet 🙂 Du har {timer} igjen denne måneden. Velkommen innom når det passer. Hilsen Monica, Lissom', 0, 'system'"
                     ]
                 }
-            ]
+            ],
+            "oppdatert": "2026-11-02: merket er fortsatt trykkbart, nå med bytte av medlemskap i ny admin (d86c8602). 2026-11-02: se over."
         },
         {
             "id": "forside-mindre-gult",
@@ -8952,7 +8980,7 @@
                 {
                     "fil": "app/nett/sider/forside.php",
                     "finnes": [
-                        "'<div class=\"lx-kortgrid lx-kortgrid3\" style=\"display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-8);\">'",
+                        "'<div class=\"lx-kortgrid lx-kortgrid3 lx-forside-innganger\" style=\"display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-8);\">'",
                         "Deler::kurskort($k + ['luft' => true, 'bred' => $i === 3]);"
                     ]
                 },
@@ -8980,7 +9008,8 @@
                         "class=\"lx-kortbred\""
                     ]
                 }
-            ]
+            ],
+            "oppdatert": "2026-11-02: teksten i koden er skrevet om i bd32f073 (ekstra klasse for bildestørrelsen, fortsatt tre kort), samme oppførsel; sjekken følger den nye teksten."
         },
         {
             "id": "forside-ingen-bildestripe",
@@ -9754,7 +9783,7 @@
                         "H.dAvmeldOk = async b =>",
                         "H.dAvmeldBetaltOk = async b =>",
                         "{handling: 'avmeld-behold-betaling', id: d.bookingId}",
-                        "/admin-ny#betalinger?booking=${d.bookingId}",
+                        "/admin#betalinger?booking=${d.bookingId}",
                         "{handling: 'fjern', id: d.bookingId}"
                     ]
                 },
@@ -9771,7 +9800,8 @@
                         "'?bookingId='+bookingId"
                     ]
                 }
-            ]
+            ],
+            "oppdatert": "2026-11-02: refusjonsflyten åpnes i dagens admin (d86c8602), etter eieren 12.10.2026: ny admin ligger på /admin."
         },
         {
             "id": "minside-forside-verving-barn",
@@ -9838,7 +9868,7 @@
                 {
                     "fil": "lissom-2108.html",
                     "finnes": [
-                        "if (/^https://(www.|m.)?facebook.com//.test(maal)) {",
+                        "if (/^https:\\/\\/(www\\.|m\\.)?facebook\\.com\\//.test(maal)) {",
                         "window.open(maal, '_blank', 'noopener');"
                     ]
                 },
@@ -9848,7 +9878,8 @@
                         "$erFacebook = preg_match("
                     ]
                 }
-            ]
+            ],
+            "oppdatert": "2026-11-02: sjekken manglet skråstrekene i regexen (skrivefeil i vedtaket); koden er uendret."
         },
         {
             "id": "juster-timer",
@@ -9893,7 +9924,7 @@
                     "fil": "ny-admin/medlemmer.js",
                     "finnes": [
                         "<button class=\"knapp\" data-mlm=\"juster\" data-id=\"${m.id}\">Juster timer</button>",
-                        "async function hentHist(m) {",
+                        "async function hentHist(m, bareBetaling = false) {",
                         "handling: 'juster'"
                     ]
                 },
@@ -9904,7 +9935,8 @@
                         "if ($h === 'timer_justert') {"
                     ]
                 }
-            ]
+            ],
+            "oppdatert": "2026-11-02: teksten i koden er skrevet om i d86c8602 (historikken kan også vise bare betalinger), samme oppførsel; sjekken følger den nye teksten."
         },
         {
             "id": "nyadmin-verkstedtid-norsk-dato",
@@ -9951,7 +9983,7 @@
                 {
                     "fil": "ny-admin/felles.js",
                     "finnes": [
-                        "'innstillinger', 'mer', 'maler']"
+                        "'innstillinger', 'mer', 'maler',"
                     ]
                 },
                 {
@@ -9961,7 +9993,8 @@
                         "/api/dokument.php?kort="
                     ]
                 }
-            ]
+            ],
+            "oppdatert": "2026-11-02: teksten i koden er skrevet om i ceb70853 og d86c8602 (flere sidefiler etter maler), samme oppførsel; sjekken følger den nye teksten."
         },
         {
             "id": "paaminnelse-uten-kontakt-ingen-varsel",
@@ -10111,13 +10144,14 @@
                     "fil": "ny-admin/felles.js",
                     "finnes": [
                         "api('kortbruk.php', {data: {handling: 'bruk', kort}}).catch(() => {});",
-                        "if (rute.id !== sistTalt) { sistTalt = rute.id; tell('ny_side_' + rute.id.replace(/-/g, '_')); }",
+                        "if (rute.id !== sistTalt) { sistTalt = rute.id; if (!NA.meg?.regnskap) tell('ny_side_' + rute.id.replace(/-/g, '_')); }",
                         "if (d.hurtig) tell('ny_hurtig_' + d.hurtig);",
                         "if (b.id === 'stemple-topp') tell('ny_hurtig_stemple');"
                     ],
                     "ikkeFinnes": []
                 }
-            ]
+            ],
+            "oppdatert": "2026-11-02: teksten i koden er skrevet om i ceb70853 (regnskapsførerens sider telles ikke), samme oppførsel; sjekken følger den nye teksten."
         },
         {
             "id": "kasse-ny-valgene-20261030",

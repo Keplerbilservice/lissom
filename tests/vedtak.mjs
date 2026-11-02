@@ -32,9 +32,13 @@ const les = (fil) => {
   return lest[fil];
 };
 
+// Testsperren ved utlegging (eieren 03.10.2026: bare kontroller for endrede filer): med VEDTAK_FILER sjekkes bare
+// vedtakene for filene i pushen. Uten variabelen sjekkes alle.
+const bareFiler = process.env.VEDTAK_FILER ? new Set(process.env.VEDTAK_FILER.split(/\r?\n/).map(f => f.trim()).filter(Boolean)) : null;
 for (const v of reg.vedtak) {
   const navn = `Vedtak ${v.id} (${v.dato}): ${v.hva}`;
   for (const k of v.kode || []) {
+    if (bareFiler && !bareFiler.has(k.fil)) continue;
     const innhold = les(k.fil);
     if (innhold === null) { brudd.push(`${navn} — fila ${k.fil} finnes ikke`); continue; }
     for (const s of k.finnes || []) {

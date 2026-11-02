@@ -23,8 +23,97 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Testsperren (eieren 27.09.2026, avgrenset 02.11.2026 etter regelen fra
+  # 03.10.2026: «Aldri hele testpakken automatisk … Kjør bare kontroller som er
+  # relevante for endrede filer»). «velg» finner testene som hører til filene i
+  # pushen (tests/kobling.tsv), «kontroll» kjører dem, og er én rød, legges
+  # ingenting ut. Hele pakken (tester.yml) kjøres bare når en endret kodefil
+  # ikke har noen kobling.
+  velg:
+    runs-on: ubuntu-latest
+    outputs:
+      kommandoer: ${{ steps.v.outputs.kommandoer }}
+      filer: ${{ steps.v.outputs.filer }}
+      alle: ${{ steps.v.outputs.alle }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Finn testene som hører til de endrede filene
+        id: v
+        env:
+          KONTROLL_BASE: ${{ github.event.before }}
+        run: bash bin/kontroll-endret.sh velg "$KONTROLL_BASE"
+
+  kontroll:
+    needs: velg
+    if: ${{ needs.velg.outputs.kommandoer != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      db:
+        image: mariadb:10.11
+        env:
+          MARIADB_DATABASE: lissom_test
+          MARIADB_USER: lissom
+          MARIADB_PASSWORD: lissom
+          MARIADB_ROOT_PASSWORD: rot
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql, mbstring, curl, gd, intl, zip
+          coverage: none
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # Samme testoppsett og database som tester.yml.
+      - name: Sett opp testoppsett og database
+        run: |
+          php -r '
+            $s = require "app/secrets.example.php";
+            $s["miljo"] = "test";
+            $s["db_vert"] = "127.0.0.1";
+            $s["db_navn"] = "lissom_test";
+            $s["db_bruker"] = "lissom";
+            $s["db_passord"] = "lissom";
+            foreach (["vipps_msn", "vipps_client_id", "vipps_client_secret", "vipps_sub_key"] as $n) { $s[$n] = "test"; }
+            $s["cron_nokkel"] = "test";
+            $s["admin_telefoner"] = ["+4791234567"];
+            file_put_contents("app/secrets.php", "<?php return " . var_export($s, true) . ";");
+          '
+          mkdir -p /tmp/senere
+          for f in db/migrations/*.sql; do
+            [[ "$(basename "$f")" > "128" ]] && mv "$f" /tmp/senere/
+          done
+          php bin/migrate.php
+          mysql -h 127.0.0.1 -u lissom -plissom lissom_test -e "UPDATE membership_plans SET navn = 'Basis 30' WHERE navn = '30 timer'"
+          mv /tmp/senere/*.sql db/migrations/
+          php bin/migrate.php
+
+      - name: Kjør de koblede testene
+        env:
+          KOMMANDOER: ${{ needs.velg.outputs.kommandoer }}
+          VEDTAK_FILER: ${{ needs.velg.outputs.filer }}
+        run: bash bin/kontroll-endret.sh kjor
+
+  full:
+    needs: velg
+    if: ${{ needs.velg.outputs.alle == 'true' }}
+    uses: ./.github/workflows/tester.yml
+
   # Syntaks i endrede PHP-filer må være gyldig før utlegging.
   publiser:
+    needs: [velg, kontroll, full]
+    if: ${{ always() && needs.velg.result == 'success' && (needs.kontroll.result == 'success' || needs.kontroll.result == 'skipped') && (needs.full.result == 'success' || needs.full.result == 'skipped') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

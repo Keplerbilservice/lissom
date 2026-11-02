@@ -624,9 +624,11 @@ try {
         && !str_contains($fil('ny-admin/mer.js'), "'Vedlikehold', 'Databaseoppdateringer'")
         && str_contains($fil('ny-admin/idag.js'), "knapp('Kjør oppdateringer', 'migrer', true)"));
     sjekk('O Lissom-logoen i menyen går til I dag', str_contains($fil('ny-admin/felles.js'), '<button class="brand" type="button" data-side="idag"'));
-    sjekk('O «Rediger kurset»/«Legg til bilde» åpner kurset direkte i admin-ny (#kurs?kurs=<id>, &vis=bilde)',
-        str_contains($fil('ny-admin/kurs.js'), "tilGammel(0, 'bilde')")
-        && str_contains($fil('admin-ny/app.js'), "params().get('kurs')") && str_contains($fil('admin-ny/app.js'), "pv==='bilde'"));
+    // Oppdatert 02.11.2026: siden d86c8602 (29.10) redigeres kurset og kursbildene direkte i ny admin, ikke i admin-ny
+    // (eieren 09.10.2026 «alt i ny admin», 12.10.2026 ny admin på /admin).
+    sjekk('O «Rediger kurset» og «Kursbilder» åpnes i ny admin',
+        str_contains($fil('ny-admin/kurs.js'), "['Rediger kurset', 'kursRediger']") && str_contains($fil('ny-admin/kurs.js'), 'H.kursBilde = async b => {')
+        && !str_contains($fil('ny-admin/kurs.js'), "tilGammel(0, 'bilde')"));
 
     // ── P Eieren 09.10.2026: Uttak leire lik leira på Min side (bilde, navn, pris, − antall +) ──
     if (DB::harKolonne('products', 'leire')) {
@@ -663,8 +665,9 @@ try {
         preg_match_all("/\\\$sak\\('[^']*', '([a-z]+)'/", $fil('api/admin/oversikt.php'), $mm);
         foreach (array_unique($mm[1]) as $t) { if (!in_array($t, ['pamelding', 'taut'], true) && !str_contains($fq, '      ' . $t . ': () =>')) { $typer[] = $t; } }
         sjekk('Q hver sakstype i «Må gjøres» har egen handling i ny admin (ingen faller til «I gammel admin»)', $typer === [] && count($mm[1]) >= 15, implode(',', $typer));
-        sjekk('Q «I gammel admin» brukes bare som reserve for ukjente typer', substr_count($fq, '${gammel}') === 0 && substr_count($fq, '? gammel') === 0
-            && substr_count($fq, '+ gammel') === 0 && str_contains($fq, '}[s.type] || (() => gammel)'));
+        // Oppdatert 02.11.2026: siden d86c8602 (29.10) finnes ingen reserve til gammel admin; ukjente typer får ingen knapp.
+        sjekk('Q ingen sak i «Må gjøres» går til gammel admin, heller ikke ukjente typer', substr_count($fq, '${gammel}') === 0 && substr_count($fq, '? gammel') === 0
+            && substr_count($fq, '+ gammel') === 0 && str_contains($fq, "}[s.type] || (() => '')"));
         sjekk('Q Betaling på mobil åpner medlemsarket (NA.arkMedlem fra medlemmer.js), ikke gammel admin',
             str_contains($fq, "knapp('Til medlemmet', 'medlem-ark', true") && str_contains($fil('ny-admin/medlemmer.js'), 'NA().arkMedlem = async id =>'));
 

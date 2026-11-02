@@ -1,0 +1,53 @@
+# Testsperren ved utlegging: hvilke tester som hører til hvilke filer.
+#
+# Eieren, 03.10.2026 og senere: «Aldri hele testpakken automatisk, verken lokalt,
+# ved push, pull request eller utlegging. Kjør bare kontroller som er relevante
+# for endrede filer.» deploy.yml leser denne fila (bin/kontroll-endret.sh) og
+# kjører bare kommandoene som hører til filene i pushen. Er én er rød, legges
+# ingenting ut.
+#
+# Format: mønster<TAB>kommando. Mønsteret er et bash-mønster mot filstien, der
+# * også dekker /. Flere linjer kan ha samme mønster. Kommandoen «-» betyr at
+# fila ikke trenger noen test (dokumenter, bilder). ALLTID kjøres ved hver push.
+#
+# Har en endret kodefil ingen kobling her, kjøres hele pakken (tester.yml) én
+# gang. Legg derfor inn en kobling når en ny del får sin egen test.
+
+ALLTID	node tests/vedtak.mjs
+
+# Sperren selv
+.github/workflows/*	bash bin/kontroll-endret.sh sjekk
+bin/kontroll-endret.sh	bash bin/kontroll-endret.sh sjekk
+tests/kobling.tsv	bash bin/kontroll-endret.sh sjekk
+tests/vedtak.mjs	node tests/vedtak.mjs
+tests/godkjent/vedtak.json	node tests/vedtak.mjs
+
+# I dag › Må gjøres, Ferdige og Forespørsler (eieren 02.11.2026)
+api/admin/oversikt.php	php tests/ferdige-foresporsler.php
+api/admin/oversikt.php	php tests/ma-gjores-mer.php
+api/admin/oversikt.php	php tests/ny-admin.php
+api/admin/foresporsler.php	php tests/ferdige-foresporsler.php
+tests/ferdige-foresporsler.php	php tests/ferdige-foresporsler.php
+
+# Ny admin
+ny-admin/*	php tests/ny-admin.php
+ny-admin/*	php tests/ferdige-foresporsler.php
+ny-admin.html	php tests/ny-admin.php
+tests/ny-admin.php	php tests/ny-admin.php
+
+# Må gjøres i admin-ny (idé 3, 4, 5 og 7)
+api/admin/ma-gjores-mer.php	php tests/ma-gjores-mer.php
+admin-ny/ma-gjores-mer.js	php tests/ma-gjores-mer.php
+tests/ma-gjores-mer.php	php tests/ma-gjores-mer.php
+
+# Uten test: tekst, dokumentasjon og bilder
+*.md	-
+docs/*	-
+*.png	-
+*.jpg	-
+*.jpeg	-
+*.webp	-
+*.svg	-
+*.ico	-
+*.pdf	-
+fonts/*	-

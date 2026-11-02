@@ -328,7 +328,8 @@
       ? `<a class="nav" href="${esc(NA.kasseAdresse())}"><span class="ic">${ic}</span>${navn}</a>`
       : `<button class="nav" type="button" data-side="${id}" ${aktiv === id ? 'aria-current="page"' : ''}><span class="ic">${ic}</span>${navn}${id === 'idag' && n ? `<span class="tall">${n}</span>` : ''}</button>`;
     /* Hamburgermenyen på mobil viser bare sidene som brukes der (I dag, Kalender, Kurs) — eieren 11.10.2026. */
-    const sideMeny = erMobil() ? MENY.filter(m => MOBIL.includes(m[0])) : MENY;
+    /* Forespørsler står i telefonmenyen (eieren 02.11.2026), siden Folk ikke er med på mobil. */
+    const sideMeny = erMobil() ? [...MENY.filter(m => MOBIL.includes(m[0])), ['foresporsler', 'Forespørsler', '☺']] : MENY;
     const meny = `<button class="brand" type="button" data-side="idag" aria-label="Lissom · til I dag">Lissom</button><div class="brand-note">Keramikk · admin</div>${sideMeny.map(navKnapp).join('')}
       ${erMobil() ? `<button class="nav send-drop" type="button" data-sendapen aria-expanded="${sendApen}" aria-controls="send-valg"><span class="ic">✉</span>Send ▾</button><div class="send-valg" id="send-valg" ${sendApen ? '' : 'hidden'}>${SEND.map(([id, navn, under]) => `<button class="nav send" type="button" data-send="${id}"><span class="send-tekst">${navn}<small>${under}</small></span></button>`).join('')}</div>` : ''}
       <div class="hurtig-tittel">Hurtig</div>

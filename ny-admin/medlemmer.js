@@ -84,7 +84,7 @@
     const alle = visteMedlemmer();
     const typer = S.planer.map(p => p.navn).filter(n => alle.some(m => m.medlemskap === n));
     const piller = [['', `Alle (${alle.length})`], ...typer.map(n => [n, `${n} (${alle.filter(m => m.medlemskap === n).length})`])];
-    boks.innerHTML = `<div class="faner" style="margin:0 0 12px"><button type="button" data-mlm="visning" data-v="aktive" aria-pressed="${S.visning === 'aktive'}">Aktive</button><button type="button" data-mlm="visning" data-v="tidligere" aria-pressed="${S.visning === 'tidligere'}">Tidligere medlemmer</button></div>
+    boks.innerHTML = `<div class="faner" style="margin:0 0 12px"><button type="button" data-mlm="visning" data-v="aktive" aria-pressed="${S.visning === 'aktive'}">Aktive</button><button type="button" data-mlm="visning" data-v="tidligere" aria-pressed="${S.visning === 'tidligere'}">Tidligere medlemmer</button><button type="button" data-mlm="visning" data-v="foresporsler" aria-pressed="${S.visning === 'foresporsler'}">${fspFaneTekst()}</button></div>
       <label style="display:grid;gap:5px;max-width:280px"><small>Sorter etter</small><select id="mlm-sorter" style="padding:11px;border-radius:9px;border:1px solid #c6b1a0;background:var(--field);font:inherit;min-height:44px">${SORTER.map(([v, t]) => `<option value="${v}" ${S.sortering === v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
       <div class="faner" style="margin:12px 0 4px">${piller.map(([v, t]) => `<button type="button" data-mlm="typefilter" data-v="${esc(v)}" aria-pressed="${S.typeFilter === v}">${esc(t)}</button>`).join('')}</div>`;
   }
@@ -139,6 +139,13 @@
     const boks = document.getElementById('mlm-liste');
     if (!boks) return;
     if (!document.getElementById('mlm-rader')) boks.innerHTML = '<div id="mlm-velger"></div><div id="mlm-rader"></div>';
+    if (S.visning === 'foresporsler') {
+      tegnVelger();
+      [...document.getElementById('mlm-velger').children].forEach((c, i) => { if (i > 0) c.hidden = true; });
+      document.getElementById('mlm-rader').innerHTML = fspRader();
+      const ey = document.getElementById('mlm-antall'); if (ey) ey.textContent = F.liste.length + ' forespørsler';
+      return;
+    }
     const q = S.sok.trim().toLowerCase();
     const L = sorter(visteMedlemmer().filter(m => (!S.typeFilter || m.medlemskap === S.typeFilter)
       && (!q || [m.navn, m.epost, m.telefon, m.medlemskap].some(v => String(v || '').toLowerCase().includes(q)))));
@@ -583,7 +590,10 @@
     }
     if (h === 'status') return arkStatus(id);
     if (h === 'byttplan') return arkByttPlan(id);
-    if (h === 'visning') { S.visning = b.dataset.v === 'tidligere' ? 'tidligere' : 'aktive'; S.typeFilter = ''; return tegnListe(); }
+    if (h === 'visning') { S.visning = ['tidligere', 'foresporsler'].includes(b.dataset.v) ? b.dataset.v : 'aktive'; S.typeFilter = ''; tegnListe(); if (S.visning === 'foresporsler') hentFsp(); return; }
+    if (h === 'fsp') return arkFsp(id);
+    if (h === 'fsp-status') return fspStatus(id, b.dataset.status, b);
+    if (h === 'fsp-svar') return fspSvar(id, b);
     if (h === 'medlem') return arkMedlem(id);
     if (h === 'stempling') return arkStempling(id);
     if (h === 'juster') return arkJuster(id);
@@ -705,6 +715,7 @@
   // Raden er role=button: Enter og mellomrom åpner medlemmet, som et trykk.
   document.addEventListener('keydown', e => {
     if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('.mlm-rad[data-mlm="medlem"]')) { e.preventDefault(); arkMedlem(Number(e.target.dataset.id)); }
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('.rad[data-mlm="fsp"]')) { e.preventDefault(); arkFsp(Number(e.target.dataset.id)); }
   });
   document.addEventListener('input', e => { if (e.target.id === 'mlm-gv-belop' || e.target.id === 'mlm-gv-hilsen') { oppdaterForh(); sjekkGave(); } });
   document.addEventListener('change', e => {
@@ -713,5 +724,62 @@
     if (e.target.id === 'mlm-sorter') { S.sortering = e.target.value; husk(S.sortering); tegnListe(); }
   });
 
+  /* ── Folk › Forespørsler (eieren 02.11.2026, «bygg og publiser» på visningen) ──
+     Alle forespørsler fra GET foresporsler.php (enquiries), nyeste øverst. Samme kilde som «Må gjøres» og «Ferdige» på I dag:
+     etter hver handling hentes forespørslene og oversikten på nytt. På telefon står siden i ☰ (Folk er ikke med på mobil). */
+  const F = { liste: [], ub: 0, hentet: false };
+  const fspFaneTekst = () => 'Forespørsler' + (F.ub ? ` (${F.ub} ubesvarte)` : '');
+  const fspMerke = f => `<span class="merke ${f.status === 'Ubesvart' ? 'gul' : 'gronn'}">${esc(f.status)}</span>`;
+  function fspRader() {
+    if (!F.hentet) return '<p class="muted">Henter …</p>';
+    if (!F.liste.length) return '<p class="tom">Ingen forespørsler.</p>';
+    return F.liste.map(f => {
+      const sv = f.svar || [], siste = sv[sv.length - 1];
+      const svar = siste ? ` · ${sv.length === 1 ? 'Svar sendt' : sv.length + ' svar sendt, siste'} ${esc(siste.tid)} · ${esc(siste.av)} (${esc(siste.kanal)})` : '';
+      return `<div class="rad klikkrad" data-mlm="fsp" data-id="${Number(f.id)}" role="button" tabindex="0" aria-label="Forespørsel fra ${esc(f.navn)}"><div class="tekst"><span class="type">${esc(f.hva || 'Forespørsel')}</span><b>${esc(f.navn)}</b>
+        <small style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${esc(f.tekst)}</small><small class="muted">${esc(f.tid)}${svar}</small></div>${fspMerke(f)}</div>`;
+    }).join('');
+  }
+  function fspTegn() {
+    if (S.visning === 'foresporsler' && document.getElementById('mlm-liste')) tegnListe();
+    else { const k = document.getElementById('mlm-velger')?.querySelector('[data-v="foresporsler"]'); if (k) k.textContent = fspFaneTekst(); }
+    const egen = document.getElementById('fsp-side-rader'); if (egen) egen.innerHTML = fspRader();
+  }
+  async function hentFsp() {
+    try { const d = await kall('foresporsler.php'); F.liste = d.foresporsler || []; F.ub = Number(d.ubesvarte) || 0; F.hentet = true; }
+    catch (e) { toast(esc(e.message)); }
+    fspTegn();
+  }
+  NA().oppdaterForesporsler = () => { if (document.getElementById('mlm-liste') || document.getElementById('fsp-side-rader')) hentFsp(); };
+  function arkFsp(id) {
+    const f = F.liste.find(x => Number(x.id) === id); if (!f) return;
+    const svar = (f.svar || []).map(v => `<div class="sms">${esc(v.tekst)}<br><small>${esc(v.tid)} · ${esc(v.av)} · ${esc(v.kanal)}</small></div>`).join('');
+    NA().apneArk(`${NA().arkHode(esc('Forespørsel fra ' + f.navn))}
+      <p>${fspMerke(f)}</p>
+      <div class="sms"><b>${esc(f.hva || 'Forespørsel')}:</b> ${esc(f.tekst)}<br><small>Fra: ${esc([f.navn, f.epost, f.tlf].filter(Boolean).join(' · '))}${f.tid ? ' · ' + esc(f.tid) : ''}</small></div>
+      ${svar ? `<h3 style="margin:16px 0 4px">Svar som er sendt</h3>${svar}` : ''}
+      <label class="felt"><small>Svaret ditt</small><textarea id="fsp-svartekst" placeholder="Skriv svaret ditt …"></textarea></label>
+      <div class="ark-fot"><button class="knapp" type="button" data-mlm="fsp-status" data-id="${Number(f.id)}" data-status="${f.status === 'Ubesvart' ? 'besvart' : 'ubesvart'}">${f.status === 'Ubesvart' ? 'Merk besvart' : 'Merk ubesvart'}</button><button class="knapp hoved" type="button" data-mlm="fsp-svar" data-id="${Number(f.id)}">Send svar</button></div>`);
+  }
+  // Etter hver handling: forespørslene og oversikten (Må gjøres og Ferdige) hentes på nytt.
+  const fspEtter = async (id, ubesvart) => { if (ubesvart) NA().idagGlem?.('henvendelse:' + id); NA().oppdaterTopp?.(); await hentFsp(); };
+  async function fspStatus(id, status, b) {
+    b.disabled = true;
+    try { const r = await kall('foresporsler.php', { id, status: status === 'ubesvart' ? 'ubesvart' : 'besvart' }); NA().lukkArk(true); toast(esc(r.beskjed || 'Lagret.')); await fspEtter(id, status === 'ubesvart'); }
+    catch (e) { toast(esc(e.message)); b.disabled = false; }
+  }
+  async function fspSvar(id, b) {
+    const tekst = document.getElementById('fsp-svartekst')?.value.trim() || '';
+    if (!tekst) { toast('Skriv svaret først.'); return; }
+    b.disabled = true;
+    try { const r = await kall('foresporsler.php', { handling: 'svar', id, tekst }); NA().lukkArk(true); toast(esc(r.beskjed || 'Svar sendt.')); await fspEtter(id, false); }
+    catch (e) { toast(esc(e.message)); b.disabled = false; }
+  }
+  async function tegnFspSide(el) {
+    el.innerHTML = `<div class="head"><div><div class="eyebrow">Folk</div><h1>Forespørsler</h1></div></div><section class="kort"><div id="fsp-side-rader">${fspRader()}</div></section>`;
+    await hentFsp();
+  }
+
   registrer('medlemmer', { tittel: 'Folk', ikon: '☺', tegn, mobil: false, sok: q => { S.sok = q; tegnListe(); } });
+  registrer('foresporsler', { tittel: 'Forespørsler', ikon: '☺', tegn: tegnFspSide, mobil: true });
 })();

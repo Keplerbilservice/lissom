@@ -10446,6 +10446,56 @@
                     "ikkeFinnes": []
                 }
             ]
+        },
+        {
+            "id": "ferdige-og-foresporsler-20261102",
+            "dato": "2026-11-02",
+            "hva": "Eieren 02.11.2026 («bygg og publiser» på visningen): (1) Nederst i I dag › Må gjøres står «Ferdige», lukket til den åpnes, med alt som er merket ferdig de siste 30 dagene (type, tittel, utdrag, når og hvem, merke). «Angre» bare på forespørsel (status=ubesvart) og Klar til henting (Merk hentet-arket). (2) Folk har fanen «Forespørsler» med alle forespørsler, nyeste øverst (ubesvarte sorteres ikke først), og hele raden åpner forespørselen med Svar og Merk besvart/ubesvart. På telefon står Forespørsler i ☰. (3) Én kilde: enquiries (status, besvart_at, besvart_av); etter hver handling hentes oversikten og forespørslene på nytt. Bryter: Vis/ferdigeliste. Sjekkes i tests/ferdige-foresporsler.php.",
+            "hvor": "Ny admin › I dag › Må gjøres, Folk › Forespørsler og ☰ på telefon",
+            "kode": [
+                {
+                    "fil": "api/admin/foresporsler.php",
+                    "finnes": [
+                        "        ORDER BY e.id DESC"
+                    ],
+                    "ikkeFinnes": [
+                        "ORDER BY e.status = 'ubesvart' DESC"
+                    ]
+                },
+                {
+                    "fil": "api/admin/oversikt.php",
+                    "finnes": [
+                        "'ferdige' => $ferdige,",
+                        "nokkel = 'Vis/ferdigeliste'",
+                        "WHERE e.status = 'besvart' AND e.besvart_at >= {$grense}"
+                    ],
+                    "ikkeFinnes": []
+                },
+                {
+                    "fil": "ny-admin/idag.js",
+                    "finnes": [
+                        "${radFerdige(d)}",
+                        "let ferdigeApen = false",
+                        "if (type === 'henting') return arkHentet(f);"
+                    ],
+                    "ikkeFinnes": []
+                },
+                {
+                    "fil": "ny-admin/medlemmer.js",
+                    "finnes": [
+                        "data-v=\"foresporsler\"",
+                        "registrer('foresporsler', { tittel: 'Forespørsler', ikon: '☺', tegn: tegnFspSide, mobil: true });"
+                    ],
+                    "ikkeFinnes": []
+                },
+                {
+                    "fil": "ny-admin/felles.js",
+                    "finnes": [
+                        "['foresporsler', 'Forespørsler', '☺']"
+                    ],
+                    "ikkeFinnes": []
+                }
+            ]
         }
     ]
 }

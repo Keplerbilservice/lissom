@@ -22,11 +22,12 @@ require __DIR__ . '/../_boot.php';
 $admin = krev_admin();
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    // Nyeste øverst, også for ubesvarte (eieren 02.11.2026, Folk › Forespørsler).
     $rader = DB::alle(
         "SELECT e.id, e.navn, e.epost, e.telefon, e.type, e.antall, e.melding, e.status, e.created_at,
                 (SELECT m.id FROM members m WHERE m.epost = e.epost AND e.epost IS NOT NULL LIMIT 1) AS member_id
            FROM enquiries e
-        ORDER BY e.status = 'ubesvart' DESC, e.id DESC
+        ORDER BY e.id DESC
           LIMIT 200"
     );
 

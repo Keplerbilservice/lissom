@@ -1147,9 +1147,157 @@ $maGjores = (static function () use ($medlemsstatus, $nyeste): array {
     return $ut;
 })();
 
+// Ferdige (eieren 02.11.2026, «bygg og publiser» på visningen): det som er merket
+// ferdig i Må gjøres de siste 30 dagene, lest fra de samme tabellene som Må gjøres
+// (forespørslene fra enquiries: status, besvart_at, besvart_av). Ingen egen tabell
+// og ingen kopi. Bryteren «Vis/ferdigeliste» = nei skrur lista av (null).
+$ferdige = (static function (): ?array {
+    if ((string) DB::verdi("SELECT verdi FROM content_blocks WHERE nokkel = 'Vis/ferdigeliste'") === 'nei') {
+        return null;
+    }
+    $ut = [];
+    $utc = new DateTimeZone('UTC');
+    $tid = static fn($t): int => (new DateTimeImmutable((string) $t, $utc))->getTimestamp();
+    $kort = static function (?string $t, int $n = 90): string {
+        $t = trim(preg_replace('/\s+/u', ' ', (string) $t) ?? '');
+        return mb_strlen($t) > $n ? rtrim(mb_substr($t, 0, $n - 1)) . '…' : $t;
+    };
+    $rad = static function (string $type, int $id, string $tittel, string $under, $naar, ?string $av, array $merke, bool $angre = false, array $mer = []) use (&$ut, $tid): void {
+        $ut[] = $mer + ['type' => $type, 'id' => $id, 'tittel' => $tittel, 'under' => $under,
+                 'tid' => $tid($naar), 'av' => $av === null || $av === '' ? null : explode(' ', $av)[0],
+                 'merke' => $merke[0], 'farge' => $merke[1], 'angre' => $angre];
+    };
+    $trygt = static function (string $hva, callable $fn): void {
+        try {
+            $fn();
+        } catch (Throwable $e) {
+            logg_feil('Ferdige: ' . $hva, $e);
+        }
+    };
+    $grense = "DATE_SUB(UTC_TIMESTAMP(), INTERVAL 30 DAY)";
+
+    $trygt('henvendelser', static function () use ($rad, $kort, $grense): void {
+        if (!DB::harKolonne('enquiries', 'besvart_at')) {
+            return;
+        }
+        $svar = DB::harTabell('foresporsel_svar') ? '(SELECT COUNT(*) FROM foresporsel_svar s WHERE s.enquiry_id = e.id)' : '0';
+        foreach (DB::alle("SELECT e.id, e.navn, e.melding, e.besvart_at, m.navn AS av, {$svar} AS svar
+                             FROM enquiries e LEFT JOIN members m ON m.id = e.besvart_av
+                            WHERE e.status = 'besvart' AND e.besvart_at >= {$grense}
+                         ORDER BY e.besvart_at DESC LIMIT 50") as $r) {
+            $rad('henvendelse', (int) $r['id'], 'Henvendelse fra ' . ((string) $r['navn'] ?: 'nettsiden'), $kort($r['melding']),
+                $r['besvart_at'], $r['av'], (int) $r['svar'] > 0 ? ['Besvart', 'gronn'] : ['Merket ferdig', ''], true);
+        }
+    });
+    $trygt('soknader', static function () use ($rad, $grense): void {
+        foreach (DB::alle("SELECT a.id, a.navn, a.onsket_type, a.status, a.behandlet_at, m.navn AS av
+                             FROM membership_applications a LEFT JOIN members m ON m.id = a.behandlet_av
+                            WHERE a.status IN ('godkjent','avslatt') AND a.behandlet_at >= {$grense}
+                         ORDER BY a.behandlet_at DESC LIMIT 50") as $r) {
+            $rad('soknad', (int) $r['id'], 'Medlemssøknad fra ' . (string) $r['navn'], (string) ($r['onsket_type'] ?? ''),
+                $r['behandlet_at'], $r['av'], $r['status'] === 'godkjent' ? ['Godkjent', 'gronn'] : ['Avslått', 'rod']);
+        }
+    });
+    $trygt('frys', static function () use ($rad, $grense): void {
+        if (!DB::harTabell('medlem_frys')) {
+            return;
+        }
+        foreach (DB::alle("SELECT f.id, f.fra_dato, f.til_dato, f.status, f.behandlet_at, p.navn, m.navn AS av
+                             FROM medlem_frys f JOIN members p ON p.id = f.member_id LEFT JOIN members m ON m.id = f.behandlet_av
+                            WHERE f.status IN ('godkjent','avslatt') AND f.behandlet_at >= {$grense}
+                         ORDER BY f.behandlet_at DESC LIMIT 50") as $r) {
+            $rad('frys', (int) $r['id'], 'Frys for ' . (string) $r['navn'],
+                date('j.n.', strtotime((string) $r['fra_dato'])) . '–' . date('j.n.', strtotime((string) $r['til_dato'])),
+                $r['behandlet_at'], $r['av'], $r['status'] === 'godkjent' ? ['Godkjent', 'gronn'] : ['Avslått', 'rod']);
+        }
+    });
+    $trygt('bidrag', static function () use ($rad, $grense): void {
+        if (!DB::harTabell('medlemsforslag')) {
+            return;
+        }
+        foreach (DB::alle("SELECT f.id, f.type, f.status, f.behandlet_at, p.navn, m.navn AS av
+                             FROM medlemsforslag f JOIN members p ON p.id = f.member_id LEFT JOIN members m ON m.id = f.behandlet_av
+                            WHERE f.status IN ('godkjent','publisert','avvist') AND f.behandlet_at >= {$grense}
+                         ORDER BY f.behandlet_at DESC LIMIT 50") as $r) {
+            $rad('bidrag', (int) $r['id'], ($r['type'] === 'video' ? 'Video' : 'Bilde') . ' fra ' . (string) $r['navn'], '',
+                $r['behandlet_at'], $r['av'], $r['status'] === 'avvist' ? ['Avvist', 'rod'] : ['Godkjent', 'gronn']);
+        }
+    });
+    $trygt('dugnad', static function () use ($rad, $kort, $grense): void {
+        if (!DB::harTabell('dugnad')) {
+            return;
+        }
+        foreach (DB::alle("SELECT d.id, d.tekst, d.status, p.navn,
+                                  COALESCE(d.godkjent_at, d.svart_at) AS naar, m.navn AS av
+                             FROM dugnad d JOIN members p ON p.id = d.member_id
+                        LEFT JOIN members m ON m.id = COALESCE(d.godkjent_av, d.svart_av)
+                            WHERE COALESCE(d.godkjent_at, d.svart_at) >= {$grense}
+                              AND d.status IN ('godkjent','ferdig','avslatt','avvist')
+                         ORDER BY naar DESC LIMIT 50") as $r) {
+            $rad('dugnad', (int) $r['id'], 'Dugnad: ' . (string) $r['navn'], $kort($r['tekst']),
+                $r['naar'], $r['av'], in_array($r['status'], ['avslatt', 'avvist'], true) ? ['Avslått', 'rod'] : ['Godkjent', 'gronn']);
+        }
+    });
+    $trygt('stempling', static function () use ($rad, $kort, $grense): void {
+        if (!DB::harTabell('stempling_rettinger')) {
+            return;
+        }
+        foreach (DB::alle("SELECT r.id, r.forklaring, r.status, r.behandlet_at, p.navn, m.navn AS av
+                             FROM stempling_rettinger r JOIN members p ON p.id = r.member_id LEFT JOIN members m ON m.id = r.behandlet_av
+                            WHERE r.status IN ('rettet','avslaatt') AND r.behandlet_at >= {$grense}
+                         ORDER BY r.behandlet_at DESC LIMIT 50") as $r) {
+            $rad('stempling', (int) $r['id'], 'Verkstedtid for ' . (string) $r['navn'], $kort($r['forklaring']),
+                $r['behandlet_at'], $r['av'], $r['status'] === 'rettet' ? ['Rettet', 'gronn'] : ['Avslått', 'rod']);
+        }
+    });
+    $trygt('tilbakebetal', static function () use ($rad, $grense): void {
+        if (!DB::harTabell('avlyst_tilbakebetal')) {
+            return;
+        }
+        foreach (DB::alle("SELECT t.booking_id, t.belop_ore, t.ferdig_at, c.tittel, COALESCE(p.navn, b.gjest_navn) AS navn, m.navn AS av
+                             FROM avlyst_tilbakebetal t
+                             JOIN bookings b ON b.id = t.booking_id
+                             JOIN courses c ON c.id = b.course_id
+                        LEFT JOIN members p ON p.id = b.member_id
+                        LEFT JOIN members m ON m.id = t.ferdig_av
+                            WHERE t.ferdig_at >= {$grense}
+                         ORDER BY t.ferdig_at DESC LIMIT 50") as $r) {
+            $kr = number_format(intdiv((int) $r['belop_ore'] + 50, 100), 0, ',', "\u{a0}");
+            $rad('tilbakebetal', (int) $r['booking_id'], 'Betalt tilbake til ' . (string) $r['navn'],
+                (string) $r['tittel'] . ' · ' . $kr . "\u{a0}kr", $r['ferdig_at'], $r['av'], ['Betalt tilbake', 'gronn']);
+        }
+    });
+    $trygt('henting', static function () use ($rad, $grense): void {
+        if (!DB::harKolonne('bookings', 'hentet_at')) {
+            return;
+        }
+        // Samme økter som «Klar til henting» i Må gjøres, der alle har hentet.
+        foreach (DB::alle(
+            "SELECT cs.id, cs.start_tid, c.tittel, MAX(b.hentet_at) AS naar, COUNT(*) AS deltakere
+               FROM course_sessions cs JOIN courses c ON c.id = cs.course_id
+               JOIN bookings b ON b.course_session_id = cs.id AND b.status IN ('betalt','reservert')
+              WHERE cs.status = 'planlagt' AND cs.hentemelding_at IS NULL
+                AND COALESCE(cs.slutt_tid, cs.start_tid) < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 4 WEEK)
+                AND cs.start_tid > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 16 WEEK)
+           GROUP BY cs.id, cs.start_tid, c.tittel
+             HAVING SUM(b.hentet_at IS NULL) = 0 AND MAX(b.hentet_at) >= {$grense}
+           ORDER BY naar DESC LIMIT 50"
+        ) as $o) {
+            $rad('henting', (int) $o['id'], 'Klar til henting: ' . (string) $o['tittel'],
+                Booking::norskDato((string) $o['start_tid']) . ' · ' . (int) $o['deltakere'] . ' deltakere',
+                $o['naar'], null, ['Hentet', 'gronn'], true);
+        }
+    });
+
+    usort($ut, static fn($a, $b) => $b['tid'] <=> $a['tid']);
+    return $ut;
+})();
+
 Svar::json([
     // Må gjøres på I dag: én samlet liste (se $maGjores over).
     'maGjores' => $maGjores,
+    // Ferdige de siste 30 dagene (null = bryteren Vis/ferdigeliste er av).
+    'ferdige' => $ferdige,
     // «Sett» paa paameldinger lagres paa serveren (migrasjon 265, idé 2).
     'settPaaServer' => DB::harTabell('pamelding_sett'),
     'dagensBestillinger' => $dagensBestillinger,

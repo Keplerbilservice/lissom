@@ -7,6 +7,8 @@
  *                  Vis/kursstart3 er på, ellers deltakerne fra kalender.php. Ingen kall til kursstart3 i oppdateringen.
  *                  Møtt/Ikke møtt = pamelding.php handling=status, samme regel som kursstart3.js.
  *   Må gjøres      oversikt.php «maGjores» (uten påmeldinger) + medlemssalg som venter (medlemssalg.php).
+ *   Ferdige        oversikt.php «ferdige»: merket ferdig de siste 30 dagene, fra de samme tabellene (eieren 02.11.2026).
+ *                  Angre: forespørsel (foresporsler.php status=ubesvart) og Klar til henting (Merk hentet-arket).
  *   Til info       nye påmeldinger (oversikt.php «maGjores» type pamelding, tre dager). Utført = pamelding.php handling=sett.
  */
 (function () {
@@ -27,6 +29,7 @@
   let migr = null; // databaseoppdateringer som venter (NA.oppdateringer, api/migrer.php)
   /* Medlemsoppfølging (eieren 12.10.2026): Prøv Lissom slutter snart og Lav aktivitet, fra oppfolging.php. */
   let oppf = null, oppfTid = 0;
+  let ferdigeApen = false; // «Ferdige» er lukket til den åpnes (eieren 02.11.2026)
   async function hentOppf(tving) {
     if (!tving && Date.now() - oppfTid < 60000) return;
     oppfTid = Date.now();
@@ -34,6 +37,8 @@
   }
   const gjort = new Set();
   const nokkel = s => s.type + ':' + s.id;
+  /* Folk › Forespørsler (eieren 02.11.2026): merkes en forespørsel ubesvart der, skal den tilbake i Må gjøres her. */
+  NA.idagGlem = nok => { gjort.delete(nok); };
 
   const idagIso = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
   const hilsen = () => { const t = new Date().getHours(); return t < 10 ? 'God morgen' : t < 18 ? 'Hei' : 'God kveld'; };
@@ -118,6 +123,7 @@
       ${maa.length || salgIgjen.length || nMigr || oppfHtml ? (nMigr ? radMigr(nMigr) : '') + salgIgjen.map(radSalg).join('') + maa.map(radSak).join('') + oppfHtml : '<p class="tom">Alt er gjort. Fint!</p>'}
       <div class="kort-head" style="margin:22px 0 4px"><h3>Til info</h3><small>Forsvinner av seg selv etter 3 dager</small></div>
       ${info.length ? info.map(s => `<div class="rad idag-info-rad${radMaal(s) ? ` klikkrad" data-rad="${esc(nokkel(s))}" role="button" tabindex="0` : ''}"><div class="tekst"><span class="type">Ny påmelding</span><b>${esc(String(s.tittel).replace(/^Ny påmelding: /, ''))}</b><small>${esc(String(s.under).replace(/ · (Ikke betalt|Betalt)$/, ''))}</small></div><div class="idag-info-side">${s.bestiltDato ? `<small class="idag-bestilt">Bestilt ${esc(s.bestiltDato)}</small>` : ''}<div class="idag-info-status">${s.betalt === true ? '<span class="merke gronn">Betalt</span>' : s.betalt === false ? '<span class="merke rod">Ikke betalt</span>' : ''}<button class="knapp liten" type="button" data-utfort="${esc(nokkel(s))}">Utført</button></div></div></div>`).join('') : '<p class="tom">Ingen nye.</p>'}
+      ${radFerdige(d)}
     </section>`;
     el.innerHTML = `
       <div class="head idag-head"><div><div class="eyebrow">${esc(dato.charAt(0).toUpperCase() + dato.slice(1))}</div><h1>${hilsen()}, ${esc(String(NA.meg?.navn || '').split(' ')[0])}</h1></div>${ovnFelt}</div>
@@ -141,6 +147,29 @@
   const TYPE = {henvendelse: 'Forespørsel', soknad: 'Medlemssøknad', frys: 'Frys', bidrag: 'Medlemsbidrag', betaling: 'Betaling', venteliste: 'Venteliste',
     henting: 'Klar til henting', leire: 'Leirebestilling', dugnad: 'Dugnad', lager: 'Lager', chat: 'Chat', innboks: 'Innboks', feil: 'Feilmelding',
     tilbakebetal: 'Avlyst dato', stempling: 'Verkstedtid'};
+  /* Ferdige (eieren 02.11.2026): det som er merket ferdig de siste 30 dagene. Samme kilde som Må gjøres, så en handling
+     ett sted vises de andre stedene ved neste oppdatering. */
+  function radFerdige(d) {
+    if (!Array.isArray(d.ferdige)) return '';
+    const liste = d.ferdige;
+    const rad = f => `<div class="rad"><div class="tekst"><span class="type">${TYPE[f.type] || ''}</span><b>${esc(f.tittel)}</b>${f.under ? `<small>${esc(f.under)}</small>` : ''}<small class="muted">Ferdig ${esc(naarTekst(f.tid))}${f.av ? ' · ' + esc(f.av) : ''}</small></div>
+      <div class="knapper" style="align-items:center"><span class="merke ${esc(f.farge || '')}">${esc(f.merke)}</span>${f.angre ? `<button class="knapp liten" type="button" data-angre="${esc(f.type)}" data-id="${Number(f.id)}">Angre</button>` : ''}</div></div>`;
+    return `<div class="kort-head" style="margin:22px 0 4px"><h3>Ferdige</h3><span style="display:flex;align-items:center;gap:10px"><small>Siste 30 dager · ${liste.length}</small>
+      <button type="button" class="na-pille" data-ferdigeapne aria-expanded="${ferdigeApen}" aria-controls="idag-ferdige">${ferdigeApen ? 'Skjul' : 'Vis'}</button></span></div>
+      <div id="idag-ferdige" ${ferdigeApen ? '' : 'hidden'}>${liste.length ? liste.map(rad).join('') : '<p class="tom">Ingenting er merket ferdig de siste 30 dagene.</p>'}</div>`;
+  }
+  async function angre(b) {
+    const id = Number(b.dataset.id), type = b.dataset.angre;
+    const f = (NA.sist?.ferdige || []).find(x => x.type === type && Number(x.id) === id); if (!f) return;
+    if (type === 'henting') return arkHentet(f);
+    if (type !== 'henvendelse') return;
+    b.disabled = true;
+    try {
+      await NA.api('foresporsler.php', {data: {id, status: 'ubesvart'}});
+      gjort.delete('henvendelse:' + id); NA.toast('Lagt tilbake i Må gjøres.');
+      await oppdater(true); NA.oppdaterForesporsler?.();
+    } catch (e) { NA.toast(esc(e.message)); b.disabled = false; }
+  }
   const knapp = (tekst, gjor, hoved, ekstra = '') => `<button class="knapp liten ${hoved ? 'hoved' : ''}" type="button" data-gjor="${gjor}" ${ekstra}>${tekst}</button>`;
   /* Databaseoppdateringer som venter (eieren 09.10.2026). Samme knapp som Innstillinger › Oppdateringer. */
   const radMigr = n => `<div class="rad"><div class="tekst"><span class="type">Vedlikehold</span><b>${n} ${n === 1 ? 'databaseoppdatering venter' : 'databaseoppdateringer venter'}</b><small>${esc(migr.mangler.join(' · '))}</small></div><div class="knapper">${knapp('Kjør oppdateringer', 'migrer', true)}</div></div>`;
@@ -270,7 +299,7 @@
     migr = m;
     tegn(d);
   }
-  const ferdig = (nok, tekst) => { gjort.add(nok); if (tekst) NA.toast(esc(tekst)); salgTid = 0; oppdater(true).catch(() => {}); };
+  const ferdig = (nok, tekst) => { gjort.add(nok); if (tekst) NA.toast(esc(tekst)); salgTid = 0; oppdater(true).catch(() => {}); if (/^henvendelse:/.test(nok)) NA.oppdaterForesporsler?.(); };
   const finnSak = k => (NA.sist?.maGjores || []).find(s => nokkel(s) === k);
 
   /* ── ovnen ───────────────────────────────────────────────────────────── */
@@ -305,7 +334,7 @@
         for (const i of endret) await NA.api('ferdigbrent.php', {data: {handling: 'hentet', bookingId: Number(i.value), hentet: i.checked ? 'ja' : 'nei'}});
         const alle = delt.length && [...inn.querySelectorAll('input[type=checkbox]')].every(i => i.checked);
         NA.lukkArk(true);
-        if (alle) ferdig(nokkel(s), 'Alle har hentet.'); else { NA.toast('Lagret.'); oppdater(true).catch(() => {}); }
+        if (alle) ferdig(nokkel(s), 'Alle har hentet.'); else { gjort.delete(nokkel(s)); NA.toast('Lagret.'); oppdater(true).catch(() => {}); }
       } catch (e) { NA.toast(esc(e.message)); lagre.disabled = false; }
     };
   }
@@ -768,6 +797,8 @@
         }
         else if (b.dataset.gjor) gjor(b);
         else if (b.dataset.utfort) utfort(b);
+        else if (b.hasAttribute('data-ferdigeapne')) { ferdigeApen = !ferdigeApen; tegn(NA.sist); el.querySelector('[data-ferdigeapne]')?.focus(); }
+        else if (b.dataset.angre) angre(b);
         else if (b.dataset.oppf === 'snakket') arkSnakket(b);
         else if (b.dataset.oppf === 'sms') smsProve(b);
       });

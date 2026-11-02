@@ -8561,7 +8561,7 @@
                 },
                 {
                     "fil": "ny-admin/felles.js",
-                    "finnes": [
+                    "ikkeFinnes": [
                         "<a class=\"knapp liten gammel-admin\" href=\"/admin-ny\">Gammel admin</a>"
                     ]
                 },
@@ -8587,7 +8587,8 @@
                     ]
                 }
             ],
-            "endret": "12.10.2026: ny admin ligger på /admin (vedtak ny-admin-paa-admin)."
+            "endret": "12.10.2026: ny admin ligger på /admin (vedtak ny-admin-paa-admin).",
+            "oppdatert": "2026-11-02: eieren 02.11.2026 svarte «Ja, borte»: pillen «Gammel admin» i ny admin (ny-admin/felles.js) skal være borte. Den ble tatt bort 29.10.2026 i d86c8602 og skal ikke tilbake; resten av vedtaket gjelder."
         },
         {
             "id": "til-info-betalt",

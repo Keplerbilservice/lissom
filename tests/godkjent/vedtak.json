@@ -1146,7 +1146,9 @@
                     "finnes": [
                         "return max(1, (int) Config::hent('timepakke_timer', '6'));",
                         "return max(0, (int) Config::hent('timepakke_pris_ore', '80000'));",
-                        "return 'Timepakken gjelder ikke Prøv Lissom.';",
+                        "return 'Timepakken gjelder ikke Prøv Lissom.';"
+                    ],
+                    "ikkeFinnes": [
                         "return 'Timepakken kan kjøpes når timene er brukt opp.';"
                     ]
                 },
@@ -1181,7 +1183,8 @@
                         "php tests/timepakke.php"
                     ]
                 }
-            ]
+            ],
+            "oppdatert": "2026-11-02: eieren 02.11.2026 svarte «behold som nå»: timepakken kan kjøpes før månedens timer er brukt opp (2fecf7e1). Sperren mot kjøp før timene er brukt opp skal ikke tilbake; resten av vedtaket gjelder."
         },
         {
             "id": "timepakke-vinduer",
@@ -1193,7 +1196,7 @@
                     "fil": "lissom-2108.html",
                     "finnes": [
                         "tpTittel: 'Snart tomt for timer',",
-                        "tpTittel: 'Månedens timer er brukt opp',",
+                        "tpTittel: 'Kjøp ekstra timer',",
                         "{ tekst: 'Kjøp timepakke', stil: hoved, klikk: kjop },",
                         "{ tekst: 'Oppgrader medlemskap', stil: lys, klikk: tilAbo },",
                         "tpTittel: 'Du har brukt opp Prøv Lissom',",
@@ -1213,7 +1216,8 @@
                         "timepakke: vindu 2"
                     ]
                 }
-            ]
+            ],
+            "oppdatert": "2026-11-02: eieren 02.11.2026 svarte «behold som nå»: vindu 2 har tittelen «Kjøp ekstra timer» (a620188f), ikke «Månedens timer er brukt opp». Resten av vinduene som før."
         },
         {
             "id": "timepakke-svar-admin",
@@ -2584,11 +2588,12 @@
                     "fil": "lissom-2108.html",
                     "finnes": [
                         "msModulVals()",
-                        "if (this.erInne() || this.state.utstApen || this.state.innstRute || this.state.kvittering) return av;"
+                        "if (this.state.utstApen || this.state.innstRute || this.state.kvittering) return av;"
                     ]
                 }
             ],
-            "kontroll": "node tests/nyadmin-kalender.mjs og node tests/minside-moduler-ut.mjs tester faktisk lokal nettleser på 390 og 1280 px. Ingen produksjonsendringer."
+            "kontroll": "node tests/nyadmin-kalender.mjs og node tests/minside-moduler-ut.mjs tester faktisk lokal nettleser på 390 og 1280 px. Ingen produksjonsendringer.",
+            "oppdatert": "2026-11-02: eieren 02.11.2026 svarte «behold som nå»: timepakketilbudet vises også mens medlemmet er stemplet inn (a620188f). Utstempling er fortsatt tilgjengelig uten gjenværende timer."
         },
         {
             "id": "betalt-periode-styrer-tilgang-20261001",
@@ -9852,12 +9857,13 @@
                     "fil": "lissom-2108.html",
                     "finnes": [
                         "<button type=\"button\" class=\"msny-pille msny-tp-pille\" onClick=\"{{ msNyTpApne }}\">{{ msNyTpPilleTekst }}</button>",
-                        "msNyTpPilleVis: timeflisVis && this.timeneBruktOpp() && !this.erInne(),",
+                        "msNyTpPilleVis: medlem && hjem && !!((st || {}).timepakke || {}).kanKjope,",
                         "msNyTpPilleTekst: 'Kjøp timepakke · ' + tall(",
                         "msNyTpApne: () => this.setState({ tpVindu: '2', tpLukket: false }),"
                     ]
                 }
-            ]
+            ],
+            "oppdatert": "2026-11-02: eieren 02.11.2026 svarte «behold som nå»: pillen «Kjøp timepakke» vises alltid når timepakken kan kjøpes (a620188f), også før timene er brukt opp og mens medlemmet er innstemplet."
         },
         {
             "id": "medlemskampanje-facebook-knapp",

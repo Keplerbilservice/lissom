@@ -353,7 +353,7 @@
       $('#topp').innerHTML = '<button class="hamburger" id="hamburger" type="button" aria-label="Meny" aria-expanded="false" aria-controls="meny">☰</button><span class="topp-fyll"></span><span>Regnskap</span>';
       return;
     }
-    $('#topp').innerHTML = `<button class="hamburger" id="hamburger" type="button" aria-label="Meny" aria-expanded="false" aria-controls="meny">☰</button><button class="hjem" type="button" data-side="idag"><span aria-hidden="true">⌂</span> I dag</button><div class="sok-wrap"><input id="sok" type="search" class="sok" placeholder="⌕ Søk" autocomplete="off" aria-label="Søk etter kurs, deltaker, medlem eller vare"><div id="sokres" class="sokres" hidden></div></div>
+    $('#topp').innerHTML = `<button class="hamburger" id="hamburger" type="button" aria-label="Meny" aria-expanded="false" aria-controls="meny">☰</button><button class="hjem" type="button" data-side="idag"><span aria-hidden="true">⌂</span> I dag</button><div class="sok-wrap"><input id="sok" type="search" class="sok" placeholder="⌕ Søk" autocomplete="off" aria-label="Søk etter kurs, deltaker, medlem, vare eller handling"><div id="sokres" class="sokres" hidden></div></div>
       <span id="topptall"></span><span class="topp-fyll"></span>
       <button class="knapp stemple-topp" id="stemple-topp" type="button" hidden></button>
       <span class="live" id="live" title="Oppdateres av seg selv"><i></i><span id="live-tekst">Live</span></span>`;
@@ -448,6 +448,35 @@
     sokData = {deltakere: p.deltakere || [], kurs: k.kurs || [], medlemmer: m.medlemmer || [], varer: v.varer || []};
     return sokData;
   }
+  /* Handlinger i søket (eieren 02.11.2026, «ja, det ser bra ut» på visningen). Monica søkte «hvordan setter jeg opp et helt
+     nytt kurs fra bunnen av» og fikk «Ingen treff». Hver handling har grupper av nøkkelord: treff når alle ordene i en
+     gruppe er begynnelsen på et ord i søket, eller frasen (med mellomrom) står i søket. Hele setninger virker. */
+  /* sok-handling:start */
+  const HANDLING = [
+    {id: 'nyttkurs', navn: '＋ Lag nytt kurs', hva: 'Et helt nytt kurs som ikke finnes fra før', ord: [['nytt', 'kurs'], ['ny', 'kurs'], ['lag', 'kurs'], ['lage', 'kurs'], ['opprett', 'kurs'], ['oppretter', 'kurs'], ['fra bunnen']]},
+    {id: 'serie', navn: '＋ Nytt kurs eller serie', hva: 'Nye datoer for et kurs som finnes', ord: [['nytt', 'kurs'], ['ny', 'kurs'], ['sett', 'kurs'], ['sette', 'kurs'], ['setter', 'kurs'], ['serie'], ['dato'], ['datoer']]},
+    {id: 'kasse', navn: 'Ta betalt', hva: 'Åpner kassa', ord: [['betal'], ['kasse'], ['kassa'], ['vipps']]},
+    {id: 'uttak', navn: 'Uttak leire', hva: 'Ta ut leire fra internbutikken', ord: [['leire'], ['uttak']]},
+    {id: 'skisse', navn: 'Skisseverktøy', hva: 'Tegn en skisse', ord: [['skisse'], ['tegn']]},
+    {id: 'foresporsler', navn: 'Forespørsler', hva: 'Alle forespørsler, nyeste øverst', ord: [['forespørsel'], ['forespørsler'], ['henvendelse']]},
+  ];
+  function handlingTreff(q) {
+    const ql = String(q || '').toLocaleLowerCase('nb-NO'), ord = ql.split(/\s+/).filter(Boolean);
+    return HANDLING.filter(a => a.ord.some(gr => gr.every(o => ord.some(w => w.startsWith(o)) || (o.includes(' ') && ql.includes(o)))));
+  }
+  /* sok-handling:slutt */
+  async function kjorHandling(id) {
+    tell('ny_sok_handling_' + id);
+    if (id === 'kasse') { location.href = NA.kasseAdresse(); return; }
+    if (id === 'uttak') return NA.uttakLeire();
+    if (id === 'skisse') return NA.skisse();
+    if (id === 'foresporsler') { gaTil('foresporsler'); window.scrollTo(0, 0); return; }
+    /* Samme ark som «＋ Nytt kurs eller serie» i Kalender (kalender.js er lastet som modul fra samme adresse). */
+    const {arkSerie} = await import('/ny-admin/kalender.js');
+    await arkSerie();
+    /* «＋ Lag nytt kurs»: samme inngang som valget «＋ Lag nytt kurs …» i Kursmal, som åpner arket «Nytt kurs». */
+    if (id === 'nyttkurs') { const v = $('#se-kurs'); if (v) { v.value = 'ny'; v.dispatchEvent(new Event('change', {bubbles: true})); } }
+  }
   function sokTreff(q, d) {
     const ord = q.toLocaleLowerCase('nb-NO').split(/\s+/).filter(Boolean);
     const passer = t => ord.every(o => String(t || '').toLocaleLowerCase('nb-NO').includes(o));
@@ -456,7 +485,7 @@
     d.deltakere.forEach(x => { if (passer(x.navn + ' ' + (x.epost || '') + ' ' + (x.tlf || ''))) t.push(['Deltaker', x.navn + ' · ' + x.kurs + ' · ' + x.dato, 'kurs', x.oktId ? {okt: x.oktId} : {kurs: x.kursId}]); });
     d.medlemmer.forEach(x => { if (passer(x.navn + ' ' + (x.epost || '') + ' ' + (x.telefon || ''))) t.push(['Medlem', x.navn, 'medlemmer', {person: x.id}]); });
     d.varer.forEach(x => { if (passer(x.tittel)) t.push(['Vare', x.tittel, 'varer', {vare: x.id}]); });
-    return t.slice(0, 12);
+    return [...handlingTreff(q).map(a => ['Handling', a.navn, '', {}, a]), ...t].slice(0, 12);
   }
   let sokNr = 0;
   async function sok(q) {
@@ -471,7 +500,9 @@
     const d = await hentSokData();
     if (nr !== sokNr) return;
     const t = sokTreff(q, d);
-    box.innerHTML = t.length ? t.map(([slag, navn, side, p]) => `<button type="button" data-gatil="${side}" data-p="${esc(new URLSearchParams(p).toString())}"><small>${slag}</small>${esc(navn)}</button>`).join('') : '<p class="tom" style="padding:10px">Ingen treff</p>';
+    box.innerHTML = t.length ? t.map(([slag, navn, side, p, a]) => a
+      ? `<button type="button" data-handling="${a.id}"><small>${slag}</small>${esc(navn)}<span class="muted" style="display:block;font-size:15px">${esc(a.hva)}</span></button>`
+      : `<button type="button" data-gatil="${side}" data-p="${esc(new URLSearchParams(p).toString())}"><small>${slag}</small>${esc(navn)}</button>`).join('') : '<p class="tom" style="padding:10px">Ingen treff</p>';
   }
 
   /* ── hurtig: uttak leire, skisseverktøy, tilpass ─────────────────────── */
@@ -625,6 +656,7 @@
     const d = b.dataset;
     if (d.side) { if (ark().open && !lukkArk(false, {utenTilbake: true})) return; gaTil(d.side); window.scrollTo(0, 0); return; }
     if (d.gatil) { $('#sokres').hidden = true; $('#sok').value = ''; if (ark().open && !lukkArk(false, {utenTilbake: true})) return; gaTil(d.gatil, new URLSearchParams(d.p || '')); window.scrollTo(0, 0); return; }
+    if (d.handling) { $('#sokres').hidden = true; $('#sok').value = ''; if (ark().open && !lukkArk(false, {utenTilbake: true})) return; Promise.resolve(kjorHandling(d.handling)).catch(e => console.error('ny-admin: handling', e)); return; }
     if (d.medlem) { lukkArk(true, {utenTilbake: true}); gaTil('medlemmer', {person: d.medlem}); return; }
     if (d.topp === 'omsetning') return arkOmsetning();
     if (d.topp === 'ubetalt') return arkUbetalt();

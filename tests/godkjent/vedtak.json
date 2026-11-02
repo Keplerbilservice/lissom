@@ -10592,6 +10592,29 @@
                     "ikkeFinnes": []
                 }
             ]
+        },
+        {
+            "id": "sok-handling-20261102",
+            "dato": "2026-11-02",
+            "hva": "Eieren 02.11.2026 («ja, det ser bra ut» på visningen): Toppsøket i ny admin viser handlinger øverst, med etiketten «Handling», navnet og en undertekst: «＋ Lag nytt kurs» / «Et helt nytt kurs som ikke finnes fra før» (åpner «Nytt kurs eller serie» og går rett til arket «Nytt kurs» via valget «＋ Lag nytt kurs …»), «＋ Nytt kurs eller serie» / «Nye datoer for et kurs som finnes» (arkSerie som i Kalender), «Ta betalt» / «Åpner kassa» (NA.kasseAdresse()), «Uttak leire» / «Ta ut leire fra internbutikken», «Skisseverktøy» / «Tegn en skisse», «Forespørsler» / «Alle forespørsler, nyeste øverst». Treff når alle ordene i en nøkkelordgruppe er begynnelsen på et ord i søket, eller frasen («fra bunnen») står i søket; hele setninger virker. «hvordan setter jeg opp et helt nytt kurs fra bunnen av» gir både Lag nytt kurs og Nytt kurs eller serie. Kurs, Deltaker, Medlem og Vare står uendret under, maks 12 totalt. Sider med egen side.sok (Medlemmer, Varer) er som før. aria-label: «Søk etter kurs, deltaker, medlem, vare eller handling». Bruk telles som ny_sok_handling_<id>. Sjekkes i tests/sok-handling.mjs.",
+            "hvor": "Ny admin › toppsøket (PC)",
+            "kode": [
+                {
+                    "fil": "ny-admin/felles.js",
+                    "finnes": [
+                        "aria-label=\"Søk etter kurs, deltaker, medlem, vare eller handling\"",
+                        "{id: 'nyttkurs', navn: '＋ Lag nytt kurs', hva: 'Et helt nytt kurs som ikke finnes fra før'",
+                        "{id: 'serie', navn: '＋ Nytt kurs eller serie', hva: 'Nye datoer for et kurs som finnes'",
+                        "{id: 'kasse', navn: 'Ta betalt', hva: 'Åpner kassa'",
+                        "{id: 'uttak', navn: 'Uttak leire', hva: 'Ta ut leire fra internbutikken'",
+                        "{id: 'skisse', navn: 'Skisseverktøy', hva: 'Tegn en skisse'",
+                        "{id: 'foresporsler', navn: 'Forespørsler', hva: 'Alle forespørsler, nyeste øverst'",
+                        "tell('ny_sok_handling_' + id);",
+                        "v.value = 'ny'; v.dispatchEvent(new Event('change', {bubbles: true}));"
+                    ],
+                    "ikkeFinnes": []
+                }
+            ]
         }
     ]
 }

@@ -62,3 +62,5 @@ app/lib/morgenmelding.php	php tests/morgenmelding.php
 tests/morgenmelding.php	php tests/morgenmelding.php
 db/migrations/283_morgenmelding_kursholder.sql	php tests/morgenmelding.php
 app/lib/maler.php	php tests/morgenmelding.php
+ny-admin/felles.js	node tests/sok-handling.mjs
+tests/sok-handling.mjs	node tests/sok-handling.mjs

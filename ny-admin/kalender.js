@@ -944,7 +944,7 @@ export async function arkSerie({start, enDato = false, kursId = 0} = {}) {
   // Ingen forhåndsvalg (eierens regel): klokkeslett, hvor ofte, hvor lenge og skoleferiene velges hver gang.
   Object.assign(SE, {kursId: forste?.id || 0, holderId: 0, fra: '', til: '',
     plasser: forste?.kapasitet || '', pris: forste ? String(forste.pris) : '', start: start || pluss(idag(), 1),
-    gjentas: enDato ? 1 : 0, varighet: enDato ? -1 : null, egen: '', ferier: new Set(), hoppFerier: false, enDato});
+    gjentas: enDato ? 1 : 0, varighet: enDato ? -1 : null, egen: '', ferier: new Set(), hoppFerier: false, enDato, flyt: false});
   nyNK();
   tegnSerie();
 }
@@ -972,7 +972,8 @@ function tegnSerie() {
   const klar = SE.kursId && SE.fra && SE.til && (SE.enDato || (SE.gjentas && SE.varighet !== null && (VARIGHET[SE.varighet]?.[2] !== 'egen' || SE.egen)));
   const ferier = (FERIER || []).filter(f => f.til >= SE.start && f.fra <= slutt);
   const fmt = d => DAG[ukedag(d)].slice(0, 3) + ' ' + kortDato(d);
-  ark(`<div class="ark-head"><h2>Nytt kurs eller serie</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
+  ark(`<div class="ark-head"><h2>${SE.flyt ? 'Nytt kurs · ' + esc(NK.navn) : 'Nytt kurs eller serie'}</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
+   ${SE.flyt ? nkSteg(3) : ''}
    <div class="to-felt">
      <label><small>Kursmal</small><select id="se-kurs"><option value="0">Velg kurs …</option><option value="ny">＋ Lag nytt kurs …</option>${liste.map(x => `<option value="${x.id}" ${x.id === SE.kursId ? 'selected' : ''}>${esc(x.tittel)}${x.status !== 'publisert' ? ' (' + esc(x.status) + ')' : ''}</option>`).join('')}</select></label>
      <label><small>Kursholder</small><select id="se-holder"><option value="0">${esc(standardHolder()?.navn || 'Standardkursholder')} (standard)</option>${holdere.map(h => `<option value="${h.id}" ${h.id === SE.holderId ? 'selected' : ''}>${esc(h.navn)}</option>`).join('')}</select></label>
@@ -1018,16 +1019,27 @@ document.addEventListener('change', e => {
   }
   if (['se-start', 'se-egen', 'se-gjentas', 'se-fra', 'se-til'].includes(t.id)) { lesSerie(); tegnSerie(); }
 });
-// ── «Nytt kurs» fra «Nytt kurs eller serie» (eieren 02.11.2026, «ja, fint» på visningen) ─────────────
-// Samme lagring som Kurs › Rediger og gamle admin (kurs.php handling=lagre, id 0). Ingen forhåndsvalg på synlighet.
-// Etter lagring er det nye kurset valgt i serie-arket, med plasser og pris fra kurset.
+// ── «Lag nytt kurs»: komplett kurs i tre steg (eieren 03.11.2026: «det må jo være å legge ut et komplett nytt kurs») ──
+// Samme tre steg som kursoppsettet i gammel admin: Kursoppsett (alle tekstene) → Bilder → Dager. Steg 1 lagrer med
+// kurs.php handling=lagre (id 0 første gang, deretter samme id). Bilder bruker bilder.php og kurs.php handling=bilder,
+// som Kursbilder. Dager er «Nytt kurs eller serie» med det nye kurset valgt. Ingen forhåndsvalg på synlighet.
+const NK_TEKSTER = [['tema','Kategori'],['kortBeskrivelse','Kort beskrivelse'],['punkter','Dette er inkludert'],['laerer','Dette lærer du'],
+  ['lagerDu','Dette lager du'],['medHjem','Dette får du med hjem'],['ferdigTid','Når arbeidet er ferdig'],['praktisk','Praktisk informasjon'],
+  ['allergener','Allergener'],['passerNivaa','Passer nivå'],['passerHvem','Passer for'],['metode','Metode'],['varighet','Varighet'],
+  ['varighetTekst','Varighet på nettsiden'],['nivaaTekst','Nivåtekst'],['tillegg','Tillegg'],['bekreftelse','Tekst i bekreftelsen'],
+  ['seoTittel','Søketittel'],['seoMeta','Søkebeskrivelse']];
 const NK = {};
-const nyNK = () => Object.assign(NK, {navn: '', pris: '', plasser: '', synlig: '', om: ''});
+const nyNK = () => Object.assign(NK, {id: 0, navn: '', pris: '', plasser: '', synlig: '', om: '', tekst: {}, bilder: [], arkiv: null});
 nyNK();
 const nkKlar = () => !!(NK.navn.trim() && String(NK.pris).trim() !== '' && +NK.plasser > 0 && NK.synlig);
+const nkBildeSrc = url => /^https?:\/\//.test(String(url || '')) ? url : '/' + String(url || '').replace(/^\/+/, '');
+function nkSteg(n) {
+  return `<div class="valgknapper" style="margin-bottom:12px">${[[1, '1 Kursoppsett'], [2, '2 Bilder'], [3, '3 Dager']].map(([i, navn]) =>
+    `<button class="knapp ${i === n ? 'valgt-knapp' : ''}" data-k="nkGaTil" data-steg="${i}" aria-pressed="${i === n}" ${i > 1 && !NK.id ? 'disabled' : ''}>${navn}</button>`).join('')}</div>`;
+}
 function arkNyttKurs() {
   ark(`<div class="ark-head"><h2>Nytt kurs</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
-   <p class="muted">Kurset legges i lista over kursmaler. Etterpå setter du opp datoene.</p>
+   ${nkSteg(1)}
    <div class="to-felt">
      <label style="grid-column:1/-1"><small>Kursnavn</small><input id="nk-navn" maxlength="191" value="${esc(NK.navn)}"></label>
      <label><small>Pris (kr)</small><input id="nk-pris" inputmode="numeric" value="${esc(NK.pris)}"></label>
@@ -1037,11 +1049,12 @@ function arkNyttKurs() {
      <button class="knapp ${NK.synlig === 'kladd' ? 'valgt-knapp' : ''}" data-k="nkSynlig" data-v="kladd" aria-pressed="${NK.synlig === 'kladd'}">Utkast – ikke synlig ennå</button>
      <button class="knapp ${NK.synlig === 'publisert' ? 'valgt-knapp' : ''}" data-k="nkSynlig" data-v="publisert" aria-pressed="${NK.synlig === 'publisert'}">Publisert</button></div></div>
    <label style="display:grid;gap:5px"><small>Beskrivelse</small><textarea class="felt" id="nk-om">${esc(NK.om)}</textarea></label>
-   <small class="muted">Bilder og resten av teksten legger du inn under Kurs › Rediger, som i dag.</small>
-   <div class="ark-fot"><button class="knapp" data-k="nkTilbake">Tilbake</button><button class="knapp hoved" data-k="nkLagre" ${nkKlar() ? '' : 'disabled'}>Lagre kurset</button></div>`);
+   ${NK_TEKSTER.map(([felt, navn]) => `<label style="display:grid;gap:5px"><small>${navn}</small><textarea class="felt" data-nk-tekst="${felt}" rows="${['tema', 'seoTittel', 'varighet', 'varighetTekst', 'ferdigTid'].includes(felt) ? 1 : 3}">${esc(NK.tekst[felt] || '')}</textarea></label>`).join('')}
+   <div class="ark-fot"><button class="knapp" data-k="nkTilbake">Tilbake</button><button class="knapp hoved" data-k="nkLagre" ${nkKlar() ? '' : 'disabled'}>Lagre og gå til bilder</button></div>`);
   if (NK.navn || NK.pris || NK.plasser || NK.om) F().arkEndret?.(true);
 }
 document.addEventListener('input', e => {
+  if (e.target.dataset?.nkTekst) { NK.tekst[e.target.dataset.nkTekst] = e.target.value; return; }
   const k = {'nk-navn': 'navn', 'nk-pris': 'pris', 'nk-plasser': 'plasser', 'nk-om': 'om'}[e.target.id];
   if (!k) return;
   NK[k] = e.target.value;
@@ -1049,22 +1062,66 @@ document.addEventListener('input', e => {
 });
 H.nkSynlig = b => { NK.synlig = b.dataset.v; arkNyttKurs(); };
 H.nkTilbake = () => tegnSerie();
+H.nkGaTil = b => { const n = +b.dataset.steg; if (n === 1) return arkNyttKurs(); if (!NK.id) return; if (n === 2) return nkBilder(); return nkDager(); };
 H.nkLagre = async b => {
   if (!nkKlar()) return;
   const pris = String(NK.pris).trim();
   if (!/^\d+$/.test(pris)) return toast('Skriv prisen i hele kroner, uten komma eller minus.');
   b.disabled = true;
+  const tekster = Object.fromEntries(NK_TEKSTER.map(([felt]) => [felt, String(NK.tekst[felt] || '').trim()]));
   let r;
   try {
-    r = await api('kurs.php', {handling: 'lagre', id: 0, tittel: NK.navn.trim(), pris: +pris, kapasitet: +NK.plasser,
-      status: NK.synlig, om: NK.om.trim(), type: 'kurs', sms: 'nei'});
+    r = await api('kurs.php', {handling: 'lagre', id: NK.id || 0, tittel: NK.navn.trim(), pris: +pris, kapasitet: +NK.plasser,
+      status: NK.synlig, om: NK.om.trim(), type: 'kurs', sms: 'nei', ...tekster});
   } catch (e) { b.disabled = false; return toast(esc(e.message)); }
-  const ny = ((await hentKurs(true)).kurs || []).find(x => x.id === +r.id);
-  Object.assign(SE, {kursId: +r.id, holderId: 0, plasser: ny?.kapasitet || +NK.plasser, pris: String(ny?.pris ?? pris)});
-  nyNK();
-  tegnSerie();
+  NK.id = +r.id || NK.id;
   toast('Kurset er lagret.');
+  await nkBilder();
 };
+async function nkBilder() {
+  if (!NK.arkiv) { try { const d = await api('bilder.php'); NK.arkiv = [...(d.egne || []), ...(d.medfolgende || [])]; } catch { NK.arkiv = []; } }
+  const k = ((await hentKurs(true)).kurs || []).find(x => x.id === NK.id);
+  NK.bilder = k?.bilder?.length ? k.bilder : k?.bilde ? [k.bilde] : [];
+  ark(`<div class="ark-head"><h2>Nytt kurs · ${esc(NK.navn)}</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
+   ${nkSteg(2)}
+   <p class="muted">Første bilde er hovedbildet. Bildene vises i denne rekkefølgen på kurssiden.</p>
+   <div style="display:grid;gap:10px;margin:12px 0">${NK.bilder.length ? NK.bilder.map((url, i) => `<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+     <img src="${esc(nkBildeSrc(url))}" alt="" style="width:96px;height:72px;object-fit:cover;border-radius:8px">
+     <span>${i === 0 ? 'Hovedbilde' : `Bilde ${i + 1}`}</span>
+     ${i ? `<button class="knapp liten" data-k="nkBildeForst" data-nr="${i}">Flytt først</button>` : ''}
+     <button class="knapp liten" data-k="nkBildeFjern" data-nr="${i}">Fjern fra kurset</button></div>`).join('') : '<p>Ingen kursbilder ennå.</p>'}</div>
+   <label style="display:grid;gap:5px;margin:12px 0"><small>Last opp et bilde</small><input type="file" id="nk-nb-opplast" accept="image/jpeg,image/png,image/webp"></label>
+   <h3>Velg fra bildearkivet</h3>
+   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;max-height:320px;overflow:auto">
+     ${NK.arkiv.map(r => `<div style="border:1px solid var(--line);border-radius:9px;padding:5px"><img src="${esc(nkBildeSrc(r.mini || r.url))}" alt="" loading="lazy" style="width:100%;height:88px;object-fit:cover;border-radius:5px">
+       <button class="knapp liten" data-k="nkBildeVelg" data-url="${esc(r.url)}" style="width:100%;margin-top:5px" ${NK.bilder.includes(r.url) ? 'disabled' : ''}>${NK.bilder.length ? 'Legg til' : 'Bruk bilde'}</button></div>`).join('')}</div>
+   <div class="ark-fot"><button class="knapp" data-k="nkGaTil" data-steg="1">Tilbake</button><button class="knapp hoved" data-k="nkGaTil" data-steg="3">Gå til dager</button></div>`);
+}
+async function nkLagreBilder(bilder) {
+  await api('kurs.php', {handling: 'bilder', id: NK.id, forrigeBilder: NK.bilder, bilder});
+  await nkBilder();
+}
+H.nkBildeVelg = async b => { b.disabled = true; try { await nkLagreBilder([...NK.bilder, b.dataset.url]); toast('Bildet er lagt til.'); } catch (e) { b.disabled = false; toast(esc(e.message)); } };
+H.nkBildeForst = async b => { const nr = +b.dataset.nr; if (!NK.bilder[nr]) return; b.disabled = true; try { await nkLagreBilder([NK.bilder[nr], ...NK.bilder.filter((_, i) => i !== nr)]); toast('Rekkefølgen er lagret.'); } catch (e) { b.disabled = false; toast(esc(e.message)); } };
+H.nkBildeFjern = async b => { const nr = +b.dataset.nr; if (!NK.bilder[nr]) return; b.disabled = true; try { await nkLagreBilder(NK.bilder.filter((_, i) => i !== nr)); toast('Bildet er fjernet fra kurset.'); } catch (e) { b.disabled = false; toast(esc(e.message)); } };
+document.addEventListener('change', async e => {
+  if (e.target.id !== 'nk-nb-opplast' || !e.target.files?.[0]) return;
+  const felt = e.target, fil = felt.files[0];
+  felt.disabled = true;
+  try {
+    const fd = new FormData(); fd.append('handling', 'last-opp'); fd.append('bilde', fil);
+    const r = await fetch('/api/admin/bilder.php', {method: 'POST', body: fd, credentials: 'same-origin'});
+    let d = {}; try { d = await r.json(); } catch { /* tomt svar */ }
+    if (!r.ok || d.ok === false || !d.url) throw Error(d.feil || 'Kunne ikke laste opp bildet.');
+    await nkLagreBilder([...NK.bilder, d.url]);
+    toast('Bildet er lastet opp og lagt til kurset.');
+  } catch (err) { felt.disabled = false; toast(esc(err.message)); }
+});
+function nkDager() {
+  const k = (KURS?.kurs || []).find(x => x.id === NK.id);
+  Object.assign(SE, {kursId: NK.id, holderId: 0, plasser: k?.kapasitet || +NK.plasser, pris: String(k?.pris ?? NK.pris), flyt: true});
+  tegnSerie();
+}
 H.seOk = async b => {
   lesSerie();
   const k = (KURS?.kurs || []).find(x => x.id === SE.kursId); if (!k) return toast('Velg kursmal først.');
@@ -1091,6 +1148,7 @@ H.seOk = async b => {
   let utenPris = 0;
   if (!erPop(k.id) && pris !== '' && +pris !== Math.round(k.pris)) for (const o of lagtInn) { try { await api('kurs.php', {handling: 'dato', oktId: o.oktId, pris}); } catch { utenPris++; } }
   lukk(true);
+  if (SE.flyt) { SE.flyt = false; nyNK(); }
   toast(`<b>${lagtInn.length} ${lagtInn.length === 1 ? 'dato' : 'datoer'} publisert</b> for ${esc(k.tittel)}.${hoppet ? ` ${hoppet} hoppet over (finnes fra før eller stengt).` : ''}${utenPris ? ` <b>Prisen ble ikke lagret på ${utenPris} ${utenPris === 1 ? 'dato' : 'datoer'}</b> — de har kursets pris. Rett den på datoen.` : ''}`);
   KURS = null; await oppfrisk();
 };

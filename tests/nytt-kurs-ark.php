@@ -105,17 +105,19 @@ try {
     sjekk('node --check ny-admin/kalender.js', $kd === 0);
     $js = (string) file_get_contents($rot . '/ny-admin/kalender.js');
     sjekk('«＋ Lag nytt kurs …» rett under «Velg kurs …»', str_contains($js, '<option value="0">Velg kurs …</option><option value="ny">＋ Lag nytt kurs …</option>'));
-    foreach (['<h2>Nytt kurs</h2>', 'Kurset legges i lista over kursmaler. Etterpå setter du opp datoene.', '<small>Kursnavn</small>',
+    foreach (['<h2>Nytt kurs</h2>', "[[1, '1 Kursoppsett'], [2, '2 Bilder'], [3, '3 Dager']]", '<small>Kursnavn</small>',
         '<small>Pris (kr)</small><input id="nk-pris"', '<small>Plasser</small><input id="nk-plasser"', 'Synlig på nettsida',
         'data-v="kladd"', 'Utkast – ikke synlig ennå', 'data-v="publisert"', '<small>Beskrivelse</small><textarea class="felt" id="nk-om">',
-        'Bilder og resten av teksten legger du inn under Kurs › Rediger, som i dag.', 'data-k="nkTilbake">Tilbake</button>',
-        'data-k="nkLagre" ${nkKlar() ? \'\' : \'disabled\'}>Lagre kurset</button>', "toast('Kurset er lagret.');"] as $bit) {
+        "['laerer','Dette lærer du']", "['seoMeta','Søkebeskrivelse']", 'data-k="nkTilbake">Tilbake</button>',
+        'data-k="nkLagre" ${nkKlar() ? \'\' : \'disabled\'}>Lagre og gå til bilder</button>', "toast('Kurset er lagret.');",
+        'id="nk-nb-opplast"', "api('kurs.php', {handling: 'bilder', id: NK.id, forrigeBilder: NK.bilder, bilder});",
+        'data-k="nkGaTil" data-steg="3">Gå til dager</button>', '${SE.flyt ? nkSteg(3) : \'\'}'] as $bit) {
         sjekk('arket har ' . $bit, str_contains($js, $bit));
     }
     sjekk('ingen forhåndsvalg på synlighet', str_contains($js, "synlig: ''") && str_contains($js, '+NK.plasser > 0 && NK.synlig'));
-    sjekk('lagrer med kurs.php handling=lagre id 0', str_contains($js, "api('kurs.php', {handling: 'lagre', id: 0, tittel: NK.navn.trim(), pris: +pris, kapasitet: +NK.plasser,"));
+    sjekk('lagrer med kurs.php handling=lagre (id 0 første gang) og alle tekstene', str_contains($js, "api('kurs.php', {handling: 'lagre', id: NK.id || 0, tittel: NK.navn.trim(), pris: +pris, kapasitet: +NK.plasser,") && str_contains($js, "sms: 'nei', ...tekster});"));
     sjekk('feil fra API-et vises som toast, arket står', str_contains($js, '} catch (e) { b.disabled = false; return toast(esc(e.message)); }'));
-    sjekk('etter lagring: kurset valgt, plasser og pris fra kurset', str_contains($js, 'Object.assign(SE, {kursId: +r.id, holderId: 0, plasser: ny?.kapasitet || +NK.plasser, pris: String(ny?.pris ?? pris)});'));
+    sjekk('Dager: det nye kurset valgt, plasser og pris fra kurset', str_contains($js, 'Object.assign(SE, {kursId: NK.id, holderId: 0, plasser: k?.kapasitet || +NK.plasser, pris: String(k?.pris ?? NK.pris), flyt: true});'));
     sjekk('Tilbake beholder serie-arket', str_contains($js, 'H.nkTilbake = () => tegnSerie();') && str_contains($js, 'const forrige = SE.kursId; lesSerie(); SE.kursId = forrige; arkNyttKurs();'));
 } catch (Throwable $x) {
     sjekk('uventet feil', false, $x->getMessage());

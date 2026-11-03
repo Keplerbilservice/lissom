@@ -10577,17 +10577,14 @@
         {
             "id": "nytt-kurs-fra-serie-20261102",
             "dato": "2026-11-02",
-            "hva": "Eieren 02.11.2026 («ja, fint» på visningen): Øverst i Kursmal i «Nytt kurs eller serie», rett under «Velg kurs …», står «＋ Lag nytt kurs …». Det åpner arket «Nytt kurs» (Kursnavn, Pris (kr), Plasser, «Synlig på nettsida» med «Utkast – ikke synlig ennå»/«Publisert» uten forhåndsvalg, Beskrivelse valgfri). «Lagre kurset» er av til navn, pris, plasser over 0 og synlighet er valgt, og lagrer med kurs.php handling=lagre id 0 (type kurs, SMS av). Etterpå er kurset valgt i serie-arket med plasser og pris fra kurset, og toast «Kurset er lagret.». «Tilbake» beholder det som var fylt inn. Feil fra API-et vises som toast. Gjelder Kalender og Kurs (samme ark). Sjekkes i tests/nytt-kurs-ark.php.",
+            "hva": "Eieren 02.11.2026 («ja, fint» på visningen): Øverst i Kursmal i «Nytt kurs eller serie», rett under «Velg kurs …», står «＋ Lag nytt kurs …». Det åpner arket «Nytt kurs» (Kursnavn, Pris (kr), Plasser, «Synlig på nettsida» med «Utkast – ikke synlig ennå»/«Publisert» uten forhåndsvalg, Beskrivelse valgfri). «Lagre kurset» er av til navn, pris, plasser over 0 og synlighet er valgt, og lagrer med kurs.php handling=lagre id 0 (type kurs, SMS av). Etterpå er kurset valgt i serie-arket med plasser og pris fra kurset, og toast «Kurset er lagret.». «Tilbake» beholder det som var fylt inn. Feil fra API-et vises som toast. Gjelder Kalender og Kurs (samme ark). Sjekkes i tests/nytt-kurs-ark.php. Erstattet 03.11.2026 av «nytt-kurs-komplett-20261103» (tre steg).",
             "hvor": "Ny admin › Kalender «＋ Nytt kurs eller serie» og Kurs «＋ Nytt kurs»",
             "kode": [
                 {
                     "fil": "ny-admin/kalender.js",
                     "finnes": [
                         "<option value=\"0\">Velg kurs …</option><option value=\"ny\">＋ Lag nytt kurs …</option>",
-                        "Kurset legges i lista over kursmaler. Etterpå setter du opp datoene.",
                         "Utkast – ikke synlig ennå",
-                        "Bilder og resten av teksten legger du inn under Kurs › Rediger, som i dag.",
-                        "api('kurs.php', {handling: 'lagre', id: 0, tittel: NK.navn.trim(), pris: +pris, kapasitet: +NK.plasser,",
                         "toast('Kurset er lagret.');"
                     ],
                     "ikkeFinnes": []
@@ -10647,6 +10644,28 @@
                         "window.NA.sokPasser(q, "
                     ],
                     "ikkeFinnes": []
+                }
+            ]
+        },
+        {
+            "id": "nytt-kurs-komplett-20261103",
+            "dato": "2026-11-03",
+            "hva": "Eieren 03.11.2026 («det må jo være å legge ut et komplett nytt kurs», «det har jo vært laget før»): «Lag nytt kurs» (toppsøket og «＋ Lag nytt kurs …» i Nytt kurs eller serie) er et komplett kursoppsett i tre steg som i gammel admin: 1 Kursoppsett (navn, pris, plasser, synlighet uten forhåndsvalg, beskrivelse og alle kurstekstene: kategori, kort beskrivelse, inkludert, lærer, lager, med hjem, ferdig, praktisk, allergener, nivå, passer for, metode, varighet, tillegg, bekreftelse, søketittel/-beskrivelse) → «Lagre og gå til bilder»; 2 Bilder (last opp eller velg fra bildearkivet, første er hovedbildet, flytt først/fjern) → «Gå til dager»; 3 Dager (Nytt kurs eller serie med det nye kurset valgt: klokkeslett, første dato, gjentakelse, hvor lenge, skoleferier) → «Publiser N datoer». Stegknappene øverst; 2 og 3 åpner først når kurset er lagret.",
+            "hvor": "Ny admin › Lag nytt kurs",
+            "kode": [
+                {
+                    "fil": "ny-admin/kalender.js",
+                    "finnes": [
+                        "[[1, '1 Kursoppsett'], [2, '2 Bilder'], [3, '3 Dager']]",
+                        "Lagre og gå til bilder</button>",
+                        "Gå til dager</button>",
+                        "api('kurs.php', {handling: 'lagre', id: NK.id || 0, tittel: NK.navn.trim(), pris: +pris, kapasitet: +NK.plasser,",
+                        "api('kurs.php', {handling: 'bilder', id: NK.id, forrigeBilder: NK.bilder, bilder});",
+                        "${SE.flyt ? nkSteg(3) : ''}"
+                    ],
+                    "ikkeFinnes": [
+                        "Bilder og resten av teksten legger du inn under Kurs › Rediger, som i dag."
+                    ]
                 }
             ]
         }

@@ -56,7 +56,8 @@ const feil=e=>{if(!e.stille)melding(e.message);};
 function aktiv(){if(!person)return;clearTimeout(laasTimer);laasTimer=setTimeout(laas,laasMs);}
 document.addEventListener('pointerdown',aktiv,{passive:true});
 document.addEventListener('keydown',aktiv);
-async function laas(){clearTimeout(laasTimer);stopPoll();stoppListe();document.querySelectorAll('.k-ark').forEach(a=>a.remove());person=null;salg=null;ferdig=null;try{await kall('pin.php',{handling:'laas'});}catch(e){}visPin();}
+// Låsen venter mens en QR-runde står (kontrolløren 03.11.2026): ellers kunne QR-en betales uten at kassa så det.
+async function laas(){if(salg&&salg.qr){aktiv();melding('Gjør ferdig betalingen først.');return;}clearTimeout(laasTimer);stopPoll();stoppListe();document.querySelectorAll('.k-ark').forEach(a=>a.remove());person=null;salg=null;ferdig=null;try{await kall('pin.php',{handling:'laas'});}catch(e){}visPin();}
 
 // «✕ Lukk» (eieren 09.10.2026): kassa åpnet fra ny admin (fra=ny-admin) eller av en innlogget admin går tilbake til /ny-admin,
 // til I dag eller siden i tilbake=. iPad-kassen (kassekontoen, uten fra=ny-admin) får ikke knappen og er som før.
@@ -261,7 +262,7 @@ function nyKundeArk(){
 function tomtSalg(){return{betaler:null,navn:null,bookingId:null,oktId:null,person:null,pop:new Map(),popUten:new Map(),popGjester:0,varer:new Map(),fritt:[],gavekort:[],timepakke:false,priser:new Map(),rabatt:null,regnet:null,feil:'',kontantkunde:false,nokler:{},noklerSig:null,forventet:null,betalt:new Set(),betalinger:[],koder:[],sist:null};}
 function start0(){if(!salg){salg=tomtSalg();salg.kontantkunde=true;tegnVenstre();}}
 // Mens det registreres, eller en QR-kode venter, kan verken kurven eller kunden byttes (kontrolløren 08.10.2026).
-const laast=()=>!!salg&&(salg.vent||salg.betalt.size>0);
+const laast=()=>!!salg&&(salg.vent||salg.betalt.size>0||!!salg.qr);
 const ikkeNaa=()=>{if(laast()){melding('Gjør ferdig betalingen først.');return true;}if(ferdig){ferdig=null;tegnVenstre();tegnKurv();}return false;};
 function kontantkunde(){if(ikkeNaa())return;const g=salg;salg=tomtSalg();salg.kontantkunde=true;if(g)beholdVarer(g);tegnVenstre();visSalg();}
 // Varene som alt er i kurven, blir med når kunden velges etterpå.
@@ -344,6 +345,7 @@ function kurvLinje(d,l,betalt=false){
 function tegnKurv(){
  if(!kurvEl)return;
  if(ferdig){tegnFerdigHoyre();return;}
+ if(salg&&salg.qr){tegnQrVent(salg);return;}
  if(!salg){kurvEl.replaceChildren(el('p',{class:'k-tom',text:'Velg fra listen.'}));return;}
  const r=salg.regnet;const linjer=[];
  if(r&&r.betalt)for(const l of r.betalt.linjer)linjer.push(kurvLinje({type:'booking',id:r.betalt.id},l,true));
@@ -426,51 +428,78 @@ function vippsNummer(){
  ark(`Har du sett at ${sum} er kommet inn på Vipps?`,lukk=>[el('div',{class:'k-rad-knapper'},pille('Avbryt',lukk),pille('Ja, registrer',()=>{lukk();registrer('Vipps','med Vipps-nummer');},'fylt'))]);
 }
 // Vipps-QR i kurven (tilbake 03.11.2026, samme logikk som før 30.10): én QR per del, neste når den forrige er betalt.
-// Mens QR-en vises, er kurven låst («Tilbake» låser opp så lenge ingen del er betalt). Statusen hentes fra Vipps via serveren
-// hvert 3. sekund (Kasse::status); nøklene per del gjør at et nytt trykk gir samme betaling, ikke en ny.
-// Summen og delene låses når QR-en startes (s.qrRegnet), så en kurv som er regnet på nytt underveis aldri vises som betalt
-// med en annen sum (kontrolløren 03.11.2026). Etter hvert svar fra serveren: gjelder svaret ikke lenger (annet salg, «Tilbake»
-// eller QR-flaten er borte), gjøres ingenting.
-function qrStart(){const s=salg;if(!s||!s.regnet||s.vent||nettNede)return;forbered(s);if(!s.betalt.size||!s.qrRegnet)s.qrRegnet=s.regnet;const deler=s.qrRegnet.deler.map(d=>d.id);qr(s,Math.max(0,deler.findIndex(id=>!s.betalt.has(id))),deler);}
-const qrGjelder=(s,omraade)=>salg===s&&!!s.vent&&(!omraade||omraade.isConnected);
+// Hver QR-runde (s.qr) har sin egen låste sum og sine egne deler; delBetalt og Betalt-skjermen bruker dem, og et svar for en
+// annen runde eller et annet salg gjør aldri noe (kontrolløren 03.11.2026). Så lenge s.qr finnes, er kurven låst (laast()).
+// «Tilbake» stopper QR-en på serveren først (handling=stoppQr): kurven låses opp bare når den er stoppet; svarer serveren
+// betalt, vises Betalt for den QR-en; feiler kallet, forblir kurven låst med «Prøv igjen». Et betalt-svar kastes aldri så
+// lenge salget og QR-runden er de samme. Statusen hentes fra Vipps via serveren hvert 3. sekund (Kasse::status);
+// nøklene per del gjør at et nytt trykk gir samme betaling, ikke en ny.
+function qrStart(){
+ const s=salg;if(!s||!s.regnet||s.vent||nettNede)return;
+ if(!s.qr){forbered(s);s.qr={regnet:s.regnet,deler:s.regnet.deler.map(d=>d.id)};}
+ const q=s.qr;qr(s,q,Math.max(0,q.deler.findIndex(id=>!s.betalt.has(id))));
+}
+const qrDenne=(s,q)=>salg===s&&s.qr===q;
+const qrGjelder=(s,q,omraade)=>qrDenne(s,q)&&!!s.vent&&(!omraade||omraade.isConnected);
 function qrValg(s){
  const igjen=()=>{stopPoll();if(salg!==s)return;s.vent=false;qrStart();};
  const kontant=()=>{stopPoll();if(salg!==s)return;s.vent=false;registrer('Kontant',s.betalt.size?'med Vipps og kontant':'kontant');};
  return el('div',{class:'k-rad-knapper',style:'justify-content:center'},pille('Prøv igjen',igjen,'fylt'),s.betalt.size?pille('Betal resten kontant',kontant):null);
 }
-async function qr(s,i,deler){
- stopPoll();const id=deler[i];const n=deler.length;s.vent=true;
+// Når QR-flaten tegnes på nytt mens runden står (feil fra registrer, nett tilbake): låst, med «Prøv igjen» (og «Tilbake»).
+function tegnQrVent(s){
+ const q=s.qr;const omraade=el('div',{class:'k-qrsone'},qrValg(s));
+ sett(kurvEl,el('div',{class:'k-hvem'},el('span',{text:s.navn||'Kontantkunde'})),el('div',{class:'k-sum'},el('span',{text:'Totalt'}),el('span',{text:q.regnet.sum})),omraade,s.betalt.size?null:tilbakeKnapp(s,q,omraade));
+}
+// «Tilbake»: stopp QR-en for delen som venter på serveren før kurven låses opp.
+function tilbakeKnapp(s,q,omraade){
+ const tilbake=async ev=>{
+  const k=ev.currentTarget;if(!qrDenne(s,q))return;k.disabled=true;stopPoll();s.vent=true;
+  const i=Math.max(0,q.deler.findIndex(id=>!s.betalt.has(id)));const id=q.deler[i];
+  let r;
+  try{r=await kall('kasse.php',{handling:'stoppQr',del:id,nokkel:s.nokler[id]});}
+  catch(e){if(e.stille||!qrDenne(s,q))return;k.disabled=false;omraade.replaceChildren(el('p',{class:'k-feil',role:'alert',text:e.message}),qrValg(s));return;}
+  if(!qrDenne(s,q))return;
+  if(r.betalt){if(r.kode&&!s.koder.some(x=>x.kode===r.kode))s.koder.push({kode:r.kode,belop:kr(q.regnet.deler[i].sumOre)});if(r.betalingId&&!s.betalinger.includes(r.betalingId))s.betalinger.push(r.betalingId);await delBetalt(s,q,i);return;}
+  // Stoppet: QR-delene som ikke er betalt får nye nøkler (den gamle QR-en er avbrutt og kan ikke brukes igjen).
+  for(const x of q.deler)if(!s.betalt.has(x)&&!x.startsWith('booking:'))s.nokler[x]=uuid();
+  s.qr=null;s.vent=false;tegnKurv();
+ };
+ return el('button',{type:'button',class:'k-pille k-qrtilbake',text:'Tilbake',onclick:tilbake});
+}
+async function qr(s,q,i){
+ if(!qrDenne(s,q))return;
+ stopPoll();const id=q.deler[i];const n=q.deler.length;s.vent=true;
  const omraade=el('div',{class:'k-qrsone'},el('p',{text:'Henter QR-kode …'}));
- sett(kurvEl,el('div',{class:'k-hvem'},el('span',{text:s.navn||'Kontantkunde'})),el('div',{class:'k-sum'},el('span',{text:'Totalt'}),el('span',{text:s.qrRegnet.sum})),omraade,s.betalt.size?null:pille('Tilbake',()=>{stopPoll();s.vent=false;if(salg===s)tegnKurv();},'k-qrtilbake'));
+ sett(kurvEl,el('div',{class:'k-hvem'},el('span',{text:s.navn||'Kontantkunde'})),el('div',{class:'k-sum'},el('span',{text:'Totalt'}),el('span',{text:q.regnet.sum})),omraade,s.betalt.size?null:tilbakeKnapp(s,q,omraade));
  let d;
  try{d=await kall('kasse.php',{handling:'qr',del:id,...body(s)});}
- catch(e){if(e.stille||!qrGjelder(s,omraade))return;if(e.status===410)s.nokler[id]=uuid();omraade.replaceChildren(el('p',{class:'k-feil',role:'alert',text:e.message}),qrValg(s));return;}
- // Et svar om at delen er betalt kastes aldri så lenge salget er det samme, heller ikke etter «Tilbake» (kontrolløren 03.11.2026):
- // ellers kunne kunden betale både med Vipps og kontant. Bare sene svar som ikke er betalt, ignoreres.
- if(salg!==s)return;
- if(d.betalt){if(d.betalingId&&!s.betalinger.includes(d.betalingId))s.betalinger.push(d.betalingId);await delBetalt(s,i,deler);return;}
- if(!qrGjelder(s,omraade))return;
+ catch(e){if(e.stille||!qrGjelder(s,q,omraade))return;if(e.status===410)s.nokler[id]=uuid();omraade.replaceChildren(el('p',{class:'k-feil',role:'alert',text:e.message}),qrValg(s));return;}
+ // Et svar om at delen er betalt kastes aldri så lenge salget og QR-runden er de samme (heller ikke under «Tilbake»).
+ if(!qrDenne(s,q))return;
+ if(d.betalt){if(d.betalingId&&!s.betalinger.includes(d.betalingId))s.betalinger.push(d.betalingId);await delBetalt(s,q,i);return;}
+ if(!qrGjelder(s,q,omraade))return;
  const status=el('p',{style:'font-weight:700',text:'Venter på Vipps …'});
  omraade.replaceChildren(...[n>1?el('p',{class:'k-tom',text:`Vipps ${i+1} av ${n} · ${d.belop}`}):null,el('img',{class:'k-qr',src:d.qr,alt:'QR-kode for betaling med Vipps'}),status].filter(Boolean));
  let runder=0;
- const sjekk=async()=>{pollTimer=null;if(!qrGjelder(s,omraade))return;try{const st=await kall('kasse.php',{handling:'status',poll:d.poll});if(salg!==s)return;if(st.betalt){if(st.kode&&!s.koder.some(k=>k.kode===st.kode))s.koder.push({kode:st.kode,belop:d.belop});if(st.betalingId&&!s.betalinger.includes(st.betalingId))s.betalinger.push(st.betalingId);await delBetalt(s,i,deler);return;}if(!qrGjelder(s,omraade))return;if(['avbrutt','feilet'].includes(st.status)){s.nokler[id]=uuid();status.textContent='Betalingen ble avbrutt i Vipps.';omraade.append(qrValg(s));return;}}catch(e){if(e.stille||!qrGjelder(s,omraade))return;status.textContent=e.message;}
+ const sjekk=async()=>{pollTimer=null;if(!qrGjelder(s,q,omraade))return;try{const st=await kall('kasse.php',{handling:'status',poll:d.poll});if(!qrDenne(s,q))return;if(st.betalt){if(st.kode&&!s.koder.some(k=>k.kode===st.kode))s.koder.push({kode:st.kode,belop:d.belop});if(st.betalingId&&!s.betalinger.includes(st.betalingId))s.betalinger.push(st.betalingId);await delBetalt(s,q,i);return;}if(!qrGjelder(s,q,omraade))return;if(['avbrutt','feilet'].includes(st.status)){s.nokler[id]=uuid();status.textContent='Betalingen ble avbrutt i Vipps.';omraade.append(qrValg(s));return;}}catch(e){if(e.stille||!qrGjelder(s,q,omraade))return;status.textContent=e.message;}
   // Går tiden ut, vises «Prøv igjen» (og «Betal resten kontant» når en del er betalt), så kassa aldri blir stående låst.
   if(++runder<220)pollTimer=setTimeout(sjekk,3000);else{status.textContent='Ingen bekreftelse ennå. Sjekk Penger i admin før du tar betalt på nytt.';omraade.append(qrValg(s));}};
  pollTimer=setTimeout(sjekk,3000);
 }
 // Serveren har sagt betalt: kurven låses igjen og «Tilbake» tas bort med en gang. Neste del eller Betalt-skjermen krever bare
-// at salget er det samme (ikke s.vent), så Betalt-skjermen alltid kommer når hele kurven er betalt (kontrolløren 03.11.2026).
-async function delBetalt(s,i,deler){
- if(salg!==s)return;
- s.vent=true;s.betalt.add(deler[i]);
+// at salget og QR-runden er de samme (ikke s.vent), så Betalt-skjermen alltid kommer når hele kurven er betalt.
+async function delBetalt(s,q,i){
+ if(!qrDenne(s,q))return;
+ s.vent=true;s.betalt.add(q.deler[i]);
  if(kurvEl)kurvEl.querySelectorAll('.k-qrtilbake').forEach(k=>k.remove());
- const neste=deler.findIndex(id=>!s.betalt.has(id));
- if(neste>=0){await qr(s,neste,deler);return;}
+ const neste=q.deler.findIndex(id=>!s.betalt.has(id));
+ if(neste>=0){await qr(s,q,neste);return;}
  let valg={epost:false,sms:false,betalinger:s.betalinger};
  try{valg=await kall('kasse.php',{handling:'kvitteringValg',betaler:betalerTilServer(s),betalinger:s.betalinger});}catch(e){}
- if(salg!==s)return;
+ if(!qrDenne(s,q))return;
  s.vent=false;
- visFerdig(s,{sum:s.qrRegnet.sum,tekst:'med Vipps',valg,koder:s.koder,endringer:[]});
+ visFerdig(s,{sum:q.regnet.sum,tekst:'med Vipps',valg,koder:s.koder,endringer:[]});
 }
 // Gavekort: hele beløpet trekkes fra kortet. Dekker kortet ikke alt, avviser serveren betalingen (midlertidig, eieren avgjør).
 function gavekortBetal(){

@@ -519,6 +519,68 @@ try {
     sjekk('… betalte kunden den gamle QR-en: 409, kontanten registreres ikke', $s[0] === 409 && $antallBetalinger() === $for
         && DB::verdi('SELECT status FROM payments WHERE vipps_reference = :r', ['r' => $ref7]) === 'betalt', $tekst($s));
 
+    // ── Kontrolløren 3. november 2026: QR betalt via webhooken før kassa fikk vite det ──
+    // Webhooken er simulert med Vipps::synkroniser() — samme behandling som webhooken og cron.
+    $qrBetaltViaWebhook = static function () use ($kjop, $send, $sett, $K, &$kasseToken, $produkt): array {
+        $sett('.betaling-status', 'CREATED');
+        DB::oppdater('products', ['lager' => 3], ['id' => $produkt]);
+        $k = $kjop(['varer' => [['id' => $produkt, 'antall' => 1]]], []);
+        $s = kall($K, ['handling' => 'qr', 'del' => 'ordre'] + $send($k), $kasseToken);
+        $ref = (string) ($s[1]['poll']['referanse'] ?? '');
+        $sett('.betaling-status', 'AUTHORIZED');
+        Vipps::synkroniser($ref);
+        $sett('.betaling-status', 'CREATED');
+        return [$k, $ref, (int) DB::verdi('SELECT id FROM payments WHERE vipps_reference = :r', ['r' => $ref])];
+    };
+    // 1) «Tilbake» mens QR-en står: serveren sier betalt (290 kr), ikke «stoppet», og kurven låses ikke opp.
+    [$kw, $refw, $pidw] = $qrBetaltViaWebhook();
+    sjekk('webhooken: QR-betalingen på 290 kr er betalt', DB::verdi('SELECT status FROM payments WHERE id = :i', ['i' => $pidw]) === 'betalt'
+        && (int) DB::verdi('SELECT belop_ore FROM payments WHERE id = :i', ['i' => $pidw]) === 29000);
+    $s = kall($K, ['handling' => 'stoppQr', 'del' => 'ordre', 'nokkel' => $kw['nokler']['ordre']], $kasseToken);
+    sjekk('«Tilbake» (stoppQr) etter webhooken: betalt, med betalingsraden — kassa viser Betalt for den QR-en',
+        $s[0] === 200 && ($s[1]['betalt'] ?? false) === true && ($s[1]['status'] ?? '') === 'betalt' && ($s[1]['betalingId'] ?? 0) === $pidw, $tekst($s));
+    $for = $antallBetalinger();
+    $s = kall($K, ['handling' => 'betal', 'maate' => 'Kontant'] + $send($kw), $kasseToken);
+    sjekk('… Kontant for samme kurv etterpå: ingen ny betaling (QR-en har gjort opp delen)', $antallBetalinger() === $for, $tekst($s));
+
+    // 2) Kurven endret (nye nøkler) og Kontant uten at kassa har sett QR-betalingen: 409, kontanten føres ikke i tillegg.
+    [$kx, $refx, $pidx] = $qrBetaltViaWebhook();
+    $for = $antallBetalinger();
+    $s = kall($K, ['handling' => 'betal', 'maate' => 'Kontant'] + $send($kjop(['fritt' => ['150']], [])), $kasseToken);
+    sjekk('QR betalt via webhooken → endret kurv → Kontant: 409, kontanten registreres ikke', $s[0] === 409 && $antallBetalinger() === $for
+        && str_contains((string) ($s[1]['feil'] ?? ''), 'Vipps-betaling fra kassa ble nettopp betalt'), $tekst($s));
+    $s = kall($K, ['handling' => 'betal', 'maate' => 'Vipps'] + $send($kjop(['fritt' => ['150']], [])), $kasseToken);
+    sjekk('… beskjeden gis én gang (kassa blir ikke stående sperret): neste salg går gjennom', $s[0] === 200 && $antallBetalinger() === $for + 1, $tekst($s));
+
+    // 3) Samme kurv, QR betalt via webhooken uten at kassa har sett det: Kontant, Gavekort og Vipps-nummer avvises (409).
+    [$ky, $refy, $pidy] = $qrBetaltViaWebhook();
+    $for = $antallBetalinger();
+    $s = kall($K, ['handling' => 'betal', 'maate' => 'Kontant'] + $send($ky), $kasseToken);
+    $s2 = kall($K, ['handling' => 'betal', 'maate' => 'Vipps'] + $send($ky), $kasseToken);
+    sjekk('QR betalt via webhooken → Kontant / Vipps-nummer for samme kurv: 409 «Kunden har alt betalt med Vipps», ingenting registrert',
+        $s[0] === 409 && $s2[0] === 409 && $antallBetalinger() === $for
+        && ($s[1]['feil'] ?? '') === 'Kunden har alt betalt med Vipps. Ikke ta betalt på nytt.', $tekst($s) . ' ' . $tekst($s2));
+    $s = kall($K, ['handling' => 'qr', 'del' => 'ordre'] + $send($ky), $kasseToken);
+    sjekk('… «Prøv igjen» (samme QR) viser den som betalt', $s[0] === 200 && ($s[1]['betalt'] ?? false) === true && ($s[1]['betalingId'] ?? 0) === $pidy, $tekst($s));
+
+    // 4) «Tilbake» mens QR-en venter: stoppes hos Vipps, ordren kanselleres, og den kan ikke betales etterpå.
+    $sett('.betaling-status', 'CREATED');
+    DB::oppdater('products', ['lager' => 3], ['id' => $produkt]);
+    $kz = $kjop(['varer' => [['id' => $produkt, 'antall' => 1]]], []);
+    $s = kall($K, ['handling' => 'qr', 'del' => 'ordre'] + $send($kz), $kasseToken);
+    $refz = (string) ($s[1]['poll']['referanse'] ?? '');
+    $s = kall($K, ['handling' => 'stoppQr', 'del' => 'ordre', 'nokkel' => $kz['nokler']['ordre']], $kasseToken);
+    $pz = DB::en('SELECT id, status FROM payments WHERE vipps_reference = :r', ['r' => $refz]);
+    sjekk('«Tilbake» mens QR-en venter: stoppet hos Vipps (cancelTransactionOnly), betalingen avbrutt og QR-ordren kansellert',
+        $s[0] === 200 && ($s[1]['status'] ?? '') === 'stoppet' && ($s[1]['betalt'] ?? true) === false && $pz['status'] === 'avbrutt'
+        && DB::verdi('SELECT status FROM orders WHERE payment_id = :p', ['p' => (int) $pz['id']]) === 'kansellert'
+        && count($vippsKall(static fn($k) => ($k['sti'] ?? '') === '/epayment/v1/payments/' . $refz . '/cancel' && ($k['kropp']['cancelTransactionOnly'] ?? false) === true)) === 1,
+        $tekst($s) . ' ' . json_encode($pz));
+    $s = kall($K, ['handling' => 'stoppQr', 'del' => 'ordre', 'nokkel' => Vipps::uuid()], $kasseToken);
+    sjekk('… «Tilbake» før noen QR er laget: «ingen», kurven kan låses opp', $s[0] === 200 && ($s[1]['status'] ?? '') === 'ingen', $tekst($s));
+    $s = kall($K, ['handling' => 'stoppQr', 'del' => 'ordre', 'nokkel' => 'ikke-en-nokkel'], $kasseToken);
+    sjekk('… ugyldig nøkkel avvises', $s[0] === 409, $tekst($s));
+
     // «Skriv beløp» med slag (eieren 24.10.2026): kurs og kunst uten mva (formål booking), brukskunst og leire med mva (ordre).
     $ks = $kjop(['fritt' => [['belop' => '500', 'slag' => 'kurs'], ['belop' => '300', 'slag' => 'leire'], ['belop' => '200', 'slag' => 'kunst']]], []);
     $s = kall($K, ['handling' => 'betal', 'maate' => 'Kontant'] + $send($ks), $kasseToken);

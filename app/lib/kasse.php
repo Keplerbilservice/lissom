@@ -254,6 +254,7 @@ final class Kasse
             // QR-koder fra denne iPaden som venter for en annen kurv (for
             // eksempel før «Tilbake»), stoppes hos Vipps før kontanten tas.
             self::stoppOktensQr($nokkelListe);
+            self::sperrUsettQr($deler);
             if ($kort !== null) {
                 // Hele kurven med gavekort: én transaksjon, kortet låst, alt
                 // eller ingenting (kontrolløren 31. oktober 2026).
@@ -607,7 +608,72 @@ final class Kasse
                 continue;
             }
             if (self::stoppQr($k) === 'betalt') {
+                self::merkSett((int) (self::radMed($k)['id'] ?? 0));
                 throw new RuntimeException('En Vipps-betaling fra kassa ble nettopp betalt. Sjekk Dagens oppgjør før du tar betalt på nytt.', 409);
+            }
+        }
+        // En QR-kode fra denne iPaden som er betalt (webhooken eller cron kom
+        // først), uten at iPaden har fått vite det: samme stopp, én gang —
+        // ellers kunne kontanten for en endret kurv tas i tillegg
+        // (kontrolløren 3. november 2026). Den merkes som sett når beskjeden
+        // gis, så kassa ikke blir stående sperret.
+        $usett = [];
+        foreach (DB::alle(
+            "SELECT p.id, p.idempotency_key FROM payments p
+              WHERE p.vipps_reference LIKE :p AND p.type = 'epayment' AND p.status IN ('autorisert', 'betalt', 'delvis_refundert')
+                AND p.created_at >= DATE_SUB(LEAST(NOW(), UTC_TIMESTAMP()), INTERVAL 30 MINUTE)
+                AND NOT EXISTS (SELECT 1 FROM audit_log a WHERE a.handling = 'kasse_qr_sett' AND a.objekt_type = 'payment' AND a.objekt_id = p.id)",
+            ['p' => self::oktPrefiks() . '-%']
+        ) as $r) {
+            if (!in_array(strtolower((string) $r['idempotency_key']), $unntatt, true)) {
+                $usett[] = (int) $r['id'];
+            }
+        }
+        if ($usett !== []) {
+            foreach ($usett as $pid) {
+                self::merkSett($pid);
+            }
+            throw new RuntimeException('En Vipps-betaling fra kassa ble nettopp betalt. Sjekk Dagens oppgjør før du tar betalt på nytt.', 409);
+        }
+    }
+
+    /** iPaden har fått vite at QR-betalingen er betalt (qr, status, stoppQr eller beskjeden over). */
+    private static function merkSett(int $betalingId): void
+    {
+        if ($betalingId > 0 && !self::erSett($betalingId)) {
+            revider('kasse_qr_sett', 'payment', $betalingId);
+        }
+    }
+
+    private static function erSett(int $betalingId): bool
+    {
+        $v = DB::verdi("SELECT 1 FROM audit_log WHERE handling = 'kasse_qr_sett' AND objekt_type = 'payment' AND objekt_id = :p LIMIT 1",
+            ['p' => $betalingId]);
+        return $v !== null && $v !== false;
+    }
+
+    /**
+     * Før noe registreres i betal(): er en QR-kode for en av delene betalt
+     * uten at iPaden har fått vite det, stoppes alt med 409. Da tas aldri
+     * kontant (eller gavekort, Vipps-nummer) for det kunden alt har betalt med
+     * Vipps; «Prøv igjen» i kassa viser den som betalt (kontrolløren
+     * 3. november 2026). Påmeldinger har sin egen sperre (skyldig()).
+     *
+     * @param list<array<string,mixed>> $deler
+     */
+    private static function sperrUsettQr(array $deler): void
+    {
+        foreach ($deler as $d) {
+            if ($d['type'] === 'booking') {
+                continue;
+            }
+            $n = (string) $d['nokkel'];
+            $rad = self::radMed($n);
+            if ($rad === null || (string) $rad['type'] !== 'epayment') {
+                continue;
+            }
+            if (self::stoppQr($n) === 'betalt' && !self::erSett((int) $rad['id'])) {
+                throw new RuntimeException('Kunden har alt betalt med Vipps. Ikke ta betalt på nytt.', 409);
             }
         }
     }
@@ -1110,7 +1176,11 @@ final class Kasse
             try {
                 // Endret pris og rabatt låses per del (rører ingenting ennå).
                 KasseJustering::laas($deler, $person);
-                return self::qrDel($d, $deler, $betaler, $nokkel, $person);
+                $r = self::qrDel($d, $deler, $betaler, $nokkel, $person);
+                if (($r['betalt'] ?? false) === true && $d['type'] !== 'booking') {
+                    self::merkSett((int) ($r['betalingId'] ?? 0));
+                }
+                return $r;
             } finally {
                 self::slippOkt();
             }
@@ -1400,6 +1470,67 @@ final class Kasse
     }
 
     /**
+     * «Tilbake» mens en QR-kode venter (kontrolløren 3. november 2026): QR-en
+     * for delen stoppes hos Vipps først, og iPaden låser opp kurven bare når
+     * svaret er «stoppet» eller «ingen» (QR-en ble aldri laget). Rakk kunden å
+     * betale, er svaret «betalt», og iPaden viser Betalt for den QR-en. Får vi
+     * ikke stoppet den (Vipps svarer ikke), kastes en feil: kurven forblir låst.
+     * Samme låser og rekkefølge som qr() og betal(), så en QR som er under
+     * opprettelse blir ferdig før den stoppes.
+     *
+     * @return array{status:string, betalt:bool, betalingId?:int|null, kode?:string}
+     */
+    public static function stoppQrDel(string $delId, string $nokkel): array
+    {
+        if (!self::gyldigNokkel($nokkel)) {
+            throw new RuntimeException('Kurven er endret. Se over den og prøv igjen.', 409);
+        }
+        $nokkel = strtolower($nokkel);
+        self::laasDel($nokkel);
+        try {
+            self::laasOkt();
+            try {
+                if (str_starts_with($delId, 'booking:')) {
+                    $bid = (int) substr($delId, 8);
+                    if ($bid <= 0 || KasseKurv::booking($bid) === null) {
+                        throw new RuntimeException('Fant ikke påmeldingen.', 404);
+                    }
+                    $stopp = KursstartKrav::stoppVentende($bid);
+                    if (self::skyldigNaa($bid) === 0) {
+                        return ['status' => 'betalt', 'betalt' => true, 'betalingId' => self::ksQrBetalt($bid)];
+                    }
+                    if ($stopp !== null) {
+                        throw new RuntimeException('Fikk ikke stoppet Vipps-betalingen som venter. Prøv igjen om litt.', KursstartKrav::VIPPS_NEI);
+                    }
+                    return ['status' => 'stoppet', 'betalt' => false];
+                }
+                $rad = self::radMed($nokkel);
+                // Bare QR-koder denne iPaden har vist.
+                if ($rad !== null && (string) $rad['type'] === 'epayment'
+                    && !str_starts_with((string) $rad['vipps_reference'], self::oktPrefiks() . '-')) {
+                    throw new RuntimeException('Fant ikke betalingen.', 404);
+                }
+                $s = self::stoppQr($nokkel);
+                if ($s === 'betalt') {
+                    $pid = (int) ($rad['id'] ?? 0);
+                    self::merkSett($pid);
+                    $ut = ['status' => 'betalt', 'betalt' => true, 'betalingId' => $pid];
+                    $kode = DB::verdi("SELECT kode FROM gift_cards WHERE payment_id = :p AND status <> 'ubetalt'", ['p' => $pid]);
+                    if ($kode !== null && $kode !== false) {
+                        $ut['kode'] = (string) $kode;
+                    }
+                    return $ut;
+                }
+                return ['status' => $s, 'betalt' => false];
+            } finally {
+                self::slippOkt();
+            }
+        } finally {
+            self::slippDel($nokkel);
+        }
+    }
+
+    /**
      * Er QR-betalingen inne? Statusen hentes fra Vipps (ikke oftere enn hvert
      * femte sekund), samme behandling som webhooken og cron.
      *
@@ -1453,6 +1584,7 @@ final class Kasse
         $ut = ['status' => $status, 'betalt' => in_array($status, ['betalt', 'delvis_refundert'], true)];
         if ($ut['betalt']) {
             $ut['betalingId'] = (int) $rad['id'];
+            self::merkSett((int) $rad['id']);
             $kode = DB::verdi("SELECT kode FROM gift_cards WHERE payment_id = :p AND status <> 'ubetalt'", ['p' => (int) $rad['id']]);
             if ($kode !== null && $kode !== false) {
                 $ut['kode'] = (string) $kode;

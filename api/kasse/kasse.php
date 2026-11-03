@@ -20,6 +20,7 @@
  *   POST handling=delt     { kurv, betaler, deler, nokler, forventet }
  *   POST handling=qr       { kurv, betaler, del, nokler, forventet }
  *   POST handling=status   { poll: {bookingId} | {referanse} }
+ *   POST handling=stoppQr  { del, nokkel }   «Tilbake»: stopp QR-en først (stoppet | ingen | betalt)
  *   POST handling=kvitteringValg { betaler, betalinger }   etter Vipps-QR
  *   POST handling=betalteIkke { bookingId }               «Endre» → «Betalte ikke»
  *   POST handling=kvittering  { betalinger, kanal, betaler, telefon? }
@@ -93,6 +94,10 @@ try {
 
         case 'status':
             Svar::ok(Kasse::status($liste('poll')));
+
+        case 'stoppQr':
+            // «Tilbake» mens QR-en venter: stoppes hos Vipps før kurven låses opp (kontrolløren 3. november 2026).
+            Svar::ok(Kasse::stoppQrDel(Foresporsel::tekst('del'), Foresporsel::tekst('nokkel')));
 
         case 'kvitteringValg':
             // Etter Vipps-QR: hvilke kvitteringer som kan sendes for det som ble betalt.

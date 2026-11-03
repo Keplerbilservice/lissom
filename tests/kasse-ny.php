@@ -512,36 +512,44 @@ try {
     // Vipps-QR tilbake i kassa (eieren 03.11.2026): egen knapp «Vipps» / «QR-kode», QR-koden og statusen fra serveren.
     foreach (["kort({class:'k-vippsqr',disabled:!kan,onclick:()=>qrStart()},el('b',{text:'Vipps'}),el('small',{text:'QR-kode'}))",
               "kall('kasse.php',{handling:'qr',del:id,...body(s)})", "kall('kasse.php',{handling:'status',poll:d.poll})",
-              "kall('kasse.php',{handling:'kvitteringValg',", "const laast=()=>!!salg&&(salg.vent||salg.betalt.size>0);"] as $t) {
+              "kall('kasse.php',{handling:'kvitteringValg',"] as $t) {
         sjekk('kasse.js (Vipps-QR): ' . $t, str_contains($js, $t));
     }
-    // Kontrolløren 03.11.2026: svar som ikke gjelder lenger, gjør ingenting; summen låses når QR-en startes;
-    // når tiden går ut, vises «Prøv igjen» / «Betal resten kontant», så kassa ikke blir låst.
-    $qrDel = (string) substr($js, (int) strpos($js, 'function qrStart(){'), (int) strpos($js, '// Gavekort: hele beløpet') - (int) strpos($js, 'function qrStart(){'));
-    sjekk('Vipps-QR: qrGjelder sjekker salget, vent og at QR-flaten er koblet til',
-        str_contains($js, "const qrGjelder=(s,omraade)=>salg===s&&!!s.vent&&(!omraade||omraade.isConnected);"));
-    // Kontrolløren 03.11.2026 (STOPP på cc021dea): et betalt-svar kastes aldri så lenge salget er det samme, heller ikke etter
-    // «Tilbake»; bare ikke-betalte sene svar ignoreres. delBetalt krever bare salg===s, låser kurven og tar bort «Tilbake».
-    sjekk('Vipps-QR: QR-svaret — annet salg: ut; betalt: alltid til delBetalt; ellers ut når svaret ikke gjelder',
-        str_contains($qrDel, "if(salg!==s)return;\n if(d.betalt){if(d.betalingId&&!s.betalinger.includes(d.betalingId))s.betalinger.push(d.betalingId);await delBetalt(s,i,deler);return;}\n if(!qrGjelder(s,omraade))return;")
-        && str_contains($qrDel, "catch(e){if(e.stille||!qrGjelder(s,omraade))return;if(e.status===410)"));
-    sjekk('Vipps-QR: statussvaret — betalt går foran qrGjelder (også etter «Tilbake»), feilgreina ignoreres når svaret ikke gjelder',
-        str_contains($qrDel, "{handling:'status',poll:d.poll});if(salg!==s)return;if(st.betalt){")
-        && str_contains($qrDel, "await delBetalt(s,i,deler);return;}if(!qrGjelder(s,omraade))return;if(['avbrutt','feilet']")
-        && str_contains($qrDel, "catch(e){if(e.stille||!qrGjelder(s,omraade))return;status.textContent=e.message;}"));
-    sjekk('Vipps-QR: delBetalt krever bare salg===s, låser kurven og tar bort «Tilbake» før neste del eller Betalt-skjermen',
-        str_contains($qrDel, "async function delBetalt(s,i,deler){\n if(salg!==s)return;\n s.vent=true;s.betalt.add(deler[i]);\n if(kurvEl)kurvEl.querySelectorAll('.k-qrtilbake').forEach(k=>k.remove());")
-        && str_contains($qrDel, "pille('Tilbake',()=>{stopPoll();s.vent=false;if(salg===s)tegnKurv();},'k-qrtilbake')"));
-    sjekk('Vipps-QR: etter kvitteringsvalget kreves bare salg===s før Betalt-skjermen (ikke s.vent)',
-        str_contains($qrDel, "catch(e){}\n if(salg!==s)return;\n s.vent=false;\n visFerdig(s,{sum:s.qrRegnet.sum,")
-        && !str_contains($qrDel, 'if(!qrGjelder(s))return;'));
-    sjekk('Vipps-QR: summen og delene låst når QR-en startes (s.qrRegnet), ikke s.regnet i visningen eller Betalt',
-        str_contains($qrDel, 'if(!s.betalt.size||!s.qrRegnet)s.qrRegnet=s.regnet;const deler=s.qrRegnet.deler.map(d=>d.id);')
-        && str_contains($qrDel, "el('span',{text:s.qrRegnet.sum})") && str_contains($qrDel, "visFerdig(s,{sum:s.qrRegnet.sum,")
-        && !str_contains($qrDel, 's.regnet.sum'));
+    // Kontrolløren 03.11.2026 (tre runder STOPP): hver QR-runde (s.qr) har sin egen låste sum og sine egne deler; svar for en
+    // annen runde eller et annet salg gjør ingenting; et betalt-svar kastes aldri så lenge runden er den samme; «Tilbake»
+    // stopper QR-en på serveren før kurven låses opp; tiden ute gir «Prøv igjen»; kassa låses ikke mens en runde står.
+    $qa = (int) strpos($js, 'function qrStart(){');
+    $qrDel = (string) substr($js, $qa, (int) strpos($js, '// Gavekort: hele beløpet') - $qa);
+    sjekk('Vipps-QR: kurven er låst så lenge en QR-runde står (s.qr), og tegnKurv viser runden',
+        str_contains($js, 'const laast=()=>!!salg&&(salg.vent||salg.betalt.size>0||!!salg.qr);')
+        && str_contains($js, " if(salg&&salg.qr){tegnQrVent(salg);return;}\n if(!salg){"));
+    sjekk('Vipps-QR: egen låst sum og egne deler per runde (q), ikke s.regnet i visningen eller Betalt',
+        str_contains($qrDel, "if(!s.qr){forbered(s);s.qr={regnet:s.regnet,deler:s.regnet.deler.map(d=>d.id)};}")
+        && str_contains($qrDel, "el('span',{text:q.regnet.sum})") && str_contains($qrDel, "visFerdig(s,{sum:q.regnet.sum,")
+        && !str_contains($qrDel, 's.regnet.sum') && !str_contains($qrDel, 'qrRegnet'));
+    sjekk('Vipps-QR: qrDenne/qrGjelder sjekker salget og runden (og vent + QR-flaten for svar som ikke er betalt)',
+        str_contains($qrDel, 'const qrDenne=(s,q)=>salg===s&&s.qr===q;')
+        && str_contains($qrDel, 'const qrGjelder=(s,q,omraade)=>qrDenne(s,q)&&!!s.vent&&(!omraade||omraade.isConnected);'));
+    sjekk('Vipps-QR: QR-svaret — annen runde: ut; betalt: alltid til delBetalt; ellers ut når svaret ikke gjelder',
+        str_contains($qrDel, "if(!qrDenne(s,q))return;\n if(d.betalt){if(d.betalingId&&!s.betalinger.includes(d.betalingId))s.betalinger.push(d.betalingId);await delBetalt(s,q,i);return;}\n if(!qrGjelder(s,q,omraade))return;")
+        && str_contains($qrDel, "catch(e){if(e.stille||!qrGjelder(s,q,omraade))return;if(e.status===410)"));
+    sjekk('Vipps-QR: statussvaret — betalt går foran qrGjelder, feilgreina ignoreres når svaret ikke gjelder',
+        str_contains($qrDel, "{handling:'status',poll:d.poll});if(!qrDenne(s,q))return;if(st.betalt){")
+        && str_contains($qrDel, "await delBetalt(s,q,i);return;}if(!qrGjelder(s,q,omraade))return;if(['avbrutt','feilet']")
+        && str_contains($qrDel, "catch(e){if(e.stille||!qrGjelder(s,q,omraade))return;status.textContent=e.message;}"));
+    sjekk('Vipps-QR: delBetalt krever samme salg og runde (ikke s.vent), låser kurven og tar bort «Tilbake»',
+        str_contains($qrDel, "async function delBetalt(s,q,i){\n if(!qrDenne(s,q))return;\n s.vent=true;s.betalt.add(q.deler[i]);\n if(kurvEl)kurvEl.querySelectorAll('.k-qrtilbake').forEach(k=>k.remove());")
+        && str_contains($qrDel, "catch(e){}\n if(!qrDenne(s,q))return;\n s.vent=false;\n visFerdig(s,{sum:q.regnet.sum,"));
+    sjekk('Vipps-QR: «Tilbake» stopper QR-en på serveren først; betalt → Betalt; stoppet → nye nøkler og opplåst; feil → låst med «Prøv igjen»',
+        str_contains($qrDel, "r=await kall('kasse.php',{handling:'stoppQr',del:id,nokkel:s.nokler[id]});")
+        && str_contains($qrDel, "catch(e){if(e.stille||!qrDenne(s,q))return;k.disabled=false;omraade.replaceChildren(el('p',{class:'k-feil',role:'alert',text:e.message}),qrValg(s));return;}")
+        && str_contains($qrDel, "for(const x of q.deler)if(!s.betalt.has(x)&&!x.startsWith('booking:'))s.nokler[x]=uuid();\n  s.qr=null;s.vent=false;tegnKurv();")
+        && !str_contains($qrDel, "pille('Tilbake',()=>{stopPoll();s.vent=false;"));
     sjekk('Vipps-QR: tiden ute (220 runder) gir «Prøv igjen» / «Betal resten kontant»',
         str_contains($qrDel, "else{status.textContent='Ingen bekreftelse ennå. Sjekk Penger i admin før du tar betalt på nytt.';omraade.append(qrValg(s));}")
         && str_contains($qrDel, "pille('Prøv igjen',igjen,'fylt'),s.betalt.size?pille('Betal resten kontant',kontant):null"));
+    sjekk('Vipps-QR: kassa låses ikke mens en QR-runde står',
+        str_contains($js, "async function laas(){if(salg&&salg.qr){aktiv();melding('Gjør ferdig betalingen først.');return;}"));
     $css = (string) file_get_contents($rot . '/admin-ny/kasse.css');
     sjekk('kasse.css: .k-qrsone og .k-qr finnes', str_contains($css, '.k-qrsone{') && str_contains($css, '.k-qr{'));
     $i = strpos($js, "el('div',{class:'k-betal4'},");

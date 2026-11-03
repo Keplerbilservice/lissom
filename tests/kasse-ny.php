@@ -547,7 +547,15 @@ try {
     $vu = (string) substr($qrDel, (int) strpos($qrDel, 'function visUsett(u){'), 600);
     sjekk('Vipps-QR: visUsett tømmer salget (salg=null) før Betalt vises; delen i QR-runden som står, gjøres opp som før',
         str_contains($vu, " stopPoll();salg=null;\n ferdig={sum:u.sum,") && !str_contains($vu, 'salg.vent=false')
-        && str_contains($qrDel, "if(q&&id&&qrDenne(s,q)){") && str_contains($qrDel, "await delBetalt(s,q,q.deler.indexOf(id));return;}\n visUsett(u);"));
+        && str_contains($qrDel, "if(q&&id&&qrDenne(s,q)){"));
+    // Kontrolløren 03.11.2026 (sjette runde): står det en kurv (409 i registrer eller qr), spørres det før noe tømmes.
+    sjekk('Vipps-QR: 409 usettQr med kurv: arket «Kunden har betalt … Gjelder det dette kjøpet?» — Ja: Betalt og tøm; Nei: kvitter, vis kort, kurven står',
+        str_contains($qrDel, "await delBetalt(s,q,q.deler.indexOf(id));return;}\n if(s&&salg===s){spoerUsett(s,u);return;}\n visUsett(u);")
+        && str_contains($qrDel, 'ark(`Kunden har betalt ${u.sum} med Vipps for ${varer}. Gjelder det dette kjøpet?`')
+        && str_contains($qrDel, "pille('Nei',()=>{lukk();kall('kasse.php',{handling:'qrSett',betalinger:[u.betalingId]}).then(()=>melding(`Betalt \${u.sum} med Vipps`)).catch(feil);})")
+        && str_contains($qrDel, "pille('Ja',()=>{lukk();visUsett(u);},'fylt')")
+        && str_contains($qrDel, "function spoerUsett(s,u){\n s.vent=false;tegnKurv();")
+        && str_contains($qrDel, "if(r.usett&&r.usett.length){visUsett(r.usett[0]);return true;}"));
     sjekk('Vipps-QR: ved start/opplåsing og etter «I dag» spør kassa om QR-er som venter eller er betalt uten å være vist',
         str_contains($js, " if(!(await sjekkAapenQr()))await taFraAdmin();")
         && str_contains($js, "text:'I dag',onclick:()=>{ferdig=null;tegnVenstre();tegnKurv();sjekkAapenQr();}")

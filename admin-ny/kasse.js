@@ -524,7 +524,17 @@ async function usettQr(s,liste){
  const u=liste[0];if(!u)return;
  const q=s&&s.qr;const id=q?q.deler.find(x=>String(s.nokler[x]||'').toLowerCase()===u.nokkel):null;
  if(q&&id&&qrDenne(s,q)){if(u.kode&&!s.koder.some(k=>k.kode===u.kode))s.koder.push({kode:u.kode,belop:u.sum});if(!s.betalinger.includes(u.betalingId))s.betalinger.push(u.betalingId);await delBetalt(s,q,q.deler.indexOf(id));return;}
+ if(s&&salg===s){spoerUsett(s,u);return;}
  visUsett(u);
+}
+// Står det en kurv, spørres det først (kontrolløren 03.11.2026): betalingen kan gjelde en annen kunde enn den som står nå.
+// «Ja»: Betalt for QR-betalingen, og kurven tømmes. «Nei»: kassa kvitterer, betalingen vises kort, og kurven står uendret.
+function spoerUsett(s,u){
+ s.vent=false;tegnKurv();
+ const varer=((u.kvittering&&u.kvittering.linjer)||[]).map(l=>l.navn).join(', ')||(u.kode?'gavekort':'et kjøp i kassa');
+ ark(`Kunden har betalt ${u.sum} med Vipps for ${varer}. Gjelder det dette kjøpet?`,lukk=>[el('div',{class:'k-rad-knapper'},
+  pille('Nei',()=>{lukk();kall('kasse.php',{handling:'qrSett',betalinger:[u.betalingId]}).then(()=>melding(`Betalt ${u.sum} med Vipps`)).catch(feil);}),
+  pille('Ja',()=>{lukk();visUsett(u);},'fylt'))]);
 }
 function visUsett(u){
  // Salget som sto, tømmes som etter et vanlig fullført salg (kontrolløren 03.11.2026): ellers kunne neste «Kontant» føre

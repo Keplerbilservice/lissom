@@ -10597,7 +10597,7 @@
         {
             "id": "sok-handling-20261102",
             "dato": "2026-11-02",
-            "hva": "Eieren 02.11.2026 («ja, det ser bra ut» på visningen): Toppsøket i ny admin viser handlinger øverst, med etiketten «Handling», navnet og en undertekst: «＋ Lag nytt kurs» / «Et helt nytt kurs som ikke finnes fra før» (åpner «Nytt kurs eller serie» og går rett til arket «Nytt kurs» via valget «＋ Lag nytt kurs …»), «＋ Nytt kurs eller serie» / «Nye datoer for et kurs som finnes» (arkSerie som i Kalender), «Ta betalt» / «Åpner kassa» (NA.kasseAdresse()), «Uttak leire» / «Ta ut leire fra internbutikken», «Skisseverktøy» / «Tegn en skisse», «Forespørsler» / «Alle forespørsler, nyeste øverst». Treff når alle ordene i en nøkkelordgruppe er begynnelsen på et ord i søket, eller frasen («fra bunnen») står i søket; hele setninger virker. «hvordan setter jeg opp et helt nytt kurs fra bunnen av» gir både Lag nytt kurs og Nytt kurs eller serie. Kurs, Deltaker, Medlem og Vare står uendret under, maks 12 totalt. Sider med egen side.sok (Medlemmer, Varer) er som før. aria-label: «Søk etter kurs, deltaker, medlem, vare eller handling». Bruk telles som ny_sok_handling_<id>. Sjekkes i tests/sok-handling.mjs.",
+            "hva": "Eieren 02.11.2026 («ja, det ser bra ut» på visningen): Toppsøket i ny admin viser handlinger øverst, med etiketten «Handling», navnet og en undertekst: «＋ Lag nytt kurs» / «Et helt nytt kurs som ikke finnes fra før» (åpner «Nytt kurs eller serie» og går rett til arket «Nytt kurs» via valget «＋ Lag nytt kurs …»), «＋ Nytt kurs eller serie» / «Nye datoer for et kurs som finnes» (arkSerie som i Kalender), «Ta betalt» / «Åpner kassa» (NA.kasseAdresse()), «Uttak leire» / «Ta ut leire fra internbutikken», «Skisseverktøy» / «Tegn en skisse», «Forespørsler» / «Alle forespørsler, nyeste øverst». Treff når alle ordene i en nøkkelordgruppe er begynnelsen på et ord i søket, eller frasen («fra bunnen») står i søket; hele setninger virker. «hvordan setter jeg opp et helt nytt kurs fra bunnen av» gir både Lag nytt kurs og Nytt kurs eller serie. Kurs, Deltaker, Medlem og Vare står uendret under, maks 12 totalt. aria-label: «Søk etter kurs, deltaker, medlem, vare eller handling». Bruk telles som ny_sok_handling_<id>. Sjekkes i tests/sok-handling.mjs.",
             "hvor": "Ny admin › toppsøket (PC)",
             "kode": [
                 {
@@ -10612,6 +10612,39 @@
                         "{id: 'foresporsler', navn: 'Forespørsler', hva: 'Alle forespørsler, nyeste øverst'",
                         "tell('ny_sok_handling_' + id);",
                         "v.value = 'ny'; v.dispatchEvent(new Event('change', {bubbles: true}));"
+                    ],
+                    "ikkeFinnes": []
+                }
+            ]
+        },
+        {
+            "id": "sok-forslag-20261103",
+            "dato": "2026-11-03",
+            "hva": "Eieren 03.11.2026 («Ja, overalt»): Toppsøket i ny admin viser forslagslista på alle sider, også Folk og Varer (der filtreres lista i tillegg). Ordene kan stå i hvilken som helst rekkefølge og i hvilket som helst felt, halve ord holder, og hele setninger gir forslag: småord (hvordan, jeg, på …) teller ikke, forslag vises når minst ett ord passer, og treff med flest ord står øverst. Lista på Folk og Varer viser rader der alle ordene finnes (NA.sokPasser).",
+            "hvor": "Ny admin › toppsøket",
+            "kode": [
+                {
+                    "fil": "ny-admin/felles.js",
+                    "finnes": [
+                        "NA.sokPasser = ",
+                        "t.sort((a, b) => b[0] - a[0]);",
+                        "if (side && typeof side.sok === 'function') side.sok(q);"
+                    ],
+                    "ikkeFinnes": [
+                        "if (side && typeof side.sok === 'function') { box.hidden = true; side.sok(q); return; }"
+                    ]
+                },
+                {
+                    "fil": "ny-admin/medlemmer.js",
+                    "finnes": [
+                        "window.NA.sokPasser(q, m.navn, m.epost, m.telefon, m.medlemskap)"
+                    ],
+                    "ikkeFinnes": []
+                },
+                {
+                    "fil": "ny-admin/varer.js",
+                    "finnes": [
+                        "window.NA.sokPasser(q, "
                     ],
                     "ikkeFinnes": []
                 }

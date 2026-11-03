@@ -148,7 +148,7 @@
     }
     const q = S.sok.trim().toLowerCase();
     const L = sorter(visteMedlemmer().filter(m => (!S.typeFilter || m.medlemskap === S.typeFilter)
-      && (!q || [m.navn, m.epost, m.telefon, m.medlemskap].some(v => String(v || '').toLowerCase().includes(q)))));
+      && (!q || window.NA.sokPasser(q, m.navn, m.epost, m.telefon, m.medlemskap))));
     tegnVelger();
     /* Rutenett med faste kolonner (eieren 12.10.2026, «Alle merkene på linje»): Navn · Status · Medlemskap · Betaling.
        Hele raden åpner medlemmet. Medlemskapet åpner «Endre» (bytte av medlemskap), betalingen åpner betalingen

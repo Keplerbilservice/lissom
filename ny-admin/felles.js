@@ -477,22 +477,31 @@
     /* «＋ Lag nytt kurs»: samme inngang som valget «＋ Lag nytt kurs …» i Kursmal, som åpner arket «Nytt kurs». */
     if (id === 'nyttkurs') { const v = $('#se-kurs'); if (v) { v.value = 'ny'; v.dispatchEvent(new Event('change', {bubbles: true})); } }
   }
+  /* Søk med forslag (eieren 03.11.2026, «Ja, overalt»): ordene kan stå i hvilken som helst rekkefølge og i hvilket som helst
+     felt, halve ord holder, og hele setninger gir forslag. Småord («hvordan», «jeg», «på» …) teller ikke. Treff med flest
+     ord øverst; forslag vises når minst ett ord passer. */
+  const SMAAORD = new Set('og i på for en et ei til med jeg vi du han hun hvordan hva hvor hvem når finn finne søk søke sitt sin sine av er det den de som kan skal vil meg oss har ha om fra ved etter alle alt noe noen'.split(' '));
+  const sokOrd = q => String(q || '').toLocaleLowerCase('nb-NO').split(/[\s,.;:!?]+/).filter(o => o.length >= 2 && !SMAAORD.has(o));
+  const ordTreff = (ord, tekst) => { const t = String(tekst || '').toLocaleLowerCase('nb-NO'); return ord.filter(o => t.includes(o)).length; };
+  NA.sokOrd = sokOrd;
+  NA.sokPasser = (q, ...felt) => { const ord = sokOrd(q); return !ord.length ? !String(q || '').trim() || felt.join(' ').toLocaleLowerCase('nb-NO').includes(String(q).trim().toLocaleLowerCase('nb-NO')) : ordTreff(ord, felt.join(' ')) === ord.length; };
   function sokTreff(q, d) {
-    const ord = q.toLocaleLowerCase('nb-NO').split(/\s+/).filter(Boolean);
-    const passer = t => ord.every(o => String(t || '').toLocaleLowerCase('nb-NO').includes(o));
+    const ord = sokOrd(q);
     const t = [];
-    d.kurs.forEach(k => { if (passer(k.tittel)) t.push(['Kurs', k.tittel, 'kurs', {kurs: k.id}]); });
-    d.deltakere.forEach(x => { if (passer(x.navn + ' ' + (x.epost || '') + ' ' + (x.tlf || ''))) t.push(['Deltaker', x.navn + ' · ' + x.kurs + ' · ' + x.dato, 'kurs', x.oktId ? {okt: x.oktId} : {kurs: x.kursId}]); });
-    d.medlemmer.forEach(x => { if (passer(x.navn + ' ' + (x.epost || '') + ' ' + (x.telefon || ''))) t.push(['Medlem', x.navn, 'medlemmer', {person: x.id}]); });
-    d.varer.forEach(x => { if (passer(x.tittel)) t.push(['Vare', x.tittel, 'varer', {vare: x.id}]); });
-    return [...handlingTreff(q).map(a => ['Handling', a.navn, '', {}, a]), ...t].slice(0, 12);
+    const legg = (tekst, rad) => { const n = ord.length ? ordTreff(ord, tekst) : 0; if (n) t.push([n, rad]); };
+    d.kurs.forEach(k => legg(k.tittel, ['Kurs', k.tittel, 'kurs', {kurs: k.id}]));
+    d.deltakere.forEach(x => legg(x.navn + ' ' + (x.epost || '') + ' ' + (x.tlf || '') + ' ' + (x.kurs || ''), ['Deltaker', x.navn + ' · ' + x.kurs + ' · ' + x.dato, 'kurs', x.oktId ? {okt: x.oktId} : {kurs: x.kursId}]));
+    d.medlemmer.forEach(x => legg(x.navn + ' ' + (x.epost || '') + ' ' + (x.telefon || ''), ['Medlem', x.navn, 'medlemmer', {person: x.id}]));
+    d.varer.forEach(x => legg(x.tittel, ['Vare', x.tittel, 'varer', {vare: x.id}]));
+    t.sort((a, b) => b[0] - a[0]);
+    return [...handlingTreff(q).map(a => ['Handling', a.navn, '', {}, a]), ...t.map(x => x[1])].slice(0, 12);
   }
   let sokNr = 0;
   async function sok(q) {
     const box = $('#sokres');
     /* Én søkeboks per skjerm: står man på en side med egen liste (Medlemmer, Varer), filtrerer topplinjesøket den. */
     const side = sider.get(rute.id);
-    if (side && typeof side.sok === 'function') { box.hidden = true; side.sok(q); return; }
+    if (side && typeof side.sok === 'function') side.sok(q);
     if (q.trim().length < 2) { box.hidden = true; return; }
     const nr = ++sokNr;
     box.hidden = false;

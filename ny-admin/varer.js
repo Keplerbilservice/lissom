@@ -58,7 +58,7 @@
 
   function treff(felt) {
     const q = S.sok.trim().toLowerCase();
-    return !q || felt.some(x => String(x || '').toLowerCase().includes(q));
+    return !q || window.NA.sokPasser(q, ...felt.map(x => String(x || '')));
   }
 
   function tegnFaner() {

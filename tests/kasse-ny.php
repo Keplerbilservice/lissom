@@ -543,6 +543,11 @@ try {
         str_contains($js, "if(e.data&&e.data.usettQr&&salg===s){melding(e.message);await usettQr(s,e.data.usettQr);return;}")
         && str_contains($qrDel, "if(q&&id&&qrDenne(s,q)){")
         && str_contains($qrDel, "ferdig={sum:u.sum,tekst:'med Vipps',valg:{},"));
+    // Kontrolløren 03.11.2026 (femte runde): Betalt for en gammel QR tømmer salget som sto, så neste «Kontant» ikke fører dobbelt.
+    $vu = (string) substr($qrDel, (int) strpos($qrDel, 'function visUsett(u){'), 600);
+    sjekk('Vipps-QR: visUsett tømmer salget (salg=null) før Betalt vises; delen i QR-runden som står, gjøres opp som før',
+        str_contains($vu, " stopPoll();salg=null;\n ferdig={sum:u.sum,") && !str_contains($vu, 'salg.vent=false')
+        && str_contains($qrDel, "if(q&&id&&qrDenne(s,q)){") && str_contains($qrDel, "await delBetalt(s,q,q.deler.indexOf(id));return;}\n visUsett(u);"));
     sjekk('Vipps-QR: ved start/opplåsing og etter «I dag» spør kassa om QR-er som venter eller er betalt uten å være vist',
         str_contains($js, " if(!(await sjekkAapenQr()))await taFraAdmin();")
         && str_contains($js, "text:'I dag',onclick:()=>{ferdig=null;tegnVenstre();tegnKurv();sjekkAapenQr();}")

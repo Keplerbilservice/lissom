@@ -527,7 +527,9 @@ async function usettQr(s,liste){
  visUsett(u);
 }
 function visUsett(u){
- stopPoll();if(salg)salg.vent=false;
+ // Salget som sto, tømmes som etter et vanlig fullført salg (kontrolløren 03.11.2026): ellers kunne neste «Kontant» føre
+ // det kunden alt har betalt med Vipps. En QR som fortsatt venter, kommer tilbake via sjekkAapenQr() etter «I dag».
+ stopPoll();salg=null;
  ferdig={sum:u.sum,tekst:'med Vipps',valg:{},koder:u.kode?[{kode:u.kode,belop:u.sum}]:[],endringer:[],kvittering:u.kvittering||null,betaler:{},kunde:u.kunde||'Kontant',sendt:false,skjema:false};
  tegnVenstre();tegnKurv();
  kall('kasse.php',{handling:'qrSett',betalinger:[u.betalingId]}).catch(()=>{});

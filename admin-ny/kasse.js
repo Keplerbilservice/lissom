@@ -441,27 +441,34 @@ function qrValg(s){
 async function qr(s,i,deler){
  stopPoll();const id=deler[i];const n=deler.length;s.vent=true;
  const omraade=el('div',{class:'k-qrsone'},el('p',{text:'Henter QR-kode …'}));
- sett(kurvEl,el('div',{class:'k-hvem'},el('span',{text:s.navn||'Kontantkunde'})),el('div',{class:'k-sum'},el('span',{text:'Totalt'}),el('span',{text:s.qrRegnet.sum})),omraade,s.betalt.size?null:pille('Tilbake',()=>{stopPoll();s.vent=false;if(salg===s)tegnKurv();}));
+ sett(kurvEl,el('div',{class:'k-hvem'},el('span',{text:s.navn||'Kontantkunde'})),el('div',{class:'k-sum'},el('span',{text:'Totalt'}),el('span',{text:s.qrRegnet.sum})),omraade,s.betalt.size?null:pille('Tilbake',()=>{stopPoll();s.vent=false;if(salg===s)tegnKurv();},'k-qrtilbake'));
  let d;
  try{d=await kall('kasse.php',{handling:'qr',del:id,...body(s)});}
  catch(e){if(e.stille||!qrGjelder(s,omraade))return;if(e.status===410)s.nokler[id]=uuid();omraade.replaceChildren(el('p',{class:'k-feil',role:'alert',text:e.message}),qrValg(s));return;}
+ // Et svar om at delen er betalt kastes aldri så lenge salget er det samme, heller ikke etter «Tilbake» (kontrolløren 03.11.2026):
+ // ellers kunne kunden betale både med Vipps og kontant. Bare sene svar som ikke er betalt, ignoreres.
+ if(salg!==s)return;
+ if(d.betalt){if(d.betalingId&&!s.betalinger.includes(d.betalingId))s.betalinger.push(d.betalingId);await delBetalt(s,i,deler);return;}
  if(!qrGjelder(s,omraade))return;
- if(d.betalt){if(d.betalingId)s.betalinger.push(d.betalingId);await delBetalt(s,i,deler);return;}
  const status=el('p',{style:'font-weight:700',text:'Venter på Vipps …'});
  omraade.replaceChildren(...[n>1?el('p',{class:'k-tom',text:`Vipps ${i+1} av ${n} · ${d.belop}`}):null,el('img',{class:'k-qr',src:d.qr,alt:'QR-kode for betaling med Vipps'}),status].filter(Boolean));
  let runder=0;
- const sjekk=async()=>{pollTimer=null;if(!qrGjelder(s,omraade))return;try{const st=await kall('kasse.php',{handling:'status',poll:d.poll});if(!qrGjelder(s,omraade))return;if(st.betalt){if(st.kode)s.koder.push({kode:st.kode,belop:d.belop});if(st.betalingId)s.betalinger.push(st.betalingId);await delBetalt(s,i,deler);return;}if(['avbrutt','feilet'].includes(st.status)){s.nokler[id]=uuid();status.textContent='Betalingen ble avbrutt i Vipps.';omraade.append(qrValg(s));return;}}catch(e){if(e.stille||!qrGjelder(s,omraade))return;status.textContent=e.message;}
+ const sjekk=async()=>{pollTimer=null;if(!qrGjelder(s,omraade))return;try{const st=await kall('kasse.php',{handling:'status',poll:d.poll});if(salg!==s)return;if(st.betalt){if(st.kode&&!s.koder.some(k=>k.kode===st.kode))s.koder.push({kode:st.kode,belop:d.belop});if(st.betalingId&&!s.betalinger.includes(st.betalingId))s.betalinger.push(st.betalingId);await delBetalt(s,i,deler);return;}if(!qrGjelder(s,omraade))return;if(['avbrutt','feilet'].includes(st.status)){s.nokler[id]=uuid();status.textContent='Betalingen ble avbrutt i Vipps.';omraade.append(qrValg(s));return;}}catch(e){if(e.stille||!qrGjelder(s,omraade))return;status.textContent=e.message;}
   // Går tiden ut, vises «Prøv igjen» (og «Betal resten kontant» når en del er betalt), så kassa aldri blir stående låst.
   if(++runder<220)pollTimer=setTimeout(sjekk,3000);else{status.textContent='Ingen bekreftelse ennå. Sjekk Penger i admin før du tar betalt på nytt.';omraade.append(qrValg(s));}};
  pollTimer=setTimeout(sjekk,3000);
 }
+// Serveren har sagt betalt: kurven låses igjen og «Tilbake» tas bort med en gang. Neste del eller Betalt-skjermen krever bare
+// at salget er det samme (ikke s.vent), så Betalt-skjermen alltid kommer når hele kurven er betalt (kontrolløren 03.11.2026).
 async function delBetalt(s,i,deler){
- s.betalt.add(deler[i]);
+ if(salg!==s)return;
+ s.vent=true;s.betalt.add(deler[i]);
+ if(kurvEl)kurvEl.querySelectorAll('.k-qrtilbake').forEach(k=>k.remove());
  const neste=deler.findIndex(id=>!s.betalt.has(id));
  if(neste>=0){await qr(s,neste,deler);return;}
  let valg={epost:false,sms:false,betalinger:s.betalinger};
  try{valg=await kall('kasse.php',{handling:'kvitteringValg',betaler:betalerTilServer(s),betalinger:s.betalinger});}catch(e){}
- if(!qrGjelder(s))return;
+ if(salg!==s)return;
  s.vent=false;
  visFerdig(s,{sum:s.qrRegnet.sum,tekst:'med Vipps',valg,koder:s.koder,endringer:[]});
 }

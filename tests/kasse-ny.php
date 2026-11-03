@@ -520,11 +520,21 @@ try {
     $qrDel = (string) substr($js, (int) strpos($js, 'function qrStart(){'), (int) strpos($js, '// Gavekort: hele beløpet') - (int) strpos($js, 'function qrStart(){'));
     sjekk('Vipps-QR: qrGjelder sjekker salget, vent og at QR-flaten er koblet til',
         str_contains($js, "const qrGjelder=(s,omraade)=>salg===s&&!!s.vent&&(!omraade||omraade.isConnected);"));
-    sjekk('Vipps-QR: etter QR-svaret, før d.betalt leses', str_contains($qrDel, "if(!qrGjelder(s,omraade))return;\n if(d.betalt){")
+    // Kontrolløren 03.11.2026 (STOPP på cc021dea): et betalt-svar kastes aldri så lenge salget er det samme, heller ikke etter
+    // «Tilbake»; bare ikke-betalte sene svar ignoreres. delBetalt krever bare salg===s, låser kurven og tar bort «Tilbake».
+    sjekk('Vipps-QR: QR-svaret — annet salg: ut; betalt: alltid til delBetalt; ellers ut når svaret ikke gjelder',
+        str_contains($qrDel, "if(salg!==s)return;\n if(d.betalt){if(d.betalingId&&!s.betalinger.includes(d.betalingId))s.betalinger.push(d.betalingId);await delBetalt(s,i,deler);return;}\n if(!qrGjelder(s,omraade))return;")
         && str_contains($qrDel, "catch(e){if(e.stille||!qrGjelder(s,omraade))return;if(e.status===410)"));
-    sjekk('Vipps-QR: etter statussvaret (og i feilgreina)', str_contains($qrDel, "{handling:'status',poll:d.poll});if(!qrGjelder(s,omraade))return;if(st.betalt){")
+    sjekk('Vipps-QR: statussvaret — betalt går foran qrGjelder (også etter «Tilbake»), feilgreina ignoreres når svaret ikke gjelder',
+        str_contains($qrDel, "{handling:'status',poll:d.poll});if(salg!==s)return;if(st.betalt){")
+        && str_contains($qrDel, "await delBetalt(s,i,deler);return;}if(!qrGjelder(s,omraade))return;if(['avbrutt','feilet']")
         && str_contains($qrDel, "catch(e){if(e.stille||!qrGjelder(s,omraade))return;status.textContent=e.message;}"));
-    sjekk('Vipps-QR: etter kvitteringsvalget, før Betalt-skjermen', str_contains($qrDel, "catch(e){}\n if(!qrGjelder(s))return;\n s.vent=false;"));
+    sjekk('Vipps-QR: delBetalt krever bare salg===s, låser kurven og tar bort «Tilbake» før neste del eller Betalt-skjermen',
+        str_contains($qrDel, "async function delBetalt(s,i,deler){\n if(salg!==s)return;\n s.vent=true;s.betalt.add(deler[i]);\n if(kurvEl)kurvEl.querySelectorAll('.k-qrtilbake').forEach(k=>k.remove());")
+        && str_contains($qrDel, "pille('Tilbake',()=>{stopPoll();s.vent=false;if(salg===s)tegnKurv();},'k-qrtilbake')"));
+    sjekk('Vipps-QR: etter kvitteringsvalget kreves bare salg===s før Betalt-skjermen (ikke s.vent)',
+        str_contains($qrDel, "catch(e){}\n if(salg!==s)return;\n s.vent=false;\n visFerdig(s,{sum:s.qrRegnet.sum,")
+        && !str_contains($qrDel, 'if(!qrGjelder(s))return;'));
     sjekk('Vipps-QR: summen og delene låst når QR-en startes (s.qrRegnet), ikke s.regnet i visningen eller Betalt',
         str_contains($qrDel, 'if(!s.betalt.size||!s.qrRegnet)s.qrRegnet=s.regnet;const deler=s.qrRegnet.deler.map(d=>d.id);')
         && str_contains($qrDel, "el('span',{text:s.qrRegnet.sum})") && str_contains($qrDel, "visFerdig(s,{sum:s.qrRegnet.sum,")

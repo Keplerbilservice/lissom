@@ -192,6 +192,8 @@ if (Foresporsel::tekst('handling') === 'antall') {
         'hvem'   => $hvem,
         // Til forhaandsvisningen i den nye adminen: hvem kanalen ikke naar.
         'alle'        => count($mottakere),
+        // «Til: …» i Send beskjed-arket (Monica 03.11.2026): navnene på mottakerne.
+        'navn'        => array_values(array_map(static fn($m) => trim((string) $m['navn']), $mottakere)),
         'utenEpost'   => array_values(array_map(static fn($m) => trim((string) $m['navn']),
                             array_filter($mottakere, static fn($m) => empty($m['epost'])))),
         'utenTelefon' => array_values(array_map(static fn($m) => trim((string) $m['navn']),

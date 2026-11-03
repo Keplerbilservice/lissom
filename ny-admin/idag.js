@@ -86,7 +86,9 @@
       : t.slag === 'tomt' && t.tomtSlag === 'raabrann' ? 'Råbrann er tømt'
       : t.slag === 'glasurbrann' && t.temperatur ? `Glasurbrann ${t.temperatur} °C er satt`
       : OVN[t.slag] || 'Ovn er tømt';
-    const okter = dagensOkter(d);
+    // Monica 03.11.2026: en økt som er over (sluttid passert) og der alle har betalt, er borte fra Dagens kurs.
+    const naaHM = new Date().toTimeString().slice(0, 5);
+    const okter = dagensOkter(d).filter(o => { const h = kal.get(o.oktId); return !(h && h.slutt && h.slutt <= naaHM && !ikkeBetalt(h).length); });
     const taUtLeire = d.taUtLeire || [];
     const sett = d.settPaaServer ? new Set() : settLes();
     const maa = NA.maGjores(d).filter(s => s.type !== 'taut' && !gjort.has(nokkel(s)));

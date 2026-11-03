@@ -573,7 +573,7 @@ H.deltaker = b => {
   ark(`<div class="ark-head"><h2>${esc(d.navn)}</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
    <p class="muted">${[d.tlf, d.epost].filter(Boolean).map(esc).join(' · ') || 'Ingen kontaktinfo'}${d.antall > 1 ? ` · ${d.antall} plasser` : ''} · ${merke(d, erPop(aktiv()?.kursId))}</p>
    ${d.merknad ? `<p class="sms">${esc(d.merknad)}</p>` : ''}
-   <div class="valgknapper"><button class="knapp" data-k="dRediger">Rediger påmelding (antall, rabatt)</button>${d.status === 'Betalt' || d.status === 'Ikke betalt' ? '<button class="knapp rod" data-k="dAvmeld">Avmeld deltaker</button>' : ''}<button class="knapp" data-k="dBekreft">Send bekreftelse på nytt</button><button class="knapp" data-k="dFlytt">Flytt til annen dato</button><button class="knapp" data-k="dVente">Flytt til venteliste</button>${kanForHaand(d, aktiv()?.kursId) ? `<button class="knapp" data-k="tbHaand" data-booking="${d.bookingId}">Registrer betaling for hånd</button>` : ''}${mottKnapp(d)}<button class="knapp rod" data-k="dSperr">Sperr kursbevis</button></div>`);
+   <div class="valgknapper"><button class="knapp" data-k="dRediger">Rediger påmelding (antall, rabatt)</button>${d.status === 'Betalt' || d.status === 'Ikke betalt' ? '<button class="knapp rod" data-k="dAvmeld">Avmeld deltaker</button>' : ''}<button class="knapp" data-k="dBekreft">Send bekreftelse på nytt</button><button class="knapp" data-k="dBeskjed">Send beskjed</button><button class="knapp" data-k="dFlytt">Flytt til annen dato</button><button class="knapp" data-k="dVente">Flytt til venteliste</button>${kanForHaand(d, aktiv()?.kursId) ? `<button class="knapp" data-k="tbHaand" data-booking="${d.bookingId}">Registrer betaling for hånd</button>` : ''}${mottKnapp(d)}<button class="knapp rod" data-k="dSperr">Sperr kursbevis</button></div>`);
 };
 // «Møtte ikke opp» rett fra kurset i kalenderen (eieren 13.10.2026). Samme status som «Ikke møtt» i Start dagens kurs:
 // ikke_mott, og «Møtte likevel» setter den tilbake til forStatus (Booking::statusForIkkeMott). Kan angres med ett trykk.
@@ -634,6 +634,8 @@ H.dRedigerOk = async () => {
   toast(esc((r.beskjed || 'Påmeldingen er endret.') + (r.belop ? ` Beløp nå: ${r.belop}.` : '')));
   await oppfrisk(); KS.delt = finnDelt(d.bookingId) || d; H.deltaker({dataset: {booking: d.bookingId}});
 };
+// «Send beskjed» til én deltaker (Monica 03.11.2026): samme ark og samme utsending (beskjed.php til=en).
+H.dBeskjed = () => { const d = KS.delt; if (d) arkBeskjed({til: 'en', navn: d.navn || '', epost: d.epost || '', telefon: d.tlf || ''}); };
 H.dBekreft = async () => { const r = await api('pamelding.php', {handling: 'bekreftelse', id: KS.delt.bookingId}); toast(esc(r.beskjed || 'Bekreftelsen er sendt.')); };
 // «Er du sikker?» før det som ikke kan angres med ett trykk (brukertesten 08.10.2026).
 const sikker = (tittel, tekst, ja, k) => ark(`${tilbakeDelt()}<div class="ark-head"><h2>${tittel}</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>

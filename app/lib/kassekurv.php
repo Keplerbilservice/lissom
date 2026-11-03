@@ -187,7 +187,9 @@ final class KasseKurv
             // «Dagens kurs» (eieren 30. oktober 2026, ny kasse): alle dagens
             // økter med påmeldte, også der alle har betalt, sortert etter
             // klokkeslett. Merket er «[n] skal betale» eller «Alle har betalt».
-            if ($rader !== []) {
+            // Monica 03.11.2026: en økt som er over og der alle har betalt, er borte fra lista.
+            $over = trim((string) ($o['slutt_tid'] ?? '')) !== '' && (string) $o['slutt_tid'] <= gmdate('Y-m-d H:i:s');
+            if ($rader !== [] && !($skalBetale === 0 && $over)) {
                 $kurs[] = ['oktId' => $oktId, 'tittel' => (string) $o['tittel'], 'kl' => $start, 'pop' => $erPop, 'skalBetale' => $skalBetale,
                            'alleBetalt' => $skalBetale === 0];
             }

@@ -879,7 +879,7 @@ const mottakerFelt = mal => mal.til === 'okt' ? {til: 'okt', oktId: +mal.oktId, 
 function tegnMottakere() {
   const m = document.getElementById('nk-bmottakere'), r = BS.svar; if (!m || !r) return;
   const ikke = BS.kanal ? ikkeNaaddFor(r, BS.kanal) : [];
-  m.innerHTML = `<b>${r.alle} mottakere</b>${BS.kanal ? ` · ${r.alle - (ikke[0]?.startsWith?.('alle (') ? r.alle : ikke.length)} nås` : ' · velg hvordan den skal sendes'}${ikke.length ? ` · <span class="ikke-naadd">Ikke nådd: ${ikke.map(esc).join(', ')}</span>` : ''}`;
+  m.innerHTML = `${BS.mal?.til === 'okt' && r.navn?.length ? `Til: ${r.navn.map(esc).join(', ')}<br>` : ''}<b>${r.alle} mottakere</b>${BS.kanal ? ` · ${r.alle - (ikke[0]?.startsWith?.('alle (') ? r.alle : ikke.length)} nås` : ' · velg hvordan den skal sendes'}${ikke.length ? ` · <span class="ikke-naadd">Ikke nådd: ${ikke.map(esc).join(', ')}</span>` : ''}`;
   sjekkBeskjed();
 }
 function sjekkBeskjed() {

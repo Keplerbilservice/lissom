@@ -10693,6 +10693,50 @@
                     "ikkeFinnes": []
                 }
             ]
+        },
+        {
+            "id": "monica-beskjed-dagens-kurs-20261103",
+            "dato": "2026-11-03",
+            "hva": "Monica 03.11.2026: (A) «Send beskjed»-arket for en kursdato viser navnene på mottakerne («Til: …»), og deltakerarket har knappen «Send beskjed» som åpner samme ark med bare den deltakeren (beskjed.php til=en). (B) «Dagens kurs» i kassa og på I dag: en økt som er over (sluttid passert) og der alle har betalt, er borte fra lista. Økter som ikke er over, eller der noen skylder, vises som før.",
+            "hvor": "Ny admin › Kurs (Send beskjed, deltakerarket), I dag › Dagens kurs, kassa › Dagens kurs",
+            "kode": [
+                {
+                    "fil": "ny-admin/kalender.js",
+                    "finnes": [
+                        "${BS.mal?.til === 'okt' && r.navn?.length ? `Til: ${r.navn.map(esc).join(', ')}<br>` : ''}"
+                    ],
+                    "ikkeFinnes": []
+                },
+                {
+                    "fil": "ny-admin/kurs.js",
+                    "finnes": [
+                        "<button class=\"knapp\" data-k=\"dBeskjed\">Send beskjed</button>",
+                        "arkBeskjed({til: 'en', navn: d.navn || '', epost: d.epost || '', telefon: d.tlf || ''})"
+                    ],
+                    "ikkeFinnes": []
+                },
+                {
+                    "fil": "api/admin/beskjed.php",
+                    "finnes": [
+                        "'navn'        => array_values(array_map(static fn($m) => trim((string) $m['navn']), $mottakere)),"
+                    ],
+                    "ikkeFinnes": []
+                },
+                {
+                    "fil": "app/lib/kassekurv.php",
+                    "finnes": [
+                        "if ($rader !== [] && !($skalBetale === 0 && $over)) {"
+                    ],
+                    "ikkeFinnes": []
+                },
+                {
+                    "fil": "ny-admin/idag.js",
+                    "finnes": [
+                        "return !(h && h.slutt && h.slutt <= naaHM && !ikkeBetalt(h).length);"
+                    ],
+                    "ikkeFinnes": []
+                }
+            ]
         }
     ]
 }

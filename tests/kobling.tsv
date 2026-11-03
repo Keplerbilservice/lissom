@@ -64,3 +64,9 @@ db/migrations/283_morgenmelding_kursholder.sql	php tests/morgenmelding.php
 app/lib/maler.php	php tests/morgenmelding.php
 ny-admin/felles.js	node tests/sok-handling.mjs
 tests/sok-handling.mjs	node tests/sok-handling.mjs
+
+# Monica 03.11.2026: «Til: …» i Send beskjed og Dagens kurs i kassa
+api/admin/beskjed.php	php tests/ny-admin.php
+api/admin/beskjed.php	php tests/send-manuelt.php
+app/lib/kassekurv.php	php tests/kasse-enkel.php
+app/lib/kassekurv.php	php tests/kasse-ny.php

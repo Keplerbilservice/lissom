@@ -10234,7 +10234,7 @@
         {
             "id": "kasse-ny-fire-betalingsknapper-20261030",
             "dato": "2026-10-30",
-            "hva": "Eieren 30.10.2026: under totalen fire store betalingsknapper, to og to: Vipps-nummer, Kontant, Gavekort, Natura. Gavekort: koden, og hele beløpet trekkes fra kortet med gavekortlogikken som finnes. Dekker kortet ikke hele beløpet, avvises betalingen med en melding (midlertidig løsning til eieren avgjør; ingen delbetaling). Natura registrerer ingenting og viser bare «Haha, din perverse fjert! Dette er notert og delt på NRK nyheter» noen sekunder (på moro). «Flere valg», «Del betalingen» og Vipps-QR vises ikke på iPaden; serverkoden for QR og delt betaling står.",
+            "hva": "Eieren 30.10.2026: under totalen fire store betalingsknapper, to og to: Vipps-nummer, Kontant, Gavekort, Natura. Gavekort: koden, og hele beløpet trekkes fra kortet med gavekortlogikken som finnes. Dekker kortet ikke hele beløpet, avvises betalingen med en melding (midlertidig løsning til eieren avgjør; ingen delbetaling). Natura registrerer ingenting og viser bare «Haha, din perverse fjert! Dette er notert og delt på NRK nyheter» noen sekunder (på moro). «Flere valg», «Del betalingen» og Vipps-QR vises ikke på iPaden; serverkoden for QR og delt betaling står. Endret: eieren 03.11.2026: Vipps-QR tilbake i kassa (vedtaket kasse-vipps-qr-tilbake-20261103).",
             "hvor": "Kassa på iPad › Kurven",
             "kode": [
                 {
@@ -10246,7 +10246,6 @@
                     ],
                     "ikkeFinnes": [
                         "text:'Flere valg'",
-                        "handling:'qr'",
                         "'Del betalingen'"
                     ]
                 },
@@ -10666,6 +10665,32 @@
                     "ikkeFinnes": [
                         "Bilder og resten av teksten legger du inn under Kurs › Rediger, som i dag."
                     ]
+                }
+            ]
+        },
+        {
+            "id": "kasse-vipps-qr-tilbake-20261103",
+            "dato": "2026-11-03",
+            "hva": "eieren 03.11.2026: Vipps-QR tilbake i kassa. Monica fikk ingen QR-kode når hun trykket Vipps på iPaden, bare spørsmålet for Vipps-nummer. Egen betalingsknapp «Vipps» / «QR-kode» over hele bredden, over de fire knappene Vipps-nummer, Kontant, Gavekort og Natura (de er uendret). Samme logikk som før 30.10: én QR per del (neste når den forrige er betalt), kurven låst mens QR-en venter («Tilbake» låser opp når ingen del er betalt), statusen fra serveren hvert 3. sekund (handling=status), «Prøv igjen» og «Betal resten kontant» når betalingen avbrytes, og Betalt-skjermen som nå («Betalt [sum] med Vipps», «Send kvittering», «I dag»).",
+            "hvor": "Kassa på iPad › Kurven",
+            "kode": [
+                {
+                    "fil": "admin-ny/kasse.js",
+                    "finnes": [
+                        "kort({class:'k-vippsqr',disabled:!kan,onclick:()=>qrStart()},el('b',{text:'Vipps'}),el('small',{text:'QR-kode'}))",
+                        "kall('kasse.php',{handling:'qr',del:id,...body(s)})",
+                        "kall('kasse.php',{handling:'status',poll:d.poll})",
+                        "kort({disabled:!kan,onclick:vippsNummer},el('b',{text:'Vipps-nummer'}))"
+                    ],
+                    "ikkeFinnes": []
+                },
+                {
+                    "fil": "admin-ny/kasse.css",
+                    "finnes": [
+                        ".k-betal4 .k-k.k-vippsqr{grid-column:1/-1}",
+                        ".k-qrsone{"
+                    ],
+                    "ikkeFinnes": []
                 }
             ]
         }

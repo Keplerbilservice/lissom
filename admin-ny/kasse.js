@@ -1,6 +1,6 @@
 // Lissom Kasse på iPad (eieren «ok, bygg det» 08.10.2026, skissen Rm1Casf4CpVv8i5zwyfecX).
 // Ny kasse etter eierens godkjente design 30.10.2026: brun topp med «Dagens oppgjør», valgene Paint on Pots, Keramikk,
-// Gavekort og Leire, «Har betalt» på kurset, fire betalingsknapper (Vipps-nummer, Kontant, Gavekort, Natura), Betalt-skjermen
+// Gavekort og Leire, «Har betalt» på kurset, fire betalingsknapper (Vipps-nummer, Kontant, Gavekort, Natura) og Vipps-QR over dem (03.11.2026), Betalt-skjermen
 // med Kunde og Kjøpet, «Dagens salg» med «Angre» og stripa uten nett.
 // Egen innlogging (rollen «kasse»), PIN per person, låser seg etter 5 minutter uten bruk.
 // All regning skjer på serveren (api/kasse/kasse.php, app/lib/kasse.php): skjermen sender hva som er valgt
@@ -260,7 +260,7 @@ function nyKundeArk(){
 // «sist»: linja som sist ble lagt i kurven. Den er gul med «LAGT TIL» til neste endring (eieren 30.10.2026).
 function tomtSalg(){return{betaler:null,navn:null,bookingId:null,oktId:null,person:null,pop:new Map(),popUten:new Map(),popGjester:0,varer:new Map(),fritt:[],gavekort:[],timepakke:false,priser:new Map(),rabatt:null,regnet:null,feil:'',kontantkunde:false,nokler:{},noklerSig:null,forventet:null,betalt:new Set(),betalinger:[],koder:[],sist:null};}
 function start0(){if(!salg){salg=tomtSalg();salg.kontantkunde=true;tegnVenstre();}}
-// Mens det registreres kan verken kurven eller kunden byttes (kontrolløren 08.10.2026).
+// Mens det registreres, eller en QR-kode venter, kan verken kurven eller kunden byttes (kontrolløren 08.10.2026).
 const laast=()=>!!salg&&(salg.vent||salg.betalt.size>0);
 const ikkeNaa=()=>{if(laast()){melding('Gjør ferdig betalingen først.');return true;}if(ferdig){ferdig=null;tegnVenstre();tegnKurv();}return false;};
 function kontantkunde(){if(ikkeNaa())return;const g=salg;salg=tomtSalg();salg.kontantkunde=true;if(g)beholdVarer(g);tegnVenstre();visSalg();}
@@ -358,8 +358,10 @@ function tegnKurv(){
   prisEndret?el('p',{class:'k-tom k-regel',text:PRIS_ENDRET}):salg.rabatt?el('p',{class:'k-tom k-regel',text:RABATT_GITT}):null,
   el('div',{class:'k-sum'},el('span',{text:'Totalt'}),el('span',{text:r?r.sum:kr(0)})),
   salg.feil?el('p',{class:'k-feil',role:'alert',text:salg.feil}):null,
-  // Fire store betalingsknapper, to og to (eieren 30.10.2026). Vipps-QR og «Del betalingen» vises ikke lenger på iPaden.
+  // Fire store betalingsknapper, to og to (eieren 30.10.2026). «Del betalingen» vises ikke lenger på iPaden.
+  // Vipps-QR er tilbake som egen knapp over de fire (eieren 03.11.2026: Monica fikk ikke tatt betalt uten QR-koden).
   el('div',{class:'k-betal4'},
+   kort({class:'k-vippsqr',disabled:!kan,onclick:()=>qrStart()},el('b',{text:'Vipps'}),el('small',{text:'QR-kode'})),
    kort({disabled:!kan,onclick:vippsNummer},el('b',{text:'Vipps-nummer'})),
    kort({disabled:!kan,onclick:()=>registrer('Kontant','kontant')},el('b',{text:'Kontant'})),
    kort({disabled:!kan,onclick:gavekortBetal},el('b',{text:'Gavekort'})),
@@ -423,6 +425,40 @@ function vippsNummer(){
  if(!salg||!salg.regnet||nettNede)return;const sum=salg.regnet.sum;
  ark(`Har du sett at ${sum} er kommet inn på Vipps?`,lukk=>[el('div',{class:'k-rad-knapper'},pille('Avbryt',lukk),pille('Ja, registrer',()=>{lukk();registrer('Vipps','med Vipps-nummer');},'fylt'))]);
 }
+// Vipps-QR i kurven (tilbake 03.11.2026, samme logikk som før 30.10): én QR per del, neste når den forrige er betalt.
+// Mens QR-en vises, er kurven låst («Tilbake» låser opp så lenge ingen del er betalt). Statusen hentes fra Vipps via serveren
+// hvert 3. sekund (Kasse::status); nøklene per del gjør at et nytt trykk gir samme betaling, ikke en ny.
+function qrStart(){const s=salg;if(!s||!s.regnet||s.vent||nettNede)return;forbered(s);const deler=s.regnet.deler.map(d=>d.id);qr(s,Math.max(0,deler.findIndex(id=>!s.betalt.has(id))),deler);}
+function qrValg(s){
+ const igjen=()=>{stopPoll();if(salg!==s)return;s.vent=false;qrStart();};
+ const kontant=()=>{stopPoll();if(salg!==s)return;s.vent=false;registrer('Kontant',s.betalt.size?'med Vipps og kontant':'kontant');};
+ return el('div',{class:'k-rad-knapper',style:'justify-content:center'},pille('Prøv igjen',igjen,'fylt'),s.betalt.size?pille('Betal resten kontant',kontant):null);
+}
+async function qr(s,i,deler){
+ stopPoll();const id=deler[i];const n=deler.length;s.vent=true;
+ const omraade=el('div',{class:'k-qrsone'},el('p',{text:'Henter QR-kode …'}));
+ sett(kurvEl,el('div',{class:'k-hvem'},el('span',{text:s.navn||'Kontantkunde'})),el('div',{class:'k-sum'},el('span',{text:'Totalt'}),el('span',{text:s.regnet.sum})),omraade,s.betalt.size?null:pille('Tilbake',()=>{stopPoll();s.vent=false;if(salg===s)tegnKurv();}));
+ let d;
+ try{d=await kall('kasse.php',{handling:'qr',del:id,...body(s)});}
+ catch(e){if(e.stille)return;if(e.status===410)s.nokler[id]=uuid();omraade.replaceChildren(el('p',{class:'k-feil',role:'alert',text:e.message}),qrValg(s));return;}
+ if(d.betalt){if(d.betalingId)s.betalinger.push(d.betalingId);await delBetalt(s,i,deler);return;}
+ if(!omraade.isConnected)return;
+ const status=el('p',{style:'font-weight:700',text:'Venter på Vipps …'});
+ omraade.replaceChildren(...[n>1?el('p',{class:'k-tom',text:`Vipps ${i+1} av ${n} · ${d.belop}`}):null,el('img',{class:'k-qr',src:d.qr,alt:'QR-kode for betaling med Vipps'}),status].filter(Boolean));
+ let runder=0;
+ const sjekk=async()=>{pollTimer=null;if(!omraade.isConnected||salg!==s)return;try{const st=await kall('kasse.php',{handling:'status',poll:d.poll});if(st.betalt){if(st.kode)s.koder.push({kode:st.kode,belop:d.belop});if(st.betalingId)s.betalinger.push(st.betalingId);await delBetalt(s,i,deler);return;}if(['avbrutt','feilet'].includes(st.status)){s.nokler[id]=uuid();status.textContent='Betalingen ble avbrutt i Vipps.';omraade.append(qrValg(s));return;}}catch(e){if(e.stille)return;status.textContent=e.message;}
+  if(++runder<220)pollTimer=setTimeout(sjekk,3000);else status.textContent='Ingen bekreftelse ennå. Sjekk Penger i admin før du tar betalt på nytt.';};
+ pollTimer=setTimeout(sjekk,3000);
+}
+async function delBetalt(s,i,deler){
+ s.betalt.add(deler[i]);
+ const neste=deler.findIndex(id=>!s.betalt.has(id));
+ if(neste>=0){await qr(s,neste,deler);return;}
+ let valg={epost:false,sms:false,betalinger:s.betalinger};
+ try{valg=await kall('kasse.php',{handling:'kvitteringValg',betaler:betalerTilServer(s),betalinger:s.betalinger});}catch(e){}
+ s.vent=false;
+ visFerdig(s,{sum:s.regnet.sum,tekst:'med Vipps',valg,koder:s.koder,endringer:[]});
+}
 // Gavekort: hele beløpet trekkes fra kortet. Dekker kortet ikke alt, avviser serveren betalingen (midlertidig, eieren avgjør).
 function gavekortBetal(){
  if(!salg||!salg.regnet||nettNede)return;
@@ -466,7 +502,8 @@ function tegnFerdigHoyre(){
 }
 function tegnFerdigVenstre(){
  const f=ferdig;const k=f.kvittering;vareGrid=null;
- venstreEl.replaceChildren(
+ // sett() hopper over KJØPET når det ikke finnes (Vipps-QR har ingen kvitteringslinjer fra serveren).
+ sett(venstreEl,
   el('div',{class:'k-flis'},el('h3',{text:'KUNDE'}),el('div',{class:'k-flis-navn',text:f.kunde})),
   k?el('div',{class:'k-flis'},el('h3',{text:'KJØPET'}),
    el('div',{class:'k-kjop'},k.linjer.map(l=>el('div',{class:'k-kjop-linje'},el('span',{class:'k-ltekst'},l.navn,l.mva?el('small',{text:l.mva}):null),el('span',{class:'k-kjop-antall',text:l.vare?String(l.antall):''}),el('b',{text:l.kr})))),

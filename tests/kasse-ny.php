@@ -508,8 +508,20 @@ try {
               "['pop','Paint on Pots'],['keramikk','Keramikk'],['gavekort','Gavekort'],['leire','Leire']", "text:'KUNDE'", "text:'KJØPET'"] as $t) {
         sjekk('kasse.js: ' . $t, str_contains($js, $t));
     }
-    sjekk('kasse.js: «Flere valg», «Del betalingen» og Vipps-QR vises ikke', !str_contains($js, "text:'Flere valg'") && !str_contains($js, "'Del betalingen'")
-        && !str_contains($js, "handling:'qr'"));
+    sjekk('kasse.js: «Flere valg» og «Del betalingen» vises ikke', !str_contains($js, "text:'Flere valg'") && !str_contains($js, "'Del betalingen'"));
+    // Vipps-QR tilbake i kassa (eieren 03.11.2026): egen knapp «Vipps» / «QR-kode», QR-koden og statusen fra serveren.
+    foreach (["kort({class:'k-vippsqr',disabled:!kan,onclick:()=>qrStart()},el('b',{text:'Vipps'}),el('small',{text:'QR-kode'}))",
+              "kall('kasse.php',{handling:'qr',del:id,...body(s)})", "kall('kasse.php',{handling:'status',poll:d.poll})",
+              "kall('kasse.php',{handling:'kvitteringValg',", "const laast=()=>!!salg&&(salg.vent||salg.betalt.size>0);"] as $t) {
+        sjekk('kasse.js (Vipps-QR): ' . $t, str_contains($js, $t));
+    }
+    $css = (string) file_get_contents($rot . '/admin-ny/kasse.css');
+    sjekk('kasse.css: .k-qrsone og .k-qr finnes', str_contains($css, '.k-qrsone{') && str_contains($css, '.k-qr{'));
+    $i = strpos($js, "el('div',{class:'k-betal4'},");
+    $blokk = $i === false ? '' : substr($js, $i, 700);
+    sjekk('kasse.js: Vipps (QR) og de fire knappene i samme blokk, i rekkefølgen Vipps, Vipps-nummer, Kontant, Gavekort, Natura',
+        $blokk !== '' && strpos($blokk, 'qrStart') < strpos($blokk, 'vippsNummer') && strpos($blokk, 'vippsNummer') < strpos($blokk, "registrer('Kontant'")
+        && strpos($blokk, "registrer('Kontant'") < strpos($blokk, 'gavekortBetal') && strpos($blokk, 'gavekortBetal') < strpos($blokk, 'natura'));
 
     $ferdig = true;
 } catch (Throwable $e) {

@@ -89,6 +89,9 @@ body.kasse{--yellow:#ffcf38;--ink:#4d1d12;--dark:#2e1002;--ground:#f4ebde;--pape
 .k-betal4{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .k-betal4 .k-k{height:76px;align-items:center;text-align:center;background:#fff}
 .k-betal4 .k-k b{font-size:21px}
+/* Vipps-QR tilbake i kassa (eieren 03.11.2026): egen knapp over de fire, over hele bredden. */
+.k-betal4 .k-k.k-vippsqr{grid-column:1/-1}
+.k-qrsone{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;min-height:0}
 .k-kurvsone .k-pille,.k-sone-topp .k-pille{min-height:64px}
 .k-ferdig{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center}
 .k-ferdig .k-g2{width:100%}

@@ -944,7 +944,8 @@ export async function arkSerie({start, enDato = false, kursId = 0} = {}) {
   // Ingen forhåndsvalg (eierens regel): klokkeslett, hvor ofte, hvor lenge og skoleferiene velges hver gang.
   Object.assign(SE, {kursId: forste?.id || 0, holderId: 0, fra: '', til: '',
     plasser: forste?.kapasitet || '', pris: forste ? String(forste.pris) : '', start: start || pluss(idag(), 1),
-    gjentas: enDato ? 1 : 0, varighet: enDato ? -1 : null, egen: '', ferier: new Set(), hoppFerier: false, enDato, flyt: false});
+    gjentas: enDato ? 1 : 0, varighet: enDato ? -1 : null, egen: '', ferier: new Set(), hoppFerier: false, enDato});
+  SE.flyt = false;
   nyNK();
   tegnSerie();
 }

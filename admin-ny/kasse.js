@@ -428,7 +428,11 @@ function vippsNummer(){
 // Vipps-QR i kurven (tilbake 03.11.2026, samme logikk som før 30.10): én QR per del, neste når den forrige er betalt.
 // Mens QR-en vises, er kurven låst («Tilbake» låser opp så lenge ingen del er betalt). Statusen hentes fra Vipps via serveren
 // hvert 3. sekund (Kasse::status); nøklene per del gjør at et nytt trykk gir samme betaling, ikke en ny.
-function qrStart(){const s=salg;if(!s||!s.regnet||s.vent||nettNede)return;forbered(s);const deler=s.regnet.deler.map(d=>d.id);qr(s,Math.max(0,deler.findIndex(id=>!s.betalt.has(id))),deler);}
+// Summen og delene låses når QR-en startes (s.qrRegnet), så en kurv som er regnet på nytt underveis aldri vises som betalt
+// med en annen sum (kontrolløren 03.11.2026). Etter hvert svar fra serveren: gjelder svaret ikke lenger (annet salg, «Tilbake»
+// eller QR-flaten er borte), gjøres ingenting.
+function qrStart(){const s=salg;if(!s||!s.regnet||s.vent||nettNede)return;forbered(s);if(!s.betalt.size||!s.qrRegnet)s.qrRegnet=s.regnet;const deler=s.qrRegnet.deler.map(d=>d.id);qr(s,Math.max(0,deler.findIndex(id=>!s.betalt.has(id))),deler);}
+const qrGjelder=(s,omraade)=>salg===s&&!!s.vent&&(!omraade||omraade.isConnected);
 function qrValg(s){
  const igjen=()=>{stopPoll();if(salg!==s)return;s.vent=false;qrStart();};
  const kontant=()=>{stopPoll();if(salg!==s)return;s.vent=false;registrer('Kontant',s.betalt.size?'med Vipps og kontant':'kontant');};
@@ -437,17 +441,18 @@ function qrValg(s){
 async function qr(s,i,deler){
  stopPoll();const id=deler[i];const n=deler.length;s.vent=true;
  const omraade=el('div',{class:'k-qrsone'},el('p',{text:'Henter QR-kode …'}));
- sett(kurvEl,el('div',{class:'k-hvem'},el('span',{text:s.navn||'Kontantkunde'})),el('div',{class:'k-sum'},el('span',{text:'Totalt'}),el('span',{text:s.regnet.sum})),omraade,s.betalt.size?null:pille('Tilbake',()=>{stopPoll();s.vent=false;if(salg===s)tegnKurv();}));
+ sett(kurvEl,el('div',{class:'k-hvem'},el('span',{text:s.navn||'Kontantkunde'})),el('div',{class:'k-sum'},el('span',{text:'Totalt'}),el('span',{text:s.qrRegnet.sum})),omraade,s.betalt.size?null:pille('Tilbake',()=>{stopPoll();s.vent=false;if(salg===s)tegnKurv();}));
  let d;
  try{d=await kall('kasse.php',{handling:'qr',del:id,...body(s)});}
- catch(e){if(e.stille)return;if(e.status===410)s.nokler[id]=uuid();omraade.replaceChildren(el('p',{class:'k-feil',role:'alert',text:e.message}),qrValg(s));return;}
+ catch(e){if(e.stille||!qrGjelder(s,omraade))return;if(e.status===410)s.nokler[id]=uuid();omraade.replaceChildren(el('p',{class:'k-feil',role:'alert',text:e.message}),qrValg(s));return;}
+ if(!qrGjelder(s,omraade))return;
  if(d.betalt){if(d.betalingId)s.betalinger.push(d.betalingId);await delBetalt(s,i,deler);return;}
- if(!omraade.isConnected)return;
  const status=el('p',{style:'font-weight:700',text:'Venter på Vipps …'});
  omraade.replaceChildren(...[n>1?el('p',{class:'k-tom',text:`Vipps ${i+1} av ${n} · ${d.belop}`}):null,el('img',{class:'k-qr',src:d.qr,alt:'QR-kode for betaling med Vipps'}),status].filter(Boolean));
  let runder=0;
- const sjekk=async()=>{pollTimer=null;if(!omraade.isConnected||salg!==s)return;try{const st=await kall('kasse.php',{handling:'status',poll:d.poll});if(st.betalt){if(st.kode)s.koder.push({kode:st.kode,belop:d.belop});if(st.betalingId)s.betalinger.push(st.betalingId);await delBetalt(s,i,deler);return;}if(['avbrutt','feilet'].includes(st.status)){s.nokler[id]=uuid();status.textContent='Betalingen ble avbrutt i Vipps.';omraade.append(qrValg(s));return;}}catch(e){if(e.stille)return;status.textContent=e.message;}
-  if(++runder<220)pollTimer=setTimeout(sjekk,3000);else status.textContent='Ingen bekreftelse ennå. Sjekk Penger i admin før du tar betalt på nytt.';};
+ const sjekk=async()=>{pollTimer=null;if(!qrGjelder(s,omraade))return;try{const st=await kall('kasse.php',{handling:'status',poll:d.poll});if(!qrGjelder(s,omraade))return;if(st.betalt){if(st.kode)s.koder.push({kode:st.kode,belop:d.belop});if(st.betalingId)s.betalinger.push(st.betalingId);await delBetalt(s,i,deler);return;}if(['avbrutt','feilet'].includes(st.status)){s.nokler[id]=uuid();status.textContent='Betalingen ble avbrutt i Vipps.';omraade.append(qrValg(s));return;}}catch(e){if(e.stille||!qrGjelder(s,omraade))return;status.textContent=e.message;}
+  // Går tiden ut, vises «Prøv igjen» (og «Betal resten kontant» når en del er betalt), så kassa aldri blir stående låst.
+  if(++runder<220)pollTimer=setTimeout(sjekk,3000);else{status.textContent='Ingen bekreftelse ennå. Sjekk Penger i admin før du tar betalt på nytt.';omraade.append(qrValg(s));}};
  pollTimer=setTimeout(sjekk,3000);
 }
 async function delBetalt(s,i,deler){
@@ -456,8 +461,9 @@ async function delBetalt(s,i,deler){
  if(neste>=0){await qr(s,neste,deler);return;}
  let valg={epost:false,sms:false,betalinger:s.betalinger};
  try{valg=await kall('kasse.php',{handling:'kvitteringValg',betaler:betalerTilServer(s),betalinger:s.betalinger});}catch(e){}
+ if(!qrGjelder(s))return;
  s.vent=false;
- visFerdig(s,{sum:s.regnet.sum,tekst:'med Vipps',valg,koder:s.koder,endringer:[]});
+ visFerdig(s,{sum:s.qrRegnet.sum,tekst:'med Vipps',valg,koder:s.koder,endringer:[]});
 }
 // Gavekort: hele beløpet trekkes fra kortet. Dekker kortet ikke alt, avviser serveren betalingen (midlertidig, eieren avgjør).
 function gavekortBetal(){

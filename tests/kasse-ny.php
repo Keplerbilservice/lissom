@@ -515,6 +515,23 @@ try {
               "kall('kasse.php',{handling:'kvitteringValg',", "const laast=()=>!!salg&&(salg.vent||salg.betalt.size>0);"] as $t) {
         sjekk('kasse.js (Vipps-QR): ' . $t, str_contains($js, $t));
     }
+    // Kontrolløren 03.11.2026: svar som ikke gjelder lenger, gjør ingenting; summen låses når QR-en startes;
+    // når tiden går ut, vises «Prøv igjen» / «Betal resten kontant», så kassa ikke blir låst.
+    $qrDel = (string) substr($js, (int) strpos($js, 'function qrStart(){'), (int) strpos($js, '// Gavekort: hele beløpet') - (int) strpos($js, 'function qrStart(){'));
+    sjekk('Vipps-QR: qrGjelder sjekker salget, vent og at QR-flaten er koblet til',
+        str_contains($js, "const qrGjelder=(s,omraade)=>salg===s&&!!s.vent&&(!omraade||omraade.isConnected);"));
+    sjekk('Vipps-QR: etter QR-svaret, før d.betalt leses', str_contains($qrDel, "if(!qrGjelder(s,omraade))return;\n if(d.betalt){")
+        && str_contains($qrDel, "catch(e){if(e.stille||!qrGjelder(s,omraade))return;if(e.status===410)"));
+    sjekk('Vipps-QR: etter statussvaret (og i feilgreina)', str_contains($qrDel, "{handling:'status',poll:d.poll});if(!qrGjelder(s,omraade))return;if(st.betalt){")
+        && str_contains($qrDel, "catch(e){if(e.stille||!qrGjelder(s,omraade))return;status.textContent=e.message;}"));
+    sjekk('Vipps-QR: etter kvitteringsvalget, før Betalt-skjermen', str_contains($qrDel, "catch(e){}\n if(!qrGjelder(s))return;\n s.vent=false;"));
+    sjekk('Vipps-QR: summen og delene låst når QR-en startes (s.qrRegnet), ikke s.regnet i visningen eller Betalt',
+        str_contains($qrDel, 'if(!s.betalt.size||!s.qrRegnet)s.qrRegnet=s.regnet;const deler=s.qrRegnet.deler.map(d=>d.id);')
+        && str_contains($qrDel, "el('span',{text:s.qrRegnet.sum})") && str_contains($qrDel, "visFerdig(s,{sum:s.qrRegnet.sum,")
+        && !str_contains($qrDel, 's.regnet.sum'));
+    sjekk('Vipps-QR: tiden ute (220 runder) gir «Prøv igjen» / «Betal resten kontant»',
+        str_contains($qrDel, "else{status.textContent='Ingen bekreftelse ennå. Sjekk Penger i admin før du tar betalt på nytt.';omraade.append(qrValg(s));}")
+        && str_contains($qrDel, "pille('Prøv igjen',igjen,'fylt'),s.betalt.size?pille('Betal resten kontant',kontant):null"));
     $css = (string) file_get_contents($rot . '/admin-ny/kasse.css');
     sjekk('kasse.css: .k-qrsone og .k-qr finnes', str_contains($css, '.k-qrsone{') && str_contains($css, '.k-qr{'));
     $i = strpos($js, "el('div',{class:'k-betal4'},");

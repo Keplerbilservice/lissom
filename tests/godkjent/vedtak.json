@@ -6658,13 +6658,13 @@
         {
             "id": "kasse-ipad-oktlaas-sms-eier-20261008",
             "dato": "2026-10-08",
-            "hva": "Kontrolløren (opus) på 1312d1d: én lås per iPad-økt (GET_LOCK kasse-okt:<økt>) rundt opprettelse og stopp av QR-koder, så en QR under opprettelse aldri merkes avbrutt før den er laget hos Vipps; SMS-kvitteringen sendes bare når betalingene hører til betaleren (samme påmelding, medlem, eller ordre for medlemmet/mobilnummeret), og høyst én gang per betaling («Kvittering på SMS er alt sendt for dette kjøpet.»).",
+            "hva": "Kontrolløren (opus) på 1312d1d: én lås per iPad-økt (GET_LOCK kasse-okt:<økt>) rundt opprettelse og stopp av QR-koder, så en QR under opprettelse aldri merkes avbrutt før den er laget hos Vipps; SMS-kvitteringen sendes bare når betalingene hører til betaleren (samme påmelding, medlem, eller ordre for medlemmet/mobilnummeret), og høyst én gang per betaling («Kvittering på SMS er alt sendt for dette kjøpet.»). Endret: eieren 03.11.2026 (Vipps-QR tilbake i kassa): låsen og QR-prefikset følger kassekontoen (GET_LOCK kasse-okt:<konto>), ikke innloggingen, så QR-kodene finnes også etter ny innlogging; kvitteringssjekken for kontantkunden følger fortsatt innloggingen.",
             "hvor": "app/lib/kasse.php, tests/kasse.php",
             "kode": [
                 {
                     "fil": "app/lib/kasse.php",
                     "finnes": [
-                        "'kasse-okt:' . self::oktId()",
+                        "'kasse-okt:' . self::kontoId()",
                         "throw new RuntimeException('Kvitteringen hører ikke til denne kunden.', 409);",
                         "throw new RuntimeException('Kvittering på SMS er alt sendt for dette kjøpet.', 409);",
                         "revider('kassekvittering_sms', 'payment', (int) $r['id']);"
@@ -7033,7 +7033,7 @@
         {
             "id": "enkel-kasse-oppsett-a-20261008",
             "dato": "2026-10-08",
-            "hva": "Den enklere kassa på iPad (eieren «ja» 8. oktober 2026, oppsett A fra fremvisningen enkel-kasse.html): valgene til venstre (61 %), kurven fast til høyre (34 %). Venstre: Kontantkunde og + Ny kunde; «Dagens kurs» fire i bredden med klokkeslett, navn og rødt «N skal betale», sortert etter tid, bare kurs der noen skal betale, kort med fast høyde, bare venstre flate ruller; «Paint on Pots · prislisten» (de fire nivåene fra pop_prisnivaer); «Annet salg»: Varer, Gavekort, Skriv beløp (Timepakke som fast valg der). Trykk på et kurs: bare de som ikke har betalt (samme påmeldinger som Kalender), med «Tilbake»; lista hentes på nytt hvert 15. sekund. + Ny kunde: navn og telefon, «Knytt til dagens kurs» (påmelding på en ledig plass, med lås) eller «Bare kjøp». Kurven: − antall +, trykk på prisen for å endre den, «Rabatt på kjøpet» i prosent (10/20/50) eller kroner med valgfritt hvorfor; serveren regner og validerer (pris ≥ 0, rabatt ≤ summen) og lagrer opprinnelig pris, ny pris, rabatt, hvem og hvorfor (kasse_justeringer, migrasjon 269); eierens regler: prosent bare når ingenting er betalt («Prosent kan bare gis når hele beløpet betales nå.»), og endret pris og rabatt ikke på samme kjøp («Prisen er endret – rabatt kan ikke gis i tillegg.» / «Rabatt er gitt – fjern den for å endre pris.»), sjekket på serveren; prisen kan settes både opp og ned (også på påmeldinger; Vipps-QR tar det høyere beløpet); kontrolløren (STOPP 98a3fb9): en påmelding som er gjort opp (betalt med QR som første del) er ute av kurven, låste andeler gjelder bare samme kurv (signatur); kontrolløren (STOPP 96ba278): rabattandelen låses per del første gang det tas betalt, og endringen skrives til påmeldingen først i samme transaksjon som betalingen (Vipps-QR: når den er betalt), som vises på kvitteringen og i Dagens oppgjør. Betal: to like kort, Vipps (QR-kode) og Kontant (eieren: «Kort» tas helt bort), og «Flere valg» (Del betalingen, Faktura, Vipps-nummer). Dagens oppgjør og Lås i menyen ⋯. Låsen etter 5 minutter og PIN som før. Endret 30.10.2026 (eieren, ny kasse, vedtakene kasse-ny-*-20261030): det som vises på iPaden er erstattet; serverkoden står.",
+            "hva": "Den enklere kassa på iPad (eieren «ja» 8. oktober 2026, oppsett A fra fremvisningen enkel-kasse.html): valgene til venstre (61 %), kurven fast til høyre (34 %). Venstre: Kontantkunde og + Ny kunde; «Dagens kurs» fire i bredden med klokkeslett, navn og rødt «N skal betale», sortert etter tid, bare kurs der noen skal betale, kort med fast høyde, bare venstre flate ruller; «Paint on Pots · prislisten» (de fire nivåene fra pop_prisnivaer); «Annet salg»: Varer, Gavekort, Skriv beløp (Timepakke som fast valg der). Trykk på et kurs: bare de som ikke har betalt (samme påmeldinger som Kalender), med «Tilbake»; lista hentes på nytt hvert 15. sekund. + Ny kunde: navn og telefon, «Knytt til dagens kurs» (påmelding på en ledig plass, med lås) eller «Bare kjøp». Kurven: − antall +, trykk på prisen for å endre den, «Rabatt på kjøpet» i prosent (10/20/50) eller kroner med valgfritt hvorfor; serveren regner og validerer (pris ≥ 0, rabatt ≤ summen) og lagrer opprinnelig pris, ny pris, rabatt, hvem og hvorfor (kasse_justeringer, migrasjon 269); eierens regler: prosent bare når ingenting er betalt («Prosent kan bare gis når hele beløpet betales nå.»), og endret pris og rabatt ikke på samme kjøp («Prisen er endret – rabatt kan ikke gis i tillegg.» / «Rabatt er gitt – fjern den for å endre pris.»), sjekket på serveren; prisen kan settes både opp og ned (også på påmeldinger; Vipps-QR tar det høyere beløpet); kontrolløren (STOPP 98a3fb9): en påmelding som er gjort opp (betalt med QR som første del) er ute av kurven, låste andeler gjelder bare samme kurv (signatur); kontrolløren (STOPP 96ba278): rabattandelen låses per del første gang det tas betalt, og endringen skrives til påmeldingen først i samme transaksjon som betalingen (Vipps-QR: når den er betalt), som vises på kvitteringen og i Dagens oppgjør. Betal: to like kort, Vipps (QR-kode) og Kontant (eieren: «Kort» tas helt bort), og «Flere valg» (Del betalingen, Faktura, Vipps-nummer). Dagens oppgjør og Lås i menyen ⋯. Låsen etter 5 minutter og PIN som før. Endret 30.10.2026 (eieren, ny kasse, vedtakene kasse-ny-*-20261030): det som vises på iPaden er erstattet; serverkoden står. Endret: eieren 03.11.2026 (Vipps-QR tilbake i kassa): kurven er også låst så lenge en QR-runde står (s.qr), til den er betalt eller stoppet på serveren.",
             "hvor": "/kasse (admin-ny/kasse.js, admin-ny/kasse.css), api/kasse/kasse.php, app/lib/kassekurv.php, app/lib/kassejustering.php, app/lib/kasse.php, app/lib/poppris.php, db/migrations/269_kasse_pris_og_rabatt.sql, tests/kasse-enkel.php",
             "kode": [
                 {
@@ -7052,7 +7052,7 @@
                         "el('b',{text:'Timepakke'})",
                         "},15000);}",
                         "aria-label':'Meny',text:'⋯'",
-                        "const laast=()=>!!salg&&(salg.vent||salg.betalt.size>0);",
+                        "const laast=()=>!!salg&&(salg.vent||salg.betalt.size>0||!!salg.qr);",
                         "const RABATT_GITT='Rabatt er gitt – fjern den for å endre pris.';",
                         "const PRIS_ENDRET='Prisen er endret – rabatt kan ikke gis i tillegg.';",
                         "const PROSENT_BETALT='Prosent kan bare gis når hele beløpet betales nå.';"
@@ -10280,7 +10280,7 @@
         {
             "id": "kasse-ny-kvittering-paa-trykk-20261030",
             "dato": "2026-10-30",
-            "hva": "Eieren 30.10.2026: Betalt-skjermen har et stort ✓, «Betalt [sum] kr [måte]», knappen «Send kvittering» og den store gule «I dag». «Send kvittering» gir feltet «Telefon» med «Avbryt» og «Send», fylt inn for kunder med kjent telefon. Det sendes aldri kvittering uten at det trykkes. Sperren mot to SMS-er for samme kjøp og sjekken på at kvitteringen hører til kunden står (kontantkunden: bare sitt eget salg fra samme iPad).",
+            "hva": "Eieren 30.10.2026: Betalt-skjermen har et stort ✓, «Betalt [sum] kr [måte]», knappen «Send kvittering» og den store gule «I dag». «Send kvittering» gir feltet «Telefon» med «Avbryt» og «Send», fylt inn for kunder med kjent telefon. Det sendes aldri kvittering uten at det trykkes. Sperren mot to SMS-er for samme kjøp og sjekken på at kvitteringen hører til kunden står (kontantkunden: bare sitt eget salg fra samme iPad). Endret: eieren 03.11.2026 (Vipps-QR tilbake i kassa): «I dag» spør også serveren om en QR fra kassen som venter eller er betalt uten å være vist (sjekkAapenQr).",
             "hvor": "Kassa på iPad › Betalt-skjermen",
             "kode": [
                 {
@@ -10288,7 +10288,7 @@
                     "finnes": [
                         "text:'Send kvittering'",
                         "el('span',{text:'Telefon'})",
-                        "text:'I dag',onclick:()=>{ferdig=null;tegnVenstre();tegnKurv();}"
+                        "text:'I dag',onclick:()=>{ferdig=null;tegnVenstre();tegnKurv();sjekkAapenQr();}"
                     ],
                     "ikkeFinnes": []
                 },

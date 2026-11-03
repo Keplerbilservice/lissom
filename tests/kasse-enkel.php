@@ -516,6 +516,8 @@ try {
             $jo = DB::en('SELECT gjort_at, rabatt_ore FROM kasse_justeringer WHERE nokkel = :k', ['k' => strtolower($k['nokler']['ordre'])]);
             sjekk('… betalt: ordren 90 kr, endringen gjort', ($s[1]['betalt'] ?? false) === true && (int) ($o['sum_ore'] ?? 0) === 9000
                 && ($o['status'] ?? '') === 'betalt' && $jo !== null && $jo['gjort_at'] !== null && (int) $jo['rabatt_ore'] === 1000, $tekst($s));
+            // Kassa viser Betalt og kvitterer (qrSett), slik admin-ny/kasse.js gjør (kontrolløren 3. november 2026).
+            kall($K, ['handling' => 'qrSett', 'betalinger' => [(int) ($s[1]['betalingId'] ?? 0)]], $kasseToken);
         } else {
             $s = kall($K, ['handling' => 'betal', 'maate' => 'Kontant'] + $send($k), $kasseToken);
             $o = $ordreFra($k);
@@ -748,7 +750,10 @@ try {
                         $feil[] = "QR $del ikke betalt " . $tekst($st);
                         break;
                     }
+                    $s = $st;
                 }
+                // Kassa har vist betalingen og kvitterer (qrSett), slik admin-ny/kasse.js gjør i delBetalt.
+                kall($K, ['handling' => 'qrSett', 'betalinger' => [(int) ($s[1]['betalingId'] ?? 0)]], $kasseToken);
             }
             $sett('.betaling-status', 'CREATED');
         }

@@ -21,6 +21,8 @@
  *   POST handling=qr       { kurv, betaler, del, nokler, forventet }
  *   POST handling=status   { poll: {bookingId} | {referanse} }
  *   POST handling=stoppQr  { del, nokkel }   «Tilbake»: stopp QR-en først (stoppet | ingen | betalt)
+ *   POST handling=qrSett   { betalinger }    iPaden har vist QR-betalingene (sperren slippes)
+ *   POST handling=aapneQr                   ved start/opplåsing: QR-er som venter, og betalte som ikke er vist
  *   POST handling=kvitteringValg { betaler, betalinger }   etter Vipps-QR
  *   POST handling=betalteIkke { bookingId }               «Endre» → «Betalte ikke»
  *   POST handling=kvittering  { betalinger, kanal, betaler, telefon? }
@@ -99,6 +101,14 @@ try {
             // «Tilbake» mens QR-en venter: stoppes hos Vipps før kurven låses opp (kontrolløren 3. november 2026).
             Svar::ok(Kasse::stoppQrDel(Foresporsel::tekst('del'), Foresporsel::tekst('nokkel')));
 
+        case 'qrSett':
+            // iPaden kvitterer for at den har vist QR-betalingene (slipper sperren i betal()).
+            Svar::ok(Kasse::qrSett(array_values($liste('betalinger'))));
+
+        case 'aapneQr':
+            // Når kassa starter eller låses opp: QR-er som venter, og betalte som ikke er vist.
+            Svar::ok(Kasse::aapneQr());
+
         case 'kvitteringValg':
             // Etter Vipps-QR: hvilke kvitteringer som kan sendes for det som ble betalt.
             Svar::ok(Kasse::kvitteringValg(KasseKurv::betaler($liste('betaler')), array_values($liste('betalinger'))));
@@ -122,6 +132,9 @@ try {
         default:
             Svar::feil('Ukjent handling.');
     }
+} catch (KasseUsettQr $e) {
+    // Betalt med Vipps-QR uten at iPaden har vist det: betalingene følger med, så kassa viser Betalt for dem.
+    Svar::feil($e->getMessage(), 409, ['usettQr' => $e->qr]);
 } catch (RuntimeException $e) {
     $kode = (int) $e->getCode();
     // Vipps sa nei eller svarte ikke: et svar, ikke en feil hos oss (samme

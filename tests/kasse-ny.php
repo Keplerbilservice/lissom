@@ -532,7 +532,23 @@ try {
         && str_contains($qrDel, 'const qrGjelder=(s,q,omraade)=>qrDenne(s,q)&&!!s.vent&&(!omraade||omraade.isConnected);'));
     sjekk('Vipps-QR: QR-svaret — annen runde: ut; betalt: alltid til delBetalt; ellers ut når svaret ikke gjelder',
         str_contains($qrDel, "if(!qrDenne(s,q))return;\n if(d.betalt){if(d.betalingId&&!s.betalinger.includes(d.betalingId))s.betalinger.push(d.betalingId);await delBetalt(s,q,i);return;}\n if(!qrGjelder(s,q,omraade))return;")
-        && str_contains($qrDel, "catch(e){if(e.stille||!qrGjelder(s,q,omraade))return;if(e.status===410)"));
+        && str_contains($qrDel, "catch(e){if(e.stille||!qrDenne(s,q))return;if(e.data&&e.data.usettQr){melding(e.message);await usettQr(s,e.data.usettQr);return;}if(!qrGjelder(s,q,omraade))return;if(e.status===410)"));
+    // Kontrolløren 03.11.2026 (fjerde runde): en betalt QR som kassa ikke har vist, sperrer til kassa har kvittert (qrSett);
+    // 409-svaret har betalingen med (usettQr), og kassa viser Betalt for den; ved start og opplåsing spør kassa serveren (aapneQr).
+    sjekk('Vipps-QR: kassa kvitterer (qrSett) når den har vist en QR-betaling, og før betal()',
+        str_contains($qrDel, " s.vent=true;s.betalt.add(q.deler[i]);\n if(kurvEl)kurvEl.querySelectorAll('.k-qrtilbake').forEach(k=>k.remove());\n // Kassa har vist betalingen: kvitter, så serveren slipper sperren for den (registrer() kvitterer på nytt om dette feilet).\n try{await kall('kasse.php',{handling:'qrSett',betalinger:s.betalinger});}catch(e){}")
+        && str_contains($js, "  if(s.betalinger.length)await kall('kasse.php',{handling:'qrSett',betalinger:s.betalinger});\n  const d=await kall('kasse.php',{handling:'betal',")
+        && str_contains($qrDel, "kall('kasse.php',{handling:'qrSett',betalinger:[u.betalingId]})"));
+    sjekk('Vipps-QR: 409 med usettQr — del av runden: gjøres opp; ellers Betalt-skjermen for den QR-en (kurven står til «I dag»)',
+        str_contains($js, "if(e.data&&e.data.usettQr&&salg===s){melding(e.message);await usettQr(s,e.data.usettQr);return;}")
+        && str_contains($qrDel, "if(q&&id&&qrDenne(s,q)){")
+        && str_contains($qrDel, "ferdig={sum:u.sum,tekst:'med Vipps',valg:{},"));
+    sjekk('Vipps-QR: ved start/opplåsing og etter «I dag» spør kassa om QR-er som venter eller er betalt uten å være vist',
+        str_contains($js, " if(!(await sjekkAapenQr()))await taFraAdmin();")
+        && str_contains($js, "text:'I dag',onclick:()=>{ferdig=null;tegnVenstre();tegnKurv();sjekkAapenQr();}")
+        && str_contains($qrDel, "r=await kall('kasse.php',{handling:'aapneQr'});")
+        && str_contains($qrDel, "if(r.usett&&r.usett.length){visUsett(r.usett[0]);return true;}")
+        && str_contains($qrDel, "s.gjen=true;s.nokler={qr:v.nokkel};"));
     sjekk('Vipps-QR: statussvaret — betalt går foran qrGjelder, feilgreina ignoreres når svaret ikke gjelder',
         str_contains($qrDel, "{handling:'status',poll:d.poll});if(!qrDenne(s,q))return;if(st.betalt){")
         && str_contains($qrDel, "await delBetalt(s,q,i);return;}if(!qrGjelder(s,q,omraade))return;if(['avbrutt','feilet']")

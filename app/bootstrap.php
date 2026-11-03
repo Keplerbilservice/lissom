@@ -83,6 +83,7 @@ spl_autoload_register(static function (string $klasse): void {
         'Frys' => 'frys.php',
         'Frakt' => 'frakt.php',
         'Kasse' => 'kasse.php',
+        'KasseUsettQr' => 'kasse.php',
         'KasseJustering' => 'kassejustering.php',
         'KasseKurv' => 'kassekurv.php',
         'KasseTilgang' => 'kassetilgang.php',

@@ -479,6 +479,8 @@ try {
         && (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE ref_type = 'order' AND ref_id = :o", ['o' => (int) ($o['id'] ?? 0)]) === 0
         && (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE emne LIKE 'Varsel må sendes for hånd%'") === $haand0,
         json_encode($o));
+    // Kassa viser Betalt og kvitterer (qrSett), slik admin-ny/kasse.js gjør i delBetalt (kontrolløren 3. november 2026).
+    kall($K, ['handling' => 'qrSett', 'betalinger' => [(int) $p['id']]], $kasseToken);
 
     // Samme kurv: QR vises, «Tilbake», Kontant (nøklene beholdes).
     $sett('.betaling-status', 'CREATED');
@@ -517,7 +519,10 @@ try {
     $k8 = $kjop(['fritt' => ['200']], []);
     $s = kall($K, ['handling' => 'betal', 'maate' => 'Kontant'] + $send($k8), $kasseToken);
     sjekk('… betalte kunden den gamle QR-en: 409, kontanten registreres ikke', $s[0] === 409 && $antallBetalinger() === $for
-        && DB::verdi('SELECT status FROM payments WHERE vipps_reference = :r', ['r' => $ref7]) === 'betalt', $tekst($s));
+        && DB::verdi('SELECT status FROM payments WHERE vipps_reference = :r', ['r' => $ref7]) === 'betalt'
+        && ($s[1]['usettQr'][0]['betalingId'] ?? 0) === (int) DB::verdi('SELECT id FROM payments WHERE vipps_reference = :r', ['r' => $ref7]), $tekst($s));
+    // … kassa viser Betalt for den (usettQr) og kvitterer.
+    kall($K, ['handling' => 'qrSett', 'betalinger' => [(int) DB::verdi('SELECT id FROM payments WHERE vipps_reference = :r', ['r' => $ref7])]], $kasseToken);
 
     // ── Kontrolløren 3. november 2026: QR betalt via webhooken før kassa fikk vite det ──
     // Webhooken er simulert med Vipps::synkroniser() — samme behandling som webhooken og cron.
@@ -532,6 +537,7 @@ try {
         $sett('.betaling-status', 'CREATED');
         return [$k, $ref, (int) DB::verdi('SELECT id FROM payments WHERE vipps_reference = :r', ['r' => $ref])];
     };
+    $kvitter = static fn(array $ider, string $tok = ''): array => kall($K, ['handling' => 'qrSett', 'betalinger' => $ider], $tok !== '' ? $tok : $kasseToken);
     // 1) «Tilbake» mens QR-en står: serveren sier betalt (290 kr), ikke «stoppet», og kurven låses ikke opp.
     [$kw, $refw, $pidw] = $qrBetaltViaWebhook();
     sjekk('webhooken: QR-betalingen på 290 kr er betalt', DB::verdi('SELECT status FROM payments WHERE id = :i', ['i' => $pidw]) === 'betalt'
@@ -541,28 +547,86 @@ try {
         $s[0] === 200 && ($s[1]['betalt'] ?? false) === true && ($s[1]['status'] ?? '') === 'betalt' && ($s[1]['betalingId'] ?? 0) === $pidw, $tekst($s));
     $for = $antallBetalinger();
     $s = kall($K, ['handling' => 'betal', 'maate' => 'Kontant'] + $send($kw), $kasseToken);
+    sjekk('… Kontant for samme kurv før kassa har kvittert: 409, ingen ny betaling', $s[0] === 409 && $antallBetalinger() === $for, $tekst($s));
+    $s = $kvitter([$pidw]);
+    sjekk('… kassa kvitterer (qrSett) når Betalt er vist', $s[0] === 200 && ($s[1]['merket'] ?? []) === [$pidw], $tekst($s));
+    $s = kall($K, ['handling' => 'betal', 'maate' => 'Kontant'] + $send($kw), $kasseToken);
     sjekk('… Kontant for samme kurv etterpå: ingen ny betaling (QR-en har gjort opp delen)', $antallBetalinger() === $for, $tekst($s));
 
-    // 2) Kurven endret (nye nøkler) og Kontant uten at kassa har sett QR-betalingen: 409, kontanten føres ikke i tillegg.
+    // 2) Kurven endret (nye nøkler) og Kontant uten at kassa har vist QR-betalingen: 409 med betalingen, til kassa har kvittert.
     [$kx, $refx, $pidx] = $qrBetaltViaWebhook();
     $for = $antallBetalinger();
     $s = kall($K, ['handling' => 'betal', 'maate' => 'Kontant'] + $send($kjop(['fritt' => ['150']], [])), $kasseToken);
-    sjekk('QR betalt via webhooken → endret kurv → Kontant: 409, kontanten registreres ikke', $s[0] === 409 && $antallBetalinger() === $for
-        && str_contains((string) ($s[1]['feil'] ?? ''), 'Vipps-betaling fra kassa ble nettopp betalt'), $tekst($s));
+    $u = $s[1]['usettQr'][0] ?? [];
+    sjekk('QR betalt via webhooken → endret kurv → Kontant: 409 med den betalte QR-en (290 kr, varen), kontanten registreres ikke',
+        $s[0] === 409 && $antallBetalinger() === $for && str_contains((string) ($s[1]['feil'] ?? ''), 'Vipps-betaling fra kassa ble nettopp betalt')
+        && ($u['betalingId'] ?? 0) === $pidx && ($u['sumOre'] ?? 0) === 29000 && ($u['nokkel'] ?? '') === strtolower($kx['nokler']['ordre'])
+        && count($u['kvittering']['linjer'] ?? []) === 1, $tekst($s));
+    $s = kall($K, ['handling' => 'betal', 'maate' => 'Kontant'] + $send($kjop(['fritt' => ['150']], [])), $kasseToken);
+    $s2 = kall($K, ['handling' => 'betal', 'maate' => 'Vipps'] + $send($kjop(['fritt' => ['150']], [])), $kasseToken);
+    $s3 = kall($K, ['handling' => 'betal', 'maate' => 'Gavekort', 'kode' => 'FINNES-IKKE'] + $send($kjop(['fritt' => ['150']], [])), $kasseToken);
+    sjekk('… flere trykk (Kontant, Vipps-nummer, Gavekort) avvises også, til kassa har kvittert', $s[0] === 409 && $s2[0] === 409 && $s3[0] >= 400
+        && $antallBetalinger() === $for, $tekst($s) . ' ' . $tekst($s2) . ' ' . $tekst($s3));
+    $kvitter([$pidx]);
     $s = kall($K, ['handling' => 'betal', 'maate' => 'Vipps'] + $send($kjop(['fritt' => ['150']], [])), $kasseToken);
-    sjekk('… beskjeden gis én gang (kassa blir ikke stående sperret): neste salg går gjennom', $s[0] === 200 && $antallBetalinger() === $for + 1, $tekst($s));
+    sjekk('… når kassa har vist og kvittert: neste salg går gjennom', $s[0] === 200 && $antallBetalinger() === $for + 1, $tekst($s));
 
     // 3) Samme kurv, QR betalt via webhooken uten at kassa har sett det: Kontant, Gavekort og Vipps-nummer avvises (409).
     [$ky, $refy, $pidy] = $qrBetaltViaWebhook();
     $for = $antallBetalinger();
     $s = kall($K, ['handling' => 'betal', 'maate' => 'Kontant'] + $send($ky), $kasseToken);
     $s2 = kall($K, ['handling' => 'betal', 'maate' => 'Vipps'] + $send($ky), $kasseToken);
-    sjekk('QR betalt via webhooken → Kontant / Vipps-nummer for samme kurv: 409 «Kunden har alt betalt med Vipps», ingenting registrert',
+    sjekk('QR betalt via webhooken → Kontant / Vipps-nummer for samme kurv: 409 «Kunden har alt betalt med Vipps», med betalingen, ingenting registrert',
         $s[0] === 409 && $s2[0] === 409 && $antallBetalinger() === $for
-        && ($s[1]['feil'] ?? '') === 'Kunden har alt betalt med Vipps. Ikke ta betalt på nytt.', $tekst($s) . ' ' . $tekst($s2));
+        && ($s[1]['feil'] ?? '') === 'Kunden har alt betalt med Vipps. Ikke ta betalt på nytt.' && ($s[1]['usettQr'][0]['betalingId'] ?? 0) === $pidy,
+        $tekst($s) . ' ' . $tekst($s2));
     $s = kall($K, ['handling' => 'qr', 'del' => 'ordre'] + $send($ky), $kasseToken);
     sjekk('… «Prøv igjen» (samme QR) viser den som betalt', $s[0] === 200 && ($s[1]['betalt'] ?? false) === true && ($s[1]['betalingId'] ?? 0) === $pidy, $tekst($s));
+    $kvitter([$pidy]);
 
+    // 5) Siden lastes på nytt / ny innlogging på kassekontoen mens QR-en betales: den nye økta finner QR-en (kontoens prefiks),
+    //    viser den som venter, og når den er betalt: Betalt — kontant avvises til kassa har kvittert.
+    $sett('.betaling-status', 'CREATED');
+    DB::oppdater('products', ['lager' => 3], ['id' => $produkt]);
+    $kr1 = $kjop(['varer' => [['id' => $produkt, 'antall' => 1]]], []);
+    $s = kall($K, ['handling' => 'qr', 'del' => 'ordre'] + $send($kr1), $kasseToken);
+    $refr = (string) ($s[1]['poll']['referanse'] ?? '');
+    $pidr = (int) DB::verdi('SELECT id FROM payments WHERE vipps_reference = :r', ['r' => $refr]);
+    $nyToken = $sesjon($kasse, 'passord', 2);
+    $s = kall($P, ['handling' => 'pin', 'pin' => $pinM], $nyToken);
+    sjekk('ny innlogging på kassekontoen: låst opp med PIN', $s[0] === 200, $tekst($s));
+    $s = kall($K, ['handling' => 'aapneQr'], $nyToken);
+    $v = $s[1]['venter'][0] ?? [];
+    sjekk('… aapneQr: QR-en fra forrige økt venter, med bildet, 290 kr og nøkkelen (QR-skjermen med «Tilbake»)', $s[0] === 200
+        && ($v['referanse'] ?? '') === $refr && str_starts_with((string) ($v['qr'] ?? ''), 'data:image/svg+xml') && ($v['sumOre'] ?? 0) === 29000
+        && ($v['nokkel'] ?? '') === strtolower($kr1['nokler']['ordre']) && ($s[1]['usett'] ?? null) === [], $tekst($s));
+    $sett('.betaling-status', 'AUTHORIZED');
+    Vipps::synkroniser($refr);
+    $sett('.betaling-status', 'CREATED');
+    $for = $antallBetalinger();
+    $s = kall($K, ['handling' => 'betal', 'maate' => 'Kontant'] + $send($kjop(['fritt' => ['150']], [])), $nyToken);
+    $s2 = kall($K, ['handling' => 'betal', 'maate' => 'Kontant'] + $send($kjop(['fritt' => ['150']], [])), $nyToken);
+    sjekk('… QR-en betales (webhooken), ny økt tar kontant: 409 med betalingen, også ved flere trykk', $s[0] === 409 && $s2[0] === 409
+        && ($s[1]['usettQr'][0]['betalingId'] ?? 0) === $pidr && $antallBetalinger() === $for, $tekst($s) . ' ' . $tekst($s2));
+    $s = kall($K, ['handling' => 'aapneQr'], $nyToken);
+    sjekk('… aapneQr: den betalte QR-en står som ikke vist (Betalt-skjermen), ingen venter', $s[0] === 200
+        && ($s[1]['usett'][0]['betalingId'] ?? 0) === $pidr && ($s[1]['usett'][0]['sum'] ?? '') === KasseKurv::kr(29000) && ($s[1]['venter'] ?? null) === [], $tekst($s));
+    $s = $kvitter([$pidr], $nyToken);
+    $s2 = kall($K, ['handling' => 'betal', 'maate' => 'Kontant'] + $send($kjop(['fritt' => ['150']], [])), $nyToken);
+    sjekk('… kvittert: aapneQr er tom, og neste salg går gjennom', ($s[1]['merket'] ?? []) === [$pidr] && $s2[0] === 200
+        && $antallBetalinger() === $for + 1 && (kall($K, ['handling' => 'aapneQr'], $nyToken)[1]['usett'] ?? null) === [], $tekst($s) . ' ' . $tekst($s2));
+    $s = $kvitter([$pidr + 100000]);
+    sjekk('… qrSett merker bare QR-betalinger fra kassen', ($s[1]['merket'] ?? null) === [], $tekst($s));
+
+    // Overgang: en QR med det gamle prefikset (innloggingen, før 3.11.2026) som venter, finnes fortsatt og kan følges opp.
+    $gammelRef = 'KQ-' . substr(hash('sha256', hash('sha256', $kasseToken)), 0, 8) . '-' . gmdate('ymd') . '-OVERGANG';
+    $gammelId = DB::settInn('payments', ['vipps_reference' => $gammelRef, 'type' => 'epayment', 'belop_ore' => 5000, 'status' => 'venter',
+        'formal' => 'ordre', 'idempotency_key' => Vipps::uuid()]);
+    $s = kall($K, ['handling' => 'status', 'poll' => ['referanse' => $gammelRef]], $kasseToken);
+    $s2 = kall($K, ['handling' => 'aapneQr'], $kasseToken);
+    sjekk('overgang: QR med innloggingens prefiks svarer på status og står i aapneQr', $s[0] === 200 && ($s[1]['status'] ?? '') === 'venter'
+        && in_array($gammelRef, array_column($s2[1]['venter'] ?? [], 'referanse'), true), $tekst($s) . ' ' . $tekst($s2));
+    DB::kjor("UPDATE payments SET status = 'avbrutt' WHERE id = :i", ['i' => $gammelId]);
     // 4) «Tilbake» mens QR-en venter: stoppes hos Vipps, ordren kanselleres, og den kan ikke betales etterpå.
     $sett('.betaling-status', 'CREATED');
     DB::oppdater('products', ['lager' => 3], ['id' => $produkt]);

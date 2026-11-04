@@ -299,6 +299,10 @@ try {
         && ($r[1]['epost'] ?? 0) === 7 && ($r[1]['sms'] ?? 0) === 7 && count($r[1]['ikkeNaadd'] ?? []) === 1, $tekst($r));
     $r = kall('/api/admin/kurs.php', ['handling' => 'avlys', 'oktId' => $sAvl], $adminT);
     sjekk('kurs.php avlys', $r[0] === 200 && DB::verdi('SELECT status FROM course_sessions WHERE id = :i', ['i' => $sAvl]) === 'avlyst', $tekst($r));
+    sjekk('andre kursstarter med samme navn forblir planlagt',
+        DB::verdi('SELECT status FROM course_sessions WHERE id = :i', ['i' => $sLedig]) === 'planlagt'
+        && DB::verdi('SELECT status FROM course_sessions WHERE id = :i', ['i' => $sFull]) === 'planlagt'
+        && DB::verdi('SELECT status FROM courses WHERE id = :i', ['i' => $kid]) === 'publisert');
     DB::kjor("UPDATE notification_templates SET aktiv = 0 WHERE navn = 'kurs_avlyst'");
     $r = kall($V, ['handling' => 'avlyst', 'oktId' => $sAvl], $adminT);
     sjekk('malen av: ingen beskjed (409)', $r[0] === 409 && (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE mal = 'kurs_avlyst' AND ref_type = 'booking' AND ref_id IN ($bKari, $bGjest)") === 0, $tekst($r));

@@ -627,7 +627,7 @@ export function oktMeny(id, x, y) {
     <button data-k="hm" data-hm="kopieruke">Kopier til hele uka</button>
     <button data-k="hm" data-hm="steng">${h.visFullt ? 'Åpne for påmelding' : 'Steng for påmelding'}</button>
     <hr>
-    <button data-k="hm" data-hm="avlys" class="fare" ${h.avlyst ? 'disabled' : ''}>Avlys dato</button>`);
+    <button data-k="hm" data-hm="avlys" class="fare" ${h.avlyst ? 'disabled' : ''}>Avlys kurs</button>`);
 }
 function dagMeny(dato, x, y) {
   menyFor = dato;
@@ -750,6 +750,7 @@ function tegnFlytt() {
   const {liste, avlys} = FL, p = liste.reduce((s, o) => s + o.pameldt, 0), n = liste.length;
   ark(`<div class="ark-head"><h2>${avlys ? 'Avlys' : 'Flytt'} ${n} kurs</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
    ${liste.map(o => `<div class="rad"><div class="tekst"><b>${kortDato(o.dato)} ${esc(o.tid)} · ${esc(o.tittel)}</b>${avlys || !FL.til ? '' : `<small>Ny: ${esc(langDato(nyTid(o).dato))} kl. ${esc(nyTid(o).tid)}</small>`}</div><span class="merke">${o.pameldt} påmeldt</span>${avlys && ubetalte(o).length < (o.deltakere || []).length ? `<span class="merke gul">${(o.deltakere || []).filter(d => d.status === 'Betalt').length} betalt</span>` : ''}</div>`).join('')}
+   ${avlys ? '<p class="muted">Alle samlinger i hvert valgte kurs avlyses. Andre kursstarter, også med samme navn eller på samme dag, blir ikke berørt.</p>' : ''}
    ${avlys ? '' : `<div><small>Ny dato og tid</small><div class="valgknapper" style="margin-top:6px">${[['uke', 'Én uke senere'], ['dag', 'Én dag senere'], ['velg', 'Velg dato og tid']].map(([k, t]) => `<button class="knapp ${FL.til === k ? 'valgt-knapp' : ''}" data-k="flyttTil" data-til="${k}" aria-pressed="${FL.til === k}">${t}</button>`).join('')}</div>
      ${FL.til === 'velg' ? `<div class="to-felt"><label><small>Dato</small><input type="date" id="nk-fdato" value="${esc(FL.dato)}"></label><label><small>Tid</small><input type="time" id="nk-ftid" value="${esc(FL.tid)}"></label></div>` : ''}</div>`}
    ${p ? (avlys

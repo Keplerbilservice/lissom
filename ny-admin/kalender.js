@@ -1024,14 +1024,14 @@ document.addEventListener('change', e => {
 // ── «Lag nytt kurs»: komplett kurs i tre steg (eieren 03.11.2026: «det må jo være å legge ut et komplett nytt kurs») ──
 // Samme tre steg som kursoppsettet i gammel admin: Kursoppsett (alle tekstene) → Bilder → Dager. Steg 1 lagrer med
 // kurs.php handling=lagre (id 0 første gang, deretter samme id). Bilder bruker bilder.php og kurs.php handling=bilder,
-// som Kursbilder. Dager er «Nytt kurs eller serie» med det nye kurset valgt. Ingen forhåndsvalg på synlighet.
+// som Kursbilder. Dager er «Nytt kurs eller serie» med det nye kurset valgt. Nye kurs starter som utkast.
 const NK_TEKSTER = [['tema','Kategori'],['kortBeskrivelse','Kort beskrivelse'],['punkter','Dette er inkludert'],['laerer','Dette lærer du'],
   ['lagerDu','Dette lager du'],['medHjem','Dette får du med hjem'],['ferdigTid','Når arbeidet er ferdig'],['praktisk','Praktisk informasjon'],
   ['allergener','Allergener'],['passerNivaa','Passer nivå'],['passerHvem','Passer for'],['metode','Metode'],['varighet','Varighet'],
   ['varighetTekst','Varighet på nettsiden'],['nivaaTekst','Nivåtekst'],['tillegg','Tillegg'],['bekreftelse','Tekst i bekreftelsen'],
   ['seoTittel','Søketittel'],['seoMeta','Søkebeskrivelse']];
 const NK = {};
-const nyNK = () => Object.assign(NK, {id: 0, navn: '', pris: '', plasser: '', synlig: '', om: '', tekst: {}, bilder: [], arkiv: null});
+const nyNK = () => Object.assign(NK, {id: 0, navn: '', pris: '', plasser: '', synlig: 'kladd', om: '', tekst: {}, bilder: [], arkiv: null});
 nyNK();
 const nkKlar = () => !!(NK.navn.trim() && String(NK.pris).trim() !== '' && +NK.plasser > 0 && NK.synlig);
 const nkBildeSrc = url => /^https?:\/\//.test(String(url || '')) ? url : '/' + String(url || '').replace(/^\/+/, '');

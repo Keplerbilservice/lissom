@@ -5,7 +5,7 @@
  *   A  kurs.php handling=lagre med id 0 og feltene arket sender, lager kurset (tittel, pris, plasser,
  *      status kladd/publisert, beskrivelse, type kurs, SMS av) og det står i kurslista (GET kurs.php).
  *   B  Uten navn svarer API-et med feilmeldingen arket viser som toast.
- *   C  Ny admin: valget øverst i Kursmal, arket «Nytt kurs» med ordrett tekst, ingen forhåndsvalg, og
+ *   C  Ny admin: valget øverst i Kursmal, arket «Nytt kurs» med ordrett tekst, utkast som standard, og
  *      etter lagring er kurset valgt med plasser og pris fra kurset.
  *
  * Ekte endepunkt (php -S med tests/nettleser/ruter.php) mot en isolert testbase. Ingenting sendes.
@@ -114,7 +114,7 @@ try {
         'data-k="nkGaTil" data-steg="3">Gå til dager</button>', '${SE.flyt ? nkSteg(3) : \'\'}'] as $bit) {
         sjekk('arket har ' . $bit, str_contains($js, $bit));
     }
-    sjekk('ingen forhåndsvalg på synlighet', str_contains($js, "synlig: ''") && str_contains($js, '+NK.plasser > 0 && NK.synlig'));
+    sjekk('utkast er valgt som standard og kan lagres', str_contains($js, "synlig: 'kladd'") && str_contains($js, '+NK.plasser > 0 && NK.synlig'));
     sjekk('lagrer med kurs.php handling=lagre (id 0 første gang) og alle tekstene', str_contains($js, "api('kurs.php', {handling: 'lagre', id: NK.id || 0, tittel: NK.navn.trim(), pris: +pris, kapasitet: +NK.plasser,") && str_contains($js, "sms: 'nei', ...tekster});"));
     sjekk('feil fra API-et vises som toast, arket står', str_contains($js, '} catch (e) { b.disabled = false; return toast(esc(e.message)); }'));
     sjekk('Dager: det nye kurset valgt, plasser og pris fra kurset', str_contains($js, 'Object.assign(SE, {kursId: NK.id, holderId: 0, plasser: k?.kapasitet || +NK.plasser, pris: String(k?.pris ?? NK.pris), flyt: true});'));

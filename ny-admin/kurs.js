@@ -88,7 +88,7 @@ function tegnKursside(h) {
     ${gruppe('Send', [['Påminnelse', 'kursPaaminnelse'], [`Kursbevis til ${bet} som har betalt`, 'kursbevis'], ['Bekreftelse på nytt', 'bekreftAlle']])}
     ${gruppe('Datoen', [['Endre dato og tid', 'kursFlytt'], ['Avlys dato', 'kursAvlys', h.avlyst ? 'disabled' : ''], ['Kopier økta', 'kursKopier'], [h.visFullt ? 'Åpne for påmelding' : 'Steng for påmelding', 'kursSteng']])}
     ${erPop(h.kursId) ? popPrisliste() : ''}
-    ${erMobil() ? '' : gruppe('Kurset', [['Rediger kurset', 'kursRediger'], ['Kursinnstillinger', 'kursInnstillinger'], ['Notat', 'kursNotat'], ['Kursbilder', 'kursBilde'], ['Slett kurs', 'kursSlett', 'style="color:var(--red)"']])}
+    ${erMobil() ? '' : gruppe('Kurset', [['Rediger kurset', 'kursRediger'], ['Kursinnstillinger', 'kursInnstillinger'], ['Notat', 'kursNotat'], ['Kursbilder', 'kursBilde'], ['Slett hele kurset', 'kursSlett', 'style="color:var(--red)"']])}
   </div></section>
   <section class="kort">
     <div class="kort-head"><h2>Deltakere ${h.pameldt}/${h.kap}</h2>${ub ? `<button class="knapp liten rod" data-k="filterUbetalt" aria-pressed="${KS.bareUbetalt}">${ub} ikke betalt</button>` : ''}</div>
@@ -781,14 +781,30 @@ H.notatOk = async () => {
 };
 H.kursSlett = () => {
   const h = aktiv();
-  ark(`<div class="ark-head"><h2>Slett kurs</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
-    <p>Hele kurset <b>${esc(h.tittel)}</b> med alle datoene. ${h.pameldt ? `<b>${h.pameldt} påmeldt</b> på denne datoen – har noen meldt seg på, blir kurset avlyst i stedet for slettet.` : ''}</p>
+  ark(`<div class="ark-head"><h2>Slett hele kurset</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
+    <p>Dette gjelder <b>${esc(h.tittel)}</b> og alle datoene, ikke bare datoen du har åpnet. Påmeldte på andre datoer kontrolleres før du kan fortsette.</p>
     <div class="ark-fot"><button class="knapp" data-k="lukk">Avbryt</button><button class="knapp rod" data-k="slettOk">Er du sikker? Slett</button></div>`);
 };
-H.slettOk = async () => {
-  const h = aktiv(); const r = await api('kurs.php', {handling: 'slett', id: h.kursId});
-  lukk(true); toast(esc(r.beskjed || 'Kurset er slettet.')); KS.okt = 0; gaaTil('kurs'); await oppfrisk();
+async function slettKurs(b, bekreftet = 0) {
+  const h = aktiv();
+  b.disabled = true;
+  try {
+    const r = await api('kurs.php', {handling: 'slett', id: h.kursId, pameldteBekreftet: bekreftet});
+    lukk(true); toast(esc(r.beskjed || 'Kurset er slettet.')); KS.okt = 0; gaaTil('kurs'); await oppfrisk();
+  } catch (e) {
+    b.disabled = false;
+    if (e.status === 409 && e.data?.pameldteBekreftes) {
+      const antall = +e.data.pameldte;
+      ark(`<div class="ark-head"><h2>Avlys hele kurset?</h2><button class="lukk" data-k="lukk" aria-label="Lukk">×</button></div>
+        <p><b>${antall} påmeldinger</b> finnes på ${esc(h.tittel)}. Dette avlyser hele kurset og alle planlagte datoer, også datoer med påmeldte. Det gjelder ikke bare datoen du åpnet.</p>
+        <div class="ark-fot"><button class="knapp" data-k="lukk">Avbryt</button><button class="knapp rod" data-k="slettMedPameldte" data-antall="${antall}">Avlys hele kurset</button></div>`);
+      return;
+    }
+    toast(esc(e.message));
+  }
 };
+H.slettOk = b => slettKurs(b);
+H.slettMedPameldte = b => slettKurs(b, +b.dataset.antall);
 H.utskrift = () => {
   const h = aktiv(); const rader = sortert(h.deltakere || []);
   const ramme = document.createElement('iframe');

@@ -86,7 +86,7 @@ function tegnKursside(h) {
   <section class="kort" style="margin-bottom:20px"><div class="hgrupper">
     ${gruppe('Deltakere', [['＋ Legg til deltaker', 'leggTil'], [`Venteliste ${vente}${vente ? ' · Gi plass' : ''}`, 'venteliste'], ['Skriv ut liste', 'utskrift']])}
     ${gruppe('Send', [['Påminnelse', 'kursPaaminnelse'], [`Kursbevis til ${bet} som har betalt`, 'kursbevis'], ['Bekreftelse på nytt', 'bekreftAlle']])}
-    ${gruppe('Datoen', [['Endre dato og tid', 'kursFlytt'], ['Avlys dato', 'kursAvlys', h.avlyst ? 'disabled' : ''], ['Kopier økta', 'kursKopier'], [h.visFullt ? 'Åpne for påmelding' : 'Steng for påmelding', 'kursSteng']])}
+    ${gruppe('Datoen', [['Endre dato og tid', 'kursFlytt'], ['Avlys kurs', 'kursAvlys', h.avlyst ? 'disabled' : ''], ['Kopier økta', 'kursKopier'], [h.visFullt ? 'Åpne for påmelding' : 'Steng for påmelding', 'kursSteng']])}
     ${erPop(h.kursId) ? popPrisliste() : ''}
     ${erMobil() ? '' : gruppe('Kurset', [['Rediger kurset', 'kursRediger'], ['Kursinnstillinger', 'kursInnstillinger'], ['Notat', 'kursNotat'], ['Kursbilder', 'kursBilde'], ['Slett hele kurset', 'kursSlett', 'style="color:var(--red)"']])}
   </div></section>

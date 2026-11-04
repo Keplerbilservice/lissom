@@ -299,6 +299,34 @@ try {
         && ($r[1]['epost'] ?? 0) === 7 && ($r[1]['sms'] ?? 0) === 7 && count($r[1]['ikkeNaadd'] ?? []) === 1, $tekst($r));
     $r = kall('/api/admin/kurs.php', ['handling' => 'avlys', 'oktId' => $sAvl], $adminT);
     sjekk('kurs.php avlys', $r[0] === 200 && DB::verdi('SELECT status FROM course_sessions WHERE id = :i', ['i' => $sAvl]) === 'avlyst', $tekst($r));
+    sjekk('andre kursstarter med samme navn forblir planlagt',
+        DB::verdi('SELECT status FROM course_sessions WHERE id = :i', ['i' => $sLedig]) === 'planlagt'
+        && DB::verdi('SELECT status FROM course_sessions WHERE id = :i', ['i' => $sFull]) === 'planlagt'
+        && DB::verdi('SELECT status FROM courses WHERE id = :i', ['i' => $kid]) === 'publisert');
+    // To kursstarter med samme navn og startdag, begge med en samling neste dag.
+    $kursDag = (new DateTimeImmutable('today', $oslo))->modify('+14 days');
+    $dag1 = $kursDag->format('Y-m-d');
+    $dag2 = $kursDag->modify('+1 day')->format('Y-m-d');
+    $utcTid = static fn(string $dag, string $tid): string => (new DateTimeImmutable("$dag $tid", $oslo))
+        ->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+    $morgen = DB::settInn('course_sessions', ['course_id' => $kid, 'start_tid' => $utcTid($dag1, '10:00'), 'status' => 'planlagt']);
+    $kveld = DB::settInn('course_sessions', ['course_id' => $kid, 'start_tid' => $utcTid($dag1, '17:00'), 'status' => 'planlagt']);
+    try {
+        Samlinger::lagre($morgen, [['dato' => $dag1, 'fra' => '10:00', 'til' => '13:00'], ['dato' => $dag2, 'fra' => '10:00', 'til' => '13:00']]);
+        Samlinger::lagre($kveld, [['dato' => $dag1, 'fra' => '17:00', 'til' => '20:00'], ['dato' => $dag2, 'fra' => '17:00', 'til' => '20:00']]);
+        $r = kall('/api/admin/kurs.php', ['handling' => 'avlys', 'oktId' => $kveld], $adminT);
+        $kal = kall('/api/admin/kalender.php?fra=' . $dag1 . '&til=' . $dag2, null, $adminT);
+        $kveldDager = array_values(array_filter($kal[1]['hendelser'] ?? [], static fn(array $h): bool => (int) ($h['oktId'] ?? 0) === $kveld));
+        $morgenDager = array_values(array_filter($kal[1]['hendelser'] ?? [], static fn(array $h): bool => (int) ($h['oktId'] ?? 0) === $morgen));
+        sjekk('17-kurset: begge samlinger avlyst i kalenderen', $r[0] === 200 && $kal[0] === 200
+            && count($kveldDager) === 2 && count(array_filter($kveldDager, static fn(array $h): bool => $h['avlyst'] === true)) === 2, $tekst($kal));
+        sjekk('10-kurset: begge samlinger fortsatt planlagt', count($morgenDager) === 2
+            && count(array_filter($morgenDager, static fn(array $h): bool => $h['avlyst'] === false)) === 2
+            && DB::verdi('SELECT status FROM courses WHERE id = :i', ['i' => $kid]) === 'publisert', $tekst($kal));
+    } finally {
+        DB::kjor('DELETE FROM okt_samlinger WHERE session_id IN (:morgen, :kveld)', ['morgen' => $morgen, 'kveld' => $kveld]);
+        DB::kjor('DELETE FROM course_sessions WHERE id IN (:morgen, :kveld)', ['morgen' => $morgen, 'kveld' => $kveld]);
+    }
     DB::kjor("UPDATE notification_templates SET aktiv = 0 WHERE navn = 'kurs_avlyst'");
     $r = kall($V, ['handling' => 'avlyst', 'oktId' => $sAvl], $adminT);
     sjekk('malen av: ingen beskjed (409)', $r[0] === 409 && (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE mal = 'kurs_avlyst' AND ref_type = 'booking' AND ref_id IN ($bKari, $bGjest)") === 0, $tekst($r));

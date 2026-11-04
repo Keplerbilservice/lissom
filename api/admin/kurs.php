@@ -1727,6 +1727,12 @@ switch ($handling) {
               WHERE course_id = :c AND status IN ('betalt','reservert')",
             ['c' => $kursId]
         );
+        // Tallet gjelder hele kurset, ikke bare datoen admin åpnet.
+        // Krev en ny, uttrykkelig bekreftelse før en påmeldt kursserie avlyses.
+        if ($pameldte > 0 && Foresporsel::heltall('pameldteBekreftet') !== $pameldte) {
+            Svar::feil('Kurset har påmeldinger på én eller flere datoer. Bekreft avlysning av hele kurset.',
+                409, ['pameldteBekreftes' => true, 'pameldte' => $pameldte]);
+        }
 
         // Og de som har vaert: avbestilte, refunderte, og de som ikke motte.
         //

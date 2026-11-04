@@ -1,6 +1,17 @@
 import {improveImage} from './bildeforslag.js';
 import {popUkeArk} from './malebord.js';
-import{el,api,button,field,form,confirm,toast,sheet,list,today,money,courseMutation}from'./ui.js';import{chooseImage}from'./bilder.js';
+import{el,api as apiBase,button,field,form,confirm,toast,sheet,list,today,money,courseMutation}from'./ui.js';import{chooseImage}from'./bilder.js';
+async function api(name, body) {
+  for (;;) {
+    try { return await apiBase(name, body); }
+    catch (e) {
+      if (name !== 'kurs.php' || body?.handling !== 'slett' || !e.data?.pameldteBekreftes) throw e;
+      const antall = +e.data.pameldte;
+      if (!await confirm('Avlys hele kurset?', `${antall} påmeldinger finnes på kurset. Dette avlyser alle planlagte datoer, også datoer med påmeldte.`, 'Avlys hele kurset')) throw Error('Avbrutt.');
+      body = {...body, pameldteBekreftet: antall};
+    }
+  }
+}
 export function courseTools(k,d,refresh){const save=async body=>{await api('kurs.php',body);refresh();};const core={handling:'lagre',id:k.id,tittel:k.tittel,pris:k.pris,status:k.status};const textFields=[['tema','Kategori'],['punkter','Dette er inkludert'],['laerer','Dette lærer du'],['praktisk','Praktisk informasjon'],['allergener','Allergener'],['passerNivaa','Passer nivå'],['passerHvem','Passer for'],['metode','Metode'],['varighet','Varighet'],['nivaaIntern','Internt nivå'],['nivaaTekst','Nivåtekst'],['kortBeskrivelse','Kort beskrivelse'],['bildeAlt','Beskrivelse av bildet'],['lagerDu','Dette lager du'],['medHjem','Dette får du med hjem'],['ferdigTid','Når arbeidet er ferdig'],['tillegg','Tillegg'],['varighetTekst','Varighet på nettsiden'],['bekreftelse','Tekst i bekreftelsen'],['seoTittel','Søketittel'],['seoMeta','Søkebeskrivelse']];
  const content=()=>form('Kursinnhold · '+k.tittel,textFields.map(([key,label])=>field(key,label,'textarea')),k,async v=>{if(k.status==='publisert'&&!await confirm('Oppdater publisert kurs?','Tekstene blir synlige på nettsiden.','Publiser endringer'))throw Error('Avbrutt.');await save({...core,...v});});
  const series=()=>form('Gjentakende kursdatoer',[field('monster','Gjentakelse','text',{options:[['ukentlig','Hver uke'],['annenhver','Annenhver uke'],['manedlig','Månedlig']]}),field('ukedag','Ukedag','number',{options:[[1,'Mandag'],[2,'Tirsdag'],[3,'Onsdag'],[4,'Torsdag'],[5,'Fredag'],[6,'Lørdag'],[7,'Søndag']]}),field('dagIMaaned','Dato i måneden','number',{min:1,max:31}),field('startDato','Startdato','date',{required:true}),field('fra','Fra','time',{required:true}),field('til','Til','time',{required:true}),field('ukerFram','Lag datoer så mange uker fram','number',{required:true,min:1,max:52}),field('antall','Antall ganger','number',{min:1,help:'Tomt felt betyr til regelen stoppes.'}),field('kapasitet','Antall plasser','number',{min:1})],{startDato:today(),fra:'18:00',til:'20:00',ukerFram:8,kapasitet:k.kapasitet},async v=>{if(v.til<=v.fra)throw Error('Slutt må være etter start.');if(!await confirm('Lag gjentakende datoer?','Opprett kursdatoer etter denne regelen.','Opprett'))throw Error('Avbrutt.');await save({handling:'serie',kursId:k.id,...v});});

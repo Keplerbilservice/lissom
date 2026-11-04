@@ -34,6 +34,7 @@ ny-admin/*	php tests/ny-admin.php
 ny-admin/*	php tests/ferdige-foresporsler.php
 api/admin/kurs.php	php tests/avlyst-dato.php
 admin-ny/kursdetaljer.js	php tests/avlyst-dato.php
+tests/avlyst-dato.php	php tests/avlyst-dato.php
 ny-admin.html	php tests/ny-admin.php
 tests/ny-admin.php	php tests/ny-admin.php
 

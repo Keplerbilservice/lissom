@@ -106,7 +106,8 @@ final class Bilder
      */
     private static function fraFil(string $sti, string $under, int $maksKant = self::MAKS_KANT, int $kvalitet = 82): string
     {
-        $info = @getimagesize($sti);
+        $markorer = [];
+        $info = @getimagesize($sti, $markorer);
         if ($info === false || !isset(self::TYPER[$info[2]])) {
             throw new RuntimeException('Filen må være JPG, PNG eller WEBP.');
         }
@@ -118,6 +119,31 @@ final class Bilder
         $kilde = @$les($sti);
         if ($kilde === false) {
             throw new RuntimeException('Bildet kunne ikke leses.');
+        }
+
+        // Telefonbilder kan ha liggende pikseldata og EXIF som sier hvordan
+        // de skal vises. Nettleseren bruker EXIF, mens GD leser pikslene som de
+        // er. Rett dem foer EXIF fjernes naar bildet lagres som ny JPEG.
+        if ($info[2] === IMAGETYPE_JPEG) {
+            $retning = self::jpegRetning($markorer['APP1'] ?? '');
+            if (in_array($retning, [2, 4, 5, 7], true)) {
+                imageflip($kilde, $retning === 4 ? IMG_FLIP_VERTICAL : IMG_FLIP_HORIZONTAL);
+            }
+            $vinkel = match ($retning) {
+                3 => 180,
+                5, 8 => 90,
+                6, 7 => 270,
+                default => 0,
+            };
+            if ($vinkel !== 0) {
+                $rotert = imagerotate($kilde, $vinkel, 0);
+                if ($rotert === false) {
+                    imagedestroy($kilde);
+                    throw new RuntimeException('Bildet kunne ikke roteres.');
+                }
+                imagedestroy($kilde);
+                $kilde = $rotert;
+            }
         }
 
         [$b, $h] = [imagesx($kilde), imagesy($kilde)];
@@ -141,6 +167,42 @@ final class Bilder
         @chmod($mal, 0644);
 
         return $navn;
+    }
+
+    /** Les bare orienteringsfeltet i JPEG/EXIF, ogsaa naar PHP mangler exif-utvidelsen. */
+    private static function jpegRetning(string $app1): int
+    {
+        if (substr($app1, 0, 6) !== "Exif\0\0" || strlen($app1) < 14) {
+            return 1;
+        }
+        $tiff = substr($app1, 6);
+        $rekkefolge = substr($tiff, 0, 2);
+        if ($rekkefolge !== 'II' && $rekkefolge !== 'MM') {
+            return 1;
+        }
+        $kort = static fn(string $s): int => unpack($rekkefolge === 'II' ? 'v' : 'n', $s)[1];
+        $lang = static fn(string $s): int => unpack($rekkefolge === 'II' ? 'V' : 'N', $s)[1];
+        if ($kort(substr($tiff, 2, 2)) !== 42) {
+            return 1;
+        }
+        $ifd = $lang(substr($tiff, 4, 4));
+        if ($ifd > strlen($tiff) - 2) {
+            return 1;
+        }
+        $antall = $kort(substr($tiff, $ifd, 2));
+        for ($i = 0; $i < $antall && $i < 128; $i++) {
+            $pos = $ifd + 2 + 12 * $i;
+            if ($pos > strlen($tiff) - 12) {
+                break;
+            }
+            if ($kort(substr($tiff, $pos, 2)) === 0x0112
+                && $kort(substr($tiff, $pos + 2, 2)) === 3
+                && $lang(substr($tiff, $pos + 4, 4)) === 1) {
+                $retning = $kort(substr($tiff, $pos + 8, 2));
+                return $retning >= 1 && $retning <= 8 ? $retning : 1;
+            }
+        }
+        return 1;
     }
 
     /** Full sti til et lagret bilde, eller null om navnet ikke er vaart. */

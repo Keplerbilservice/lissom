@@ -38,6 +38,10 @@ tests/avlyst-dato.php	php tests/avlyst-dato.php
 ny-admin.html	php tests/ny-admin.php
 tests/ny-admin.php	php tests/ny-admin.php
 
+# Telefonbilder: EXIF-retning ved opplasting fra Min side
+app/lib/bilder.php	php tests/bilder-orientering.php
+tests/bilder-orientering.php	php tests/bilder-orientering.php
+
 # «＋ Lag nytt kurs …» i Nytt kurs eller serie (eieren 02.11.2026)
 ny-admin/kalender.js	php tests/nytt-kurs-ark.php
 tests/nytt-kurs-ark.php	php tests/nytt-kurs-ark.php

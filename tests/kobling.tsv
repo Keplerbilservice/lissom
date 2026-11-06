@@ -28,11 +28,6 @@ api/admin/oversikt.php	php tests/ma-gjores-mer.php
 api/admin/oversikt.php	php tests/ny-admin.php
 api/admin/foresporsler.php	php tests/ferdige-foresporsler.php
 tests/ferdige-foresporsler.php	php tests/ferdige-foresporsler.php
-# Tilbudt ventelisteplass og betalt beløp (Monica 06.11.2026)
-api/admin/oversikt.php	php tests/venteliste-tilbudt.php
-ny-admin/idag.js	php tests/venteliste-tilbudt.php
-ny-admin/kurs.js	php tests/venteliste-tilbudt.php
-tests/venteliste-tilbudt.php	php tests/venteliste-tilbudt.php
 
 # Ny admin
 ny-admin/*	php tests/ny-admin.php

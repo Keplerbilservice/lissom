@@ -1044,99 +1044,19 @@ $maGjores = (static function () use ($medlemsstatus, $nyeste): array {
     }
     $trygt('venteliste', static function () use ($sak): void {
         $rader = DB::alle(
-            "SELECT w.id, w.navn, w.epost, w.telefon, w.status, w.varslet_at, w.frist_at,
-                    w.course_id, w.course_session_id, c.tittel, cs.start_tid
+            "SELECT w.id, w.navn, w.course_id, w.course_session_id, c.tittel, cs.start_tid
                FROM waitlist w JOIN courses c ON c.id = w.course_id
           LEFT JOIN course_sessions cs ON cs.id = w.course_session_id
-              WHERE w.status IN ('venter', 'varslet') ORDER BY w.posisjon LIMIT 100"
+              WHERE w.status IN ('venter', 'varslet')
+                -- Har hen booket kurset etter at hen sto seg paa lista, er det
+                -- ingen plass aa tilby (Monica 06.11.2026).
+                AND NOT EXISTS (SELECT 1 FROM bookings b LEFT JOIN members m ON m.id = b.member_id
+                                 WHERE b.course_id = w.course_id AND b.status IN ('betalt', 'reservert')
+                                   AND b.created_at >= w.created_at
+                                   AND ((w.epost <> '' AND COALESCE(m.epost, b.gjest_epost) = w.epost)
+                                     OR (w.telefon <> '' AND COALESCE(m.telefon, b.gjest_telefon) = w.telefon)))
+              ORDER BY w.posisjon LIMIT 100"
         );
-        if ($rader === []) {
-            return;
-        }
-
-        // Tilbudt plass (Monica 06.11.2026: «står fortsatt i oversikten, fikk
-        // de beskjed?»). En rad som er varslet er ikke en åpen sak lenger: den
-        // står under «Til info» i tre dager med hva varselkøen sier om
-        // e-posten og SMS-en, og teller ikke i Må gjøres. Mens fristen løper,
-        // foreslås ikke samme plass til nestemann heller.
-        $tilbudt = array_values(array_filter($rader, static fn(array $w): bool => (string) $w['status'] === 'varslet'));
-        $rader = array_values(array_filter($rader, static fn(array $w): bool => (string) $w['status'] !== 'varslet'));
-        $naa = gmdate('Y-m-d H:i:s');
-        $holdtOkt = [];
-        $holdtKurs = [];
-        foreach ($tilbudt as $w) {
-            if ($w['frist_at'] !== null && (string) $w['frist_at'] > $naa) {
-                if ($w['course_session_id'] !== null) {
-                    $holdtOkt[(int) $w['course_session_id']] = true;
-                } else {
-                    $holdtKurs[(int) $w['course_id']] = true;
-                }
-            }
-        }
-        $tilbudt = array_values(array_filter($tilbudt, static fn(array $w): bool =>
-            $w['varslet_at'] !== null && (string) $w['varslet_at'] >= gmdate('Y-m-d H:i:s', time() - 3 * 86400)));
-        if ($tilbudt !== []) {
-            $ider = implode(',', array_map(static fn(array $w): int => (int) $w['id'], $tilbudt));
-            $medMal = DB::harKolonne('notifications', 'mal') ? " AND (mal IS NULL OR mal = 'venteliste_ledig')" : '';
-            $varsler = [];
-            foreach (DB::alle(
-                "SELECT ref_id, kanal, mottaker, status, created_at FROM notifications
-                  WHERE ref_type = 'waitlist' AND ref_id IN ({$ider}){$medMal} ORDER BY id"
-            ) as $n) {
-                $varsler[(int) $n['ref_id']][] = $n;
-            }
-            $sifre = static fn(?string $t): string => substr(preg_replace('/\D+/', '', (string) $t) ?? '', -8);
-            $kanalNavn = ['epost' => 'e-post', 'sms' => 'SMS'];
-            foreach ($tilbudt as $w) {
-                // Bare varslene fra siste tilbud, og bare de som gikk til kunden
-                // (ikke «må sendes for hånd»-e-posten til verkstedet).
-                $fra = gmdate('Y-m-d H:i:s', strtotime((string) $w['varslet_at'] . ' UTC') - 120);
-                $sendt = $feilet = $ko = [];
-                foreach ($varsler[(int) $w['id']] ?? [] as $n) {
-                    if ((string) $n['created_at'] < $fra) {
-                        continue;
-                    }
-                    $tilKunden = (string) $n['kanal'] === 'sms'
-                        ? $sifre($w['telefon']) !== '' && $sifre($n['mottaker']) === $sifre($w['telefon'])
-                        : mb_strtolower(trim((string) $n['mottaker'])) === mb_strtolower(trim((string) $w['epost']));
-                    if (!$tilKunden) {
-                        continue;
-                    }
-                    $k = $kanalNavn[(string) $n['kanal']] ?? (string) $n['kanal'];
-                    match ((string) $n['status']) {
-                        'sendt' => $sendt[$k] = $k,
-                        'ko'    => $ko[$k] = $k,
-                        default => $feilet[$k] = $k,
-                    };
-                }
-                $og = static fn(array $l): string => implode(' og ', array_values($l));
-                if ($sendt !== []) {
-                    $tekst = 'beskjed sendt (' . $og($sendt) . ')' . ($feilet !== [] ? ', ' . $og($feilet) . ' feilet' : '');
-                    $merke = ['Beskjed sendt', 'gronn'];
-                } elseif ($ko !== []) {
-                    $tekst = 'beskjed ligger i kø (' . $og($ko) . ')';
-                    $merke = ['Beskjed i kø', 'gul'];
-                } elseif ($feilet !== []) {
-                    $tekst = 'beskjeden feilet (' . $og($feilet) . ')';
-                    $merke = ['Beskjed feilet', 'rod'];
-                } else {
-                    $tekst = 'ingen beskjed er registrert sendt til kunden';
-                    $merke = ['Ikke sendt', 'rod'];
-                }
-                $varslet = (new DateTimeImmutable((string) $w['varslet_at'], new DateTimeZone('UTC')))
-                    ->setTimezone(new DateTimeZone('Europe/Oslo'));
-                $navn = trim((string) $w['navn']);
-                $okt = $w['course_session_id'] !== null ? (int) $w['course_session_id'] : null;
-                $sak('Kurs', 'venteliste_tilbudt', (int) $w['id'], $navn . ': ' . (string) $w['tittel']
-                        . ($w['start_tid'] ? ' · ' . Booking::norskDato((string) $w['start_tid']) : ''),
-                    'Tilbudt plass ' . $varslet->format('j.n.') . ' kl. ' . $varslet->format('H.i') . ' – ' . $tekst,
-                    'venteliste', [
-                        'teller' => false, 'oktId' => $okt, 'kursId' => (int) $w['course_id'],
-                        'bestiltTid' => (string) $w['varslet_at'],
-                        'varselMerke' => $merke[0], 'varselFarge' => $merke[1],
-                    ]);
-            }
-        }
         if ($rader === []) {
             return;
         }
@@ -1154,8 +1074,7 @@ $maGjores = (static function () use ($medlemsstatus, $nyeste): array {
         foreach ($rader as $w) {
             $okt = $w['course_session_id'] !== null ? (int) $w['course_session_id'] : null;
             $ledig = $okt !== null ? (($ledige[$okt] ?? 0) > 0) : isset($kursLedig[(int) $w['course_id']]);
-            $holdt = $okt !== null ? isset($holdtOkt[$okt]) : isset($holdtKurs[(int) $w['course_id']]);
-            if (!$ledig || $holdt) {
+            if (!$ledig) {
                 continue;
             }
             $navn = trim((string) $w['navn']);

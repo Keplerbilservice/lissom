@@ -10737,37 +10737,6 @@
                     "ikkeFinnes": []
                 }
             ]
-        },
-        {
-            "id": "monica-venteliste-tilbudt-betalt-belop-20261106",
-            "dato": "2026-11-06",
-            "hva": "Monica 06.11.2026: (A) En ventelisteplass som er tilbudt (status varslet) er ikke en åpen sak i Må gjøres lenger. Den står under «Til info» på I dag i tre dager som «Tilbudt plass <dato> kl. <tid> – beskjed sendt (e-post og SMS)» med merke fra varselkøen (Beskjed sendt / Beskjed i kø / Beskjed feilet / Ikke sendt). Mens fristen løper foreslås ikke samme dato til nestemann. Varslingen er uendret. (B) Deltakerlisten på Kurs viser betalt beløp ved Betalt («Betalt · 650 kr») fra betalingen (betaltOre), ikke listepris.",
-            "hvor": "Ny admin › I dag (Må gjøres / Til info), Kurs › deltakerlisten",
-            "kode": [
-                {
-                    "fil": "api/admin/oversikt.php",
-                    "finnes": [
-                        "$sak('Kurs', 'venteliste_tilbudt', (int) $w['id'],",
-                        "'teller' => false, 'oktId' => $okt, 'kursId' => (int) $w['course_id'],",
-                        "if (!$ledig || $holdt) {"
-                    ],
-                    "ikkeFinnes": []
-                },
-                {
-                    "fil": "ny-admin/idag.js",
-                    "finnes": [
-                        "s.type === 'venteliste_tilbudt' ? radTilbudt(s)"
-                    ],
-                    "ikkeFinnes": []
-                },
-                {
-                    "fil": "ny-admin/kurs.js",
-                    "finnes": [
-                        "`<span class=\"merke gronn\">Betalt · ${kr(d.betaltOre)}</span>`"
-                    ],
-                    "ikkeFinnes": []
-                }
-            ]
         }
     ]
 }

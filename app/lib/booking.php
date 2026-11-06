@@ -1520,17 +1520,6 @@ final class Booking
 
             $bookingId = DB::settInn('bookings', $felter);
 
-            // Har hen booket selv, staar hen ikke lenger i ventelista for kurset
-            // (Monica 06.11.2026: «Plass ledig» for en som alt hadde betalt).
-            if ($epost !== '' || $telefon !== '') {
-                DB::kjor(
-                    "UPDATE waitlist SET status = 'booket'
-                      WHERE course_id = :k AND status IN ('venter', 'varslet')
-                        AND (epost = :e OR (telefon IS NOT NULL AND telefon = :t))",
-                    ['k' => (int) $okt['course_id'], 'e' => $epost, 't' => $telefon !== '' ? $telefon : null]
-                );
-            }
-
             // Gjenstandene kunden valgte, ferdig utfylt i kassa (eieren
             // 11.10.2026). Ikke «slaatt inn»: gjenstander_ore staar tomt til
             // Monica har sett dem, og hun kan rette dem der.

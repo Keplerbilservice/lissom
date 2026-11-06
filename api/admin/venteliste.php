@@ -235,6 +235,26 @@ if (Foresporsel::tekst('handling') === 'legg-til') {
     ]);
 }
 
+/**
+ * SMS i tillegg til e-posten (eieren 06.11.2026, migrasjon 284). Bare når
+ * telefonnummer finnes og SMS er satt opp; uten malen (migrasjonen ikke kjørt)
+ * sendes ingenting.
+ */
+$smsTil = static function (string $mal, array $rad, string $kurs, ?string $startTid, string $refType, int $refId): void {
+    $tlf = trim((string) ($rad['telefon'] ?? ''));
+    if ($tlf === '' || !Varsel::smsMulig()) {
+        return;
+    }
+    $dato = $startTid !== null && $startTid !== ''
+        ? ' ' . (new DateTimeImmutable($startTid, new DateTimeZone('UTC')))->setTimezone(new DateTimeZone('Europe/Oslo'))->format('j.n')
+        : '';
+    Varsel::mal($mal, ['navn' => $rad['navn'], 'telefon' => $tlf], [
+        'fornavn' => explode(' ', trim((string) $rad['navn']))[0],
+        'kurs'    => $kurs,
+        'dato'    => $dato,
+    ], $refType, $refId);
+};
+
 $id = Foresporsel::heltall('id');
 $rad = DB::en(
     'SELECT w.*, c.tittel, c.slug FROM waitlist w JOIN courses c ON c.id = w.course_id WHERE w.id = :i',
@@ -262,6 +282,9 @@ switch (Foresporsel::tekst('handling')) {
             'dato'  => '',
             'lenke' => $lenke,
         ], 'waitlist', $id);
+        $smsTil('venteliste_ledig_sms', $rad, (string) $rad['tittel'], $rad['course_session_id'] !== null
+            ? DB::verdi('SELECT start_tid FROM course_sessions WHERE id = :i', ['i' => (int) $rad['course_session_id']]) : null,
+            'waitlist', $id);
 
         DB::oppdater('waitlist', [
             'status'     => 'varslet',
@@ -414,6 +437,7 @@ switch (Foresporsel::tekst('handling')) {
                 'dato'  => Booking::norskDato((string) $okt['start_tid']),
                 'lenke' => Config::nettsted() . '/min-side',
             ], 'booking', $bookingId);
+            $smsTil('venteliste_tildelt_sms', $rad, (string) $okt['tittel'], (string) $okt['start_tid'], 'booking', $bookingId);
             $varslet = true;
         }
 

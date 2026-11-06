@@ -92,3 +92,9 @@ admin-ny/kasse.js	php tests/venteliste-betalt.php
 admin-ny/kasse.js	php tests/kasse-ny.php
 tests/kasse-ny.php	php tests/kasse-ny.php
 tests/venteliste-betalt.php	php tests/venteliste-betalt.php
+
+# Ventelisten på SMS (eieren 06.11.2026, migrasjon 284)
+db/migrations/284_venteliste_sms.sql	php tests/venteliste-sms.php
+api/admin/venteliste.php	php tests/venteliste-sms.php
+app/lib/maler.php	php tests/venteliste-sms.php
+tests/venteliste-sms.php	php tests/venteliste-sms.php

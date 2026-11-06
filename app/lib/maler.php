@@ -352,6 +352,25 @@ final class Maler
                 'lenke'   => 'Lenken til kursbeviset',
             ],
         ],
+        // Ventelisten på SMS (eieren 6. november 2026, migrasjon 284).
+        'venteliste_ledig_sms' => [
+            'tittel' => 'Det ble ledig plass (SMS)',
+            'hvor'   => 'Sendes sammen med e-posten når du trykker «Tilby plassen», til den som har mobil.',
+            'felter' => [
+                'fornavn' => 'Fornavnet til den som venter',
+                'kurs'    => 'Kurset det ble plass på',
+                'dato'    => 'Datoen med mellomrom foran, for eksempel « 7.11» (tom når det gjelder hele kurset)',
+            ],
+        ],
+        'venteliste_tildelt_sms' => [
+            'tittel' => 'Fikk plassen (SMS)',
+            'hvor'   => 'Sendes sammen med e-posten når du gir noen fra ventelisten en plass, til den som har mobil.',
+            'felter' => [
+                'fornavn' => 'Fornavnet til deltakeren',
+                'kurs'    => 'Kurset',
+                'dato'    => 'Datoen med mellomrom foran, for eksempel « 7.11»',
+            ],
+        ],
         // Kassa på iPaden (eieren, 8. oktober 2026, migrasjon 264).
         'kassekvittering_sms' => [
             'tittel' => 'Kvittering fra kassa (SMS)',

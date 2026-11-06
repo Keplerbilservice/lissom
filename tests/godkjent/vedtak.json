@@ -10796,6 +10796,30 @@
                     "ikkeFinnes": []
                 }
             ]
+        },
+        {
+            "id": "venteliste-sms-20261106",
+            "dato": "2026-11-06",
+            "hva": "Eieren 06.11.2026: «de må få SMS, ikke nå, men fremover». «Tilby plassen» og «Gi plass» på ventelisten sender en SMS i tillegg til e-posten (malene venteliste_ledig_sms og venteliste_tildelt_sms, migrasjon 284, tekst godkjent ordrett), bare når telefonnummer finnes og SMS er satt opp. Ingen ny utsending for det som alt er sendt.",
+            "hvor": "Admin › Venteliste (Tilby plassen, Gi plass)",
+            "kode": [
+                {
+                    "fil": "api/admin/venteliste.php",
+                    "finnes": [
+                        "$smsTil('venteliste_ledig_sms', $rad,",
+                        "$smsTil('venteliste_tildelt_sms', $rad,"
+                    ],
+                    "ikkeFinnes": []
+                },
+                {
+                    "fil": "db/migrations/284_venteliste_sms.sql",
+                    "finnes": [
+                        "'Hei {fornavn}, det ble ledig plass pa {kurs}{dato}. Forste som booker far plassen: lissom.no/kurs Hilsen Lissom'",
+                        "'Hei {fornavn}, du har fatt plass pa {kurs}{dato}. Se plassen pa Min side: lissom.no/min-side Hilsen Lissom'"
+                    ],
+                    "ikkeFinnes": []
+                }
+            ]
         }
     ]
 }

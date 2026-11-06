@@ -812,7 +812,7 @@ H.utskrift = () => {
   ramme.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden';
   ramme.srcdoc = `<!doctype html><html lang="nb"><head><meta charset="utf-8"><title>${esc(h.tittel)}</title><style>body{font-family:Georgia,serif;color:#4D1D12;padding:24px}table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:8px 6px;border-bottom:1px solid #E8DCC8;text-align:left}@page{margin:14mm}</style></head><body>
     <h1 style="font-size:22px">${esc(h.tittel)}</h1><p>${esc(langDato(h.dato))} kl. ${esc(h.tid)}${h.slutt ? '–' + esc(h.slutt) : ''} · ${h.pameldt}/${h.kap} påmeldt${h.holder ? ' · ' + esc(h.holder) : ''}</p>
-    <table><tr><th></th><th>Navn</th><th>Antall</th><th>Betaling</th><th>Telefon</th><th>Merknad</th></tr>${rader.map(d => `<tr><td>☐</td><td>${esc(d.navn)}</td><td>${d.antall}</td><td>${esc(d.status)}${d.status === 'Ikke betalt' && !erPop(h.kursId) && d.belopOre ? ' · ' + kr(d.belopOre) : ''}</td><td>${esc(d.tlf)}</td><td>${esc(d.merknad)}</td></tr>`).join('')}</table></body></html>`;
+    <table><tr><th></th><th>Navn</th><th>Antall</th><th>Betaling</th><th>Telefon</th><th>Merknad</th></tr>${rader.map(d => `<tr><td>☐</td><td>${esc(d.navn)}</td><td>${d.antall}</td><td>${esc(d.status)}${d.status === 'Ikke betalt' && !erPop(h.kursId) && d.belopOre ? ' · ' + kr(d.belopOre) : ''}${d.status === 'Betalt' && d.betaltOre > 0 ? ' · ' + kr(d.betaltOre) : ''}</td><td>${esc(d.tlf)}</td><td>${esc(d.merknad)}</td></tr>`).join('')}</table></body></html>`;
   ramme.onload = () => { ramme.contentWindow.focus(); ramme.contentWindow.print(); setTimeout(() => ramme.remove(), 60000); };
   document.body.append(ramme);
 };

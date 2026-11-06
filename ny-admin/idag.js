@@ -124,7 +124,7 @@
       <div class="kort-head"><h2>Må gjøres</h2></div>
       ${maa.length || salgIgjen.length || nMigr || oppfHtml ? (nMigr ? radMigr(nMigr) : '') + salgIgjen.map(radSalg).join('') + maa.map(radSak).join('') + oppfHtml : '<p class="tom">Alt er gjort. Fint!</p>'}
       <div class="kort-head" style="margin:22px 0 4px"><h3>Til info</h3><small>Forsvinner av seg selv etter 3 dager</small></div>
-      ${info.length ? info.map(s => `<div class="rad idag-info-rad${radMaal(s) ? ` klikkrad" data-rad="${esc(nokkel(s))}" role="button" tabindex="0` : ''}"><div class="tekst"><span class="type">Ny påmelding</span><b>${esc(String(s.tittel).replace(/^Ny påmelding: /, ''))}</b><small>${esc(String(s.under).replace(/ · (Ikke betalt|Betalt)$/, ''))}</small></div><div class="idag-info-side">${s.bestiltDato ? `<small class="idag-bestilt">Bestilt ${esc(s.bestiltDato)}</small>` : ''}<div class="idag-info-status">${s.betalt === true ? '<span class="merke gronn">Betalt</span>' : s.betalt === false ? '<span class="merke rod">Ikke betalt</span>' : ''}<button class="knapp liten" type="button" data-utfort="${esc(nokkel(s))}">Utført</button></div></div></div>`).join('') : '<p class="tom">Ingen nye.</p>'}
+      ${info.length ? info.map(s => `<div class="rad idag-info-rad${radMaal(s) ? ` klikkrad" data-rad="${esc(nokkel(s))}" role="button" tabindex="0` : ''}"><div class="tekst"><span class="type">Ny påmelding</span><b>${esc(String(s.tittel).replace(/^Ny påmelding: /, ''))}</b><small>${esc(String(s.under).replace(/ · (Ikke betalt|Betalt)$/, ''))}</small></div><div class="idag-info-side">${s.bestiltDato ? `<small class="idag-bestilt">Bestilt ${esc(s.bestiltDato)}</small>` : ''}<div class="idag-info-status">${s.betalt === true ? `<span class="merke gronn">Betalt${s.betaltOre > 0 ? ' · ' + kr(s.betaltOre) : ''}</span>` : s.betalt === false ? '<span class="merke rod">Ikke betalt</span>' : ''}<button class="knapp liten" type="button" data-utfort="${esc(nokkel(s))}">Utført</button></div></div></div>`).join('') : '<p class="tom">Ingen nye.</p>'}
       ${radFerdige(d)}
     </section>`;
     el.innerHTML = `
@@ -379,7 +379,7 @@
       try {
         const t = await NA.api('kursstart3.php?okt=' + oktId);
         return {tittel: t.okt?.tittel, liste: (t.deltakere || []).map(p => ({id: Number(p.bookingId), navn: p.navn, antall: Number(p.antall) || 1,
-          kode: p.statusKode, forStatus: p.forStatus || null, ub: p.status === 'Ikke betalt' && Number(p.skyldigOre) > 0, skyldig: p.skyldig, status: p.status}))};
+          kode: p.statusKode, forStatus: p.forStatus || null, ub: p.status === 'Ikke betalt' && Number(p.skyldigOre) > 0, skyldig: p.skyldig, status: p.status, betaltOre: Number(p.betaltOre) || 0}))};
       } catch (e) {
         if (e.status !== 403) throw e;
       }
@@ -388,7 +388,7 @@
     const h = (k.hendelser || []).find(x => x.oktId === oktId);
     const kode = {'Betalt': 'betalt', 'Ikke betalt': 'reservert', 'Møtte ikke opp': 'ikke_mott'};
     return {tittel: h?.tittel, utenForStatus: true, liste: (h?.deltakere || []).map(p => ({id: Number(p.bookingId), navn: p.navn, antall: Number(p.antall) || 1,
-      kode: kode[p.status] || 'annet', forStatus: null, ub: p.status === 'Ikke betalt', skyldig: p.belopOre ? kr(p.belopOre) : '', status: p.status}))};
+      kode: kode[p.status] || 'annet', forStatus: null, ub: p.status === 'Ikke betalt', skyldig: p.belopOre ? kr(p.belopOre) : '', status: p.status, betaltOre: Number(p.betaltOre) || 0}))};
   }
   async function arkStartKurs(oktId) {
     NA.apneArk(NA.arkHode('Start dagens kurs') + '<p class="laster">Henter deltakerne …</p>');
@@ -407,7 +407,7 @@
     const inn = NA.apneArk(`${NA.arkHode(esc((k.tittel || o.tittel || 'Kurset') + (o.klokke ? ' · ' + o.klokke : '')))}
       <p class="muted">Velg «Møtt» eller «Ikke møtt» for hver. De som ikke har betalt står øverst.</p>
       <div>${liste.length ? liste.map(p => `<div class="rad"><div class="tekst"><b>${esc(p.navn)}${p.antall > 1 ? ' · ' + p.antall + ' plasser' : ''}</b>
-          ${p.ub ? `<span class="merke rod">Ikke betalt${p.skyldig ? ' · ' + esc(p.skyldig) : ''}</span>` : `<span class="merke ${p.status === 'Betalt' ? 'gronn' : ''}">${esc(p.status)}</span>`}</div>
+          ${p.ub ? `<span class="merke rod">Ikke betalt${p.skyldig ? ' · ' + esc(p.skyldig) : ''}</span>` : `<span class="merke ${p.status === 'Betalt' ? 'gronn' : ''}">${esc(p.status)}${p.status === 'Betalt' && p.betaltOre > 0 ? ' · ' + kr(p.betaltOre) : ''}</span>`}</div>
           ${kan(p) ? `<div class="mott-valg" role="group" aria-label="Oppmøte for ${esc(p.navn)}">
             <button type="button" data-mott="${p.id}" data-v="ja" aria-pressed="false" ${mottKan(p) ? '' : 'disabled title="Endres på kurssiden"'}>Møtt</button>
             <button type="button" class="nei" data-mott="${p.id}" data-v="nei" aria-pressed="${valg.get(p.id) === 'nei'}">Ikke møtt</button></div>` : ''}

@@ -79,3 +79,16 @@ app/lib/kassekurv.php	php tests/kasse-enkel.php
 app/lib/kassekurv.php	php tests/kasse-ny.php
 tests/kasse-enkel.php	php tests/kasse-enkel.php
 app/lib/booking.php	php tests/pamelding-flytt.php
+
+# Venteliste og betalt beløp i admin (Monica 06.11.2026)
+api/admin/venteliste.php	php tests/venteliste-betalt.php
+api/admin/kalender.php	php tests/venteliste-betalt.php
+api/admin/kursstart3.php	php tests/venteliste-betalt.php
+api/admin/medlemmer.php	php tests/venteliste-betalt.php
+api/admin/oversikt.php	php tests/venteliste-betalt.php
+app/lib/booking.php	php tests/venteliste-betalt.php
+ny-admin/*	php tests/venteliste-betalt.php
+admin-ny/kasse.js	php tests/venteliste-betalt.php
+admin-ny/kasse.js	php tests/kasse-ny.php
+tests/kasse-ny.php	php tests/kasse-ny.php
+tests/venteliste-betalt.php	php tests/venteliste-betalt.php

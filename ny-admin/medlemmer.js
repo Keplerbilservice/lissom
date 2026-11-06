@@ -62,7 +62,7 @@
   // knapp = id: merket blir en trykkbar pille som åpner betalingen for personen (lista).
   function betalingMerke(m, knapp = 0) {
     const [k, t] = m.betalingUte ? ['rod', m.betalingTekst || 'Ikke betalt']
-      : m.betaling === 'betalt' ? ['gronn', 'Betalt']
+      : m.betaling === 'betalt' ? ['gronn', 'Betalt' + (m.betaltOre > 0 ? ' · ' + NA().kr(m.betaltOre) : '')]
       : m.betaling === 'fri' ? ['', 'Betaler ikke']
       : m.betaling === 'fryst' ? ['', 'Fryst'] : [];
     if (!t) return '';
@@ -113,7 +113,7 @@
   function merke(m) {
     const status = statusMerke(m);
     const betaling = m.betalingUte ? `<span class="merke rod">${esc(m.betalingTekst || 'Ikke betalt')}</span>`
-      : m.betaling === 'betalt' ? '<span class="merke gronn">Betalt</span>'
+      : m.betaling === 'betalt' ? `<span class="merke gronn">Betalt${m.betaltOre > 0 ? ' · ' + esc(NA().kr(m.betaltOre)) : ''}</span>`
       : m.betaling === 'fri' ? '<span class="merke">Betaler ikke</span>'
       : m.betaling === 'fryst' ? '<span class="merke">Fryst</span>' : '';
     return `<span class="merker">${status}${betaling}</span>`;

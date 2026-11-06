@@ -2271,6 +2271,7 @@ if (Foresporsel::heltall('person') > 0 || Foresporsel::heltall('booking') > 0) {
 
     $rader = DB::alle(
         "SELECT b.id, b.member_id, b.antall, b.status, b.belop_ore, b.created_at, {$bevisFelt}
+                " . Booking::betaltSql('b') . " AS betalt_ore,
                 c.tittel, c.type, cs.start_tid, p.vipps_reference
            FROM bookings b
            JOIN courses c ON c.id = b.course_id
@@ -2728,7 +2729,7 @@ if (Foresporsel::heltall('person') > 0 || Foresporsel::heltall('booking') > 0) {
                 'sum'     => Booking::kroner((int) $b['belop_ore'])
                              . ((int) $b['antall'] > 1 ? ' · ' . $b['antall'] . ' plasser' : ''),
                 'status'  => match ((string) $b['status']) {
-                    'betalt'    => 'Betalt',
+                    'betalt'    => 'Betalt' . ((int) ($b['betalt_ore'] ?? 0) > 0 ? ' · ' . PopPris::kr((int) $b['betalt_ore']) : ''),
                     'reservert' => 'Reservert — ikke betalt',
                     'avbestilt' => 'Avbestilt',
                     default     => (string) $b['status'],
@@ -3166,6 +3167,7 @@ Svar::json(['lavAktivitetDager' => Aktivitet::dager(), 'medlemmer' => array_map(
                 ->modify('-1 day')->format('Y-m-d');
         }
         return ['betaling' => $b['tilstand'], 'betalingTekst' => $b['tekst'],
+                'betaltOre' => $b['tilstand'] === 'betalt' && $kilde !== null ? (int) ($kilde['belop_ore'] ?? 0) : 0,
                 'betaltTil' => $betaltTil === null ? null : Booking::norskDatoKort($betaltTil . ' 12:00:00'),
                 'betalingForfalt' => $b['forfalt'],
                 // «Pengene er ikke inne» — det filteret og kortet teller.

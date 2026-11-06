@@ -1520,6 +1520,17 @@ final class Booking
 
             $bookingId = DB::settInn('bookings', $felter);
 
+            // Har hen booket selv, staar hen ikke lenger i ventelista for kurset
+            // (Monica 06.11.2026: «Plass ledig» for en som alt hadde betalt).
+            if ($epost !== '' || $telefon !== '') {
+                DB::kjor(
+                    "UPDATE waitlist SET status = 'booket'
+                      WHERE course_id = :k AND status IN ('venter', 'varslet')
+                        AND (epost = :e OR (telefon IS NOT NULL AND telefon = :t))",
+                    ['k' => (int) $okt['course_id'], 'e' => $epost, 't' => $telefon !== '' ? $telefon : null]
+                );
+            }
+
             // Gjenstandene kunden valgte, ferdig utfylt i kassa (eieren
             // 11.10.2026). Ikke «slaatt inn»: gjenstander_ore staar tomt til
             // Monica har sett dem, og hun kan rette dem der.
@@ -3731,6 +3742,20 @@ final class Booking
      * betalingerFor(): begge pekerne, netto etter refusjon, gavekortdelen med,
      * annullerte teller ikke. $b er aliaset paa bookings i spoerringen.
      */
+    /**
+     * Har ventelisteraden $w booket kurset selv etter at hen sto seg paa lista
+     * (samme e-post eller telefon, betalt eller reservert)? Da er hen ikke i
+     * koen lenger (Monica 06.11.2026).
+     */
+    public static function ventelisteBooketSql(string $w): string
+    {
+        return "EXISTS (SELECT 1 FROM bookings vb LEFT JOIN members vm ON vm.id = vb.member_id
+                         WHERE vb.course_id = {$w}.course_id AND vb.status IN ('betalt', 'reservert')
+                           AND vb.created_at >= {$w}.created_at
+                           AND (({$w}.epost <> '' AND COALESCE(vm.epost, vb.gjest_epost) = {$w}.epost)
+                             OR ({$w}.telefon <> '' AND COALESCE(vm.telefon, vb.gjest_telefon) = {$w}.telefon)))";
+    }
+
     public static function betaltSql(string $b): string
     {
         if (!DB::harKolonne('payments', 'booking_id')) {

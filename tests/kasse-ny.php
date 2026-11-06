@@ -245,7 +245,7 @@ try {
     $s = kall($K . '?okt=' . $popOkt, null, $kasseToken);
     sjekk('kurset: Ola skylder, Sara står under «Har betalt» med «Betalt»', $s[0] === 200
         && array_column($s[1]['rader'] ?? [], 'bookingId') === [$ola] && array_column($s[1]['betalte'] ?? [], 'bookingId') === [$sara]
-        && (($s[1]['betalte'][0]['pille']['tekst'] ?? '') === 'Betalt'), $tekst($s));
+        && str_starts_with((string) ($s[1]['betalte'][0]['pille']['tekst'] ?? ''), 'Betalt'), $tekst($s));
     $per = kall($K, ['handling' => 'person', 'bookingId' => $sara], $kasseToken);
     $lagret = $per[1]['lagret'] ?? [];
     sjekk('personen: gjenstanden hun valgte står lagret', count($lagret) === 1 && ($lagret[0]['antall'] ?? 0) === 1, $tekst($per));

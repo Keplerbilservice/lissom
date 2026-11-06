@@ -34,6 +34,7 @@ if (Foresporsel::metode() === 'GET') {
            JOIN courses c ON c.id = w.course_id
       LEFT JOIN course_sessions cs ON cs.id = w.course_session_id
           WHERE w.status IN ('venter','varslet')
+            AND NOT " . Booking::ventelisteBooketSql('w') . "
        ORDER BY cs.start_tid IS NULL, cs.start_tid, c.tittel, w.posisjon"
     );
 

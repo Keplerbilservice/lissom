@@ -196,7 +196,7 @@ function valgInnhold(){
  return data.nivaer.length?[el('div',{class:'k-g3'},data.nivaer.map(nivaaKort))]:[];
 }
 const personKort=(k,r,betalt)=>kort({class:'kurs',valgt:!!salg&&salg.bookingId===r.bookingId,onclick:()=>nyttSalg({bookingId:r.bookingId,navn:r.navn,oktId:k.oktId})},el('b',{text:r.navn}),el('small',{text:r.pop?`${r.antall} ${r.antall===1?'person':'personer'}`:r.info}),
- betalt?el('span',{class:'k-merke betalt',text:'Betalt'}):r.pop&&r.depositumOre?el('span',{class:'k-merke dep',text:r.depositum+' depositum'}):el('span',{class:'k-merke skylder',text:r.pille.tekst}));
+ betalt?el('span',{class:'k-merke betalt',text:r.pille&&r.pille.tekst||'Betalt'}):r.pop&&r.depositumOre?el('span',{class:'k-merke dep',text:r.depositum+' depositum'}):el('span',{class:'k-merke skylder',text:r.pille.tekst}));
 function tegnVenstre(){
  if(!venstreEl)return;
  if(ferdig){tegnFerdigVenstre();return;}

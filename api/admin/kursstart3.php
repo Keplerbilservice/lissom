@@ -160,6 +160,7 @@ foreach ($rader as $r) {
     // «ny»: meldt på siste døgn, samme grense som kalenderen (kalender.php).
     'ny'         => (string) $r['created_at'] >= $nyGrense,
         'skyldigOre' => $skyldig,
+        'betaltOre'  => (int) DB::verdi('SELECT ' . Booking::betaltSql('b') . ' FROM bookings b WHERE b.id = :i', ['i' => $id]),
         'skyldig'    => Booking::kroner($skyldig),
         'harTlf'     => KursstartKrav::telefon((string) ($r['telefon'] ?? '')) !== null,
         // «venter» = kravet ligger i Vipps-appen og er ikke betalt ennå.

@@ -299,6 +299,7 @@ final class KasseKurv
             $skyldig = KursstartKrav::skyldig($id, (int) $b['belop_ore'], (string) $b['status']);
             $betalt = (int) Booking::betalingerFor($id)['sum'];
             $antall = (int) $b['antall'];
+            $betaltTekst = 'Betalt' . ($betalt > 0 ? ' · ' . self::kr($betalt) : '');
             $vedBooking = 0;
             if ($erPop) {
                 // Det som er betalt ved booking: aldri mer enn beløpet ved
@@ -309,11 +310,11 @@ final class KasseKurv
                 $pille = $b['gjenstander_ore'] === null
                     ? ['tekst' => 'Gjenstander', 'tone' => 'skylder']
                     : ($skyldig > 0 ? ['tekst' => 'Skylder ' . self::kr($skyldig), 'tone' => 'skylder']
-                                    : ['tekst' => 'Betalt', 'tone' => 'betalt']);
+                                    : ['tekst' => $betaltTekst, 'tone' => 'betalt']);
             } else {
                 $info = $antall . ' ' . ($antall === 1 ? 'plass' : 'plasser');
                 $pille = $skyldig > 0 ? ['tekst' => 'Skylder ' . self::kr($skyldig), 'tone' => 'skylder']
-                                      : ['tekst' => 'Betalt', 'tone' => 'betalt'];
+                                      : ['tekst' => $betaltTekst, 'tone' => 'betalt'];
             }
             $rader[] = [
                 'bookingId'    => $id,

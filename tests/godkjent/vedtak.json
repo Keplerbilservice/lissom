@@ -8681,7 +8681,7 @@
                 {
                     "fil": "ny-admin/medlemmer.js",
                     "finnes": [
-                        "m.betaling === 'betalt' ? '<span class=\"merke gronn\">Betalt</span>'",
+                        "m.betaling === 'betalt' ? `<span class=\"merke gronn\">Betalt${m.betaltOre > 0 ? ' · ' + esc(NA().kr(m.betaltOre)) : ''}</span>`",
                         "m.betaling === 'fri' ? '<span class=\"merke\">Betaler ikke</span>'",
                         "return `<span class=\"merker\">${status}${betaling}</span>`;"
                     ]
@@ -10733,6 +10733,65 @@
                     "fil": "ny-admin/idag.js",
                     "finnes": [
                         "return !(h && h.slutt && h.slutt <= naaHM && !ikkeBetalt(h).length);"
+                    ],
+                    "ikkeFinnes": []
+                }
+            ]
+        },
+        {
+            "id": "monica-venteliste-booket-betalt-belop-20261106",
+            "dato": "2026-11-06",
+            "hva": "Eieren 06.11.2026 (via Monica): (1) Den som har fått plass, skal bort fra ventelisten. Booker hen selv, får ventelisteraden for kurset status «booket». Har hen booket kurset (betalt/reservert, samme e-post eller telefon) etter at hen sto seg på lista, vises hen ikke i ventelisten i admin: Må gjøres («Plass ledig»), Venteliste-siden og kurssiden/kalenderen. (2) «Betalt» i admin viser faktisk betalt beløp: «Betalt · 1 590 kr» (I dag: Ny påmelding og Start dagens kurs, Kurs: deltakerliste og utskrift, Medlemmer: liste/ark og kurshistorikk, kassa: Har betalt).",
+            "hvor": "Ny admin › I dag, Kurs, Medlemmer, Venteliste; kassa",
+            "kode": [
+                {
+                    "fil": "app/lib/booking.php",
+                    "finnes": [
+                        "public static function ventelisteBooketSql(string $w): string",
+                        "\"UPDATE waitlist SET status = 'booket'"
+                    ],
+                    "ikkeFinnes": []
+                },
+                {
+                    "fil": "api/admin/oversikt.php",
+                    "finnes": [
+                        "AND NOT \" . Booking::ventelisteBooketSql('w') . \"",
+                        "'betaltOre' => $p['betaltOre'],"
+                    ],
+                    "ikkeFinnes": []
+                },
+                {
+                    "fil": "api/admin/venteliste.php",
+                    "finnes": [
+                        "AND NOT \" . Booking::ventelisteBooketSql('w') . \""
+                    ],
+                    "ikkeFinnes": []
+                },
+                {
+                    "fil": "api/admin/kalender.php",
+                    "finnes": [
+                        "AND NOT \" . Booking::ventelisteBooketSql('w') . \""
+                    ],
+                    "ikkeFinnes": []
+                },
+                {
+                    "fil": "ny-admin/kurs.js",
+                    "finnes": [
+                        "`<span class=\"merke gronn\">Betalt · ${kr(d.betaltOre)}</span>`"
+                    ],
+                    "ikkeFinnes": []
+                },
+                {
+                    "fil": "ny-admin/idag.js",
+                    "finnes": [
+                        "Betalt${s.betaltOre > 0 ? ' · ' + kr(s.betaltOre) : ''}"
+                    ],
+                    "ikkeFinnes": []
+                },
+                {
+                    "fil": "app/lib/kassekurv.php",
+                    "finnes": [
+                        "$betaltTekst = 'Betalt' . ($betalt > 0 ? ' · ' . self::kr($betalt) : '');"
                     ],
                     "ikkeFinnes": []
                 }

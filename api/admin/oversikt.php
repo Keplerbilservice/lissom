@@ -365,6 +365,7 @@ try {
 // --- Siste paameldinger ---------------------------------------------------
 $nyeste = DB::alle(
     "SELECT b.id, b.antall, b.status, b.belop_ore, b.created_at, b.course_session_id,
+            " . Booking::betaltSql('b') . " AS betalt_ore,
             COALESCE(m.navn, b.gjest_navn) AS navn,
             COALESCE(m.epost, b.gjest_epost) AS epost,
             c.tittel, cs.start_tid, p.vipps_reference
@@ -1019,7 +1020,8 @@ $maGjores = (static function () use ($medlemsstatus, $nyeste): array {
         }
         $hvem = mb_strtolower(trim((string) ($b['epost'] ?: $b['navn'])));
         $p = &$pameldinger[$hvem . '|' . mb_strtolower((string) $b['tittel'])];
-        $p ??= ['b' => $b, 'ider' => [], 'plasser' => 0, 'datoer' => [], 'betalt' => true, 'bestiltTid' => ''];
+        $p ??= ['b' => $b, 'ider' => [], 'plasser' => 0, 'datoer' => [], 'betalt' => true, 'bestiltTid' => '', 'betaltOre' => 0];
+        $p['betaltOre'] += (int) ($b['betalt_ore'] ?? 0);
         $p['ider'][] = (int) $b['id'];
         $p['plasser'] += max(1, (int) $b['antall']);
         $p['bestiltTid'] = max($p['bestiltTid'], (string) $b['created_at']);
@@ -1038,7 +1040,7 @@ $maGjores = (static function () use ($medlemsstatus, $nyeste): array {
                 implode(', ', array_unique($p['datoer'])),
                 $p['betalt'] ? 'Betalt' : 'Ikke betalt'])), 'pameldte?booking=' . (int) $b['id'],
             // Ny admin viser betalingen som merke (eieren 11.10.2026: «fint om jeg kan se om de er betalt eller ikke»).
-            ['ider' => $p['ider'], 'betalt' => $p['betalt'],
+            ['ider' => $p['ider'], 'betalt' => $p['betalt'], 'betaltOre' => $p['betaltOre'],
              'bestiltTid' => $p['bestiltTid'], 'bestiltDato' => Booking::norskDatoKort($p['bestiltTid'])]
             + ['oktId' => $b['course_session_id'] !== null ? (int) $b['course_session_id'] : null]);
     }
@@ -1048,13 +1050,7 @@ $maGjores = (static function () use ($medlemsstatus, $nyeste): array {
                FROM waitlist w JOIN courses c ON c.id = w.course_id
           LEFT JOIN course_sessions cs ON cs.id = w.course_session_id
               WHERE w.status IN ('venter', 'varslet')
-                -- Har hen booket kurset etter at hen sto seg paa lista, er det
-                -- ingen plass aa tilby (Monica 06.11.2026).
-                AND NOT EXISTS (SELECT 1 FROM bookings b LEFT JOIN members m ON m.id = b.member_id
-                                 WHERE b.course_id = w.course_id AND b.status IN ('betalt', 'reservert')
-                                   AND b.created_at >= w.created_at
-                                   AND ((w.epost <> '' AND COALESCE(m.epost, b.gjest_epost) = w.epost)
-                                     OR (w.telefon <> '' AND COALESCE(m.telefon, b.gjest_telefon) = w.telefon)))
+                AND NOT " . Booking::ventelisteBooketSql('w') . "
               ORDER BY w.posisjon LIMIT 100"
         );
         if ($rader === []) {

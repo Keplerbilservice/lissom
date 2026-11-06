@@ -171,6 +171,7 @@ if ($oktIder !== []) {
            FROM waitlist w
           WHERE w.course_session_id IN ({$inn})
             AND w.status IN ('venter','varslet')
+            AND NOT " . Booking::ventelisteBooketSql('w') . "
        ORDER BY w.posisjon"
     ) as $w) {
         $w['paa_kurset'] = false;
@@ -192,6 +193,7 @@ if ($oktIder !== []) {
           WHERE w.course_session_id IS NULL
             AND w.course_id IN (' . implode(',', $kursIder) . ")
             AND w.status IN ('venter','varslet')
+            AND NOT " . Booking::ventelisteBooketSql('w') . "
        ORDER BY w.posisjon"
     ) as $w) {
         $w['paa_kurset'] = true;

@@ -78,3 +78,4 @@ api/admin/beskjed.php	php tests/send-manuelt.php
 app/lib/kassekurv.php	php tests/kasse-enkel.php
 app/lib/kassekurv.php	php tests/kasse-ny.php
 tests/kasse-enkel.php	php tests/kasse-enkel.php
+app/lib/booking.php	php tests/pamelding-flytt.php

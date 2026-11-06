@@ -47,7 +47,8 @@ async function hentOkt(tving) {
 // Paint on Pots: beløpet regnes ikke her. Prisen etter gjenstanden (nivåene fra prislisten) tas i kassa.
 function merke(d, pop) {
   if (d.status === 'Ikke betalt') return pop || !d.belopOre ? '<span class="merke rod">Ikke betalt</span>' : `<span class="merke rod">Ikke betalt · ${kr(d.belopOre)}</span>`;
-  if (d.status === 'Betalt') return '<span class="merke gronn">Betalt</span>';
+  // Faktisk betalt beløp (betalingene, minus refusjon), ikke listepris (Monica 06.11.2026: «jeg må se beløpet»).
+  if (d.status === 'Betalt') return d.betaltOre > 0 ? `<span class="merke gronn">Betalt · ${kr(d.betaltOre)}</span>` : '<span class="merke gronn">Betalt</span>';
   return `<span class="merke">${esc(d.status)}</span>`;
 }
 const rekke = {'Ikke betalt': 0, 'Betalt': 1};

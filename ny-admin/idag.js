@@ -95,7 +95,8 @@
     const salgIgjen = salg.filter(x => !gjort.has('salg:' + x.id));
     const nMigr = migr?.mangler?.length || 0;
     const oppfHtml = radOppf();
-    const info = (d.maGjores || []).filter(s => s.type === 'pamelding' && !gjort.has(nokkel(s)) && !(s.ider || [s.id]).every(i => sett.has(i)))
+    /* Tilbudt ventelisteplass (Monica 06.11.2026) står her med beskjedstatus, ikke i Må gjøres. */
+    const info = (d.maGjores || []).filter(s => (s.type === 'pamelding' && !gjort.has(nokkel(s)) && !(s.ider || [s.id]).every(i => sett.has(i))) || s.type === 'venteliste_tilbudt')
       .sort((a, b) => String(b.bestiltTid || '').localeCompare(String(a.bestiltTid || '')) || Number(b.id) - Number(a.id));
     const dato = new Date().toLocaleDateString('nb-NO', {weekday: 'long', day: 'numeric', month: 'long'});
     const hurtig = NA.hurtig();
@@ -124,7 +125,7 @@
       <div class="kort-head"><h2>Må gjøres</h2></div>
       ${maa.length || salgIgjen.length || nMigr || oppfHtml ? (nMigr ? radMigr(nMigr) : '') + salgIgjen.map(radSalg).join('') + maa.map(radSak).join('') + oppfHtml : '<p class="tom">Alt er gjort. Fint!</p>'}
       <div class="kort-head" style="margin:22px 0 4px"><h3>Til info</h3><small>Forsvinner av seg selv etter 3 dager</small></div>
-      ${info.length ? info.map(s => `<div class="rad idag-info-rad${radMaal(s) ? ` klikkrad" data-rad="${esc(nokkel(s))}" role="button" tabindex="0` : ''}"><div class="tekst"><span class="type">Ny påmelding</span><b>${esc(String(s.tittel).replace(/^Ny påmelding: /, ''))}</b><small>${esc(String(s.under).replace(/ · (Ikke betalt|Betalt)$/, ''))}</small></div><div class="idag-info-side">${s.bestiltDato ? `<small class="idag-bestilt">Bestilt ${esc(s.bestiltDato)}</small>` : ''}<div class="idag-info-status">${s.betalt === true ? '<span class="merke gronn">Betalt</span>' : s.betalt === false ? '<span class="merke rod">Ikke betalt</span>' : ''}<button class="knapp liten" type="button" data-utfort="${esc(nokkel(s))}">Utført</button></div></div></div>`).join('') : '<p class="tom">Ingen nye.</p>'}
+      ${info.length ? info.map(s => s.type === 'venteliste_tilbudt' ? radTilbudt(s) : `<div class="rad idag-info-rad${radMaal(s) ? ` klikkrad" data-rad="${esc(nokkel(s))}" role="button" tabindex="0` : ''}"><div class="tekst"><span class="type">Ny påmelding</span><b>${esc(String(s.tittel).replace(/^Ny påmelding: /, ''))}</b><small>${esc(String(s.under).replace(/ · (Ikke betalt|Betalt)$/, ''))}</small></div><div class="idag-info-side">${s.bestiltDato ? `<small class="idag-bestilt">Bestilt ${esc(s.bestiltDato)}</small>` : ''}<div class="idag-info-status">${s.betalt === true ? '<span class="merke gronn">Betalt</span>' : s.betalt === false ? '<span class="merke rod">Ikke betalt</span>' : ''}<button class="knapp liten" type="button" data-utfort="${esc(nokkel(s))}">Utført</button></div></div></div>`).join('') : '<p class="tom">Ingen nye.</p>'}
       ${radFerdige(d)}
     </section>`;
     el.innerHTML = `
@@ -145,8 +146,10 @@
           ${taUtLeire.map(r => `<div class="rad"><div class="tekst"><b>${esc(r.vare)}</b><small>${Number(r.antall)} på lager</small></div><button class="knapp liten" type="button" data-taut="${Number(r.id)}" ${Number(r.antall) > 0 ? '' : 'disabled'}>Ta ut 1</button></div>`).join('')}</section>` : ''}
       </div>`;
   }
+  /* Tilbudt plass fra ventelisten: hvem, hvilket kurs, og om beskjeden gikk ut (varselkøen). Raden åpner ventelisten. */
+  const radTilbudt = s => `<div class="rad idag-info-rad${radMaal(s) ? ` klikkrad" data-rad="${esc(nokkel(s))}" role="button" tabindex="0` : ''}"><div class="tekst"><span class="type">Venteliste</span><b>${esc(s.tittel)}</b><small>${esc(s.under)}</small></div><div class="idag-info-side"><div class="idag-info-status"><span class="merke ${esc(s.varselFarge || '')}">${esc(s.varselMerke || '')}</span></div></div></div>`;
   OVN_SMAL.addEventListener('change', () => { if (el?.isConnected && NA.sist) tegn(NA.sist); });
-  const TYPE = {henvendelse: 'Forespørsel', soknad: 'Medlemssøknad', frys: 'Frys', bidrag: 'Medlemsbidrag', betaling: 'Betaling', venteliste: 'Venteliste',
+  const TYPE = {henvendelse: 'Forespørsel', soknad: 'Medlemssøknad', frys: 'Frys', bidrag: 'Medlemsbidrag', betaling: 'Betaling', venteliste: 'Venteliste', venteliste_tilbudt: 'Venteliste',
     henting: 'Klar til henting', leire: 'Leirebestilling', dugnad: 'Dugnad', lager: 'Lager', chat: 'Chat', innboks: 'Innboks', feil: 'Feilmelding',
     tilbakebetal: 'Avlyst dato', stempling: 'Verkstedtid'};
   /* Ferdige (eieren 02.11.2026): det som er merket ferdig de siste 30 dagene. Samme kilde som Må gjøres, så en handling
@@ -258,7 +261,7 @@
       case 'innboks': return () => arkInnboks(s);
       case 'feil': return () => arkFeil(s);
       case 'henting': return () => tilKurs(id);
-      case 'venteliste': return s.oktId ? () => tilKurs(Number(s.oktId), {venteliste: 1}) : s.kursId ? () => NA.gaTil('kurs', {kurs: Number(s.kursId), fra: 'idag', venteliste: 1}) : null;
+      case 'venteliste': case 'venteliste_tilbudt': return s.oktId ? () => tilKurs(Number(s.oktId), {venteliste: 1}) : s.kursId ? () => NA.gaTil('kurs', {kurs: Number(s.kursId), fra: 'idag', venteliste: 1}) : null;
       case 'pamelding': case 'tilbakebetal': return s.oktId ? () => tilKurs(Number(s.oktId), {booking: id}) : null;
       case 'lager': return NA.erMobil() ? null : () => NA.gaTil('varer', {vare: id});
       case 'soknad': return () => arkSoknad(s);
